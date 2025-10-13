@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read and write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Users can read public user profiles
+      allow read: if request.auth != null && 
+        (resource.data.isPublic == true || request.auth.uid == userId);
+    }
+    
+    // Users can manage their own decks
+    match /users/{userId}/decks/{deckId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Users can manage cards in their decks
+    match /users/{userId}/decks/{deckId}/cards/{cardId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Public decks can be read by authenticated users
+    match /decks/{deckId} {
+      allow read: if request.auth != null && 
+        (resource.data.isPublic == true || 
+         resource.data.createdBy == request.auth.uid);
+      allow write: if request.auth != null && 
+        resource.data.createdBy == request.auth.uid;
+    }
+    
+    // Cards in public decks can be read by authenticated users
+    match /decks/{deckId}/cards/{cardId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        get(/databases/$(database)/documents/decks/$(deckId)).data.createdBy == request.auth.uid;
+    }
+    
+    // Search logs can be written by authenticated users
+    match /searchLogs/{logId} {
+      allow read: if false; // Only Cloud Functions can read
+      allow write: if request.auth != null;
+    }
+    
+    // Study sessions can be managed by users
+    match /users/{userId}/studySessions/{sessionId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
