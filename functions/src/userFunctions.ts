@@ -1,7 +1,7 @@
-import {onCall} from "firebase-functions/v2/https";
-import {onDocumentWritten} from "firebase-functions/v2/firestore";
+import { onCall } from "firebase-functions/v2/https";
+import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
-import {getFirestore, FieldValue} from "firebase-admin/firestore";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
 const db = getFirestore();
 
@@ -9,16 +9,14 @@ const db = getFirestore();
  * Get user decks with cards
  */
 export const getUserDecks = onCall(async (request) => {
-  const {userId} = request.data;
+  const { userId } = request.data;
 
   if (!userId) {
     throw new Error("UserId is required");
   }
 
   try {
-    const decksSnapshot = await db
-      .collection(`users/${userId}/decks`)
-      .get();
+    const decksSnapshot = await db.collection(`users/${userId}/decks`).get();
 
     const decks = await Promise.all(
       decksSnapshot.docs.map(async (deckDoc) => {
@@ -35,10 +33,10 @@ export const getUserDecks = onCall(async (request) => {
           ...deckData,
           cards,
         };
-      }),
+      })
     );
 
-    return {decks};
+    return { decks };
   } catch (error) {
     logger.error("Error getting user decks", error);
     throw new Error("Failed to get user decks");
@@ -49,7 +47,7 @@ export const getUserDecks = onCall(async (request) => {
  * Update card progress after review
  */
 export const updateCardProgress = onCall(async (request) => {
-  const {userId, deckId, cardId, grade, difficulty, interval, firstLearn} =
+  const { userId, deckId, cardId, grade, difficulty, interval, firstLearn } =
     request.data;
 
   if (!userId || !deckId || !cardId) {
@@ -75,10 +73,12 @@ export const updateCardProgress = onCall(async (request) => {
         reps: (existingAlgo.reps ?? 0) + 1,
         state: 2, // reviewed state; dostosuj wg Twojej definicji stanów
       },
-      firstLearn: firstLearn ? {
-        ...existingFirstLearn,
-        ...firstLearn,
-      } : existingFirstLearn,
+      firstLearn: firstLearn
+        ? {
+            ...existingFirstLearn,
+            ...firstLearn,
+          }
+        : existingFirstLearn,
       grade: grade ?? 0,
       lastReviewDate: now,
     });
@@ -100,7 +100,7 @@ export const updateCardProgress = onCall(async (request) => {
       firstLearn,
     });
 
-    return {success: true};
+    return { success: true };
   } catch (error) {
     logger.error("Error updating card progress", error);
     throw new Error("Failed to update card progress");
@@ -111,7 +111,7 @@ export const updateCardProgress = onCall(async (request) => {
  * Get user progress and statistics
  */
 export const getUserProgress = onCall(async (request) => {
-  const {userId} = request.data;
+  const { userId } = request.data;
 
   if (!userId) {
     throw new Error("UserId is required");
@@ -165,7 +165,7 @@ export const getUserProgress = onCall(async (request) => {
  * Get user settings
  */
 export const getUserSettings = onCall(async (request) => {
-  const {userId} = request.data;
+  const { userId } = request.data;
 
   if (!userId) {
     throw new Error("UserId is required");
@@ -177,13 +177,13 @@ export const getUserSettings = onCall(async (request) => {
     const settingsDoc = await settingsDocPath.get();
 
     if (settingsDoc.exists) {
-      return {settings: settingsDoc.data() || {}};
+      return { settings: settingsDoc.data() || {} };
     }
 
     // Fallback: settings embedded in user root document under `settings`
     const userDoc = await db.doc(`users/${userId}`).get();
-    const userData = userDoc.data() || {} as Record<string, unknown>;
-    return {settings: userData.settings || {}};
+    const userData = userDoc.data() || ({} as Record<string, unknown>);
+    return { settings: userData.settings || {} };
   } catch (error) {
     logger.error("Error getting user settings", error);
     throw new Error("Failed to get user settings");
@@ -194,7 +194,7 @@ export const getUserSettings = onCall(async (request) => {
  * Process friend requests
  */
 export const processFriendRequest = onCall(async (request) => {
-  const {fromUserId, toUserId, action} = request.data;
+  const { fromUserId, toUserId, action } = request.data;
 
   if (!fromUserId || !toUserId || !action) {
     throw new Error("fromUserId, toUserId, and action are required");
@@ -243,7 +243,7 @@ export const processFriendRequest = onCall(async (request) => {
       action,
     });
 
-    return {success: true};
+    return { success: true };
   } catch (error) {
     logger.error("Error processing friend request", error);
     throw new Error("Failed to process friend request");
@@ -297,5 +297,201 @@ export const validateUserData = onDocumentWritten(
     } catch (error) {
       logger.error("Error validating user data", error);
     }
-  },
+  }
 );
+
+/**
+ * Return server authoritative time and optional active season info
+ */
+export const serverNow = onCall(async () => {
+  const now = new Date();
+  return {
+    nowMs: now.getTime(),
+    iso: now.toISOString(),
+  };
+});
+
+/**
+ * Get or initialize current season (weekly windows, server-defined)
+ * Collection: ranking/currentSeason
+ */
+export const getCurrentSeason = onCall(async () => {
+  const seasonRef = db.doc("ranking/currentSeason");
+  const snap = await seasonRef.get();
+
+  const computeWindow = () => {
+    const now = new Date();
+    // Start of current week (Mon 00:00 UTC)
+    const day = now.getUTCDay();
+    const diffToMonday = (day + 6) % 7; // 0 for Monday
+    const start = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        0,
+        0,
+        0,
+        0
+      )
+    );
+    start.setUTCDate(start.getUTCDate() - diffToMonday);
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + 7);
+    const seasonId = `${start.toISOString().slice(0, 10)}_${end
+      .toISOString()
+      .slice(0, 10)}`;
+    return { seasonId, startAt: start, endAt: end, status: "active" } as const;
+  };
+
+  if (!snap.exists) {
+    const window = computeWindow();
+    await seasonRef.set({ ...window, createdAt: FieldValue.serverTimestamp() });
+    return window;
+  }
+
+  const data = snap.data() as {
+    seasonId: string;
+    startAt: any;
+    endAt: any;
+    status: string;
+  };
+  return data;
+});
+
+/**
+ * Submit points for current season (authoritative, server-timestamped)
+ * Request: { userId: string; delta: number }
+ */
+export const submitPoints = onCall(async (request) => {
+  const { userId, delta } = request.data || {};
+  if (!userId || typeof delta !== "number") {
+    throw new Error("userId and numeric delta are required");
+  }
+
+  // Call local function directly to avoid nested onCall.run typing
+  const seasonSnap = await db.doc("ranking/currentSeason").get();
+  let seasonId: string | undefined;
+  if (seasonSnap.exists) {
+    const data = seasonSnap.data() as { seasonId?: string };
+    seasonId = data?.seasonId;
+  } else {
+    // initialize if missing
+    const now = new Date();
+    const day = now.getUTCDay();
+    const diffToMonday = (day + 6) % 7;
+    const start = new Date(
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        0,
+        0,
+        0,
+        0
+      )
+    );
+    start.setUTCDate(start.getUTCDate() - diffToMonday);
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + 7);
+    seasonId = `${start.toISOString().slice(0, 10)}_${end
+      .toISOString()
+      .slice(0, 10)}`;
+    await seasonSnap.ref.set({
+      seasonId,
+      startAt: start,
+      endAt: end,
+      status: "active",
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  }
+  if (!seasonId) {
+    throw new Error("No active season");
+  }
+
+  const docRef = db.doc(`seasonUserPoints/${seasonId}/users/${userId}`);
+
+  await db.runTransaction(async (trx) => {
+    const snap = await trx.get(docRef);
+    const prev = snap.exists
+      ? (snap.data() as { points?: number })
+      : { points: 0 };
+    const nextPoints = (prev.points || 0) + delta;
+    trx.set(
+      docRef,
+      {
+        points: nextPoints,
+        lastActivityAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+  });
+
+  logger.info("Points submitted", { userId, delta, seasonId });
+  return { success: true };
+});
+
+/**
+ * Close current season and publish simple leaderboard snapshot
+ * For production, consider Cloud Scheduler to call this weekly.
+ */
+export const weeklyRollOver = onCall(async () => {
+  const seasonDoc = await db.doc("ranking/currentSeason").get();
+  if (!seasonDoc.exists) {
+    throw new Error("No current season");
+  }
+  const { seasonId, endAt } = seasonDoc.data() as any;
+  const now = new Date();
+  if (endAt?.toDate && now < endAt.toDate()) {
+    // Not yet ended, but allow manual publish
+    logger.warn("weeklyRollOver called before season end", { seasonId });
+  }
+
+  // Build leaderboard (global, top 100)
+  const usersSnap = await db
+    .collection(`seasonUserPoints/${seasonId}/users`)
+    .orderBy("points", "desc")
+    .limit(100)
+    .get();
+
+  const entries = usersSnap.docs.map((d, idx) => {
+    const data = d.data() as { points?: number; lastActivityAt?: unknown };
+    return {
+      userId: d.id,
+      points: data.points ?? 0,
+      lastActivityAt: data.lastActivityAt ?? null,
+      position: idx + 1,
+    };
+  });
+
+  await db.doc(`leaderboards/${seasonId}/groups/global`).set(
+    {
+      entries,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  // Initialize next season window
+  const end = endAt?.toDate ? endAt.toDate() : new Date();
+  const nextStart = new Date(end);
+  const nextEnd = new Date(nextStart);
+  nextEnd.setUTCDate(nextEnd.getUTCDate() + 7);
+  const nextId = `${nextStart.toISOString().slice(0, 10)}_${nextEnd
+    .toISOString()
+    .slice(0, 10)}`;
+
+  await seasonDoc.ref.set(
+    {
+      seasonId: nextId,
+      startAt: nextStart,
+      endAt: nextEnd,
+      status: "active",
+      rolledAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  logger.info("Season rolled over", { prev: seasonId, next: nextId });
+  return { success: true, nextSeasonId: nextId };
+});

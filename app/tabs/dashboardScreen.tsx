@@ -53,33 +53,33 @@ export default function decksScreen(): React.JSX.Element {
         // Get user progress and statistics from Cloud Function
         const [userProgress, userDecks] = await Promise.all([
           cloudFunctions.getUserProgress(userCtx.id),
-          cloudFunctions.getUserDecks(userCtx.id)
+          cloudFunctions.getUserDecks(userCtx.id),
         ]);
-        
+
         console.log("User decks:", userDecks);
-        
+
         // Transform decks data to match expected format
-        const readyDecks: Deck[] = userDecks.decks.map(deck => ({
+        const readyDecks: Deck[] = userDecks.decks.map((deck) => ({
           id: deck.id,
           title: deck.title || "Untitled Deck",
           views: deck.views || 0,
           likes: deck.likes || 0,
           saved: deck.saved || false,
-          ...deck
+          ...deck,
         }));
-        
+
         // For now, consider all decks as unpinned (you can add pinning logic later)
         const readyPinned: Deck[] = [];
-        
+
         // You can use userProgress.stats for statistics display
         console.log("User stats:", userProgress.stats);
         console.log("Study streak:", userProgress.streak);
         console.log("User decks:", readyDecks.length);
-        
+
         setDecks(readyDecks);
         setPinned(readyPinned);
       }
-      
+
       setIsLoading(false);
     } catch (e) {
       console.log(e);
@@ -87,7 +87,6 @@ export default function decksScreen(): React.JSX.Element {
       setIsLoading(false);
     }
   }
-
 
   function openDeckHandler(gotDeck: Deck): void {
     router.push({
@@ -156,7 +155,11 @@ export default function decksScreen(): React.JSX.Element {
           <View style={styles.topContainer}>
             <Text style={styles.title}>Daily goal</Text>
             <View style={styles.topIconsContainer}>
-              <Pressable onPress={() => {}}>
+              <Pressable
+                onPress={() => {
+                  router.push({ pathname: "../stack/notificationsScreen" });
+                }}
+              >
                 <BellIcon size={36} color={Colors.primary_700} />
               </Pressable>
             </View>
@@ -197,7 +200,15 @@ export default function decksScreen(): React.JSX.Element {
               );
             })}
           </View>
-          <Text style={styles.subtext}>Show More</Text>
+          <Pressable
+            onPress={() => {
+              router.push({
+                pathname: "../stack/myLibraryScreen",
+              });
+            }}
+          >
+            <Text style={styles.subtext}>Show More</Text>
+          </Pressable>
           <Text style={styles.subtitle}>Categories</Text>
           <ScrollView horizontal={true}>
             <View style={styles.categoriesContainer}>
@@ -207,7 +218,7 @@ export default function decksScreen(): React.JSX.Element {
                     key={category}
                     onPress={() => {
                       router.push({
-                        pathname: "../stack/searchScreen",
+                        pathname: "../tabs/searchScreen",
                         params: { category: category },
                       });
                     }}
@@ -232,12 +243,11 @@ export default function decksScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 15,
+    paddingHorizontal: 20,
     alignItems: "center",
     backgroundColor: Colors.primary_100,
   },
   topContainer: {
-    marginTop: 10,
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
@@ -279,6 +289,7 @@ const styles = StyleSheet.create({
   },
   learnButton: {
     width: "40%",
+    alignSelf: "center",
   },
   learnButtonContainer: {
     marginTop: 24,

@@ -50,7 +50,7 @@ export const searchDecks = onCall(async (request) => {
 
     // Log search for analytics
     if (userId) {
-      await db.collection("searchLogs").add({
+      await db.collection("users").doc(userId).collection("searchLogs").add({
         userId,
         searchText,
         filters,
@@ -64,4 +64,20 @@ export const searchDecks = onCall(async (request) => {
     logger.error("Error searching decks", error);
     throw new Error("Search failed");
   }
+});
+
+/**
+ * Get search logs
+ */
+export const getSearchLogs = onCall(async (request) => {
+  const { userId } = request.data;
+  const logs = await db
+    .collection("users")
+    .doc(userId)
+    .collection("searchLogs")
+    .get();
+  return logs.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
 });

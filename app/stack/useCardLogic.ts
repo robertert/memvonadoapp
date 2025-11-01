@@ -48,6 +48,11 @@ export function useCardLogic(id: string) {
     all: 20,
   });
 
+  const [lastAnswerType, setLastAnswerType] = useState<string | null>(null);
+  const [currentStreak, setCurrentStreak] = useState<number>(0);
+  const [streakAchieved, setStreakAchieved] = useState<boolean>(false);
+  const [streakLost, setStreakLost] = useState<boolean>(false);
+
   const cardLogicState: CardLogicState = {
     cards,
     isLoading,
@@ -141,7 +146,6 @@ export function useCardLogic(id: string) {
       if (!cards || cards.length === 0) {
         throw new Error("No cards available");
       }
-
       if (
         (cards[0].firstLearn && cards[0].firstLearn.consecutiveGood >= 2) ||
         type == "easy" ||
@@ -264,6 +268,7 @@ export function useCardLogic(id: string) {
                 state: 1,
                 consecutiveGood: newConsecutiveGood,
               };
+              updatedPrevAns = type;
             }
             break;
           case "hard":
@@ -487,6 +492,10 @@ export function useCardLogic(id: string) {
           todo: sortedSession.length,
           all: sortedSession.length,
         });
+        // Reset streak when starting new session
+        setCurrentStreak(0);
+        setStreakAchieved(false);
+        setStreakLost(false);
         console.log(
           "Fetched cards for deck:",
           id,
@@ -568,6 +577,40 @@ export function useCardLogic(id: string) {
     fetchCards();
   }, []);
 
+  // Wrapper for newCard to track last answer and streak
+  const newCardWithTracking = (type: string): void => {
+    setLastAnswerType(type);
+
+    // Update streak logic
+    if (type === "good" || type === "easy") {
+      const newStreak = currentStreak + 1;
+      setCurrentStreak(newStreak);
+      setStreakLost(false); // Clear streak lost flag
+
+      // Trigger streak celebration at 5
+      if (newStreak === 5) {
+        setStreakAchieved(true);
+        // Reset after a moment to allow for animation
+        setTimeout(() => {
+          setStreakAchieved(false);
+        }, 2000);
+      }
+    } else if (type === "wrong" || type === "hard") {
+      // Check if we're losing a streak (had streak > 0)
+      if (currentStreak > 0) {
+        setStreakLost(true);
+        // Clear streak lost flag after animation
+        setTimeout(() => {
+          setStreakLost(false);
+        }, 800);
+      }
+      // Reset streak on wrong/hard answer
+      setCurrentStreak(0);
+    }
+
+    newCard(type);
+  };
+
   return {
     cardLogicState,
     error,
@@ -575,8 +618,14 @@ export function useCardLogic(id: string) {
     setIsBack,
     setTooltip,
     setProgress,
-    newCard,
+    newCard: newCardWithTracking,
     updateCards,
     clearError: () => setError(null),
+    lastAnswerType,
+    clearLastAnswerType: () => setLastAnswerType(null),
+    currentStreak,
+    streakAchieved,
+    clearStreakAchieved: () => setStreakAchieved(false),
+    streakLost,
   };
 }

@@ -21,21 +21,27 @@ interface BottomSheetProps {
 /**
  * BottomSheet component that displays detailed progress statistics with expandable interface
  */
-export const BottomSheet = React.memo<BottomSheetProps>(({
-  progress,
-  tabBarValue,
-  tooltip,
-  swipeUp,
-  tabBarStyle,
-  insideStyles,
-  outsideStyles,
-  bottomStyle,
-  insideDisplayStyles,
-  safeArea,
-}) => {
-  return (
-    <Animated.View style={[{ flex: 1, justifyContent: "flex-end", width: "100%" }, bottomStyle]}>
-      <GestureDetector gesture={swipeUp}>
+export const BottomSheet = React.memo<BottomSheetProps>(
+  ({
+    progress,
+    tabBarValue,
+    tooltip,
+    swipeUp,
+    tabBarStyle,
+    insideStyles,
+    outsideStyles,
+    bottomStyle,
+    insideDisplayStyles,
+    safeArea,
+  }) => {
+    return (
+      <Animated.View
+        style={[
+          { flex: 1, justifyContent: "flex-end", width: "100%" },
+          bottomStyle,
+        ]}
+      >
+        <GestureDetector gesture={swipeUp}>
           <Animated.View
             style={[
               tabBarStyle,
@@ -48,49 +54,126 @@ export const BottomSheet = React.memo<BottomSheetProps>(({
             ]}
           >
             <Animated.View style={outsideStyles}>
-              <View style={{ paddingTop: 10, flexDirection: "row", justifyContent: "space-around" }}>
-                <Text style={{ color: Colors.blue, fontSize: 25,fontWeight: "bold" }}>{progress.easy}</Text>
-                <Text style={{ color: Colors.green, fontSize: 25,fontWeight: "bold" }}>{progress.good}</Text>
-                <Text style={{ color: Colors.yellow, fontSize: 25,fontWeight: "bold" }}>{progress.hard}</Text>
-                <Text style={{ color: Colors.red, fontSize: 25,fontWeight: "bold" }}>{progress.wrong}</Text>
-                <Text style={{ color: Colors.primary_100, fontSize: 25,fontWeight: "bold" }}>{progress.todo}</Text>
+              <View
+                style={{
+                  paddingTop: 10,
+                  flexDirection: "row",
+                  justifyContent: "space-around",
+                }}
+              >
+                <Text
+                  style={{
+                    color: Colors.blue,
+                    fontSize: 25,
+                    fontWeight: "bold",
+                  }}
+                >
+                  {progress.easy}
+                </Text>
+                <Text
+                  style={{
+                    color: Colors.green,
+                    fontSize: 25,
+                    fontWeight: "bold",
+                  }}
+                >
+                  {progress.good}
+                </Text>
+                <Text
+                  style={{
+                    color: Colors.yellow,
+                    fontSize: 25,
+                    fontWeight: "bold",
+                  }}
+                >
+                  {progress.hard}
+                </Text>
+                <Text
+                  style={{
+                    color: Colors.red,
+                    fontSize: 25,
+                    fontWeight: "bold",
+                  }}
+                >
+                  {progress.wrong}
+                </Text>
+                <Text
+                  style={{
+                    color: Colors.primary_100,
+                    fontSize: 25,
+                    fontWeight: "bold",
+                  }}
+                >
+                  {progress.todo}
+                </Text>
               </View>
             </Animated.View>
 
             <Animated.View style={[insideStyles]}>
               <Animated.View style={[{ flex: 1 }, insideDisplayStyles]}>
                 {/* Statistics rows */}
-                <View style={{ flexDirection: "row", marginVertical: 10, justifyContent: "space-around" }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    marginVertical: 10,
+                    justifyContent: "space-around",
+                  }}
+                >
                   <View style={{ alignItems: "center" }}>
-                    <Text style={{ color: "#74b9ff", fontSize: 30 }}>{progress.easy}</Text>
+                    <Text style={{ color: "#74b9ff", fontSize: 30 }}>
+                      {progress.easy}
+                    </Text>
                     <Text style={{ color: "#ffffff", fontSize: 20 }}>Easy</Text>
                   </View>
                   <View style={{ alignItems: "center" }}>
-                    <Text style={{ color: "#51cf66", fontSize: 30 }}>{progress.good}</Text>
+                    <Text style={{ color: "#51cf66", fontSize: 30 }}>
+                      {progress.good}
+                    </Text>
                     <Text style={{ color: "#ffffff", fontSize: 20 }}>Good</Text>
                   </View>
                   <View style={{ alignItems: "center" }}>
-                    <Text style={{ color: "#ffd43b", fontSize: 30 }}>{progress.hard}</Text>
+                    <Text style={{ color: "#ffd43b", fontSize: 30 }}>
+                      {progress.hard}
+                    </Text>
                     <Text style={{ color: "#ffffff", fontSize: 20 }}>Hard</Text>
                   </View>
                   <View style={{ alignItems: "center" }}>
-                    <Text style={{ color: "#ff6b6b", fontSize: 30 }}>{progress.wrong}</Text>
-                    <Text style={{ color: "#ffffff", fontSize: 20 }}>Wrong</Text>
+                    <Text style={{ color: "#ff6b6b", fontSize: 30 }}>
+                      {progress.wrong}
+                    </Text>
+                    <Text style={{ color: "#ffffff", fontSize: 20 }}>
+                      Wrong
+                    </Text>
                   </View>
                 </View>
 
-                <View style={{ flexDirection: "row", marginVertical: 10, justifyContent: "space-around" }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    marginVertical: 10,
+                    justifyContent: "space-around",
+                  }}
+                >
                   <View style={{ alignItems: "center" }}>
-                    <Text style={{ color: "#ffffff", fontSize: 30 }}>{progress.all}</Text>
+                    <Text style={{ color: "#ffffff", fontSize: 30 }}>
+                      {progress.all}
+                    </Text>
                     <Text style={{ color: "#ffffff", fontSize: 20 }}>All</Text>
                   </View>
                   <View style={{ alignItems: "center" }}>
-                    <Text style={{ color: "#ffffff", fontSize: 30 }}>{progress.todo}</Text>
-                    <Text style={{ color: "#ffffff", fontSize: 20 }}>To do</Text>
+                    <Text style={{ color: "#ffffff", fontSize: 30 }}>
+                      {progress.todo}
+                    </Text>
+                    <Text style={{ color: "#ffffff", fontSize: 20 }}>
+                      To do
+                    </Text>
                   </View>
                   <View style={{ alignItems: "center" }}>
                     <Text style={{ color: "#ffffff", fontSize: 30 }}>
-                      {Math.ceil(((progress.all - progress.todo) * 100) / progress.all)}%
+                      {Math.ceil(
+                        ((progress.all - progress.todo) * 100) / progress.all
+                      )}
+                      %
                     </Text>
                     <Text style={{ color: "#ffffff", fontSize: 20 }}>done</Text>
                   </View>
@@ -130,30 +213,117 @@ export const BottomSheet = React.memo<BottomSheetProps>(({
 
                 {/* Chart section */}
                 <View style={{ flex: 1, alignItems: "center" }}>
-                  <Text style={{ marginTop: 20, marginBottom: 40, fontSize: 30, color: "#ffffff" }}>
+                  <Text
+                    style={{
+                      marginTop: 20,
+                      marginBottom: 40,
+                      fontSize: 30,
+                      color: "#ffffff",
+                    }}
+                  >
                     Current state chart
                   </Text>
 
                   <View style={{ marginTop: 20, paddingHorizontal: 20 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 5 }}>
-                      <View style={{ width: 20, height: 20, borderRadius: 10, marginRight: 10, backgroundColor: "#74b9ff" }} />
-                      <Text style={{ fontSize: 16, color: "#339af0" }}>Easy: {progress.easy}</Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginVertical: 5,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: 10,
+                          marginRight: 10,
+                          backgroundColor: "#74b9ff",
+                        }}
+                      />
+                      <Text style={{ fontSize: 16, color: "#339af0" }}>
+                        Easy: {progress.easy}
+                      </Text>
                     </View>
-                    <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 5 }}>
-                      <View style={{ width: 20, height: 20, borderRadius: 10, marginRight: 10, backgroundColor: "#51cf66" }} />
-                      <Text style={{ fontSize: 16, color: "#40c057" }}>Good: {progress.good}</Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginVertical: 5,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: 10,
+                          marginRight: 10,
+                          backgroundColor: "#51cf66",
+                        }}
+                      />
+                      <Text style={{ fontSize: 16, color: "#40c057" }}>
+                        Good: {progress.good}
+                      </Text>
                     </View>
-                    <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 5 }}>
-                      <View style={{ width: 20, height: 20, borderRadius: 10, marginRight: 10, backgroundColor: "#ffd43b" }} />
-                      <Text style={{ fontSize: 16, color: "#fab005" }}>Hard: {progress.hard}</Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginVertical: 5,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: 10,
+                          marginRight: 10,
+                          backgroundColor: "#ffd43b",
+                        }}
+                      />
+                      <Text style={{ fontSize: 16, color: "#fab005" }}>
+                        Hard: {progress.hard}
+                      </Text>
                     </View>
-                    <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 5 }}>
-                      <View style={{ width: 20, height: 20, borderRadius: 10, marginRight: 10, backgroundColor: "#ff6b6b" }} />
-                      <Text style={{ fontSize: 16, color: "#fa5252" }}>Wrong: {progress.wrong}</Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginVertical: 5,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: 10,
+                          marginRight: 10,
+                          backgroundColor: "#ff6b6b",
+                        }}
+                      />
+                      <Text style={{ fontSize: 16, color: "#fa5252" }}>
+                        Wrong: {progress.wrong}
+                      </Text>
                     </View>
-                    <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 5 }}>
-                      <View style={{ width: 20, height: 20, borderRadius: 10, marginRight: 10, backgroundColor: "#ffffff" }} />
-                      <Text style={{ fontSize: 16, color: "#495057" }}>Rest: {progress.todo}</Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginVertical: 5,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: 10,
+                          marginRight: 10,
+                          backgroundColor: "#ffffff",
+                        }}
+                      />
+                      <Text style={{ fontSize: 16, color: "#495057" }}>
+                        Rest: {progress.todo}
+                      </Text>
                     </View>
                   </View>
 
@@ -180,9 +350,10 @@ export const BottomSheet = React.memo<BottomSheetProps>(({
               </Animated.View>
             </Animated.View>
           </Animated.View>
-      </GestureDetector>
-    </Animated.View>
-  );
-});
+        </GestureDetector>
+      </Animated.View>
+    );
+  }
+);
 
-BottomSheet.displayName = 'BottomSheet';
+BottomSheet.displayName = "BottomSheet";

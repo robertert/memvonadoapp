@@ -8,5 +8,7 @@
  */
 export { calculateNextReview } from "./learningFunctions";
 export { searchDecks } from "./searchFunctions";
+export { getSearchLogs } from "./searchFunctions";
+export { serverNow, getCurrentSeason, submitPoints, weeklyRollOver, } from "./userFunctions";
 export { getUserDecks, updateCardProgress, getUserProgress, getUserSettings, processFriendRequest, validateUserData, } from "./userFunctions";
-export { createDeckWithCards, updateUserStats, getDeckDetails, getDeckCards, getDueDeckCards, getNewDeckCards, } from "./deckFunctions";
+export { createDeckWithCards, updateUserStats, getDeckDetails, getDeckCards, getDueDeckCards, getNewDeckCards, getPopularDecks, resetDeck, } from "./deckFunctions";

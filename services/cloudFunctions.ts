@@ -36,8 +36,34 @@ export interface UserSettings {
   [key: string]: any;
 }
 
+export interface SearchLog {
+  id: string;
+  searchText: string;
+  filters: SearchFilters;
+  resultsCount: number;
+  timestamp: Date;
+}
+
 // Cloud Functions calls
 export const cloudFunctions = {
+  // Server authoritative time
+  serverNow: async () => {
+    const fn = httpsCallable(functions, "serverNow");
+    const result = await fn({});
+    return result.data as { nowMs: number; iso: string };
+  },
+
+  // Current season window (weekly)
+  getCurrentSeason: async () => {
+    const fn = httpsCallable(functions, "getCurrentSeason");
+    const result = await fn({});
+    return result.data as {
+      seasonId: string;
+      startAt: any;
+      endAt: any;
+      status: string;
+    };
+  },
   // Search decks with advanced filtering
   searchDecks: async (
     searchText?: string,
@@ -129,6 +155,13 @@ export const cloudFunctions = {
     return result.data as { deckId: string };
   },
 
+  // Get user search logs
+  getSearchLogs: async (userId: string) => {
+    const getSearchLogsFunction = httpsCallable(functions, "getSearchLogs");
+    const result = await getSearchLogsFunction({ userId });
+    return result.data as SearchLog[];
+  },
+
   // Get user progress and statistics
   getUserProgress: async (userId: string) => {
     const getUserProgressFunction = httpsCallable(functions, "getUserProgress");
@@ -141,6 +174,13 @@ export const cloudFunctions = {
     const getUserSettingsFunction = httpsCallable(functions, "getUserSettings");
     const result = await getUserSettingsFunction({ userId });
     return result.data as { settings: UserSettings };
+  },
+
+  // Get popular public decks
+  getPopularDecks: async (limit: number = 8) => {
+    const fn = httpsCallable(functions, "getPopularDecks");
+    const result = await fn({ limit });
+    return result.data as { decks: any[] };
   },
 
   // Process friend requests
@@ -158,6 +198,13 @@ export const cloudFunctions = {
       toUserId,
       action,
     });
+    return result.data as { success: boolean };
+  },
+
+  // Reset deck progress
+  resetDeck: async (deckId: string) => {
+    const resetDeckFunction = httpsCallable(functions, "resetDeck");
+    const result = await resetDeckFunction({ deckId });
     return result.data as { success: boolean };
   },
 };

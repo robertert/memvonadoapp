@@ -17,17 +17,26 @@ export default {
     assetBundlePatterns: ["**/*"],
     ios: {
       supportsTablet: true,
+      bundleIdentifier: "com.memvocado.app",
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
+        NSMicrophoneUsageDescription:
+          "We use the microphone to record pronunciation audio for your cards.",
+      },
     },
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#ffffff",
       },
+      package: "com.memvocado.app",
+      permissions: ["RECORD_AUDIO"],
     },
     web: {
       favicon: "./assets/favicon.png",
     },
     plugins: [
+      "expo-audio",
       "expo-router",
       [
         "expo-font",
@@ -47,6 +56,9 @@ export default {
       FIREBASE_MESSAGING_SENDER_ID: process.env.FIREBASE_MESSAGING_SENDER_ID,
       FIREBASE_APP_ID: process.env.FIREBASE_APP_ID,
       FIREBASE_MEASUREMENT_ID: process.env.FIREBASE_MEASUREMENT_ID,
+      eas: {
+        projectId: "a455ada4-2415-44b3-8533-eaafd438b84c",
+      },
     },
   },
 };

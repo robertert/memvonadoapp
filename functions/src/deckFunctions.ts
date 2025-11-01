@@ -1,7 +1,7 @@
 import { onCall } from "firebase-functions/v2/https";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getFirestore, FieldValue, WriteBatch } from "firebase-admin/firestore";
 import { CardData } from "./types/common";
 
 const db = getFirestore();
@@ -213,6 +213,29 @@ export const getNewDeckCards = onCall(async (request) => {
 });
 
 /**
+ * Get popular public decks
+ */
+export const getPopularDecks = onCall(async (request) => {
+  const { limit = 8 } = request.data || {};
+
+  try {
+    const snapshot = await db
+      .collection("decks")
+      .where("isPublic", "==", true)
+      .orderBy("views", "desc")
+      .limit(limit)
+      .get();
+
+    const decks = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+    return { decks };
+  } catch (error) {
+    logger.error("Error getting popular decks", error);
+    throw new Error("Failed to get popular decks");
+  }
+});
+
+/**
  * Update user stats when deck is modified
  */
 export const updateUserStats = onDocumentWritten(
@@ -268,3 +291,107 @@ export const updateUserStats = onDocumentWritten(
     }
   }
 );
+
+/**
+ * Reset deck progress - removes all card progress data
+ */
+export const resetDeck = onCall(async (request) => {
+  const { deckId } = request.data;
+  const auth = request.auth;
+
+  if (!deckId) {
+    throw new Error("deckId is required");
+  }
+
+  if (!auth) {
+    throw new Error("Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  try {
+    // Verify user owns the deck
+    const deckRef = db.collection("decks").doc(deckId);
+    const deckSnap = await deckRef.get();
+
+    if (!deckSnap.exists) {
+      throw new Error("Deck not found");
+    }
+
+    const deckData = deckSnap.data();
+
+    // Check if user is the creator of the deck
+    if (deckData?.createdBy !== userId) {
+      // Also check if deck is in user's decks list
+      const userRef = db.doc(`users/${userId}`);
+      const userSnap = await userRef.get();
+      const userData = userSnap.data();
+      const userDecks = userData?.decks || [];
+
+      if (!userDecks.includes(deckId)) {
+        throw new Error(
+          "Unauthorized: You don't have permission to reset this deck"
+        );
+      }
+    }
+
+    const cardsRef = deckRef.collection("cards");
+
+    // Get all cards in the deck
+    const cardsSnapshot = await cardsRef.get();
+
+    if (cardsSnapshot.empty) {
+      logger.info("No cards found in deck", { deckId });
+      return { success: true, cardsReset: 0 };
+    }
+
+    // Use batch to update all cards (Firestore batch limit is 500)
+    const batches: WriteBatch[] = [];
+    let currentBatch = db.batch();
+    let batchCount = 0;
+    let cardsReset = 0;
+
+    cardsSnapshot.forEach((doc) => {
+      const cardRef = cardsRef.doc(doc.id);
+      currentBatch.update(cardRef, {
+        cardAlgo: FieldValue.delete(),
+        firstLearn: FieldValue.delete(),
+        grade: -1,
+        lastReviewDate: FieldValue.delete(),
+        difficulty: 2.5,
+        nextReviewInterval: 1,
+      });
+      cardsReset++;
+      batchCount++;
+
+      // Firestore batch limit is 500 operations
+      if (batchCount >= 500) {
+        batches.push(currentBatch);
+        currentBatch = db.batch();
+        batchCount = 0;
+      }
+    });
+
+    // Add the last batch if it has operations
+    if (batchCount > 0) {
+      batches.push(currentBatch);
+    }
+
+    // Commit all batches
+    await Promise.all(batches.map((batch) => batch.commit()));
+
+    logger.info("Deck progress reset successfully", {
+      deckId,
+      userId,
+      cardsReset,
+    });
+
+    return { success: true, cardsReset };
+  } catch (error) {
+    logger.error("Error resetting deck progress", error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("Failed to reset deck progress");
+  }
+});

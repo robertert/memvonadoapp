@@ -13,14 +13,6 @@ import { Colors, Fonts, generageRandomUid } from "../../constants/colors";
 import { View } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Foundation } from "@expo/vector-icons";
-import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated";
 import {
   Gesture,
   GestureDetector,
@@ -78,6 +70,7 @@ export default function createSelfScreen(): React.JSX.Element {
   const [isTagsShown, setIsTagsShown] = useState<boolean>(false);
   const [tagCard, setTagCard] = useState<Card | null>(null);
   const [newTag, setNewTag] = useState<string>("");
+  const [deckLanguage, setDeckLanguage] = useState<string>("en");
 
   const userCtx = useContext(UserContext);
 
@@ -100,12 +93,12 @@ export default function createSelfScreen(): React.JSX.Element {
   async function saveHandler(): Promise<void> {
     try {
       setIsLoading(true);
-      
+
       // Prepare cards data for Cloud Function
-      const cardsData = cards.map(card => ({
+      const cardsData = cards.map((card) => ({
         front: card.front,
         back: card.back,
-        tags: card.tags || []
+        tags: card.tags || [],
       }));
 
       // Use Cloud Function to create deck with cards
@@ -155,7 +148,7 @@ export default function createSelfScreen(): React.JSX.Element {
 
   function newTagHandler(): void {
     if (!tagCard) return;
-    
+
     setCards((prev) => {
       let newCards = [...prev];
       newCards = newCards.map((card) => {
@@ -176,7 +169,7 @@ export default function createSelfScreen(): React.JSX.Element {
 
   function delTagHandler(delTag: string): void {
     if (!tagCard) return;
-    
+
     setCards((prev) => {
       let newCards = [...prev];
       newCards = newCards.map((card) => {
@@ -190,59 +183,120 @@ export default function createSelfScreen(): React.JSX.Element {
   }
 
   return (
-    <GestureHandlerRootView>
+    <GestureHandlerRootView style={styles.container}>
       <LinearGradient
         start={{ x: 0, y: 0 }}
         style={styles.background}
-        colors={[Colors.primary_500, Colors.primary_100]}
+        colors={[Colors.primary_100, Colors.primary_100]}
       >
-        <View style={[styles.container, { paddingTop: safeArea.top + 8 }]}>
+        <View
+          style={[styles.headerContainer, { paddingTop: safeArea.top + 8 }]}
+        >
+          <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <AntDesign name="arrow-left" size={24} color={Colors.primary_700} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Nowy Deck</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+
+        <View style={styles.contentContainer}>
           {isLoading ? (
-            <View
-              style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <ActivityIndicator
-                size={"large"}
-                color={Colors.accent_500}
-                style={{ alignSelf: "center" }}
-              />
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size={"large"} color={Colors.accent_500} />
             </View>
           ) : (
-            <ScrollView style={{ flex: 1, width: "100%" }}>
-              <Text style={styles.titleLabel}>Title</Text>
-              <View style={styles.titleInputContainer}>
-                <TextInput
-                  style={styles.titleInput}
-                  onChangeText={titleChangeHandler}
-                  value={title}
-                />
-              </View>
-              {cards.map((card) => {
-                return (
-                  <NewCard
-                    key={card.id}
-                    card={card}
-                    setCards={setCards}
-                    tagsShownHandler={tagsShownHandler}
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.titleSection}>
+                <Text style={styles.titleLabel}>Tytuł decku</Text>
+                <View style={styles.titleInputContainer}>
+                  <TextInput
+                    style={styles.titleInput}
+                    onChangeText={titleChangeHandler}
+                    value={title}
+                    placeholder="Wprowadź tytuł..."
+                    placeholderTextColor={Colors.primary_700_50}
                   />
-                );
-              })}
-              <Pressable onPress={createNewHandler}>
-                <AntDesign
-                  name="pluscircle"
-                  size={45}
-                  color={Colors.accent_500}
-                  style={styles.plusIcon}
-                />
-              </Pressable>
-              <Pressable onPress={saveHandler}>
-                <View style={styles.saveButton}>
-                  <Text style={styles.saveText}>Create</Text>
                 </View>
+              </View>
+
+              {/* Wybór języka decku */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  gap: 8,
+                  marginBottom: 10,
+                }}
+              >
+                {[
+                  { code: "en", label: "English" },
+                  { code: "pl", label: "Polski" },
+                  { code: "es", label: "Español" },
+                  { code: "de", label: "Deutsch" },
+                ].map((lng) => (
+                  <Pressable
+                    key={lng.code}
+                    onPress={() => setDeckLanguage(lng.code)}
+                    style={{
+                      paddingVertical: 6,
+                      paddingHorizontal: 12,
+                      borderRadius: 12,
+                      borderWidth: 2,
+                      borderColor: Colors.primary_700,
+                      backgroundColor:
+                        deckLanguage === lng.code
+                          ? Colors.primary_700
+                          : Colors.primary_100,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color:
+                          deckLanguage === lng.code
+                            ? Colors.primary_100
+                            : Colors.primary_700,
+                        fontFamily: Fonts.primary,
+                        fontWeight: "800",
+                      }}
+                    >
+                      {lng.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <View style={styles.cardsSection}>
+                <Text style={styles.sectionTitle}>Karty</Text>
+                {cards.map((card) => {
+                  return (
+                    <NewCard
+                      key={card.id}
+                      card={card}
+                      setCards={setCards}
+                      tagsShownHandler={tagsShownHandler}
+                      deckLanguage={deckLanguage}
+                    />
+                  );
+                })}
+                <Pressable
+                  onPress={createNewHandler}
+                  style={styles.addCardButton}
+                >
+                  <AntDesign
+                    name="plus-circle"
+                    size={45}
+                    color={Colors.accent_500}
+                  />
+                  <Text style={styles.addCardText}>Dodaj kartę</Text>
+                </Pressable>
+              </View>
+
+              <Pressable onPress={saveHandler} style={styles.saveButton}>
+                <Text style={styles.saveText}>Utwórz Deck</Text>
               </Pressable>
             </ScrollView>
           )}
@@ -252,46 +306,64 @@ export default function createSelfScreen(): React.JSX.Element {
             animationType="slide"
             onRequestClose={() => setIsTagsShown(false)}
           >
-            <Pressable 
-              style={styles.modalOverlay} 
+            <Pressable
+              style={styles.modalOverlay}
               onPress={() => setIsTagsShown(false)}
             >
-              <View style={[styles.dialogContainer, styles.modalContent]}>
-                <Text style={styles.tagsTitle}>Tags:</Text>
-                <ScrollView style={styles.scrollOverlay}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.tagsTitle}>Tagi</Text>
+                  <Pressable
+                    onPress={() => setIsTagsShown(false)}
+                    style={styles.closeButton}
+                  >
+                    <AntDesign
+                      name="close"
+                      size={24}
+                      color={Colors.primary_700}
+                    />
+                  </Pressable>
+                </View>
+
+                <ScrollView style={styles.tagsScrollView}>
                   {(cards.filter((card) => card.id === tagCard?.id)[0]?.tags
                     ? cards.filter((card) => card.id === tagCard?.id)[0].tags
                     : []
                   ).map((itemData, index) => {
                     return (
-                      <View key={index} style={styles.tagContainer}>
-                        <Text style={styles.tagsText}>{itemData}</Text>
+                      <View key={index} style={styles.tagItem}>
+                        <Text style={styles.tagText}>{itemData}</Text>
                         <Pressable onPress={() => delTagHandler(itemData)}>
                           <FontAwesome5
                             name="trash"
-                            size={24}
-                            color={Colors.accent_500}
+                            size={20}
+                            color={Colors.red}
                           />
                         </Pressable>
                       </View>
                     );
                   })}
                 </ScrollView>
-                <View style={styles.newTagContainer}>
+
+                <View style={styles.addTagContainer}>
                   <View style={styles.tagInputContainer}>
                     <TextInput
                       onChangeText={tagChangeHandler}
                       value={newTag}
                       style={styles.tagInput}
+                      placeholder="Dodaj nowy tag..."
+                      placeholderTextColor={Colors.primary_700_50}
                     />
                   </View>
-                  <Pressable onPress={newTagHandler}>
+                  <Pressable
+                    onPress={newTagHandler}
+                    style={styles.addTagButton}
+                  >
                     <AntDesign
-                      name="pluscircle"
-                      size={25}
-                      color={Colors.accent_500}
-                      style={styles.plusIcon}
-                        />
+                      name="plus"
+                      size={20}
+                      color={Colors.primary_100}
+                    />
                   </Pressable>
                 </View>
               </View>
@@ -306,8 +378,6 @@ export default function createSelfScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 15,
-    alignItems: "center",
   },
   background: {
     position: "absolute",
@@ -316,46 +386,112 @@ const styles = StyleSheet.create({
     top: 0,
     height: "100%",
   },
-  saveButton: {
-    alignSelf: "center",
-    width: 150,
-    marginTop: 50,
-    padding: 20,
-    backgroundColor: Colors.accent_500,
-    borderRadius: 20,
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+    backgroundColor: Colors.primary_100,
   },
-  saveText: {
-    textAlign: "center",
-    fontSize: 18,
-    color: Colors.white,
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 24,
     fontFamily: Fonts.primary,
-  },
-  titleInputContainer: {
-    borderColor: Colors.primary_700,
-    borderRadius: 10,
-    borderBottomWidth: 3,
-    marginBottom: 40,
-    marginTop: 20,
-    backgroundColor: Colors.accent_500_30,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-  },
-  titleInput: {
-    textAlign: "center",
     color: Colors.primary_700,
-    fontFamily: Fonts.primary,
-    fontSize: 25,
+    fontWeight: "900",
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  contentContainer: {
+    flex: 1,
+    paddingHorizontal: 15,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
+  titleSection: {
+    marginTop: 20,
+    marginBottom: 30,
   },
   titleLabel: {
-    textAlign: "center",
+    fontSize: 24,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "900",
+    marginBottom: 15,
+  },
+  titleInputContainer: {
+    backgroundColor: Colors.primary_100,
+    borderRadius: 16,
+    borderWidth: 3,
+    borderColor: Colors.primary_700,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+  },
+  titleInput: {
     color: Colors.primary_700,
     fontFamily: Fonts.primary,
-    fontSize: 25,
+    fontSize: 20,
+    fontWeight: "600",
   },
-  plusIcon: {
-    alignSelf: "center",
-    marginTop: 30,
+  cardsSection: {
+    marginBottom: 30,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "900",
+    marginBottom: 15,
+  },
+  addCardButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.primary_100,
+    borderRadius: 16,
+    borderWidth: 3,
+    borderColor: Colors.primary_700,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    marginTop: 15,
+  },
+  addCardText: {
+    fontSize: 18,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "700",
+    marginLeft: 10,
+  },
+  saveButton: {
+    backgroundColor: Colors.primary_700,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
     marginBottom: 20,
+  },
+  saveText: {
+    fontSize: 20,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_100,
+    fontWeight: "900",
   },
   cardStack: {
     flexDirection: "row",
@@ -367,53 +503,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginLeft: 1,
   },
-  dialogContainer: {
-    width: "80%",
-    padding: 20,
-    borderRadius: 15,
-    backgroundColor: Colors.primary_500,
-    maxHeight: 500,
-  },
-  tagsTitle: {
-    fontFamily: Fonts.primary,
-    color: Colors.primary_700,
-    fontSize: 23,
-  },
-  tagsText: {
-    fontFamily: Fonts.primary,
-    color: Colors.accent_500,
-    fontSize: 21,
-  },
-  tagInputContainer: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    backgroundColor: Colors.accent_500_30,
-    borderRadius: 10,
-    marginRight: 15,
-  },
-  tagInput: {
-    color: Colors.primary_700,
-    fontFamily: Fonts.secondary,
-  },
-  newTagContainer: {
-    justifyContent: "center",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  scrollOverlay: {
-    marginTop: 15,
-    width: "100%",
-    borderRadius: 15,
-    backgroundColor: Colors.accent_500_30,
-    paddingHorizontal: 10,
-  },
-  tagContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginVertical: 5,
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -421,8 +510,74 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.primary_100,
     borderRadius: 20,
     padding: 20,
+    width: "85%",
+    maxHeight: "70%",
+    borderWidth: 3,
+    borderColor: Colors.primary_700,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  closeButton: {
+    padding: 5,
+  },
+  tagsTitle: {
+    fontSize: 24,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "900",
+  },
+  tagsScrollView: {
+    maxHeight: 200,
+    marginBottom: 20,
+  },
+  tagItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: Colors.accent_500_30,
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginVertical: 5,
+  },
+  tagText: {
+    fontSize: 16,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "600",
+    flex: 1,
+  },
+  addTagContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  tagInputContainer: {
+    flex: 1,
+    backgroundColor: Colors.primary_100,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.primary_700,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    marginRight: 10,
+  },
+  tagInput: {
+    color: Colors.primary_700,
+    fontFamily: Fonts.primary,
+    fontSize: 16,
+  },
+  addTagButton: {
+    backgroundColor: Colors.primary_700,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

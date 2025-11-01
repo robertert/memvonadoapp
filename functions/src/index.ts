@@ -19,6 +19,13 @@ setGlobalOptions({ maxInstances: 10, region: "europe-west1" });
 // Import all functions from modules
 export { calculateNextReview } from "./learningFunctions";
 export { searchDecks } from "./searchFunctions";
+export { getSearchLogs } from "./searchFunctions";
+export {
+  serverNow,
+  getCurrentSeason,
+  submitPoints,
+  weeklyRollOver,
+} from "./userFunctions";
 export {
   getUserDecks,
   updateCardProgress,
@@ -34,4 +41,6 @@ export {
   getDeckCards,
   getDueDeckCards,
   getNewDeckCards,
+  getPopularDecks,
+  resetDeck,
 } from "./deckFunctions";

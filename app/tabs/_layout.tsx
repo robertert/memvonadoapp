@@ -1,7 +1,6 @@
-import React from 'react';
+import React from "react";
 import { Tabs } from "expo-router";
 import { Colors } from "../../constants/colors";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, View } from "react-native";
 import {
@@ -91,7 +90,7 @@ export default function TabsLayout(): React.JSX.Element {
         }}
       />
       <Tabs.Screen
-        name="statsScreen"
+        name="rankingsScreen"
         options={{
           tabBarIcon: ({ focused, color, size }: TabBarIconProps) => {
             return (

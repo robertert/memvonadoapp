@@ -26,6 +26,7 @@ import {
   HeartIcon,
   RectangleStackIcon,
   UserIcon,
+  Cog6ToothIcon,
 } from "react-native-heroicons/solid";
 
 interface Deck {
@@ -166,7 +167,7 @@ export default function deckDetails(): React.JSX.Element {
         lastDocId: newLastDocId,
       } = await cloudFunctions.getDeckCards(typedParams.deckId, 20, lastDocId);
 
-      setCards(prevCards => [...prevCards, ...(moreCards || [])]);
+      setCards((prevCards) => [...prevCards, ...(moreCards || [])]);
       setHasMoreCards(hasMore);
       setLastDocId(newLastDocId);
     } catch (error) {
@@ -284,14 +285,14 @@ export default function deckDetails(): React.JSX.Element {
               <ArrowLeftIcon color={Colors.primary_700} size={30} />
             </Pressable>
             <View style={styles.skeletonTitle} />
-            <View style={{ width: 30 }} />
+            <View style={styles.skeletonSettingsButton} />
           </View>
 
           <View style={styles.listContainer}>
             <FlatList
               data={[1, 2, 3]}
               renderItem={() => <SkeletonCard />}
-              keyExtractor={item => item.toString()}
+              keyExtractor={(item) => item.toString()}
               horizontal
               showsHorizontalScrollIndicator={false}
             />
@@ -368,13 +369,23 @@ export default function deckDetails(): React.JSX.Element {
             <ArrowLeftIcon color={Colors.primary_700} size={30} />
           </Pressable>
           <Text style={styles.headerTitle}>{deck.title}</Text>
-          <View style={{ width: 30 }} />
+          <Pressable
+            onPress={() => {
+              router.push({
+                pathname: "./deckSettings",
+                params: { deckId: deck.id || typedParams.deckId },
+              });
+            }}
+            style={styles.settingsButton}
+          >
+            <Cog6ToothIcon color={Colors.primary_700} size={24} />
+          </Pressable>
         </View>
         <View style={styles.listContainer}>
           <Animated.FlatList
             data={cards}
             renderItem={renderCard}
-            keyExtractor={item => item.id}
+            keyExtractor={(item) => item.id}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={[
@@ -472,6 +483,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   backButton: {
+    padding: 8,
+  },
+  settingsButton: {
     padding: 8,
   },
   headerTitle: {
@@ -709,5 +723,11 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     marginTop: 30,
     marginBottom: 20,
+  },
+  skeletonSettingsButton: {
+    width: 24,
+    height: 24,
+    backgroundColor: Colors.primary_700_30,
+    borderRadius: 12,
   },
 });

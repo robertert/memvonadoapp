@@ -166,7 +166,7 @@ export default function authSignin(): React.JSX.Element {
         }}
       >
         <Image
-          src={require("../../assets/memvocadoicon.png")}
+          source={require("../../assets/memvocadoicon.png")}
           style={{ height: 200, width: 200 }}
         />
       </View>
@@ -177,7 +177,7 @@ export default function authSignin(): React.JSX.Element {
     <View style={[styles.container, { paddingTop: safeArea.top }]}>
       <View style={styles.topConatainer}>
         <Image
-          src={require("../../assets/memvocadoicon.png")}
+          source={require("../../assets/memvocadoicon.png")}
           style={styles.icon}
         />
         <Text style={styles.title}>Memvocado</Text>

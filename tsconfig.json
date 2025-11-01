@@ -19,7 +19,8 @@
       "@/app/*": ["./app/*"],
       "@/constants/*": ["./constants/*"],
       "@/store/*": ["./store/*"],
-      "@/ui/*": ["./ui/*"]
+      "@/ui/*": ["./ui/*"],
+      "@/assets/*": ["./assets/*"]
     }
   },
   "extends": "expo/tsconfig.base",
@@ -28,13 +29,6 @@
       "moduleResolution": "node"
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "**/*.js",
-    "**/*.jsx"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+  "exclude": ["node_modules"]
 }

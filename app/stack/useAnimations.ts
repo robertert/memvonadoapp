@@ -7,6 +7,7 @@ import {
   withSequence,
   withSpring,
   withTiming,
+  Easing,
 } from "react-native-reanimated";
 import { AnimationValues } from "./learnScreen.types";
 
@@ -62,7 +63,7 @@ export function useAnimations() {
       // Usunięto ograniczenia - wskaźniki mogą się teraz swobodnie wysuwać spoza ekranu
       // Maksymalne wysunięcie będzie kontrolowane w useGestures.ts
       const MAX_SLIDE_DISTANCE = 200; // Maksymalna odległość wysunięcia
-      
+
       if (newValue.r < -MAX_SLIDE_DISTANCE) {
         translateXrInfo.value = -MAX_SLIDE_DISTANCE;
       }

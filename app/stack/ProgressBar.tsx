@@ -1,7 +1,11 @@
 // React and React Native imports
 import React, { useEffect } from "react";
 import { View } from "react-native";
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 
 // Local imports
@@ -24,8 +28,6 @@ export function ProgressBar({ tabBarValue, progressText }: ProgressBarProps) {
       stiffness: 180,
       mass: 0.7,
       overshootClamping: false,
-      restDisplacementThreshold: 0.1,
-      restSpeedThreshold: 0.2,
     });
   }, [tabBarValue]);
 
@@ -34,7 +36,13 @@ export function ProgressBar({ tabBarValue, progressText }: ProgressBarProps) {
   }));
 
   return (
-    <View style={{ width: "100%", paddingHorizontal: 20, marginBottom: DIMENSIONS.PROGRESS_MARGIN_BOTTOM }}>
+    <View
+      style={{
+        width: "100%",
+        paddingHorizontal: 20,
+        marginBottom: DIMENSIONS.PROGRESS_MARGIN_BOTTOM,
+      }}
+    >
       <View
         style={{
           height: ANIMATION_CONSTANTS.PROGRESS_BAR_HEIGHT,
@@ -50,29 +58,34 @@ export function ProgressBar({ tabBarValue, progressText }: ProgressBarProps) {
               backgroundColor: Colors.accent_500,
               borderRadius: 10,
               position: "relative",
-              minWidth: '8%',
+              minWidth: "8%",
             },
             barStyle,
           ]}
         >
           {/* Mała jasna kuleczka na końcu progress bara */}
-          
+
+          <View
+            style={{
+              position: "absolute",
+              right: 6, // Pozycjonuje kuleczkę na końcu paska
+              top: 4.8, // Centruje pionowo
+              width: 15,
+              height: 10,
+              borderRadius: 6,
+            }}
+          >
             <View
               style={{
-                position: "absolute",
-                right: 6, // Pozycjonuje kuleczkę na końcu paska
-                top: 4.8,   // Centruje pionowo
-                width: 15,
-                height: 10,
+                width: "100%",
+                height: "100%",
+                backgroundColor: Colors.accent_300,
                 borderRadius: 6,
               }}
-            >
-              <View style={{ width: "100%", height: "100%", backgroundColor: Colors.accent_300, borderRadius: 6 }} />
-            </View>
-          
+            />
+          </View>
         </Animated.View>
       </View>
-      
     </View>
   );
 }

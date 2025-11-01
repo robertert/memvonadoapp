@@ -41,9 +41,24 @@ export declare const getNewDeckCards: import("firebase-functions/v2/https").Call
     }[];
 }>, unknown>;
 /**
+ * Get popular public decks
+ */
+export declare const getPopularDecks: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    decks: {
+        id: string;
+    }[];
+}>, unknown>;
+/**
  * Update user stats when deck is modified
  */
 export declare const updateUserStats: import("firebase-functions/core").CloudFunction<import("firebase-functions/v2/firestore").FirestoreEvent<import("firebase-functions/v2/firestore").Change<import("firebase-functions/v2/firestore").DocumentSnapshot> | undefined, {
     deckId: string;
     userId: string;
 }>>;
+/**
+ * Reset deck progress - removes all card progress data
+ */
+export declare const resetDeck: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+    cardsReset: number;
+}>, unknown>;

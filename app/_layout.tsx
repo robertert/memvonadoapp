@@ -8,7 +8,7 @@ import {
 import { router, Stack } from "expo-router";
 
 import { View, useColorScheme } from "react-native";
-
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import Header from "../ui/Header";
 import * as SplashScreen from "expo-splash-screen";
@@ -25,7 +25,6 @@ export default function RootLayout(): React.JSX.Element | null {
       router.replace("../tabs");
     }
   });
-
 
   const colorScheme = useColorScheme();
 
@@ -47,7 +46,8 @@ export default function RootLayout(): React.JSX.Element | null {
   }
 
   return (
-    <View onLayout={onLayoutRootView} style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View onLayout={onLayoutRootView} style={{ flex: 1 }}>
         <ThemeProvider
           value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
         >
@@ -65,6 +65,7 @@ export default function RootLayout(): React.JSX.Element | null {
             </Stack>
           </UserContextProvider>
         </ThemeProvider>
-    </View>
+      </View>
+    </GestureHandlerRootView>
   );
 }

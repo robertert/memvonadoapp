@@ -7,3 +7,9 @@ export declare const searchDecks: import("firebase-functions/v2/https").Callable
     }[];
     total: number;
 }>, unknown>;
+/**
+ * Get search logs
+ */
+export declare const getSearchLogs: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    id: string;
+}[]>, unknown>;
