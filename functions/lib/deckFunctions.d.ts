@@ -16,9 +16,7 @@ export declare const getDeckDetails: import("firebase-functions/v2/https").Calla
  * Get cards for a deck with pagination
  */
 export declare const getDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    cards: {
-        id: string;
-    }[];
+    cards: any[];
     hasMore: boolean;
     lastDocId: string | null;
 }>, unknown>;
@@ -28,17 +26,13 @@ export declare const getDeckCards: import("firebase-functions/v2/https").Callabl
  * - Returns firstLearn due cards (firstLearn.isNew && firstLearn.due <= now)
  */
 export declare const getDueDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    cards: {
-        id: string;
-    }[];
+    cards: any[];
 }>, unknown>;
 /**
  * Get new candidate cards (firstLearn.isNew && not yet introduced this session)
  */
 export declare const getNewDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    cards: {
-        id: string;
-    }[];
+    cards: any[];
 }>, unknown>;
 /**
  * Get popular public decks
@@ -61,4 +55,10 @@ export declare const updateUserStats: import("firebase-functions/core").CloudFun
 export declare const resetDeck: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
     cardsReset: number;
+}>, unknown>;
+/**
+ * Update deck settings
+ */
+export declare const updateDeckSettings: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
 }>, unknown>;

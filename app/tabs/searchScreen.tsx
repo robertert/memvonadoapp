@@ -195,9 +195,8 @@ export default function marketplaceScreen(): React.JSX.Element {
       default:
         return (
           <Image
+            style={{ width: SIZE, height: SIZE }}
             source={require("../../assets/images/gbFlag.png")}
-            width={SIZE}
-            height={SIZE}
           />
         );
     }

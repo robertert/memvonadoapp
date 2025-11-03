@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useContext } from "react";
 import {
   StyleSheet,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Fonts } from "../../constants/colors";
@@ -15,23 +16,36 @@ import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { FireIcon, TrophyIcon } from "react-native-heroicons/solid";
 import { cloudFunctions } from "../../services/cloudFunctions";
+import { UserContext } from "../../store/user-context";
 
 interface RankingUser {
-  id: number;
+  userId: string;
+  username?: string;
   name: string;
   avatar: string;
   points: number;
-  streak: number;
+  streak?: number;
   position: number;
 }
 
 export default function rankingsScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
+  const userCtx = useContext(UserContext);
   const [activeTab, setActiveTab] = useState<"random" | "following">("random");
   const [leagueTitle, setLeagueTitle] = useState<string>("🏆 Bronze League");
   const [timeLeft, setTimeLeft] = useState<string>("10:00");
+  const [randomUsers, setRandomUsers] = useState<RankingUser[]>([]);
+  const [followingUsers, setFollowingUsers] = useState<RankingUser[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [groupInfo, setGroupInfo] = useState<string>("");
   const serverOffsetRef = useRef<number>(0);
   const seasonEndRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (userCtx.id) {
+      fetchRankings();
+    }
+  }, [userCtx.id, activeTab]);
 
   useEffect(() => {
     let interval: number | null = null;
@@ -45,7 +59,19 @@ export default function rankingsScreen(): React.JSX.Element {
 
         const localNow = Date.now();
         serverOffsetRef.current = serverTime.nowMs - localNow;
-        const endAtMs = new Date(season.endAt._seconds * 1000).getTime();
+
+        // Handle both Firestore Timestamp format and plain object
+        let endAtMs: number;
+        if (season.endAt?.toDate) {
+          endAtMs = season.endAt.toDate().getTime();
+        } else if (season.endAt?._seconds) {
+          endAtMs = season.endAt._seconds * 1000;
+        } else if (typeof season.endAt === "string") {
+          endAtMs = new Date(season.endAt).getTime();
+        } else {
+          endAtMs = Date.now() + 7 * 24 * 60 * 60 * 1000; // Default: 7 days from now
+        }
+
         seasonEndRef.current = endAtMs;
         const tick = () => {
           if (!seasonEndRef.current) return;
@@ -80,173 +106,63 @@ export default function rankingsScreen(): React.JSX.Element {
       if (interval) clearInterval(interval);
     };
   }, []);
-  // Przykładowe dane dla losowych osób
-  const randomUsers: RankingUser[] = [
-    {
-      id: 1,
-      name: "Anna Kowalski",
-      avatar: "👩",
-      points: 2450,
-      streak: 15,
-      position: 1,
-    },
-    {
-      id: 2,
-      name: "Piotr Nowak",
-      avatar: "👨",
-      points: 2380,
-      streak: 12,
-      position: 2,
-    },
-    {
-      id: 3,
-      name: "Maria Wiśniewska",
-      avatar: "👩",
-      points: 2320,
-      streak: 18,
-      position: 3,
-    },
-    {
-      id: 4,
-      name: "Jan Kowalczyk",
-      avatar: "👨",
-      points: 2280,
-      streak: 10,
-      position: 4,
-    },
-    {
-      id: 5,
-      name: "Katarzyna Zielińska",
-      avatar: "👩",
-      points: 2250,
-      streak: 14,
-      position: 5,
-    },
-    {
-      id: 6,
-      name: "Tomasz Kaczmarek",
-      avatar: "👨",
-      points: 2200,
-      streak: 8,
-      position: 6,
-    },
-    {
-      id: 7,
-      name: "Agnieszka Szymańska",
-      avatar: "👩",
-      points: 2180,
-      streak: 16,
-      position: 7,
-    },
-    {
-      id: 8,
-      name: "Michał Woźniak",
-      avatar: "👨",
-      points: 2150,
-      streak: 11,
-      position: 8,
-    },
-    {
-      id: 9,
-      name: "Joanna Dąbrowska",
-      avatar: "👩",
-      points: 2120,
-      streak: 9,
-      position: 9,
-    },
-    {
-      id: 10,
-      name: "Paweł Kozłowski",
-      avatar: "👨",
-      points: 2080,
-      streak: 13,
-      position: 10,
-    },
-    {
-      id: 11,
-      name: "Magdalena Jankowska",
-      avatar: "👩",
-      points: 2050,
-      streak: 7,
-      position: 11,
-    },
-    {
-      id: 12,
-      name: "Łukasz Mazur",
-      avatar: "👨",
-      points: 2020,
-      streak: 12,
-      position: 12,
-    },
-    {
-      id: 13,
-      name: "Monika Krawczyk",
-      avatar: "👩",
-      points: 1980,
-      streak: 6,
-      position: 13,
-    },
-    {
-      id: 14,
-      name: "Jakub Piotrowski",
-      avatar: "👨",
-      points: 1950,
-      streak: 15,
-      position: 14,
-    },
-    {
-      id: 15,
-      name: "Natalia Grabowska",
-      avatar: "👩",
-      points: 1920,
-      streak: 5,
-      position: 15,
-    },
-  ];
 
-  // Przykładowe dane dla obserwowanych osób
-  const followingUsers: RankingUser[] = [
-    {
-      id: 1,
-      name: "mankowskae",
-      avatar: "🐧",
-      points: 2500,
-      streak: 20,
-      position: 1,
-    },
-    {
-      id: 2,
-      name: "jan_kowalski",
-      avatar: "👨",
-      points: 2400,
-      streak: 18,
-      position: 2,
-    },
-    {
-      id: 3,
-      name: "anna_nowak",
-      avatar: "👩",
-      points: 2350,
-      streak: 15,
-      position: 3,
-    },
-    {
-      id: 4,
-      name: "piotr_wisniewski",
-      avatar: "👨",
-      points: 2300,
-      streak: 12,
-      position: 4,
-    },
-    {
-      id: 5,
-      name: "maria_zielinska",
-      avatar: "👩",
-      points: 2250,
-      streak: 14,
-      position: 5,
-    },
-  ];
+  async function fetchRankings(): Promise<void> {
+    if (!userCtx.id) return;
+
+    try {
+      setIsLoading(true);
+
+      if (activeTab === "random") {
+        // Get user's group leaderboard
+        const leaderboard = await cloudFunctions.getLeaderboard(userCtx.id);
+
+        // Get league info to set title
+        if (leaderboard.leagueNumber) {
+          const leagueInfo = await cloudFunctions.getLeagueInfo(
+            leaderboard.leagueNumber
+          );
+          setLeagueTitle(leagueInfo.league.name);
+          setGroupInfo(`Grupa ${leaderboard.totalMembers}/20`);
+        }
+
+        // Transform to RankingUser format
+        const users: RankingUser[] = leaderboard.entries.map(
+          (entry, index) => ({
+            userId: entry.userId,
+            name: entry.username || "Unknown",
+            username: entry.username,
+            avatar: "👤", // Default avatar
+            points: entry.points,
+            position: entry.position,
+          })
+        );
+
+        setRandomUsers(users);
+      } else {
+        // Get following rankings
+        const following = await cloudFunctions.getFollowingRankings(userCtx.id);
+
+        // Transform to RankingUser format
+        const users: RankingUser[] = following.rankings.map(
+          (ranking, index) => ({
+            userId: ranking.userId,
+            name: ranking.username || "Unknown",
+            username: ranking.username,
+            avatar: "👤", // Default avatar
+            points: ranking.points,
+            position: ranking.position ?? 0,
+          })
+        );
+
+        setFollowingUsers(users);
+      }
+    } catch (error) {
+      console.error("Error fetching rankings:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   const getPositionIcon = (position: number) => {
     switch (position) {
@@ -276,7 +192,7 @@ export default function rankingsScreen(): React.JSX.Element {
 
   const renderUserItem = (user: RankingUser) => (
     <View
-      key={user.id}
+      key={user.userId}
       style={[
         styles.userItem,
         user.position <= 3 && activeTab === "random" && styles.userItemTop,
@@ -305,10 +221,12 @@ export default function rankingsScreen(): React.JSX.Element {
               />
               <Text style={styles.statText}>{user.points}</Text>
             </View>
-            <View style={styles.statItem}>
-              <FireIcon size={16} color={Colors.accent_500} />
-              <Text style={styles.statText}>{user.streak} dni</Text>
-            </View>
+            {user.streak !== undefined && (
+              <View style={styles.statItem}>
+                <FireIcon size={16} color={Colors.accent_500} />
+                <Text style={styles.statText}>{user.streak} dni</Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -345,11 +263,18 @@ export default function rankingsScreen(): React.JSX.Element {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {activeTab === "random" ? (
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.accent_500} />
+          </View>
+        ) : activeTab === "random" ? (
           <>
             <Pressable onPress={() => router.push("../stack/leagueScreen")}>
               <Text style={styles.mainSectionTitle}>{leagueTitle}</Text>
             </Pressable>
+            {groupInfo && (
+              <Text style={styles.sectionSubtitle}>{groupInfo}</Text>
+            )}
             <Text style={styles.sectionSubtitle}>Finish Top 3 to advance!</Text>
             <View style={styles.timerContainer}>
               <MaterialCommunityIcons
@@ -360,7 +285,11 @@ export default function rankingsScreen(): React.JSX.Element {
               <Text style={styles.timerLabel}>Time left</Text>
               <Text style={styles.timerText}>{timeLeft}</Text>
             </View>
-            {randomUsers.map(renderUserItem)}
+            {randomUsers.length > 0 ? (
+              randomUsers.map(renderUserItem)
+            ) : (
+              <Text style={styles.emptyText}>No rankings available</Text>
+            )}
           </>
         ) : (
           <>
@@ -368,7 +297,13 @@ export default function rankingsScreen(): React.JSX.Element {
             <Text style={styles.sectionSubtitle}>
               Ranking among your friends
             </Text>
-            {followingUsers.map(renderUserItem)}
+            {followingUsers.length > 0 ? (
+              followingUsers.map(renderUserItem)
+            ) : (
+              <Text style={styles.emptyText}>
+                No friends rankings available
+              </Text>
+            )}
           </>
         )}
       </ScrollView>
@@ -556,5 +491,19 @@ const styles = StyleSheet.create({
     color: Colors.primary_700,
     fontWeight: "600",
     marginLeft: 4,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 100,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "600",
+    textAlign: "center",
+    marginTop: 40,
   },
 });

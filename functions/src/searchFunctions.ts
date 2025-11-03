@@ -12,7 +12,7 @@ const db = getFirestore();
  * Search decks with advanced filtering
  */
 export const searchDecks = onCall(async (request) => {
-  const { searchText, filters, userId } = request.data;
+  const { searchText, filters, userId, limit = 20 } = request.data;
 
   if (!searchText && !filters) {
     throw new Error("Search text or filters required");
@@ -41,7 +41,7 @@ export const searchDecks = onCall(async (request) => {
       }
     }
 
-    const snapshot = await query.limit(20).get();
+    const snapshot = await query.limit(limit).get();
 
     const results = snapshot.docs.map((doc) => ({
       id: doc.id,
@@ -50,13 +50,20 @@ export const searchDecks = onCall(async (request) => {
 
     // Log search for analytics
     if (userId) {
-      await db.collection("users").doc(userId).collection("searchLogs").add({
+      const logData: any = {
         userId,
-        searchText,
-        filters,
+        searchText: searchText || null,
         resultsCount: results.length,
         timestamp: new Date(),
-      });
+      };
+      if (filters) {
+        logData.filters = filters;
+      }
+      await db
+        .collection("users")
+        .doc(userId)
+        .collection("searchLogs")
+        .add(logData);
     }
 
     return { results, total: results.length };
@@ -70,13 +77,19 @@ export const searchDecks = onCall(async (request) => {
  * Get search logs
  */
 export const getSearchLogs = onCall(async (request) => {
-  const { userId } = request.data;
-  const logs = await db
+  const { userId } = request.data || {};
+
+  if (!userId) {
+    throw new Error("userId is required");
+  }
+
+  const logsSnapshot = await db
     .collection("users")
     .doc(userId)
     .collection("searchLogs")
+    .orderBy("timestamp", "desc")
     .get();
-  return logs.docs.map((doc) => ({
+  return logsSnapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
   }));

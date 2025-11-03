@@ -66,11 +66,19 @@ export const getLeaderboard = onCall(async (request) => {
     }
 
     // Get all members in the group
-    const groupRef = db.collection(
-      `leagueGroups/${currentSeasonId}/${userLeague}/groups/${userGroupId}/members`
-    );
+    // Note: We need an index on points for this query to work
+    // Collection: leagueGroups/{seasonId}_{leagueNumber}/groups/{groupId}/members
+    // Index: points (descending)
+    const groupMembersRef = db
+      .collection("leagueGroups")
+      .doc(`${currentSeasonId}_${userLeague}`)
+      .collection("groups")
+      .doc(userGroupId)
+      .collection("members");
 
-    const membersSnapshot = await groupRef.orderBy("points", "desc").get();
+    const membersSnapshot = await groupMembersRef
+      .orderBy("points", "desc")
+      .get();
 
     // Get user info for each member
     const entries = await Promise.all(
@@ -146,12 +154,7 @@ export const getUserRanking = onCall(async (request) => {
     const userSeasonPoints = await userSeasonPointsRef.get();
 
     if (!userSeasonPoints.exists) {
-      return {
-        position: null,
-        groupId: null,
-        leagueNumber: null,
-        points: 0,
-      };
+      return null;
     }
 
     const userData = userSeasonPoints.data() as {
@@ -165,24 +168,24 @@ export const getUserRanking = onCall(async (request) => {
     const userPoints = userData?.points ?? 0;
 
     if (!userGroupId) {
-      return {
-        position: null,
-        groupId: null,
-        leagueNumber: userLeague,
-        points: userPoints,
-      };
+      return null;
     }
 
     // Count how many users in the group have more points
-    const groupRef = db.collection(
-      `leagueGroups/${currentSeasonId}/${userLeague}/groups/${userGroupId}/members`
+    const groupRef = db
+      .collection("leagueGroups")
+      .doc(`${currentSeasonId}_${userLeague}`)
+      .collection("groups")
+      .doc(userGroupId)
+      .collection("members");
+
+    // Get all members and calculate position
+    const allMembers = await groupRef.get();
+    const membersWithMorePoints = allMembers.docs.filter(
+      (doc) => (doc.data().points ?? 0) > userPoints
     );
 
-    const membersWithMorePoints = await groupRef
-      .where("points", ">", userPoints)
-      .get();
-
-    const position = membersWithMorePoints.size + 1;
+    const position = membersWithMorePoints.length + 1;
 
     return {
       position,
@@ -267,15 +270,20 @@ export const getFollowingRankings = onCall(async (request) => {
           }
 
           // Get friend's position in their group
-          const groupRef = db.collection(
-            `leagueGroups/${currentSeasonId}/${friendLeague}/groups/${friendGroupId}/members`
+          const groupRef = db
+            .collection("leagueGroups")
+            .doc(`${currentSeasonId}_${friendLeague}`)
+            .collection("groups")
+            .doc(friendGroupId)
+            .collection("members");
+
+          // Get all members and filter client-side (more reliable than where query)
+          const allMembers = await groupRef.get();
+          const membersWithMorePoints = allMembers.docs.filter(
+            (doc) => (doc.data().points ?? 0) > friendPoints
           );
 
-          const membersWithMorePoints = await groupRef
-            .where("points", ">", friendPoints)
-            .get();
-
-          const position = membersWithMorePoints.size + 1;
+          const position = membersWithMorePoints.length + 1;
           const totalMembers = (await groupRef.get()).size;
 
           // Get friend's username
@@ -283,7 +291,8 @@ export const getFollowingRankings = onCall(async (request) => {
           let username = "Unknown";
           if (friendUserDoc.exists) {
             const friendUserData = friendUserDoc.data();
-            username = friendUserData?.username || friendUserData?.name || "Unknown";
+            username =
+              friendUserData?.username || friendUserData?.name || "Unknown";
           }
 
           return {
@@ -336,9 +345,10 @@ export const assignUserToGroup = onCall(async (request) => {
     const userLeague = leagueNumber ?? userData?.league ?? 1;
 
     // Find a group with less than 20 members
-    const groupsRef = db.collection(
-      `leagueGroups/${seasonId}/${userLeague}/groups`
-    );
+    const groupsRef = db
+      .collection("leagueGroups")
+      .doc(`${seasonId}_${userLeague}`)
+      .collection("groups");
 
     const allGroupsSnapshot = await groupsRef.get();
 
@@ -387,16 +397,22 @@ export const assignUserToGroup = onCall(async (request) => {
       : { points: 0 };
 
     // Add user to group members
-    const memberRef = db.doc(
-      `leagueGroups/${seasonId}/${userLeague}/groups/${targetGroupId}/members/${userId}`
-    );
+    const memberRef = db
+      .collection("leagueGroups")
+      .doc(`${seasonId}_${userLeague}`)
+      .collection("groups")
+      .doc(targetGroupId)
+      .collection("members")
+      .doc(userId);
 
     await db.runTransaction(async (trx) => {
       // Check group capacity again
       const groupDoc = await trx.get(
-        db.doc(
-          `leagueGroups/${seasonId}/${userLeague}/groups/${targetGroupId}`
-        )
+        db
+          .collection("leagueGroups")
+          .doc(`${seasonId}_${userLeague}`)
+          .collection("groups")
+          .doc(targetGroupId)
       );
 
       const groupData = groupDoc.data() as {
@@ -454,4 +470,3 @@ export const assignUserToGroup = onCall(async (request) => {
     throw new Error("Failed to assign user to group");
   }
 });
-

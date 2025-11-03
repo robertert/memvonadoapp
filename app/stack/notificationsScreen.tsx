@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useContext } from "react";
 import {
   StyleSheet,
   Text,
@@ -7,6 +7,7 @@ import {
   FlatList,
   Dimensions,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Fonts } from "../../constants/colors";
@@ -24,6 +25,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { cloudFunctions } from "../../services/cloudFunctions";
+import { UserContext } from "../../store/user-context";
 
 interface NotificationItem {
   id: string;
@@ -32,30 +35,6 @@ interface NotificationItem {
   date: string; // ISO
   type: "info" | "success" | "warning" | "error";
 }
-
-const placeholderNotifications: NotificationItem[] = [
-  {
-    id: "1",
-    title: "Weekly League Reset!",
-    body: "New week, new goals! Compete again for the Top 3.",
-    date: "2024-07-08T08:00:00Z",
-    type: "info",
-  },
-  {
-    id: "2",
-    title: "Ranking Up!",
-    body: "Congrats! You advanced to the Bronze League.",
-    date: "2024-07-03T15:20:00Z",
-    type: "success",
-  },
-  {
-    id: "3",
-    title: "Streak broken",
-    body: "You missed your daily practice. Start again today!",
-    date: "2024-07-01T21:00:00Z",
-    type: "warning",
-  },
-];
 
 function getIcon(type: string) {
   switch (type) {
@@ -107,10 +86,10 @@ const SWIPE_THRESHOLD = 120;
 
 function NotificationSwipeCard({
   notification,
-  setNotifications,
+  onDismiss,
 }: {
   notification: NotificationItem;
-  setNotifications: React.Dispatch<React.SetStateAction<NotificationItem[]>>;
+  onDismiss: () => void;
 }) {
   const transX = useSharedValue(0);
   const opacity = useSharedValue(1);
@@ -134,9 +113,7 @@ function NotificationSwipeCard({
         transX.value = withTiming(-400);
         runOnJS(() => {
           setTimeout(() => {
-            setNotifications((prev) =>
-              prev.filter((n) => n.id !== notification.id)
-            );
+            onDismiss();
           }, 400);
         })();
       } else {
@@ -165,10 +142,71 @@ function NotificationSwipeCard({
 
 export default function notificationsScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
-  const [notifications, setNotifications] = useState<NotificationItem[]>(
-    placeholderNotifications
-  );
+  const userCtx = useContext(UserContext);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const hasNotifications = notifications && notifications.length > 0;
+
+  useEffect(() => {
+    if (userCtx.id) {
+      fetchNotifications();
+    }
+  }, [userCtx.id]);
+
+  async function fetchNotifications(): Promise<void> {
+    if (!userCtx.id) return;
+
+    try {
+      setIsLoading(true);
+      const result = await cloudFunctions.getNotifications(userCtx.id, 50);
+
+      // Transform to NotificationItem format
+      const transformedNotifications: NotificationItem[] =
+        result.notifications.map((n: any) => {
+          // Handle date formatting
+          let dateStr = "";
+          if (n.createdAt?.toDate) {
+            dateStr = n.createdAt.toDate().toISOString();
+          } else if (n.createdAt?._seconds) {
+            dateStr = new Date(n.createdAt._seconds * 1000).toISOString();
+          } else if (typeof n.createdAt === "string") {
+            dateStr = n.createdAt;
+          } else {
+            dateStr = new Date().toISOString();
+          }
+
+          return {
+            id: n.id,
+            title: n.title || "Notification",
+            body: n.body || "",
+            date: dateStr,
+            type: n.type || "info",
+          };
+        });
+
+      setNotifications(transformedNotifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleNotificationDismiss(
+    notificationId: string
+  ): Promise<void> {
+    if (!userCtx.id) return;
+
+    try {
+      // Mark as read when dismissed
+      await cloudFunctions.markNotificationRead(userCtx.id, notificationId);
+
+      // Remove from local state
+      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  }
 
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -183,7 +221,11 @@ export default function notificationsScreen(): React.JSX.Element {
         <Text style={styles.headerTitle}>Notifications</Text>
         <View style={styles.headerSpacer} />
       </View>
-      {hasNotifications ? (
+      {isLoading ? (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color={Colors.accent_500} />
+        </View>
+      ) : hasNotifications ? (
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -193,7 +235,7 @@ export default function notificationsScreen(): React.JSX.Element {
             <Animated.View key={n.id} layout={Layout.springify()}>
               <NotificationSwipeCard
                 notification={n}
-                setNotifications={setNotifications}
+                onDismiss={() => handleNotificationDismiss(n.id)}
               />
             </Animated.View>
           ))}

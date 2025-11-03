@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   StyleSheet,
   Text,
@@ -7,6 +7,7 @@ import {
   Image,
   Pressable,
   Share,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Fonts } from "../../constants/colors";
@@ -17,77 +18,112 @@ import { router } from "expo-router";
 import { FireIcon } from "react-native-heroicons/solid";
 import { FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
 import ContributionHeatmap from "../../ui/ContributionHeatmap";
+import { cloudFunctions } from "../../services/cloudFunctions";
+import { UserContext } from "../../store/user-context";
 
 export default function profileScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
+  const userCtx = useContext(UserContext);
   const weeks = 16; // zakres 16 tygodni wstecz
-  const heatmapData: { date: string; count: number }[] = (() => {
-    const today = new Date();
-    const days = weeks * 7;
-    const arr: { date: string; count: number }[] = [];
-    for (let i = 0; i < days; i++) {
-      const dt = new Date(today);
-      dt.setDate(today.getDate() - i);
-      const iso = dt.toISOString().slice(0, 10);
-      // Placeholder: deterministyczny wzór aktywności jak na GitHubie
-      const idx = (dt.getUTCDate() + dt.getUTCMonth() + dt.getUTCDay()) % 5;
-      const levels = [0, 1, 2, 4, 6];
-      arr.push({ date: iso, count: levels[idx] });
-    }
-    return arr;
-  })();
-  const awards = [
-    {
-      key: 1,
-      name: "1st place",
-    },
-    {
-      key: 2,
-      name: "2nd place",
-    },
-    {
-      key: 3,
-      name: "3rd place",
-    },
-  ];
-  const friendsStreaks = [
-    {
-      key: 1,
-      name: "John Doe",
-      streak: 10,
-    },
-    {
-      key: 2,
-      name: "Jane Doe",
-      streak: 15,
-    },
-    {
-      key: 3,
-      name: "Jim Doe",
-      streak: 20,
-    },
-  ];
 
-  const myDecks = [
-    {
-      key: 1,
-      name: "Angielski - Podstawy",
-      cards: 45,
-      lastStudied: "2 dni temu",
-    },
-    {
-      key: 2,
-      name: "Historia Polski",
-      cards: 78,
-      lastStudied: "1 tydzień temu",
-    },
-    {
-      key: 3,
-      name: "Matematyka - Algebra",
-      cards: 32,
-      lastStudied: "3 dni temu",
-    },
-  ];
+  const [heatmapData, setHeatmapData] = useState<
+    { date: string; count: number }[]
+  >([]);
+  const [awards, setAwards] = useState<
+    Array<{ id?: string; key?: number; name?: string }>
+  >([]);
+  const [friendsStreaks, setFriendsStreaks] = useState<
+    Array<{ userId?: string; key?: number; name: string; streak: number }>
+  >([]);
+  const [myDecks, setMyDecks] = useState<
+    Array<{
+      id?: string;
+      key?: number;
+      name: string;
+      cards: number;
+      lastStudied?: string;
+    }>
+  >([]);
+  const [profileData, setProfileData] = useState<{
+    stats?: {
+      totalCards?: number;
+      totalDecks?: number;
+      totalReviews?: number;
+      averageDifficulty?: number;
+    };
+    streak?: number;
+    friendsCount?: number;
+    followers?: number;
+    following?: number;
+  }>({});
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (userCtx.id) {
+      fetchProfileData();
+    }
+  }, [userCtx.id]);
+
+  async function fetchProfileData(): Promise<void> {
+    if (!userCtx.id) return;
+
+    try {
+      setIsLoading(true);
+
+      const [profile, heatmap, awardsData, streaks, decks] = await Promise.all([
+        cloudFunctions.getUserProfile(userCtx.id),
+        cloudFunctions.getUserActivityHeatmap(userCtx.id, weeks),
+        cloudFunctions.getUserAwards(userCtx.id),
+        cloudFunctions.getFriendsStreaks(userCtx.id),
+        cloudFunctions.getUserDecks(userCtx.id),
+      ]);
+
+      setProfileData({
+        stats: profile.stats,
+        streak: profile.streak,
+        friendsCount: profile.friendsCount,
+        followers: profile.followers,
+        following: profile.following,
+      });
+
+      setHeatmapData(heatmap.heatmapData);
+      setAwards(
+        awardsData.awards.map((a: any, idx: number) => ({
+          id: a.id || `award-${idx}`,
+          key: idx + 1,
+          name:
+            a.type === "league"
+              ? `Liga ${a.leagueNumber}`
+              : a.type === "streak"
+              ? `Streak ${a.streakDays}`
+              : a.milestoneType || "Award",
+        }))
+      );
+
+      setFriendsStreaks(
+        streaks.friendsStreaks.map((fs: any, idx: number) => ({
+          userId: fs.userId,
+          key: idx + 1,
+          name: fs.name,
+          streak: fs.streak,
+        }))
+      );
+
+      // Transform decks - we'd need lastStudied from studySessions, for now just use basic data
+      setMyDecks(
+        decks.decks.slice(0, 3).map((deck: any, idx: number) => ({
+          id: deck.id,
+          key: idx + 1,
+          name: deck.title || "Untitled",
+          cards: deck.cardsNum || deck.cards?.length || 0,
+        }))
+      );
+    } catch (error) {
+      console.error("Error fetching profile data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   function shareProfileHandler(): void {
     Share.share({
@@ -129,15 +165,17 @@ export default function profileScreen(): React.JSX.Element {
           <View style={styles.infoContainer}>
             <View style={styles.userInfo}>
               <View style={styles.infoItem}>
-                <Text style={styles.infoNum}>15</Text>
+                <Text style={styles.infoNum}>
+                  {profileData.friendsCount ?? 0}
+                </Text>
                 <Text style={styles.infoText}>Friends</Text>
               </View>
               <View style={styles.infoItem}>
-                <Text style={styles.infoNum}>200</Text>
+                <Text style={styles.infoNum}>{profileData.followers ?? 0}</Text>
                 <Text style={styles.infoText}>Followers</Text>
               </View>
               <View style={styles.infoItem}>
-                <Text style={styles.infoNum}>30</Text>
+                <Text style={styles.infoNum}>{profileData.following ?? 0}</Text>
                 <Text style={styles.infoText}>Following</Text>
               </View>
             </View>
@@ -145,45 +183,59 @@ export default function profileScreen(): React.JSX.Element {
         </View>
         <View style={styles.statsContainer}>
           <Text style={styles.subTitle}>Your Stats</Text>
-          <View style={styles.statsItemsContainer}>
-            <View style={styles.statsItem}>
-              <MaterialCommunityIcons
-                name="card"
-                size={24}
-                color={Colors.primary_700}
-                style={styles.statsItemIcon}
-              />
-              <Text style={styles.statsItemValue}>15</Text>
-            </View>
-            <View style={styles.statsItem}>
-              <FireIcon
-                size={24}
-                color={Colors.accent_500}
-                style={styles.statsItemIcon}
-              />
-              <Text style={styles.statsItemValue}>13 dni</Text>
-            </View>
-          </View>
-          <View style={styles.statsItemsContainer}>
-            <View style={styles.statsItem}>
-              <MaterialCommunityIcons
-                name="cards"
-                size={24}
-                color={Colors.primary_700}
-                style={styles.statsItemIcon}
-              />
-              <Text style={styles.statsItemValue}>5623</Text>
-            </View>
-            <View style={styles.statsItem}>
-              <FontAwesome6
-                name="ranking-star"
-                size={24}
-                color={Colors.primary_700}
-                style={styles.statsItemIcon}
-              />
-              <Text style={styles.statsItemValue}>Golden</Text>
-            </View>
-          </View>
+          {isLoading ? (
+            <ActivityIndicator size="small" color={Colors.accent_500} />
+          ) : (
+            <>
+              <View style={styles.statsItemsContainer}>
+                <View style={styles.statsItem}>
+                  <MaterialCommunityIcons
+                    name="card"
+                    size={24}
+                    color={Colors.primary_700}
+                    style={styles.statsItemIcon}
+                  />
+                  <Text style={styles.statsItemValue}>
+                    {profileData.stats?.totalDecks ?? 0}
+                  </Text>
+                </View>
+                <View style={styles.statsItem}>
+                  <FireIcon
+                    size={24}
+                    color={Colors.accent_500}
+                    style={styles.statsItemIcon}
+                  />
+                  <Text style={styles.statsItemValue}>
+                    {profileData.streak ?? 0} dni
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.statsItemsContainer}>
+                <View style={styles.statsItem}>
+                  <MaterialCommunityIcons
+                    name="cards"
+                    size={24}
+                    color={Colors.primary_700}
+                    style={styles.statsItemIcon}
+                  />
+                  <Text style={styles.statsItemValue}>
+                    {profileData.stats?.totalCards ?? 0}
+                  </Text>
+                </View>
+                <View style={styles.statsItem}>
+                  <FontAwesome6
+                    name="ranking-star"
+                    size={24}
+                    color={Colors.primary_700}
+                    style={styles.statsItemIcon}
+                  />
+                  <Text style={styles.statsItemValue}>
+                    {profileData.stats?.totalReviews ?? 0}
+                  </Text>
+                </View>
+              </View>
+            </>
+          )}
           <View style={styles.sectionContainer}>
             <Text style={styles.subTitle}>Mutal streaks</Text>
             <ScrollView
@@ -191,19 +243,26 @@ export default function profileScreen(): React.JSX.Element {
               showsHorizontalScrollIndicator={false}
               style={styles.horizontalScroll}
             >
-              {friendsStreaks.map((friend) => (
-                <View key={friend.key} style={styles.friendStreakItem}>
-                  <Text style={styles.friendStreakName}>{friend.name}</Text>
-                  <MaterialCommunityIcons
-                    name="penguin"
-                    size={36}
-                    color={Colors.primary_700}
-                  />
-                  <Text style={styles.friendStreakDays}>
-                    {friend.streak} days
-                  </Text>
-                </View>
-              ))}
+              {friendsStreaks.length > 0 ? (
+                friendsStreaks.map((friend) => (
+                  <View
+                    key={friend.key || friend.userId}
+                    style={styles.friendStreakItem}
+                  >
+                    <Text style={styles.friendStreakName}>{friend.name}</Text>
+                    <MaterialCommunityIcons
+                      name="penguin"
+                      size={36}
+                      color={Colors.primary_700}
+                    />
+                    <Text style={styles.friendStreakDays}>
+                      {friend.streak} days
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.emptyText}>No friends streaks yet</Text>
+              )}
             </ScrollView>
           </View>
           <View style={styles.sectionContainer}>
@@ -213,24 +272,32 @@ export default function profileScreen(): React.JSX.Element {
               showsHorizontalScrollIndicator={false}
               style={styles.horizontalScroll}
             >
-              {awards.map((award) => (
-                <View key={award.key} style={styles.awardItem}>
-                  <MaterialCommunityIcons
-                    name="medal"
-                    size={24}
-                    color={Colors.primary_700}
-                  />
-                </View>
-              ))}
+              {awards.length > 0 ? (
+                awards.map((award) => (
+                  <View key={award.key || award.id} style={styles.awardItem}>
+                    <MaterialCommunityIcons
+                      name="medal"
+                      size={24}
+                      color={Colors.primary_700}
+                    />
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.emptyText}>No awards yet</Text>
+              )}
             </ScrollView>
           </View>
           <View style={styles.sectionContainer}>
             <Text style={styles.subTitle}>Aktywność nauki</Text>
-            <ContributionHeatmap
-              weeks={weeks}
-              data={heatmapData}
-              title="Ostatnie tygodnie"
-            />
+            {isLoading ? (
+              <ActivityIndicator size="small" color={Colors.accent_500} />
+            ) : (
+              <ContributionHeatmap
+                weeks={weeks}
+                data={heatmapData.length > 0 ? heatmapData : []}
+                title="Ostatnie tygodnie"
+              />
+            )}
           </View>
           <View style={styles.sectionContainer}>
             <Text style={styles.subTitle}>Twoje decki</Text>
@@ -239,19 +306,27 @@ export default function profileScreen(): React.JSX.Element {
               showsHorizontalScrollIndicator={false}
               style={styles.horizontalScroll}
             >
-              {myDecks.map((deck) => (
-                <View key={deck.key} style={styles.deckItem}>
-                  <MaterialCommunityIcons
-                    name="cards"
-                    size={24}
-                    color={Colors.primary_700}
-                    style={styles.deckIcon}
-                  />
-                  <Text style={styles.deckName}>{deck.name}</Text>
-                  <Text style={styles.deckCards}>{deck.cards} kart</Text>
-                  <Text style={styles.deckLastStudied}>{deck.lastStudied}</Text>
-                </View>
-              ))}
+              {myDecks.length > 0 ? (
+                myDecks.map((deck) => (
+                  <View key={deck.key || deck.id} style={styles.deckItem}>
+                    <MaterialCommunityIcons
+                      name="cards"
+                      size={24}
+                      color={Colors.primary_700}
+                      style={styles.deckIcon}
+                    />
+                    <Text style={styles.deckName}>{deck.name}</Text>
+                    <Text style={styles.deckCards}>{deck.cards} kart</Text>
+                    {deck.lastStudied && (
+                      <Text style={styles.deckLastStudied}>
+                        {deck.lastStudied}
+                      </Text>
+                    )}
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.emptyText}>No decks yet</Text>
+              )}
             </ScrollView>
             <Pressable
               style={styles.libraryButton}
@@ -493,5 +568,13 @@ const styles = StyleSheet.create({
     color: Colors.primary_100,
     fontWeight: "700",
     marginRight: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_500,
+    fontWeight: "500",
+    textAlign: "center",
+    padding: 20,
   },
 });

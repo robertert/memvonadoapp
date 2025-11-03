@@ -335,8 +335,18 @@ export function useCardLogic(id: string) {
       console.log("Fetching cards for deck:", id);
       setIsLoading(true);
 
-      // Get deck details first
-      const { deck: currentDeck } = await cloudFunctions.getDeckDetails(id);
+      // Ensure user personal copy exists; if not, create it
+      try {
+        await cloudFunctions.getUserDeckDetails(userCtx.id!, id);
+      } catch {
+        await cloudFunctions.startLearningDeck(userCtx.id!, id);
+      }
+
+      // Get user deck details
+      const { deck: currentDeck } = await cloudFunctions.getUserDeckDetails(
+        userCtx.id!,
+        id
+      );
       const { settings } = await cloudFunctions.getUserSettings(userCtx.id!);
       const dailyGoal = settings.dailyGoal ?? 10; // liczba dziennych powtórek (FSRS)
       const dailyNew = settings.dailyNew ?? 20; // liczba nowych kart do wprowadzenia
@@ -367,10 +377,14 @@ export function useCardLogic(id: string) {
           }
         };
 
-        // Server-side: fetch due FSRS + due firstLearn + new candidates
+        // Server-side: fetch due FSRS + due firstLearn + new candidates from user deck
         const [dueRes, newRes] = await Promise.all([
-          cloudFunctions.getDueDeckCards(id, dailyGoal * 3 + dailyNew * 3),
-          cloudFunctions.getNewDeckCards(id, dailyNew * 3),
+          cloudFunctions.getUserDueDeckCards(
+            userCtx.id!,
+            id,
+            dailyGoal * 3 + dailyNew * 3
+          ),
+          cloudFunctions.getUserNewDeckCards(userCtx.id!, id, dailyNew * 3),
         ]);
         const cards = [...(dueRes.cards || []), ...(newRes.cards || [])];
 

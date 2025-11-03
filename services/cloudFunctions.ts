@@ -1,7 +1,31 @@
-import { getFunctions, httpsCallable } from "firebase/functions";
+import {
+  getFunctions,
+  httpsCallable,
+  connectFunctionsEmulator,
+} from "firebase/functions";
 import { app } from "../firebase";
+import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
 
 const functions = getFunctions(app, "europe-west1");
+
+// Connect to emulator if in development mode
+// Check if we're running in development (React Native doesn't have __DEV__ in all contexts)
+const isDev = true;
+
+if (isDev) {
+  try {
+    // Only connect once - check if already connected by trying to access internal state
+    // If connection fails, it's likely already connected or emulator isn't running
+    connectFunctionsEmulator(functions, "127.0.0.1", 5001);
+    connectFirestoreEmulator(getFirestore(app), "127.0.0.1", 8080);
+    console.log("Connected to Functions emulator at 127.0.0.1:5001");
+  } catch (error: any) {
+    // Already connected or emulator not available - this is expected in some cases
+    if (error?.message && !error.message.includes("already connected")) {
+      console.log("Functions emulator not available or already connected");
+    }
+  }
+}
 
 // Types for Cloud Functions
 export interface SearchFilters {
@@ -206,5 +230,260 @@ export const cloudFunctions = {
     const resetDeckFunction = httpsCallable(functions, "resetDeck");
     const result = await resetDeckFunction({ deckId });
     return result.data as { success: boolean };
+  },
+
+  // Update deck settings
+  updateDeckSettings: async (deckId: string, settings: any) => {
+    const updateDeckSettingsFunction = httpsCallable(
+      functions,
+      "updateDeckSettings"
+    );
+    const result = await updateDeckSettingsFunction({ deckId, settings });
+    return result.data as { success: boolean };
+  },
+
+  // Copy public deck into user's space to start learning
+  startLearningDeck: async (userId: string, deckId: string) => {
+    const fn = httpsCallable(functions, "startLearningDeck");
+    const result = await fn({ userId, deckId });
+    return result.data as { success: boolean };
+  },
+
+  // User deck APIs
+  getUserDeckDetails: async (userId: string, deckId: string) => {
+    const fn = httpsCallable(functions, "getUserDeckDetails");
+    const result = await fn({ userId, deckId });
+    return result.data as { deck: any };
+  },
+  getUserDeckCards: async (
+    userId: string,
+    deckId: string,
+    limit: number = 20,
+    startAfter?: string
+  ) => {
+    const fn = httpsCallable(functions, "getUserDeckCards");
+    const result = await fn({ userId, deckId, limit, startAfter });
+    return result.data as {
+      cards: any[];
+      hasMore: boolean;
+      lastDocId: string | null;
+    };
+  },
+  getUserDueDeckCards: async (
+    userId: string,
+    deckId: string,
+    limit: number = 100
+  ) => {
+    const fn = httpsCallable(functions, "getUserDueDeckCards");
+    const result = await fn({ userId, deckId, limit });
+    return result.data as { cards: any[] };
+  },
+  getUserNewDeckCards: async (
+    userId: string,
+    deckId: string,
+    limit: number = 50
+  ) => {
+    const fn = httpsCallable(functions, "getUserNewDeckCards");
+    const result = await fn({ userId, deckId, limit });
+    return result.data as { cards: any[] };
+  },
+
+  // Update user settings
+  updateUserSettings: async (userId: string, settings: UserSettings) => {
+    const updateUserSettingsFunction = httpsCallable(
+      functions,
+      "updateUserSettings"
+    );
+    const result = await updateUserSettingsFunction({ userId, settings });
+    return result.data as { success: boolean };
+  },
+
+  // Get user profile
+  getUserProfile: async (userId: string) => {
+    const getUserProfileFunction = httpsCallable(functions, "getUserProfile");
+    const result = await getUserProfileFunction({ userId });
+    return result.data as {
+      userId: string;
+      username: string;
+      email: string | null;
+      stats: any;
+      streak: number;
+      league: number;
+      points: number;
+      friendsCount: number;
+      followers: number;
+      following: number;
+    };
+  },
+
+  // Get user activity heatmap
+  getUserActivityHeatmap: async (userId: string, weeks: number = 16) => {
+    const getUserActivityHeatmapFunction = httpsCallable(
+      functions,
+      "getUserActivityHeatmap"
+    );
+    const result = await getUserActivityHeatmapFunction({ userId, weeks });
+    return result.data as {
+      heatmapData: Array<{ date: string; count: number }>;
+    };
+  },
+
+  // Get user awards
+  getUserAwards: async (userId: string) => {
+    const getUserAwardsFunction = httpsCallable(functions, "getUserAwards");
+    const result = await getUserAwardsFunction({ userId });
+    return result.data as { awards: any[] };
+  },
+
+  // Get friends streaks
+  getFriendsStreaks: async (userId: string) => {
+    const getFriendsStreaksFunction = httpsCallable(
+      functions,
+      "getFriendsStreaks"
+    );
+    const result = await getFriendsStreaksFunction({ userId });
+    return result.data as {
+      friendsStreaks: Array<{ userId: string; name: string; streak: number }>;
+    };
+  },
+
+  // Get leaderboard (user's group ranking)
+  getLeaderboard: async (userId: string, seasonId?: string) => {
+    const getLeaderboardFunction = httpsCallable(functions, "getLeaderboard");
+    const result = await getLeaderboardFunction({ userId, seasonId });
+    return result.data as {
+      entries: Array<{
+        userId: string;
+        username: string;
+        points: number;
+        position: number;
+        lastActivityAt: any;
+      }>;
+      groupId: string | null;
+      leagueNumber: number | null;
+      seasonId: string;
+      totalMembers: number;
+    };
+  },
+
+  // Get user ranking in their group
+  getUserRanking: async (userId: string, seasonId?: string) => {
+    const getUserRankingFunction = httpsCallable(functions, "getUserRanking");
+    const result = await getUserRankingFunction({ userId, seasonId });
+    return result.data as {
+      position: number | null;
+      groupId: string | null;
+      leagueNumber: number | null;
+      points: number;
+      totalMembers?: number;
+    };
+  },
+
+  // Get following rankings (friends in their groups)
+  getFollowingRankings: async (userId: string, seasonId?: string) => {
+    const getFollowingRankingsFunction = httpsCallable(
+      functions,
+      "getFollowingRankings"
+    );
+    const result = await getFollowingRankingsFunction({ userId, seasonId });
+    return result.data as {
+      rankings: Array<{
+        userId: string;
+        username?: string;
+        position: number | null;
+        points: number;
+        leagueNumber: number;
+        groupId?: string;
+        totalMembers?: number;
+      }>;
+    };
+  },
+
+  // Get notifications
+  getNotifications: async (userId: string, limit: number = 50) => {
+    const getNotificationsFunction = httpsCallable(
+      functions,
+      "getNotifications"
+    );
+    const result = await getNotificationsFunction({ userId, limit });
+    return result.data as {
+      notifications: Array<{
+        id: string;
+        title: string;
+        body: string;
+        type: "info" | "success" | "warning" | "error";
+        read: boolean;
+        createdAt: any;
+        linkTo?: string;
+      }>;
+    };
+  },
+
+  // Mark notification as read
+  markNotificationRead: async (userId: string, notificationId: string) => {
+    const markNotificationReadFunction = httpsCallable(
+      functions,
+      "markNotificationRead"
+    );
+    const result = await markNotificationReadFunction({
+      userId,
+      notificationId,
+    });
+    return result.data as { success: boolean };
+  },
+
+  // Get league info
+  getLeagueInfo: async (leagueNumber: number) => {
+    const getLeagueInfoFunction = httpsCallable(functions, "getLeagueInfo");
+    const result = await getLeagueInfoFunction({ leagueNumber });
+    return result.data as {
+      league: { id: number; name: string; color: string; description: string };
+    };
+  },
+
+  // Get all leagues info
+  getAllLeaguesInfo: async () => {
+    const getAllLeaguesInfoFunction = httpsCallable(
+      functions,
+      "getAllLeaguesInfo"
+    );
+    const result = await getAllLeaguesInfoFunction({});
+    return result.data as {
+      leagues: Array<{
+        id: number;
+        name: string;
+        color: string;
+        description: string;
+      }>;
+    };
+  },
+
+  // Get user group info
+  getUserGroup: async (userId: string, seasonId?: string) => {
+    const getUserGroupFunction = httpsCallable(functions, "getUserGroup");
+    const result = await getUserGroupFunction({ userId, seasonId });
+    return result.data as {
+      groupId: string | null;
+      leagueNumber: number | null;
+      memberCount: number;
+      capacity: number;
+      isFull: boolean;
+    };
+  },
+
+  // Add placeholder data for testing
+  addPlaceholderData: async (userId?: string, createUser?: boolean) => {
+    const addPlaceholderDataFunction = httpsCallable(
+      functions,
+      "addPlaceholderData"
+    );
+    const result = await addPlaceholderDataFunction({ userId, createUser });
+    return result.data as {
+      success: boolean;
+      userId: string;
+      decksCreated: number;
+      totalCards: number;
+      deckIds: string[];
+    };
   },
 };

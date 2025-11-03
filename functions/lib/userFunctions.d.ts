@@ -3,9 +3,7 @@
  */
 export declare const getUserDecks: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     decks: {
-        cards: {
-            id: string;
-        }[];
+        cards: any[];
         id: string;
     }[];
 }>, unknown>;
@@ -40,8 +38,10 @@ export declare const processFriendRequest: import("firebase-functions/v2/https")
 }>, unknown>;
 /**
  * Validate user data on creation
+ * @param {any} event - event object
+ * @return {Promise<void>}
  */
-export declare const validateUserData: import("firebase-functions/core").CloudFunction<import("firebase-functions/v2/firestore").FirestoreEvent<import("firebase-functions/v2/firestore").Change<import("firebase-functions/v2/firestore").DocumentSnapshot> | undefined, {
+export declare const validateUserData: import("firebase-functions/core").CloudFunction<import("firebase-functions/firestore").FirestoreEvent<import("firebase-functions/firestore").Change<import("firebase-functions/firestore").DocumentSnapshot> | undefined, {
     userId: string;
 }>>;
 /**
@@ -80,4 +80,57 @@ export declare const submitPoints: import("firebase-functions/v2/https").Callabl
 export declare const weeklyRollOver: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
     nextSeasonId: string;
+}>, unknown>;
+/**
+ * Update user settings
+ */
+export declare const updateUserSettings: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+}>, unknown>;
+/**
+ * Get user profile with full information
+ */
+export declare const getUserProfile: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    userId: any;
+    username: string;
+    email: string | null;
+    stats: {
+        totalCards?: number;
+        totalDecks?: number;
+        totalReviews?: number;
+        averageDifficulty?: number;
+    };
+    streak: number;
+    league: number;
+    points: number;
+    friendsCount: number;
+    followers: number;
+    following: number;
+}>, unknown>;
+/**
+ * Get user activity heatmap data
+ */
+export declare const getUserActivityHeatmap: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    heatmapData: {
+        date: string;
+        count: number;
+    }[];
+}>, unknown>;
+/**
+ * Get user awards
+ */
+export declare const getUserAwards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    awards: {
+        id: string;
+    }[];
+}>, unknown>;
+/**
+ * Get friends streaks
+ */
+export declare const getFriendsStreaks: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    friendsStreaks: {
+        userId: string;
+        name: string;
+        streak: number;
+    }[];
 }>, unknown>;

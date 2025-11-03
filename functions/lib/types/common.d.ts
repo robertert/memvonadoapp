@@ -35,3 +35,9 @@ export interface StudySession {
     date: Date;
     duration: number;
 }
+/**
+ * Helper function to transform flat card structure to nested structure
+ * @param {any} doc - Firestore document snapshot or data object
+ * @return {any} Transformed card with nested cardData structure
+ */
+export declare function transformCardData(doc: any): any;

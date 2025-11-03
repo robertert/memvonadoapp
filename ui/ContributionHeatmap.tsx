@@ -24,8 +24,12 @@ export default function ContributionHeatmap({
 
   // Zbuduj siatkę dat (tygodnie x 7 dni)
   const grid: { date: string; count: number }[][] = [];
+  const columnDates: string[] = []; // daty dla każdej kolumny (pierwszy dzień tygodnia)
+
   for (let w = weeks - 1; w >= 0; w--) {
     const column: { date: string; count: number }[] = [];
+    let columnMondayDate: string = "";
+
     for (let d = 0; d < 7; d++) {
       const dt = new Date(today);
       const offset = w * 7 + (6 - d); // kolumny od najstarszej, dni Pon-Ndz (góra-dół)
@@ -33,9 +37,32 @@ export default function ContributionHeatmap({
       const iso = dt.toISOString().slice(0, 10);
       const found = data.find((x) => x.date === iso);
       column.push({ date: iso, count: found?.count || 0 });
+
+      // Zapisz datę poniedziałku (pierwszy dzień tygodnia, d=6 to poniedziałek)
+      if (d === 6) {
+        columnMondayDate = iso;
+      }
     }
     grid.push(column);
+    columnDates.push(columnMondayDate);
   }
+
+  // Dni tygodnia (poniedziałek na górze, niedziela na dole)
+  const dayLabels = ["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"];
+
+  // Funkcja do pobrania miesiąca z daty
+  const getMonth = (dateStr: string): string => {
+    const date = new Date(dateStr + "T00:00:00");
+    return date.toLocaleDateString("pl-PL", { month: "short" });
+  };
+
+  // Funkcja sprawdzająca, czy miesiąc się zmienił w stosunku do poprzedniej kolumny
+  const shouldShowMonth = (idx: number): boolean => {
+    if (idx === 0) return true; // Zawsze pokazuj pierwszą kolumnę
+    const currentMonth = getMonth(columnDates[idx]);
+    const previousMonth = getMonth(columnDates[idx - 1]);
+    return currentMonth !== previousMonth;
+  };
 
   const colorFor = (count: number): string => {
     if (count <= levels[0]) return Colors.primary_100; // brak
@@ -48,18 +75,50 @@ export default function ContributionHeatmap({
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
-      <View style={styles.gridRow}>
-        {grid.map((col, cIdx) => (
-          <View key={cIdx} style={styles.column}>
-            {col.map((cell, rIdx) => (
-              <View
-                key={`${cell.date}-${rIdx}`}
-                style={[styles.cell, { backgroundColor: colorFor(cell.count) }]}
-              />
+      <View style={styles.heatmapWrapper}>
+        {/* Etykiety dni tygodnia po lewej */}
+        <View style={styles.dayLabelsColumn}>
+          {dayLabels.map((day, idx) => (
+            <Text key={idx} style={styles.dayLabel}>
+              {day}
+            </Text>
+          ))}
+        </View>
+
+        {/* Główna siatka z etykietami dat na dole */}
+        <View style={styles.gridContainer}>
+          <View style={styles.gridRow}>
+            {grid.map((col, cIdx) => (
+              <View key={cIdx} style={styles.column}>
+                {col.map((cell, rIdx) => (
+                  <View
+                    key={`${cell.date}-${rIdx}`}
+                    style={[
+                      styles.cell,
+                      { backgroundColor: colorFor(cell.count) },
+                    ]}
+                  />
+                ))}
+              </View>
             ))}
           </View>
-        ))}
+
+          {/* Etykiety miesięcy pod kolumnami */}
+          <View style={styles.dateLabelsRow}>
+            {columnDates.map((dateStr, idx) => {
+              if (shouldShowMonth(idx)) {
+                return (
+                  <Text key={idx} style={styles.dateLabel}>
+                    {getMonth(dateStr)}
+                  </Text>
+                );
+              }
+              return <View key={idx} style={styles.dateLabelSpacer} />;
+            })}
+          </View>
+        </View>
       </View>
+
       <View style={styles.legendRow}>
         <Text style={styles.legendLabel}>Mniej</Text>
         <View style={[styles.legendCell, { backgroundColor: colorFor(0) }]} />
@@ -104,9 +163,29 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     marginBottom: 8,
   },
+  heatmapWrapper: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  dayLabelsColumn: {
+    marginRight: 6,
+    justifyContent: "space-between",
+    height: CELL * 7 + GAP * 6, // wysokość całej siatki (7 komórek + 6 przerw)
+  },
+  dayLabel: {
+    fontSize: 10,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "500",
+    height: CELL + GAP,
+    textAlignVertical: "center",
+  },
+  gridContainer: {
+    flex: 1,
+    alignItems: "flex-start",
+  },
   gridRow: {
     flexDirection: "row",
-    alignSelf: "center",
   },
   column: {
     flexDirection: "column",
@@ -117,6 +196,22 @@ const styles = StyleSheet.create({
     height: CELL,
     borderRadius: 4,
     marginBottom: GAP,
+  },
+  dateLabelsRow: {
+    flexDirection: "row",
+    marginTop: 4,
+    alignItems: "flex-start",
+  },
+  dateLabel: {
+    fontSize: 9,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "500",
+    width: CELL + GAP,
+    textAlign: "center",
+  },
+  dateLabelSpacer: {
+    width: CELL + GAP,
   },
   legendRow: {
     marginTop: 10,

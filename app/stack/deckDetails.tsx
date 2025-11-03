@@ -45,8 +45,6 @@ interface Deck {
 interface CardData {
   front: string;
   back: string;
-  frontColor: string;
-  backColor: string;
   tags: string[];
 }
 

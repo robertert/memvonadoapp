@@ -171,13 +171,15 @@ export default function deckSettings(): React.JSX.Element {
 
   async function saveSettings(): Promise<void> {
     try {
-      // Tutaj zapisz ustawienia do backendu
-      // await cloudFunctions.updateDeckSettings(typedParams.deckId, settings);
-      console.log("Saving settings:", settings);
-      // Tymczasowo tylko powrót
+      setIsLoading(true);
+      await cloudFunctions.updateDeckSettings(typedParams.deckId, settings);
+      console.log("Settings saved successfully");
       router.back();
     } catch (error) {
       console.error("Error saving settings:", error);
+      Alert.alert("Błąd", "Nie udało się zapisać ustawień. Spróbuj ponownie.");
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -185,16 +187,12 @@ export default function deckSettings(): React.JSX.Element {
     try {
       setIsResetting(true);
       await cloudFunctions.resetDeck(typedParams.deckId);
-      Alert.alert(
-        "Sukces",
-        "Postęp decku został zresetowany pomyślnie.",
-        [
-          {
-            text: "OK",
-            onPress: () => router.back(),
-          },
-        ]
-      );
+      Alert.alert("Sukces", "Postęp decku został zresetowany pomyślnie.", [
+        {
+          text: "OK",
+          onPress: () => router.back(),
+        },
+      ]);
     } catch (error) {
       console.error("Error resetting deck:", error);
       Alert.alert("Błąd", "Nie udało się zresetować decku. Spróbuj ponownie.");

@@ -2,7 +2,7 @@ import { onCall } from "firebase-functions/v2/https";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue, WriteBatch } from "firebase-admin/firestore";
-import { CardData } from "./types/common";
+import { CardData, transformCardData } from "./types/common";
 
 const db = getFirestore();
 
@@ -26,7 +26,7 @@ export const createDeckWithCards = onCall(async (request) => {
       cardsNum: cards.length,
       createdBy: userId,
       createdAt: new Date(),
-      isPublic: false,
+      isPublic: true,
     });
 
     // Create cards
@@ -41,11 +41,7 @@ export const createDeckWithCards = onCall(async (request) => {
       });
     });
 
-    // Add deck to user's decks
-    const userRef = db.doc(`users/${userId}`);
-    batch.update(userRef, {
-      decks: FieldValue.arrayUnion(deckRef.id),
-    });
+    // No backward compatibility needed: do not update user's decks array
 
     await batch.commit();
 
@@ -124,14 +120,17 @@ export const getDeckCards = onCall(async (request) => {
     }
 
     const cardsSnap = await query.get();
-    const cards = cardsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const cards = cardsSnap.docs.map((doc) => transformCardData(doc));
 
     // Check if there are more cards by trying to get one more
     let hasMore = false;
     if (cardsSnap.docs.length === limit) {
-      // There might be more, so check by getting one more document
+      // If we got exactly the limit, check if there are more
       const lastDoc = cardsSnap.docs[cardsSnap.docs.length - 1];
-      const nextQuery = deckRef.collection("cards").startAfter(lastDoc).limit(1);
+      const nextQuery = deckRef
+        .collection("cards")
+        .startAfter(lastDoc)
+        .limit(1);
       const nextSnap = await nextQuery.get();
       hasMore = nextSnap.docs.length > 0;
     }
@@ -167,37 +166,45 @@ export const getDueDeckCards = onCall(async (request) => {
 
   try {
     const deckRef = db.collection("decks").doc(deckId);
+    const deckSnap = await deckRef.get();
+
+    if (!deckSnap.exists) {
+      throw new Error("Deck not found");
+    }
+
     const cardsSnap = await deckRef.collection("cards").limit(limit).get();
     const now = Date.now();
 
-    const raw = cardsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const raw = cardsSnap.docs.map((doc) => transformCardData(doc));
 
     const due = raw.filter((c: any) => {
       const first = c.firstLearn as any;
       const algo = c.cardAlgo as any;
-      
+
       if (first?.isNew) {
         if (!first?.due) return false;
         // Handle Firestore Timestamp or Date
-        const dueTs = first.due instanceof Date 
-          ? first.due.getTime()
-          : first.due?.toDate 
+        const dueTs =
+          first.due instanceof Date
+            ? first.due.getTime()
+            : first.due?.toDate
             ? first.due.toDate().getTime()
-            : first.due?.seconds 
-              ? first.due.seconds * 1000 + (first.due.nanoseconds || 0) / 1000000
-              : new Date(first.due).getTime();
+            : first.due?.seconds
+            ? first.due.seconds * 1000 + (first.due.nanoseconds || 0) / 1000000
+            : new Date(first.due).getTime();
         return dueTs <= now;
       }
-      
+
       if (!algo?.due) return false;
       // Handle Firestore Timestamp or Date
-      const dueTs = algo.due instanceof Date
-        ? algo.due.getTime()
-        : algo.due?.toDate
+      const dueTs =
+        algo.due instanceof Date
+          ? algo.due.getTime()
+          : algo.due?.toDate
           ? algo.due.toDate().getTime()
           : algo.due?.seconds
-            ? algo.due.seconds * 1000 + (algo.due.nanoseconds || 0) / 1000000
-            : new Date(algo.due).getTime();
+          ? algo.due.seconds * 1000 + (algo.due.nanoseconds || 0) / 1000000
+          : new Date(algo.due).getTime();
       return dueTs <= now;
     });
 
@@ -223,26 +230,48 @@ export const getNewDeckCards = onCall(async (request) => {
 
   try {
     const deckRef = db.collection("decks").doc(deckId);
+    const deckSnap = await deckRef.get();
+
+    if (!deckSnap.exists) {
+      throw new Error("Deck not found");
+    }
+
     const cardsSnap = await deckRef.collection("cards").limit(limit).get();
 
-    const raw = cardsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const raw = cardsSnap.docs.map((doc) => transformCardData(doc));
 
     const candidates = raw.filter((c: any) => {
       const first = c.firstLearn as any;
       const prevAns = (c as any).prevAns;
       const consecutiveGood =
         (c as any).consecutiveGood ?? first?.consecutiveGood ?? 0;
-      return (
-        first?.isNew &&
-        (!first?.due || new Date(first.due).getTime() <= Date.now()) &&
-        !prevAns &&
-        consecutiveGood === 0
-      );
+
+      if (!first?.isNew) return false;
+
+      // Handle Firestore Timestamp for due date
+      let dueTs = Date.now() + 1; // Default to future if no due date
+      if (first?.due) {
+        if (first.due instanceof Date) {
+          dueTs = first.due.getTime();
+        } else if (first.due?.toDate) {
+          dueTs = first.due.toDate().getTime();
+        } else if (first.due?.seconds) {
+          dueTs =
+            first.due.seconds * 1000 + (first.due.nanoseconds || 0) / 1000000;
+        } else {
+          dueTs = new Date(first.due).getTime();
+        }
+      }
+
+      return dueTs <= Date.now() && !prevAns && consecutiveGood === 0;
     });
 
     return { cards: candidates.slice(0, limit) };
   } catch (error) {
     logger.error("Error getting new deck cards", error);
+    if (error instanceof Error && error.message === "Deck not found") {
+      throw error;
+    }
     throw new Error("Failed to get new deck cards");
   }
 });
@@ -270,6 +299,155 @@ export const getPopularDecks = onCall(async (request) => {
   }
 });
 
+/**
+ * User-deck equivalents (operate on users/{userId}/decks/{deckId})
+ */
+export const getUserDeckDetails = onCall(async (request) => {
+  const { userId, deckId } = request.data || {};
+  if (!userId || !deckId) {
+    throw new Error("userId and deckId are required");
+  }
+  try {
+    const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
+    const deckSnap = await deckRef.get();
+    if (!deckSnap.exists) throw new Error("Deck not found");
+    return { deck: { id: deckSnap.id, ...deckSnap.data() } };
+  } catch (error) {
+    logger.error("Error getting user deck details", error);
+    if (error instanceof Error) throw error;
+    throw new Error("Failed to get user deck details");
+  }
+});
+
+export const getUserDeckCards = onCall(async (request) => {
+  const { userId, deckId, limit = 20, startAfter } = request.data || {};
+  if (!userId || !deckId) {
+    throw new Error("userId and deckId are required");
+  }
+  try {
+    const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
+    const deckSnap = await deckRef.get();
+    if (!deckSnap.exists) throw new Error("Deck not found");
+
+    let query = deckRef.collection("cards").limit(limit);
+    if (startAfter) {
+      const startAfterDoc = await deckRef
+        .collection("cards")
+        .doc(startAfter)
+        .get();
+      if (startAfterDoc.exists) {
+        query = query.startAfter(startAfterDoc);
+      }
+    }
+    const cardsSnap = await query.get();
+    const cards = cardsSnap.docs.map((doc) => transformCardData(doc));
+
+    let hasMore = false;
+    if (cardsSnap.docs.length === limit) {
+      const lastDoc = cardsSnap.docs[cardsSnap.docs.length - 1];
+      const nextQuery = deckRef
+        .collection("cards")
+        .startAfter(lastDoc)
+        .limit(1);
+      const nextSnap = await nextQuery.get();
+      hasMore = nextSnap.docs.length > 0;
+    }
+    return {
+      cards,
+      hasMore,
+      lastDocId:
+        cardsSnap.docs.length > 0
+          ? cardsSnap.docs[cardsSnap.docs.length - 1].id
+          : null,
+    };
+  } catch (error) {
+    logger.error("Error getting user deck cards", error);
+    if (error instanceof Error) throw error;
+    throw new Error("Failed to get user deck cards");
+  }
+});
+
+export const getUserDueDeckCards = onCall(async (request) => {
+  const { userId, deckId, limit = 100 } = request.data || {};
+  if (!userId || !deckId) throw new Error("userId and deckId are required");
+  try {
+    const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
+    const deckSnap = await deckRef.get();
+    if (!deckSnap.exists) throw new Error("Deck not found");
+
+    const cardsSnap = await deckRef.collection("cards").limit(limit).get();
+    const now = Date.now();
+    const raw = cardsSnap.docs.map((doc) => transformCardData(doc));
+    const due = raw.filter((c: any) => {
+      const first = c.firstLearn as any;
+      const algo = c.cardAlgo as any;
+      if (first?.isNew) {
+        if (!first?.due) return false;
+        const dueTs =
+          first.due instanceof Date
+            ? first.due.getTime()
+            : first.due?.toDate
+            ? first.due.toDate().getTime()
+            : first.due?.seconds
+            ? first.due.seconds * 1000 + (first.due.nanoseconds || 0) / 1000000
+            : new Date(first.due).getTime();
+        return dueTs <= now;
+      }
+      if (!algo?.due) return false;
+      const dueTs =
+        algo.due instanceof Date
+          ? algo.due.getTime()
+          : algo.due?.toDate
+          ? algo.due.toDate().getTime()
+          : algo.due?.seconds
+          ? algo.due.seconds * 1000 + (algo.due.nanoseconds || 0) / 1000000
+          : new Date(algo.due).getTime();
+      return dueTs <= now;
+    });
+    return { cards: due };
+  } catch (error) {
+    logger.error("Error getting user due deck cards", error);
+    if (error instanceof Error) throw error;
+    throw new Error("Failed to get user due deck cards");
+  }
+});
+
+export const getUserNewDeckCards = onCall(async (request) => {
+  const { userId, deckId, limit = 50 } = request.data || {};
+  if (!userId || !deckId) throw new Error("userId and deckId are required");
+  try {
+    const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
+    const deckSnap = await deckRef.get();
+    if (!deckSnap.exists) throw new Error("Deck not found");
+
+    const cardsSnap = await deckRef.collection("cards").limit(limit).get();
+    const raw = cardsSnap.docs.map((doc) => transformCardData(doc));
+    const candidates = raw.filter((c: any) => {
+      const first = c.firstLearn as any;
+      const prevAns = (c as any).prevAns;
+      const consecutiveGood =
+        (c as any).consecutiveGood ?? first?.consecutiveGood ?? 0;
+      if (!first?.isNew) return false;
+      let dueTs = Date.now() + 1;
+      if (first?.due) {
+        if (first.due instanceof Date) dueTs = first.due.getTime();
+        else if (first.due?.toDate) dueTs = first.due.toDate().getTime();
+        else if (first.due?.seconds) {
+          dueTs =
+            first.due.seconds * 1000 + (first.due.nanoseconds || 0) / 1000000;
+        } else {
+          dueTs = new Date(first.due).getTime();
+        }
+      }
+      return dueTs <= Date.now() && !prevAns && consecutiveGood === 0;
+    });
+    return { cards: candidates.slice(0, limit) };
+  } catch (error) {
+    logger.error("Error getting user new deck cards", error);
+    if (error instanceof Error) throw error;
+    throw new Error("Failed to get user new deck cards");
+  }
+});
 /**
  * Update user stats when deck is modified
  */
@@ -357,17 +535,7 @@ export const resetDeck = onCall(async (request) => {
 
     // Check if user is the creator of the deck
     if (deckData?.createdBy !== userId) {
-      // Also check if deck is in user's decks list
-      const userRef = db.doc(`users/${userId}`);
-      const userSnap = await userRef.get();
-      const userData = userSnap.data();
-      const userDecks = userData?.decks || [];
-
-      if (!userDecks.includes(deckId)) {
-        throw new Error(
-          "Unauthorized: You don't have permission to reset this deck"
-        );
-      }
+      throw new Error("User does not have permission");
     }
 
     const cardsRef = deckRef.collection("cards");
@@ -461,17 +629,7 @@ export const updateDeckSettings = onCall(async (request) => {
 
     // Check if user is the creator of the deck
     if (deckData?.createdBy !== userId) {
-      // Also check if deck is in user's decks list
-      const userRef = db.doc(`users/${userId}`);
-      const userSnap = await userRef.get();
-      const userData = userSnap.data();
-      const userDecks = userData?.decks || [];
-
-      if (!userDecks.includes(deckId)) {
-        throw new Error(
-          "Unauthorized: You don't have permission to update this deck"
-        );
-      }
+      throw new Error("User does not have permission");
     }
 
     // Update deck settings
@@ -492,5 +650,92 @@ export const updateDeckSettings = onCall(async (request) => {
       throw error;
     }
     throw new Error("Failed to update deck settings");
+  }
+});
+
+/**
+ * Copy a public deck into user's personal space to track individual progress
+ * Source: decks/{deckId}
+ * Target: users/{userId}/decks/{deckId} + cards
+ */
+export const startLearningDeck = onCall(async (request) => {
+  const { userId, deckId } = request.data || {};
+
+  if (!userId || !deckId) {
+    throw new Error("userId and deckId are required");
+  }
+
+  try {
+    // Verify source deck exists
+    const srcDeckRef = db.collection("decks").doc(deckId);
+    const srcDeckSnap = await srcDeckRef.get();
+    if (!srcDeckSnap.exists) {
+      throw new Error("Deck not found");
+    }
+
+    const srcDeck = srcDeckSnap.data() || {};
+
+    // Create target user deck document (use same deckId for easier mapping)
+    const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
+    const userDeckSnap = await userDeckRef.get();
+
+    // If already exists, do not duplicate; return ok
+    if (!userDeckSnap.exists) {
+      await userDeckRef.set({
+        title: srcDeck.title,
+        sourceDeckId: deckId,
+        createdAt: new Date(),
+        createdBy: srcDeck.createdBy || null,
+        isPublic: false,
+        cardsNum: srcDeck.cardsNum || 0,
+      });
+
+      // Copy cards in batches (max 500 writes per batch)
+      const cardsSnap = await srcDeckRef.collection("cards").get();
+      if (!cardsSnap.empty) {
+        let batch = db.batch();
+        let opCount = 0;
+
+        for (const cardDoc of cardsSnap.docs) {
+          const data = cardDoc.data() as CardData & Record<string, unknown>;
+          const tgtCardRef = userDeckRef.collection("cards").doc(cardDoc.id);
+          batch.set(tgtCardRef, {
+            front: data.front,
+            back: data.back,
+            tags: Array.isArray((data as any).tags) ? (data as any).tags : [],
+            // initialize learning progress for user
+            grade: -1,
+            difficulty: 2.5,
+            nextReviewInterval: 1,
+            firstLearn: {
+              isNew: true,
+              due: new Date(),
+              state: 0,
+              consecutiveGood: 0,
+            },
+            createdAt: new Date(),
+          });
+          opCount++;
+          if (opCount >= 450) {
+            await batch.commit();
+            batch = db.batch();
+            opCount = 0;
+          }
+        }
+
+        if (opCount > 0) {
+          await batch.commit();
+        }
+      }
+    }
+
+    logger.info("Deck copied to user space", { userId, deckId });
+    return { success: true };
+  } catch (error) {
+    logger.error("Error starting learning deck", error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("Failed to start learning deck");
   }
 });
