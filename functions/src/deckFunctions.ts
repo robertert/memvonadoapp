@@ -86,6 +86,9 @@ export const getDeckDetails = onCall(async (request) => {
     };
   } catch (error) {
     logger.error("Error getting deck details", error);
+    if (error instanceof Error && error.message === "Deck not found") {
+      throw error;
+    }
     throw new Error("Failed to get deck details");
   }
 });
@@ -123,9 +126,19 @@ export const getDeckCards = onCall(async (request) => {
     const cardsSnap = await query.get();
     const cards = cardsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
+    // Check if there are more cards by trying to get one more
+    let hasMore = false;
+    if (cardsSnap.docs.length === limit) {
+      // There might be more, so check by getting one more document
+      const lastDoc = cardsSnap.docs[cardsSnap.docs.length - 1];
+      const nextQuery = deckRef.collection("cards").startAfter(lastDoc).limit(1);
+      const nextSnap = await nextQuery.get();
+      hasMore = nextSnap.docs.length > 0;
+    }
+
     return {
       cards,
-      hasMore: cardsSnap.docs.length === limit,
+      hasMore,
       lastDocId:
         cardsSnap.docs.length > 0
           ? cardsSnap.docs[cardsSnap.docs.length - 1].id
@@ -133,6 +146,9 @@ export const getDeckCards = onCall(async (request) => {
     };
   } catch (error) {
     logger.error("Error getting deck cards", error);
+    if (error instanceof Error && error.message === "Deck not found") {
+      throw error;
+    }
     throw new Error("Failed to get deck cards");
   }
 });
@@ -159,19 +175,38 @@ export const getDueDeckCards = onCall(async (request) => {
     const due = raw.filter((c: any) => {
       const first = c.firstLearn as any;
       const algo = c.cardAlgo as any;
-      const dueTs = first?.isNew
-        ? first?.due
-          ? new Date(first.due).getTime()
-          : 0
-        : algo?.due
-        ? new Date(algo.due).getTime()
-        : 0;
+      
+      if (first?.isNew) {
+        if (!first?.due) return false;
+        // Handle Firestore Timestamp or Date
+        const dueTs = first.due instanceof Date 
+          ? first.due.getTime()
+          : first.due?.toDate 
+            ? first.due.toDate().getTime()
+            : first.due?.seconds 
+              ? first.due.seconds * 1000 + (first.due.nanoseconds || 0) / 1000000
+              : new Date(first.due).getTime();
+        return dueTs <= now;
+      }
+      
+      if (!algo?.due) return false;
+      // Handle Firestore Timestamp or Date
+      const dueTs = algo.due instanceof Date
+        ? algo.due.getTime()
+        : algo.due?.toDate
+          ? algo.due.toDate().getTime()
+          : algo.due?.seconds
+            ? algo.due.seconds * 1000 + (algo.due.nanoseconds || 0) / 1000000
+            : new Date(algo.due).getTime();
       return dueTs <= now;
     });
 
     return { cards: due };
   } catch (error) {
     logger.error("Error getting due deck cards", error);
+    if (error instanceof Error && error.message === "Deck not found") {
+      throw error;
+    }
     throw new Error("Failed to get due deck cards");
   }
 });
@@ -393,5 +428,69 @@ export const resetDeck = onCall(async (request) => {
       throw error;
     }
     throw new Error("Failed to reset deck progress");
+  }
+});
+
+/**
+ * Update deck settings
+ */
+export const updateDeckSettings = onCall(async (request) => {
+  const { deckId, settings } = request.data || {};
+  const auth = request.auth;
+
+  if (!deckId || !settings) {
+    throw new Error("deckId and settings are required");
+  }
+
+  if (!auth) {
+    throw new Error("Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  try {
+    // Verify user owns the deck
+    const deckRef = db.collection("decks").doc(deckId);
+    const deckSnap = await deckRef.get();
+
+    if (!deckSnap.exists) {
+      throw new Error("Deck not found");
+    }
+
+    const deckData = deckSnap.data();
+
+    // Check if user is the creator of the deck
+    if (deckData?.createdBy !== userId) {
+      // Also check if deck is in user's decks list
+      const userRef = db.doc(`users/${userId}`);
+      const userSnap = await userRef.get();
+      const userData = userSnap.data();
+      const userDecks = userData?.decks || [];
+
+      if (!userDecks.includes(deckId)) {
+        throw new Error(
+          "Unauthorized: You don't have permission to update this deck"
+        );
+      }
+    }
+
+    // Update deck settings
+    await deckRef.update({
+      settings: settings,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    logger.info("Deck settings updated successfully", {
+      deckId,
+      userId,
+    });
+
+    return { success: true };
+  } catch (error) {
+    logger.error("Error updating deck settings", error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("Failed to update deck settings");
   }
 });
