@@ -14,12 +14,14 @@ module.exports = {
   ],
   parser: "@typescript-eslint/parser",
   parserOptions: {
-    project: ["tsconfig.json", "tsconfig.dev.json"],
     sourceType: "module",
+    // Nie ustawiamy project tutaj - tylko w overrides dla .ts
   },
   ignorePatterns: [
     "/lib/**/*", // Ignore built files.
     "/generated/**/*", // Ignore generated files.
+    "__tests__/**",
+    "jest.config.js",
   ],
   plugins: ["@typescript-eslint", "import"],
   rules: {
@@ -35,5 +37,22 @@ module.exports = {
     "comma-dangle": "off",
     semi: "off",
     "quote-props": "off", // Wyłączamy sprawdzanie spójności cudzysłowów w nazwach właściwości
+    "import/no-commonjs": "off", // Wyłączamy ostrzeżenie o CommonJS dla pliku konfiguracyjnego
   },
+  overrides: [
+    {
+      files: ["*.ts"],
+      parserOptions: {
+        project: ["tsconfig.json"],
+      },
+    },
+    {
+      files: ["*.js", ".eslintrc.js", "jest.config.js"],
+      parser: "espree", // Domyślny parser ESLint dla JS (bez TypeScript)
+      parserOptions: {
+        ecmaVersion: 2020,
+        sourceType: "module",
+      },
+    },
+  ],
 };

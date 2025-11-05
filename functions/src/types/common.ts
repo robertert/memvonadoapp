@@ -2,6 +2,32 @@
  * Common types used across Cloud Functions
  */
 
+export interface DeckData {
+  id: string;
+  title: string;
+  category: string;
+  views: number;
+  likes: number;
+  cardsNum: number;
+  createdBy: string;
+  createdAt: Date;
+  isPublic: boolean;
+  settings: object;
+}
+
+export interface DeckLearningData {
+  id: string;
+  title: string;
+  category: string;
+  cardsNum: number;
+  zenMode?: boolean;
+  dueCardsNumPerDay?: number;
+  newCardsNumPerDay?: number;
+  todoCardsNum: number;
+  doneCardsNum: number;
+  lastReviewDate?: Date;
+}
+
 export interface CardData {
   front: string;
   back: string;

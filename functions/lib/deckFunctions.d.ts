@@ -43,6 +43,25 @@ export declare const getPopularDecks: import("firebase-functions/v2/https").Call
     }[];
 }>, unknown>;
 /**
+ * User-deck equivalents (operate on users/{userId}/decks/{deckId})
+ */
+export declare const getUserDeckDetails: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    deck: {
+        id: string;
+    };
+}>, unknown>;
+export declare const getUserDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    cards: any[];
+    hasMore: boolean;
+    lastDocId: string | null;
+}>, unknown>;
+export declare const getUserDueDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    cards: any[];
+}>, unknown>;
+export declare const getUserNewDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    cards: any[];
+}>, unknown>;
+/**
  * Update user stats when deck is modified
  */
 export declare const updateUserStats: import("firebase-functions/core").CloudFunction<import("firebase-functions/v2/firestore").FirestoreEvent<import("firebase-functions/v2/firestore").Change<import("firebase-functions/v2/firestore").DocumentSnapshot> | undefined, {
@@ -60,5 +79,13 @@ export declare const resetDeck: import("firebase-functions/v2/https").CallableFu
  * Update deck settings
  */
 export declare const updateDeckSettings: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+}>, unknown>;
+/**
+ * Copy a public deck into user's personal space to track individual progress
+ * Source: decks/{deckId}
+ * Target: users/{userId}/decks/{deckId} + cards
+ */
+export declare const startLearningDeck: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
 }>, unknown>;

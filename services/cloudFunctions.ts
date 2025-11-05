@@ -4,28 +4,9 @@ import {
   connectFunctionsEmulator,
 } from "firebase/functions";
 import { app } from "../firebase";
-import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
+import { Platform } from "react-native";
 
 const functions = getFunctions(app, "europe-west1");
-
-// Connect to emulator if in development mode
-// Check if we're running in development (React Native doesn't have __DEV__ in all contexts)
-const isDev = true;
-
-if (isDev) {
-  try {
-    // Only connect once - check if already connected by trying to access internal state
-    // If connection fails, it's likely already connected or emulator isn't running
-    connectFunctionsEmulator(functions, "127.0.0.1", 5001);
-    connectFirestoreEmulator(getFirestore(app), "127.0.0.1", 8080);
-    console.log("Connected to Functions emulator at 127.0.0.1:5001");
-  } catch (error: any) {
-    // Already connected or emulator not available - this is expected in some cases
-    if (error?.message && !error.message.includes("already connected")) {
-      console.log("Functions emulator not available or already connected");
-    }
-  }
-}
 
 // Types for Cloud Functions
 export interface SearchFilters {

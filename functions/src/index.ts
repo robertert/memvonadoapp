@@ -45,8 +45,6 @@ export {
   updateUserStats,
   getDeckDetails,
   getDeckCards,
-  getDueDeckCards,
-  getNewDeckCards,
   getPopularDecks,
   resetDeck,
   updateDeckSettings,

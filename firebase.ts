@@ -15,6 +15,7 @@ import {
   connectFirestoreEmulator,
 } from "firebase/firestore";
 import Constants from "expo-constants";
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 
 const firebaseConfig = {
   apiKey: Constants.expoConfig?.extra?.FIREBASE_API_KEY,
@@ -65,5 +66,50 @@ export const storage: FirebaseStorage = getStorage(app);
 export const db: Firestore = getFirestore(app);
 export { app };
 
-//connectFirestoreEmulator(getFirestore(), "127.0.0.1", 8080);
-//connectStorageEmulator(getStorage(), "127.0.0.1", 9199);
+// Connect to emulators only in development mode and only if available
+// Use lazy connection to avoid crashes if emulator isn't running
+let emulatorsConnected = false;
+
+const connectToEmulators = () => {
+  if (emulatorsConnected) return;
+
+  // Only connect in development mode
+  const isDev = false;
+
+  if (!isDev) return;
+
+  try {
+    // Use localhost for iOS simulator, 127.0.0.1 for Android
+    const host = Platform.OS === "ios" ? "localhost" : "127.0.0.1";
+
+    // Connect Firestore emulator
+    try {
+      connectFirestoreEmulator(db, host, 8080);
+    } catch (error: any) {
+      // Already connected or not available - ignore
+      if (!error?.message?.includes("already connected")) {
+        console.log("Firestore emulator not available");
+      }
+    }
+
+    // Connect Functions emulator
+    try {
+      const functions = getFunctions(app, "europe-west1");
+      connectFunctionsEmulator(functions, host, 5001);
+    } catch (error: any) {
+      // Already connected or not available - ignore
+      if (!error?.message?.includes("already connected")) {
+        console.log("Functions emulator not available");
+      }
+    }
+
+    emulatorsConnected = true;
+  } catch (error) {
+    // Silently fail if emulators aren't available
+    console.log("Emulators not available");
+  }
+};
+
+// Connect emulators on first use (lazy initialization)
+// Call this when needed, not at module load time
+export const connectEmulatorsIfNeeded = connectToEmulators;

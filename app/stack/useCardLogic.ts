@@ -105,10 +105,13 @@ export function useCardLogic(id: string) {
       if (userCtx.id && card.id) {
         // Only save firstLearn during first repetitions, don't save cardAlgo yet
         if (card.firstLearn?.isNew) {
-          // Just update firstLearn, don't touch cardAlgo during first repetitions
-          const cardRef = doc(db, `decks/${id}/cards/${card.id}`);
+          // Just update firstLearn in cardProgress (lazy copying)
+          const progressRef = doc(
+            db,
+            `users/${userCtx.id}/decks/${id}/cardProgress/${card.id}`
+          );
           await setDoc(
-            cardRef,
+            progressRef,
             {
               firstLearn: card.firstLearn,
             },
@@ -378,6 +381,11 @@ export function useCardLogic(id: string) {
         };
 
         // Server-side: fetch due FSRS + due firstLearn + new candidates from user deck
+        console.log("Fetching due and new cards");
+        console.log("dailyGoal", dailyGoal);
+        console.log("dailyNew", dailyNew);
+        console.log("userCtx.id", userCtx.id);
+        console.log("id", id);
         const [dueRes, newRes] = await Promise.all([
           cloudFunctions.getUserDueDeckCards(
             userCtx.id!,
@@ -386,7 +394,10 @@ export function useCardLogic(id: string) {
           ),
           cloudFunctions.getUserNewDeckCards(userCtx.id!, id, dailyNew * 3),
         ]);
-        const cards = [...(dueRes.cards || []), ...(newRes.cards || [])];
+
+        // Backend already filtered:
+        // - dueRes.cards: all due cards (FSRS + firstLearn due)
+        // - newRes.cards: new candidates (isNew: true, consecutiveGood: 0, prevAns: null)
 
         // Prepare FSRS base card for safe defaults
         const baseAlgo = {
@@ -401,8 +412,8 @@ export function useCardLogic(id: string) {
           due: Date.now(),
         };
 
-        // Transform ALL fetched cards first (we'll partition after)
-        const transformedCardsAll = (cards || []).map((card: any) => {
+        // Helper function to transform card data
+        const transformCard = (card: any) => {
           const algo = card.cardAlgo || {};
           const first = card.firstLearn;
           const dueTs = first?.isNew
@@ -444,53 +455,34 @@ export function useCardLogic(id: string) {
           const isNew =
             fullAlgo.reps === 0 || fullAlgo.state === 0 || !card.lastReviewDate;
 
-          // Get firstLearn from card if it exists, otherwise initialize
           const firstLearn = card.firstLearn || {
             isNew,
             state: fullAlgo.state,
-            consecutiveGood: 0, // Inicjalizujemy licznik dobrych odpowiedzi pod rząd
+            consecutiveGood: 0,
           };
 
           return {
             id: card.id,
-            cardData: card.cardData || card, // keep original content
+            cardData: card.cardData || card,
             firstLearn: firstLearn,
             cardAlgo: fullAlgo,
             grade: card.grade ?? 0,
             difficulty: fullAlgo.difficulty,
             interval: card.nextReviewInterval ?? fullAlgo.scheduled_days ?? 1,
           };
-        });
+        };
 
-        const nowMs = Date.now();
-        // Partition into FSRS due, firstLearn due (already introduced), and brand new introductions
-        const fsrsDue = transformedCardsAll.filter(
-          (c: any) =>
-            !c.firstLearn?.isNew &&
-            (c.cardAlgo?.due ? new Date(c.cardAlgo.due).getTime() : 0) <= nowMs
-        );
+        // Transform due cards (already filtered by backend)
+        const transformedDue = (dueRes.cards || []).map(transformCard);
 
-        const firstLearnDue = transformedCardsAll.filter(
-          (c: any) =>
-            c.firstLearn?.isNew &&
-            c.firstLearn?.due &&
-            new Date(c.firstLearn.due).getTime() <= nowMs
-        );
+        // Transform new cards and limit to dailyNew (already filtered by backend)
+        const transformedNew = (newRes.cards || [])
+          .slice(0, dailyNew)
+          .map(transformCard);
 
-        const newCandidates = transformedCardsAll.filter(
-          (c: any) =>
-            c.firstLearn?.isNew &&
-            (!c.firstLearn?.due ||
-              new Date(c.firstLearn.due).getTime() <= nowMs) &&
-            (c.consecutiveGood ?? c.firstLearn?.consecutiveGood ?? 0) === 0 &&
-            c.prevAns == null
-        );
-
-        const introductions = newCandidates.slice(0, dailyNew);
-
-        // Merge and deduplicate
+        // Merge and deduplicate (in case same card appears in both)
         const mapById: Record<string, any> = {};
-        [...fsrsDue, ...firstLearnDue, ...introductions].forEach((c: any) => {
+        [...transformedDue, ...transformedNew].forEach((c: any) => {
           mapById[c.id] = c;
         });
         const sessionCards = Object.values(mapById) as any[];

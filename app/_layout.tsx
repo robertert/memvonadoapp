@@ -15,13 +15,33 @@ import * as SplashScreen from "expo-splash-screen";
 import { useFonts, loadAsync } from "expo-font";
 import UserContextProvider from "../store/user-context";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../firebase";
+import { auth, connectEmulatorsIfNeeded } from "../firebase";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { PLACEHOLDER_MODE, PLACEHOLDER_SEEDED_KEY } from "../constants/flags";
+import { cloudFunctions } from "../services/cloudFunctions";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout(): React.JSX.Element | null {
-  onAuthStateChanged(auth, (user) => {
+  // Connect to emulators in development mode
+  useEffect(() => {
+    connectEmulatorsIfNeeded();
+  }, []);
+
+  onAuthStateChanged(auth, async (user) => {
     if (user) {
+      // Jednorazowe zasilenie danych placeholder dla demo
+      if (PLACEHOLDER_MODE) {
+        try {
+          const seeded = await AsyncStorage.getItem(PLACEHOLDER_SEEDED_KEY);
+          if (!seeded) {
+            await cloudFunctions.addPlaceholderData(user.uid, true);
+            await AsyncStorage.setItem(PLACEHOLDER_SEEDED_KEY, "1");
+          }
+        } catch (e) {
+          // ciche pominięcie błędów w trybie demo
+        }
+      }
       router.replace("../tabs");
     }
   });

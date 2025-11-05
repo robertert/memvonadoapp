@@ -21,6 +21,8 @@ import { UserContext } from "../../store/user-context";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { BellIcon, FireIcon, LanguageIcon } from "react-native-heroicons/solid";
 import PieChart from "../../ui/CustomPieChart";
+import { PLACEHOLDER_MODE } from "../../constants/flags";
+import { placeholderDecks } from "../../constants/placeholderData";
 
 interface Deck {
   id: string;
@@ -48,8 +50,19 @@ export default function decksScreen(): React.JSX.Element {
   async function fetchDecks(): Promise<void> {
     try {
       setIsLoading(true);
-
-      if (userCtx.id) {
+      if (PLACEHOLDER_MODE || !userCtx.id) {
+        // Tryb placeholder lub brak użytkownika: pokaż deki demo
+        setDecks(
+          placeholderDecks.map((d) => ({
+            id: d.id,
+            title: d.title,
+            views: d.views || 0,
+            likes: d.likes || 0,
+            saved: false,
+          }))
+        );
+        setPinned([]);
+      } else if (userCtx.id) {
         // Get user progress and statistics from Cloud Function
         const [userProgress, userDecks] = await Promise.all([
           cloudFunctions.getUserProgress(userCtx.id),
@@ -83,7 +96,21 @@ export default function decksScreen(): React.JSX.Element {
       setIsLoading(false);
     } catch (e) {
       console.log(e);
-      Alert.alert("Error", "Try again later");
+      // W trybie demo pokaż placeholdery zamiast błędu
+      if (PLACEHOLDER_MODE) {
+        setDecks(
+          placeholderDecks.map((d) => ({
+            id: d.id,
+            title: d.title,
+            views: d.views || 0,
+            likes: d.likes || 0,
+            saved: false,
+          }))
+        );
+        setPinned([]);
+      } else {
+        Alert.alert("Error", "Try again later");
+      }
       setIsLoading(false);
     }
   }

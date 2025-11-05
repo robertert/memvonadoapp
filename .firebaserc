@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "memvocado-69c67"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

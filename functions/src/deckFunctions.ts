@@ -2,7 +2,12 @@ import { onCall } from "firebase-functions/v2/https";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue, WriteBatch } from "firebase-admin/firestore";
-import { CardData, transformCardData } from "./types/common";
+import {
+  CardData,
+  DeckData,
+  DeckLearningData,
+  transformCardData,
+} from "./types/common";
 
 const db = getFirestore();
 
@@ -78,7 +83,7 @@ export const getDeckDetails = onCall(async (request) => {
     const deckData = deckSnap.data() || {};
 
     return {
-      deck: { id: deckSnap.id, ...deckData },
+      deck: { id: deckSnap.id, ...deckData } as DeckData,
     };
   } catch (error) {
     logger.error("Error getting deck details", error);
@@ -153,130 +158,6 @@ export const getDeckCards = onCall(async (request) => {
 });
 
 /**
- * Get due cards for a deck (server-side filtering)
- * - Returns FSRS due cards (cardAlgo.due <= now)
- * - Returns firstLearn due cards (firstLearn.isNew && firstLearn.due <= now)
- */
-export const getDueDeckCards = onCall(async (request) => {
-  const { deckId, limit = 100 } = request.data || {};
-
-  if (!deckId) {
-    throw new Error("deckId is required");
-  }
-
-  try {
-    const deckRef = db.collection("decks").doc(deckId);
-    const deckSnap = await deckRef.get();
-
-    if (!deckSnap.exists) {
-      throw new Error("Deck not found");
-    }
-
-    const cardsSnap = await deckRef.collection("cards").limit(limit).get();
-    const now = Date.now();
-
-    const raw = cardsSnap.docs.map((doc) => transformCardData(doc));
-
-    const due = raw.filter((c: any) => {
-      const first = c.firstLearn as any;
-      const algo = c.cardAlgo as any;
-
-      if (first?.isNew) {
-        if (!first?.due) return false;
-        // Handle Firestore Timestamp or Date
-        const dueTs =
-          first.due instanceof Date
-            ? first.due.getTime()
-            : first.due?.toDate
-            ? first.due.toDate().getTime()
-            : first.due?.seconds
-            ? first.due.seconds * 1000 + (first.due.nanoseconds || 0) / 1000000
-            : new Date(first.due).getTime();
-        return dueTs <= now;
-      }
-
-      if (!algo?.due) return false;
-      // Handle Firestore Timestamp or Date
-      const dueTs =
-        algo.due instanceof Date
-          ? algo.due.getTime()
-          : algo.due?.toDate
-          ? algo.due.toDate().getTime()
-          : algo.due?.seconds
-          ? algo.due.seconds * 1000 + (algo.due.nanoseconds || 0) / 1000000
-          : new Date(algo.due).getTime();
-      return dueTs <= now;
-    });
-
-    return { cards: due };
-  } catch (error) {
-    logger.error("Error getting due deck cards", error);
-    if (error instanceof Error && error.message === "Deck not found") {
-      throw error;
-    }
-    throw new Error("Failed to get due deck cards");
-  }
-});
-
-/**
- * Get new candidate cards (firstLearn.isNew && not yet introduced this session)
- */
-export const getNewDeckCards = onCall(async (request) => {
-  const { deckId, limit = 50 } = request.data || {};
-
-  if (!deckId) {
-    throw new Error("deckId is required");
-  }
-
-  try {
-    const deckRef = db.collection("decks").doc(deckId);
-    const deckSnap = await deckRef.get();
-
-    if (!deckSnap.exists) {
-      throw new Error("Deck not found");
-    }
-
-    const cardsSnap = await deckRef.collection("cards").limit(limit).get();
-
-    const raw = cardsSnap.docs.map((doc) => transformCardData(doc));
-
-    const candidates = raw.filter((c: any) => {
-      const first = c.firstLearn as any;
-      const prevAns = (c as any).prevAns;
-      const consecutiveGood =
-        (c as any).consecutiveGood ?? first?.consecutiveGood ?? 0;
-
-      if (!first?.isNew) return false;
-
-      // Handle Firestore Timestamp for due date
-      let dueTs = Date.now() + 1; // Default to future if no due date
-      if (first?.due) {
-        if (first.due instanceof Date) {
-          dueTs = first.due.getTime();
-        } else if (first.due?.toDate) {
-          dueTs = first.due.toDate().getTime();
-        } else if (first.due?.seconds) {
-          dueTs =
-            first.due.seconds * 1000 + (first.due.nanoseconds || 0) / 1000000;
-        } else {
-          dueTs = new Date(first.due).getTime();
-        }
-      }
-
-      return dueTs <= Date.now() && !prevAns && consecutiveGood === 0;
-    });
-
-    return { cards: candidates.slice(0, limit) };
-  } catch (error) {
-    logger.error("Error getting new deck cards", error);
-    if (error instanceof Error && error.message === "Deck not found") {
-      throw error;
-    }
-    throw new Error("Failed to get new deck cards");
-  }
-});
-
-/**
  * Get popular public decks
  */
 export const getPopularDecks = onCall(async (request) => {
@@ -290,7 +171,9 @@ export const getPopularDecks = onCall(async (request) => {
       .limit(limit)
       .get();
 
-    const decks = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const decks = snapshot.docs.map(
+      (doc) => ({ id: doc.id, ...doc.data() } as DeckData)
+    );
 
     return { decks };
   } catch (error) {
@@ -311,7 +194,7 @@ export const getUserDeckDetails = onCall(async (request) => {
     const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
     const deckSnap = await deckRef.get();
     if (!deckSnap.exists) throw new Error("Deck not found");
-    return { deck: { id: deckSnap.id, ...deckSnap.data() } };
+    return { deck: { id: deckSnap.id, ...deckSnap.data() } as DeckData };
   } catch (error) {
     logger.error("Error getting user deck details", error);
     if (error instanceof Error) throw error;
@@ -325,13 +208,16 @@ export const getUserDeckCards = onCall(async (request) => {
     throw new Error("userId and deckId are required");
   }
   try {
-    const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
-    const deckSnap = await deckRef.get();
-    if (!deckSnap.exists) throw new Error("Deck not found");
+    // Verify user deck exists
+    const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
+    const userDeckSnap = await userDeckRef.get();
+    if (!userDeckSnap.exists) throw new Error("Deck not found");
 
-    let query = deckRef.collection("cards").limit(limit);
+    // Get source deck cards with pagination
+    const sourceDeckRef = db.collection("decks").doc(deckId);
+    let query = sourceDeckRef.collection("cards").limit(limit);
     if (startAfter) {
-      const startAfterDoc = await deckRef
+      const startAfterDoc = await sourceDeckRef
         .collection("cards")
         .doc(startAfter)
         .get();
@@ -340,12 +226,15 @@ export const getUserDeckCards = onCall(async (request) => {
       }
     }
     const cardsSnap = await query.get();
-    const cards = cardsSnap.docs.map((doc) => transformCardData(doc));
 
+    // Join with progress
+    const cards = await joinCardsWithProgress(userId, deckId, cardsSnap.docs);
+
+    // Check if there are more cards
     let hasMore = false;
     if (cardsSnap.docs.length === limit) {
       const lastDoc = cardsSnap.docs[cardsSnap.docs.length - 1];
-      const nextQuery = deckRef
+      const nextQuery = sourceDeckRef
         .collection("cards")
         .startAfter(lastDoc)
         .limit(1);
@@ -366,6 +255,58 @@ export const getUserDeckCards = onCall(async (request) => {
     throw new Error("Failed to get user deck cards");
   }
 });
+
+/**
+ * Helper: Join card content from source deck with user progress (lazy)
+ * @param {string} userId - User ID
+ * @param {string} deckId - Deck ID
+ * @param {FirebaseFirestore.QueryDocumentSnapshot[]} sourceCards - Source card documents
+ * @return {Promise<any[]>} Joined cards with progress
+ */
+async function joinCardsWithProgress(
+  userId: string,
+  deckId: string,
+  sourceCards: FirebaseFirestore.QueryDocumentSnapshot[]
+): Promise<any[]> {
+  const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
+  const progressRef = userDeckRef.collection("cardProgress");
+
+  // Get all progress documents for these cards in parallel
+  const progressPromises = sourceCards.map((cardDoc) =>
+    progressRef.doc(cardDoc.id).get()
+  );
+  const progressDocs = await Promise.all(progressPromises);
+
+  // Join content with progress
+  return sourceCards.map((cardDoc, idx) => {
+    const cardData = cardDoc.data();
+    const progressDoc = progressDocs[idx];
+    const progress = progressDoc.exists ? progressDoc.data() : null;
+
+    // Default progress for new cards
+    const defaultFirstLearn = {
+      isNew: true,
+      due: new Date(),
+      state: 0,
+      consecutiveGood: 0,
+    };
+
+    return {
+      id: cardDoc.id,
+      cardData: {
+        front: cardData.front || "",
+        back: cardData.back || "",
+        tags: cardData.tags || [],
+      },
+      cardAlgo: progress?.cardAlgo || undefined,
+      firstLearn: progress?.firstLearn || defaultFirstLearn,
+      grade: progress?.grade ?? -1,
+      difficulty: progress?.difficulty ?? 2.5,
+      nextReviewInterval: progress?.nextReviewInterval ?? 1,
+      lastReviewDate: progress?.lastReviewDate || undefined,
+    };
+  });
+}
 
 export const getUserDueDeckCards = onCall(async (request) => {
   const { userId, deckId, limit = 100 } = request.data || {};
@@ -416,17 +357,30 @@ export const getUserNewDeckCards = onCall(async (request) => {
   const { userId, deckId, limit = 50 } = request.data || {};
   if (!userId || !deckId) throw new Error("userId and deckId are required");
   try {
-    const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
-    const deckSnap = await deckRef.get();
-    if (!deckSnap.exists) throw new Error("Deck not found");
+    // Verify user deck exists
+    const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
+    const userDeckSnap = await userDeckRef.get();
+    if (!userDeckSnap.exists) throw new Error("Deck not found");
 
-    const cardsSnap = await deckRef.collection("cards").limit(limit).get();
-    const raw = cardsSnap.docs.map((doc) => transformCardData(doc));
-    const candidates = raw.filter((c: any) => {
+    // Get source deck cards (all cards from original deck)
+    const sourceDeckRef = db.collection("decks").doc(deckId);
+    const sourceCardsSnap = await sourceDeckRef
+      .collection("cards")
+      .limit(limit * 3)
+      .get();
+
+    // Join with progress
+    const joinedCards = await joinCardsWithProgress(
+      userId,
+      deckId,
+      sourceCardsSnap.docs
+    );
+
+    // Filter new candidates (isNew: true, consecutiveGood: 0, no prevAns)
+    const candidates = joinedCards.filter((c: any) => {
       const first = c.firstLearn as any;
       const prevAns = (c as any).prevAns;
-      const consecutiveGood =
-        (c as any).consecutiveGood ?? first?.consecutiveGood ?? 0;
+      const consecutiveGood = first?.consecutiveGood ?? 0;
       if (!first?.isNew) return false;
       let dueTs = Date.now() + 1;
       if (first?.due) {
@@ -673,7 +627,7 @@ export const startLearningDeck = onCall(async (request) => {
       throw new Error("Deck not found");
     }
 
-    const srcDeck = srcDeckSnap.data() || {};
+    const srcDeck = (srcDeckSnap.data() as DeckData) || {};
 
     // Create target user deck document (use same deckId for easier mapping)
     const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
@@ -683,50 +637,18 @@ export const startLearningDeck = onCall(async (request) => {
     if (!userDeckSnap.exists) {
       await userDeckRef.set({
         title: srcDeck.title,
-        sourceDeckId: deckId,
-        createdAt: new Date(),
+        id: deckId,
+        createdAt: srcDeck.createdAt || new Date(),
         createdBy: srcDeck.createdBy || null,
-        isPublic: false,
         cardsNum: srcDeck.cardsNum || 0,
-      });
-
-      // Copy cards in batches (max 500 writes per batch)
-      const cardsSnap = await srcDeckRef.collection("cards").get();
-      if (!cardsSnap.empty) {
-        let batch = db.batch();
-        let opCount = 0;
-
-        for (const cardDoc of cardsSnap.docs) {
-          const data = cardDoc.data() as CardData & Record<string, unknown>;
-          const tgtCardRef = userDeckRef.collection("cards").doc(cardDoc.id);
-          batch.set(tgtCardRef, {
-            front: data.front,
-            back: data.back,
-            tags: Array.isArray((data as any).tags) ? (data as any).tags : [],
-            // initialize learning progress for user
-            grade: -1,
-            difficulty: 2.5,
-            nextReviewInterval: 1,
-            firstLearn: {
-              isNew: true,
-              due: new Date(),
-              state: 0,
-              consecutiveGood: 0,
-            },
-            createdAt: new Date(),
-          });
-          opCount++;
-          if (opCount >= 450) {
-            await batch.commit();
-            batch = db.batch();
-            opCount = 0;
-          }
-        }
-
-        if (opCount > 0) {
-          await batch.commit();
-        }
-      }
+        category: srcDeck.category || "",
+        todoCardsNum: 0,
+        doneCardsNum: 0,
+        lastReviewDate: undefined,
+        dueCardsNumPerDay: undefined,
+        newCardsNumPerDay: undefined,
+        zenMode: false,
+      } as DeckLearningData);
     }
 
     logger.info("Deck copied to user space", { userId, deckId });

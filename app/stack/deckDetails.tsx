@@ -20,6 +20,11 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
 import { cloudFunctions } from "../../services/cloudFunctions";
+import { PLACEHOLDER_MODE } from "../../constants/flags";
+import {
+  placeholderDecks,
+  placeholderCards,
+} from "../../constants/placeholderData";
 import {
   ArrowLeftIcon,
   EyeIcon,
@@ -115,39 +120,75 @@ export default function deckDetails(): React.JSX.Element {
       setCards([]);
       setLastDocId(null);
       setHasMoreCards(true);
+      if (PLACEHOLDER_MODE) {
+        const pd = placeholderDecks[0];
+        setDeck({
+          id: pd.id,
+          title: pd.title,
+          views: pd.views || 0,
+          likes: (pd as any).likes || 0,
+          cards: pd.cardsNum || placeholderCards.length,
+          userId: pd.createdBy,
+          userName: "DemoUser",
+          done: 12,
+          today: 8,
+          new: 5,
+        });
+        setCards(placeholderCards as unknown as Card[]);
+        setHasMoreCards(false);
+        setLastDocId(null);
+      } else {
+        // Get deck details first
+        const { deck: deckData } = await cloudFunctions.getDeckDetails(
+          typedParams.deckId
+        );
+        console.log("Deck data:", deckData);
 
-      // Get deck details first
-      const { deck: deckData } = await cloudFunctions.getDeckDetails(
-        typedParams.deckId
-      );
-      console.log("Deck data:", deckData);
+        // Get first batch of cards
+        const {
+          cards: deckCards,
+          hasMore,
+          lastDocId: newLastDocId,
+        } = await cloudFunctions.getDeckCards(typedParams.deckId, 20);
+        console.log("Deck cards:", deckCards);
 
-      // Get first batch of cards
-      const {
-        cards: deckCards,
-        hasMore,
-        lastDocId: newLastDocId,
-      } = await cloudFunctions.getDeckCards(typedParams.deckId, 20);
-      console.log("Deck cards:", deckCards);
+        setDeck({
+          id: deckData?.id,
+          title: deckData?.title || "Untitled",
+          views: deckData?.views || 0,
+          likes: deckData?.likes || 0,
+          cards: deckData?.cardsNum ?? deckCards?.length ?? 0,
+          userId: deckData?.createdBy || generageRandomUid(),
+          userName: deckData?.userName || "Unknown",
+          done: deckData?.done || 0,
+          today: deckData?.today || 0,
+          new: deckData?.new || 0,
+        });
 
-      setDeck({
-        id: deckData?.id,
-        title: deckData?.title || "Untitled",
-        views: deckData?.views || 0,
-        likes: deckData?.likes || 0,
-        cards: deckData?.cardsNum ?? deckCards?.length ?? 0,
-        userId: deckData?.createdBy || generageRandomUid(),
-        userName: deckData?.userName || "Unknown",
-        done: deckData?.done || 0,
-        today: deckData?.today || 0,
-        new: deckData?.new || 0,
-      });
-
-      setCards(deckCards || []);
-      setHasMoreCards(hasMore);
-      setLastDocId(newLastDocId);
+        setCards(deckCards || []);
+        setHasMoreCards(hasMore);
+        setLastDocId(newLastDocId);
+      }
     } catch (error) {
       console.error("Error fetching deck:", error);
+      if (PLACEHOLDER_MODE) {
+        const pd = placeholderDecks[0];
+        setDeck({
+          id: pd.id,
+          title: pd.title,
+          views: pd.views || 0,
+          likes: (pd as any).likes || 0,
+          cards: pd.cardsNum || placeholderCards.length,
+          userId: pd.createdBy,
+          userName: "DemoUser",
+          done: 12,
+          today: 8,
+          new: 5,
+        });
+        setCards(placeholderCards as unknown as Card[]);
+        setHasMoreCards(false);
+        setLastDocId(null);
+      }
     } finally {
       setIsLoading(false);
     }

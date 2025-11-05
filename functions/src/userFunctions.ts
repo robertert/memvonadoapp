@@ -59,34 +59,43 @@ export const updateCardProgress = onCall(async (request) => {
   }
 
   try {
-    // Update progress in user's personal copy of the deck
-    const cardRef = db.doc(`users/${userId}/decks/${deckId}/cards/${cardId}`);
+    // Lazy copying: Update progress in cardProgress collection (creates if doesn't exist)
+    const progressRef = db.doc(
+      `users/${userId}/decks/${deckId}/cardProgress/${cardId}`
+    );
     const now = new Date();
     const nextDue = new Date(now);
     nextDue.setDate(nextDue.getDate() + (interval || 1));
 
-    const cardDoc = await cardRef.get();
-    const existingAlgo = cardDoc.data()?.cardAlgo || {};
-    const existingFirstLearn = cardDoc.data()?.firstLearn || {};
-    await cardRef.update({
-      cardAlgo: {
-        ...existingAlgo,
+    const progressDoc = await progressRef.get();
+    const existingAlgo = progressDoc.data()?.cardAlgo || {};
+    const existingFirstLearn = progressDoc.data()?.firstLearn || {};
+
+    // Use set with merge to create if doesn't exist, update if exists
+    await progressRef.set(
+      {
+        cardAlgo: {
+          ...existingAlgo,
+          difficulty: difficulty ?? existingAlgo.difficulty ?? 2.5,
+          scheduled_days: interval ?? existingAlgo.scheduled_days ?? 1,
+          due: nextDue,
+          last_review: now,
+          reps: (existingAlgo.reps ?? 0) + 1,
+          state: 2, // reviewed state
+        },
+        firstLearn: firstLearn
+          ? {
+              ...existingFirstLearn,
+              ...firstLearn,
+            }
+          : existingFirstLearn,
+        grade: grade ?? 0,
+        lastReviewDate: now,
         difficulty: difficulty ?? existingAlgo.difficulty ?? 2.5,
-        scheduled_days: interval ?? existingAlgo.scheduled_days ?? 1,
-        due: nextDue,
-        last_review: now,
-        reps: (existingAlgo.reps ?? 0) + 1,
-        state: 2, // reviewed state; dostosuj wg Twojej definicji stanów
+        nextReviewInterval: interval ?? existingAlgo.scheduled_days ?? 1,
       },
-      firstLearn: firstLearn
-        ? {
-            ...existingFirstLearn,
-            ...firstLearn,
-          }
-        : existingFirstLearn,
-      grade: grade ?? 0,
-      lastReviewDate: now,
-    });
+      { merge: true }
+    );
 
     // Log study session
     await db.collection(`users/${userId}/studySessions`).add({

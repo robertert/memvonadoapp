@@ -1,13 +1,13 @@
-import {onDocumentUpdated} from "firebase-functions/v2/firestore";
+import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 
-import {SuperMemo2} from "./superMemo2";
+import { SuperMemo2 } from "./superMemo2";
 
 /**
- * Calculate next review date when card is updated
+ * Calculate next review date when card progress is updated
  */
 export const calculateNextReview = onDocumentUpdated(
-  "users/{userId}/decks/{deckId}/cards/{cardId}",
+  "users/{userId}/decks/{deckId}/cardProgress/{cardId}",
   async (event) => {
     const beforeData = event.data?.before.data();
     const afterData = event.data?.after.data();
@@ -23,10 +23,10 @@ export const calculateNextReview = onDocumentUpdated(
 
     try {
       const superMemo = new SuperMemo2();
-      const {interval, difficulty} = superMemo.calculate(
+      const { interval, difficulty } = superMemo.calculate(
         afterData.grade,
         afterData.difficulty || 2.5,
-        afterData.nextReviewInterval || 1,
+        afterData.nextReviewInterval || 1
       );
 
       const nextReviewDate = new Date();
@@ -47,5 +47,5 @@ export const calculateNextReview = onDocumentUpdated(
     } catch (error) {
       logger.error("Error calculating next review", error);
     }
-  },
+  }
 );
