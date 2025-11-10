@@ -2,7 +2,6 @@
 
 **Memvocado** to nowoczesna aplikacja mobilna do nauki z fiszkami, wykorzystująca zaawansowany algorytm FSRS (Free Spaced Repetition Scheduler) do optymalizacji procesu zapamiętywania. Aplikacja łączy w sobie elementy gamifikacji, system rankingów i lig oraz społecznościowe funkcje, które motywują do regularnej nauki.
 
-🌐 **Strona internetowa**: [memvocado.com](https://www.memvocado.com)
 
 ---
 
