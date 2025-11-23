@@ -1,4 +1,5 @@
 import SuperMemo2 from "./SuperMemo2";
+import { CardGrade } from "@/types/schemas";
 
 interface FlashcardData {
   question: string;
@@ -6,7 +7,7 @@ interface FlashcardData {
   lastReviewDate: Date;
   difficulty: number;
   nextReviewInterval: number;
-  grade: number;
+  grade: CardGrade;
   nextReviewDate: Date;
 }
 
@@ -16,7 +17,7 @@ class Flashcard {
   lastReviewDate: Date;
   difficulty: number;
   nextReviewInterval: number;
-  grade: number;
+  grade: CardGrade;
   nextReviewDate: Date;
 
   constructor(
@@ -25,7 +26,7 @@ class Flashcard {
     lastReviewDate: Date = new Date(),
     difficulty: number = 2.5,
     nextReviewInterval: number = 1,
-    grade: number = -1,
+    grade: CardGrade = CardGrade.NotGraded,
     nextReviewDate: Date = new Date()
   ) {
     this.question = question;
@@ -37,9 +38,9 @@ class Flashcard {
     this.nextReviewDate = nextReviewDate;
   }
 
-  reviewSuperMemo(userPerformance: number): void {
+  reviewSuperMemo(userPerformance: CardGrade): void {
     let adjustedPerformance: number;
-    
+
     switch (userPerformance) {
       case 1:
         adjustedPerformance = 2;
@@ -53,7 +54,7 @@ class Flashcard {
       default:
         adjustedPerformance = 0;
     }
-    
+
     const superMemo = new SuperMemo2();
     const { interval, difficulty } = superMemo.calculate(
       adjustedPerformance,

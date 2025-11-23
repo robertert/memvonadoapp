@@ -23,6 +23,7 @@ import { BellIcon, FireIcon, LanguageIcon } from "react-native-heroicons/solid";
 import PieChart from "../../ui/CustomPieChart";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
 import { placeholderDecks } from "../../constants/placeholderData";
+import { DeckSchema, UserProgress, UserProgressSchema } from "@/types/schemas";
 
 interface Deck {
   id: string;
@@ -37,9 +38,9 @@ export default function decksScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
 
   const [decks, setDecks] = useState<Deck[]>([]);
-  const [pinned, setPinned] = useState<Deck[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isRefresh, setIsRefresh] = useState<boolean>(false);
+  const [userProgress, setUserProgress] = useState<UserProgress>();
 
   const userCtx = useContext(UserContext);
 
@@ -52,16 +53,7 @@ export default function decksScreen(): React.JSX.Element {
       setIsLoading(true);
       if (PLACEHOLDER_MODE || !userCtx.id) {
         // Tryb placeholder lub brak użytkownika: pokaż deki demo
-        setDecks(
-          placeholderDecks.map((d) => ({
-            id: d.id,
-            title: d.title,
-            views: d.views || 0,
-            likes: d.likes || 0,
-            saved: false,
-          }))
-        );
-        setPinned([]);
+        setDecks(placeholderDecks);
       } else if (userCtx.id) {
         // Get user progress and statistics from Cloud Function
         const [userProgress, userDecks] = await Promise.all([
@@ -69,28 +61,14 @@ export default function decksScreen(): React.JSX.Element {
           cloudFunctions.getUserDecks(userCtx.id),
         ]);
 
-        console.log("User decks:", userDecks);
+        const validatedUserProgress: UserProgress =
+          UserProgressSchema.parse(userProgress);
+        const validatedDecks: Deck[] = DeckSchema.array().parse(
+          userDecks.decks
+        );
 
-        // Transform decks data to match expected format
-        const readyDecks: Deck[] = userDecks.decks.map((deck) => ({
-          id: deck.id,
-          title: deck.title || "Untitled Deck",
-          views: deck.views || 0,
-          likes: deck.likes || 0,
-          saved: deck.saved || false,
-          ...deck,
-        }));
-
-        // For now, consider all decks as unpinned (you can add pinning logic later)
-        const readyPinned: Deck[] = [];
-
-        // You can use userProgress.stats for statistics display
-        console.log("User stats:", userProgress.stats);
-        console.log("Study streak:", userProgress.streak);
-        console.log("User decks:", readyDecks.length);
-
-        setDecks(readyDecks);
-        setPinned(readyPinned);
+        setUserProgress(validatedUserProgress);
+        setDecks(validatedDecks);
       }
 
       setIsLoading(false);
@@ -98,16 +76,7 @@ export default function decksScreen(): React.JSX.Element {
       console.log(e);
       // W trybie demo pokaż placeholdery zamiast błędu
       if (PLACEHOLDER_MODE) {
-        setDecks(
-          placeholderDecks.map((d) => ({
-            id: d.id,
-            title: d.title,
-            views: d.views || 0,
-            likes: d.likes || 0,
-            saved: false,
-          }))
-        );
-        setPinned([]);
+        setDecks(placeholderDecks.map((d) => DeckSchema.parse(d as Deck)));
       } else {
         Alert.alert("Error", "Try again later");
       }
@@ -119,19 +88,6 @@ export default function decksScreen(): React.JSX.Element {
     router.push({
       pathname: "../stack/learnScreen",
       params: { id: gotDeck.id },
-    });
-  }
-
-  function savedHandeler(gotDeck: Deck): void {
-    setDecks((prev) => {
-      let newVal = [...prev];
-      newVal = newVal.map((deck) => {
-        if (gotDeck.id === deck.id) {
-          deck.saved = !deck.saved;
-        }
-        return deck;
-      });
-      return newVal;
     });
   }
 
@@ -157,7 +113,9 @@ export default function decksScreen(): React.JSX.Element {
     if (decks.length > 0) {
       router.push({
         pathname: "../stack/learnScreen",
-        params: { deckId: decks[0].id },
+        params: {
+          deckId: userProgress?.recentSessions[0].deckId || decks[0].id,
+        },
       });
     }
   }
@@ -193,11 +151,15 @@ export default function decksScreen(): React.JSX.Element {
           </View>
           <View style={styles.dailyGoalContainer}>
             <View style={styles.dailyGoalSectionContainer}>
-              <Text style={styles.dailyGoalText}>4</Text>
+              <Text style={styles.dailyGoalText}>
+                {userProgress?.stats.currentStreak}
+              </Text>
               <FireIcon size={36} color={Colors.red} />
             </View>
             <View style={styles.dailyGoalSectionContainer}>
-              <Text style={styles.dailyGoalText}>100 / 120</Text>
+              <Text style={styles.dailyGoalText}>
+                {userProgress?.todaySessionsCount} / {userProgress?.dailyGoal}
+              </Text>
               <MaterialCommunityIcons
                 name="cards"
                 size={36}
@@ -388,6 +350,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.primary,
     color: Colors.primary_700,
     fontWeight: "700",
+    width: "70%",
   },
   categoryText: {
     fontSize: 15,

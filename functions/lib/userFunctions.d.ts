@@ -1,10 +1,52 @@
 /**
+ * Aktualizuje streak użytkownika „na żądanie” przy starcie aplikacji.
+ * Bazuje na tym, czy wczoraj (w strefie czasowej użytkownika) była jakakolwiek sesja.
+ * Idempotentne dzięki polu stats.lastStreakDate (YYYY-MM-DD).
+ */
+export declare const updateUserStreakOnLogin: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    currentStreak: number;
+    longestStreak: number;
+    lastStreakDate: any;
+    updated: boolean;
+}>, unknown>;
+/**
+ * Aktualizuje streak natychmiast po spełnieniu progu dziennego
+ * (np. 10 kart w danym dniu). Jeżeli użytkownik już ma zapisany
+ * stats.lastStreakDate == dzisiaj (w jego strefie), nie robi nic.
+ * Liczy liczbę sesji przypadających na dzisiejszy dzień w strefie
+ * i gdy osiągnie próg, inkrementuje streak i zapisuje lastStreakDate.
+ *
+ * request.data: { userId: string, timeZone?: string, threshold?: number }
+ */
+export declare const updateUserStreakIfQualified: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    qualified: boolean;
+    updated: boolean;
+    currentStreak: number;
+    longestStreak: number;
+    lastStreakDate: string | null;
+    threshold: number;
+    todayCount: number | undefined;
+}>, unknown>;
+/**
  * Get user decks with cards
  */
 export declare const getUserDecks: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     decks: {
-        cards: any[];
+        createdAt: Date;
         id: string;
+        tags: string[];
+        title: string;
+        category: string;
+        icon: string;
+        isPublic: boolean;
+        views: number;
+        likes: number;
+        cardsNum: number;
+        createdBy: string;
+        createdByUsername: string;
+        is_deleted: boolean;
+        updatedAt?: Date | undefined;
+        deletedAt?: Date | undefined;
     }[];
 }>, unknown>;
 /**
@@ -17,12 +59,19 @@ export declare const updateCardProgress: import("firebase-functions/v2/https").C
  * Get user progress and statistics
  */
 export declare const getUserProgress: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    stats: any;
-    recentSessions: {
-        id: string;
-    }[];
-    streak: number;
-    lastStudyDate: any;
+    dailyGoal: number;
+    stats: {
+        totalCards: number;
+        totalDecks: number;
+        totalReviews: number;
+        averageDifficulty?: number | undefined;
+        currentStreak?: number | undefined;
+        longestStreak?: number | undefined;
+        lastStreakDate?: Date | undefined;
+        lastStudyDate?: Date | undefined;
+    };
+    recentSessions: any[];
+    todaySessionsCount: number;
 }>, unknown>;
 /**
  * Get user settings
@@ -41,7 +90,7 @@ export declare const processFriendRequest: import("firebase-functions/v2/https")
  * @param {any} event - event object
  * @return {Promise<void>}
  */
-export declare const validateUserData: import("firebase-functions/core").CloudFunction<import("firebase-functions/firestore").FirestoreEvent<import("firebase-functions/firestore").Change<import("firebase-functions/firestore").DocumentSnapshot> | undefined, {
+export declare const validateUserData: import("firebase-functions/core").CloudFunction<import("firebase-functions/v2/firestore").FirestoreEvent<import("firebase-functions/v2/firestore").Change<import("firebase-functions/v2/firestore").DocumentSnapshot> | undefined, {
     userId: string;
 }>>;
 /**

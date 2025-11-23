@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useContext } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -9,6 +9,8 @@ import {
   TextInput,
   Animated,
   Dimensions,
+  Alert,
+  Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Fonts, generageRandomUid } from "../../constants/colors";
@@ -21,6 +23,7 @@ import { router } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
+import { UserContext } from "../../store/user-context";
 import {
   placeholderDecks,
   placeholderCards,
@@ -34,50 +37,16 @@ import {
   Cog6ToothIcon,
 } from "react-native-heroicons/solid";
 
-interface Deck {
-  id?: string;
-  title: string;
-  views: number | string;
-  likes: number;
-  cards: number;
-  userId: string;
-  userName: string;
-  done: number;
-  today: number;
-  new: number;
-}
-
-interface CardData {
-  front: string;
-  back: string;
-  tags: string[];
-}
-
-interface CardAlgo {
-  difficulty: number;
-  due: any;
-  elapsed_days: number;
-  lapses: number;
-  last_review: any;
-  reps: number;
-  scheduled_days: number;
-  stability: number;
-  state: number;
-}
-
-interface FirstLearn {
-  due: any;
-  isFirst: boolean;
-  isNew: boolean;
-  state: number;
-}
-
-interface Card {
-  id: string;
-  cardData: CardData;
-  cardAlgo?: CardAlgo;
-  firstLearn?: FirstLearn;
-}
+import {
+  CardSchema,
+  DeckLearningData,
+  DeckSchema,
+  safeValidateArray,
+  safeValidateCard,
+  safeValidateDeck,
+  type Card,
+  type Deck,
+} from "@/types";
 
 interface DeckParams {
   deckId: string;
@@ -85,6 +54,7 @@ interface DeckParams {
 
 export default function deckDetails(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
+  const userCtx = useContext(UserContext);
 
   const params = useLocalSearchParams();
   const typedParams = params as unknown as DeckParams;
@@ -93,26 +63,61 @@ export default function deckDetails(): React.JSX.Element {
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [hasMoreCards, setHasMoreCards] = useState<boolean>(true);
   const [lastDocId, setLastDocId] = useState<string | null>(null);
-  const [deck, setDeck] = useState<Deck>({
-    title: "English",
-    views: "10k",
-    likes: 100,
-    cards: 124,
-    userId: generageRandomUid(),
-    userName: "Robert",
-    done: 12,
-    today: 90,
-    new: 120,
-  });
+  const [deck, setDeck] = useState<Deck>();
+  const [userDeck, setUserDeck] = useState<DeckLearningData>();
   const [cards, setCards] = useState<Card[]>([]);
-
+  const [syncModalVisible, setSyncModalVisible] = useState<boolean>(false);
+  const [cardChanges, setCardChanges] = useState<any[]>([]);
+  const [isCheckingChanges, setIsCheckingChanges] = useState<boolean>(false);
   const [dateAgo, setDateAgo] = useState<string>("2 weeks ago");
 
   useEffect(() => {
-    console.log("Deck ID:", typedParams.deckId);
-
     fetchDeck();
   }, []);
+
+  async function checkForChanges(): Promise<void> {
+    if (!userCtx.id || !typedParams.deckId || isCheckingChanges) return;
+
+    try {
+      setIsCheckingChanges(true);
+      const result = await cloudFunctions.checkCardChanges(
+        userCtx.id,
+        typedParams.deckId
+      );
+      if (result.changes && result.changes.length > 0) {
+        setCardChanges(result.changes);
+        setSyncModalVisible(true);
+      }
+    } catch (error) {
+      console.error("Error checking for changes:", error);
+      // Silently fail - user can manually check if needed
+    } finally {
+      setIsCheckingChanges(false);
+    }
+  }
+
+  async function handleSyncAll(): Promise<void> {
+    if (!userCtx.id || !typedParams.deckId) return;
+
+    try {
+      const result = await cloudFunctions.syncDeckCards(
+        userCtx.id,
+        typedParams.deckId,
+        true
+      );
+      Alert.alert(
+        "Synchronizacja zakończona",
+        `Zsynchronizowano ${result.syncedCount} kart.`
+      );
+      setSyncModalVisible(false);
+      setCardChanges([]);
+      // Refresh deck
+      fetchDeck();
+    } catch (error) {
+      console.error("Error syncing cards:", error);
+      Alert.alert("Błąd", "Nie udało się zsynchronizować kart.");
+    }
+  }
 
   async function fetchDeck(): Promise<void> {
     try {
@@ -122,19 +127,20 @@ export default function deckDetails(): React.JSX.Element {
       setHasMoreCards(true);
       if (PLACEHOLDER_MODE) {
         const pd = placeholderDecks[0];
-        setDeck({
-          id: pd.id,
-          title: pd.title,
-          views: pd.views || 0,
-          likes: (pd as any).likes || 0,
-          cards: pd.cardsNum || placeholderCards.length,
-          userId: pd.createdBy,
-          userName: "DemoUser",
-          done: 12,
-          today: 8,
-          new: 5,
-        });
-        setCards(placeholderCards as unknown as Card[]);
+
+        const resultDeck = safeValidateDeck(pd);
+        if (!resultDeck.success) {
+          console.error("Invalid deck data", resultDeck.error);
+          throw new Error("Invalid deck data");
+        }
+        const resultCards = safeValidateArray(placeholderCards, CardSchema);
+        if (!resultCards.success) {
+          console.error("Invalid cards data", resultCards.error);
+          throw new Error("Invalid cards data");
+        }
+
+        setDeck(resultDeck.data as Deck);
+        setCards(resultCards.data as Card[]);
         setHasMoreCards(false);
         setLastDocId(null);
       } else {
@@ -142,7 +148,23 @@ export default function deckDetails(): React.JSX.Element {
         const { deck: deckData } = await cloudFunctions.getDeckDetails(
           typedParams.deckId
         );
-        console.log("Deck data:", deckData);
+
+        const { deck: userDeckData } = await cloudFunctions.getUserDeckDetails(
+          userCtx.id!,
+          typedParams.deckId
+        );
+
+        if (userDeckData) {
+          checkForChanges();
+        }
+
+        if (!deckData) throw new Error("Deck not found");
+
+        const resultDeck = safeValidateDeck(deckData);
+        if (!resultDeck.success) {
+          console.error("Invalid deck data from API", resultDeck.error);
+          throw new Error("Invalid deck data structure");
+        }
 
         // Get first batch of cards
         const {
@@ -150,45 +172,22 @@ export default function deckDetails(): React.JSX.Element {
           hasMore,
           lastDocId: newLastDocId,
         } = await cloudFunctions.getDeckCards(typedParams.deckId, 20);
-        console.log("Deck cards:", deckCards);
 
-        setDeck({
-          id: deckData?.id,
-          title: deckData?.title || "Untitled",
-          views: deckData?.views || 0,
-          likes: deckData?.likes || 0,
-          cards: deckData?.cardsNum ?? deckCards?.length ?? 0,
-          userId: deckData?.createdBy || generageRandomUid(),
-          userName: deckData?.userName || "Unknown",
-          done: deckData?.done || 0,
-          today: deckData?.today || 0,
-          new: deckData?.new || 0,
-        });
+        if (!deckCards) throw new Error("Cards not found");
 
-        setCards(deckCards || []);
+        const resultCards = safeValidateArray(deckCards, CardSchema);
+        if (!resultCards.success) {
+          console.error("Invalid cards data from API", resultCards.error);
+          throw new Error("Invalid cards data structure");
+        }
+
+        setDeck(resultDeck.data as Deck);
+        setCards(resultCards.data as Card[]);
         setHasMoreCards(hasMore);
         setLastDocId(newLastDocId);
       }
     } catch (error) {
       console.error("Error fetching deck:", error);
-      if (PLACEHOLDER_MODE) {
-        const pd = placeholderDecks[0];
-        setDeck({
-          id: pd.id,
-          title: pd.title,
-          views: pd.views || 0,
-          likes: (pd as any).likes || 0,
-          cards: pd.cardsNum || placeholderCards.length,
-          userId: pd.createdBy,
-          userName: "DemoUser",
-          done: 12,
-          today: 8,
-          new: 5,
-        });
-        setCards(placeholderCards as unknown as Card[]);
-        setHasMoreCards(false);
-        setLastDocId(null);
-      }
     } finally {
       setIsLoading(false);
     }
@@ -199,20 +198,51 @@ export default function deckDetails(): React.JSX.Element {
 
     try {
       setIsLoadingMore(true);
-
       const {
         cards: moreCards,
         hasMore,
         lastDocId: newLastDocId,
       } = await cloudFunctions.getDeckCards(typedParams.deckId, 20, lastDocId);
 
-      setCards((prevCards) => [...prevCards, ...(moreCards || [])]);
+      if (!moreCards) throw new Error("Cards not found");
+      const resultCards = safeValidateArray(moreCards, CardSchema);
+      if (!resultCards.success) {
+        console.error("Invalid cards data from API", resultCards.error);
+        throw new Error("Invalid cards data structure");
+      }
+
+      setCards((prevCards) => [...prevCards, ...(resultCards.data as Card[])]);
       setHasMoreCards(hasMore);
       setLastDocId(newLastDocId);
     } catch (error) {
       console.error("Error loading more cards:", error);
     } finally {
       setIsLoadingMore(false);
+    }
+  }
+
+  async function startLearningDeckHandler(): Promise<void> {
+    if (!userDeck) {
+      try {
+        if (!userCtx.id || !deck?.id) return;
+        const result = await cloudFunctions.startLearningDeck(
+          userCtx.id,
+          deck.id
+        );
+        if (!result.success)
+          throw new Error("Nie udało się rozpocząć nauki nad tym deckiem.");
+        router.push({
+          pathname: "./learnScreen",
+          params: { deckId: deck?.id },
+        });
+      } catch (error: any) {
+        Alert.alert("Błąd", error.message);
+      }
+    } else {
+      router.push({
+        pathname: "./learnScreen",
+        params: { deckId: deck?.id },
+      });
     }
   }
 
@@ -407,12 +437,12 @@ export default function deckDetails(): React.JSX.Element {
           >
             <ArrowLeftIcon color={Colors.primary_700} size={30} />
           </Pressable>
-          <Text style={styles.headerTitle}>{deck.title}</Text>
+          <Text style={styles.headerTitle}>{deck?.title}</Text>
           <Pressable
             onPress={() => {
               router.push({
                 pathname: "./deckSettings",
-                params: { deckId: deck.id || typedParams.deckId },
+                params: { deckId: deck?.id || typedParams.deckId },
               });
             }}
             style={styles.settingsButton}
@@ -449,24 +479,24 @@ export default function deckDetails(): React.JSX.Element {
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <EyeIcon size={24} color={Colors.primary_700} />
-            <Text style={styles.statNumber}>{deck.views}</Text>
+            <Text style={styles.statNumber}>{deck?.views}</Text>
             <Text style={styles.statLabel}>Views</Text>
           </View>
           <View style={styles.statItem}>
             <RectangleStackIcon size={24} color={Colors.primary_700} />
-            <Text style={styles.statNumber}>{deck.cards}</Text>
+            <Text style={styles.statNumber}>{deck?.cardsNum}</Text>
             <Text style={styles.statLabel}>Cards</Text>
           </View>
           <View style={styles.statItem}>
             <HeartIcon size={24} color={Colors.primary_700} />
-            <Text style={styles.statNumber}>{deck.likes}</Text>
+            <Text style={styles.statNumber}>{deck?.likes}</Text>
             <Text style={styles.statLabel}>Likes</Text>
           </View>
         </View>
         <View style={styles.userContainer}>
           <View style={styles.userInfo}>
             <UserIcon size={24} color={Colors.primary_700} />
-            <Text style={styles.userName}>{deck.userName}</Text>
+            <Text style={styles.userName}>{deck?.createdBy}</Text>
           </View>
           <Text style={styles.dateText}>{dateAgo}</Text>
         </View>
@@ -474,26 +504,12 @@ export default function deckDetails(): React.JSX.Element {
           <Text style={styles.progressTitle}>Your Progress</Text>
           <View style={styles.progressStats}>
             <View style={styles.progressItem}>
-              <Text style={styles.progressNumber}>{deck.done}</Text>
-              <Text style={styles.progressLabel}>Done</Text>
-            </View>
-            <View style={styles.progressItem}>
-              <Text style={styles.progressNumber}>{deck.new}</Text>
-              <Text style={styles.progressLabel}>New</Text>
-            </View>
-            <View style={styles.progressItem}>
-              <Text style={styles.progressNumber}>{deck.today}</Text>
-              <Text style={styles.progressLabel}>Today</Text>
+              {/* TODO: Add progress stats */}
             </View>
           </View>
         </View>
         <Pressable
-          onPress={() => {
-            router.push({
-              pathname: "./learnScreen",
-              params: { id: deck.id },
-            });
-          }}
+          onPress={startLearningDeckHandler}
           style={styles.startButton}
         >
           <View style={styles.startButtonGradient}>
@@ -501,6 +517,99 @@ export default function deckDetails(): React.JSX.Element {
           </View>
         </Pressable>
       </View>
+
+      {/* Sync Modal */}
+      <Modal
+        visible={syncModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setSyncModalVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "white",
+              borderRadius: 20,
+              padding: 20,
+              width: "80%",
+              maxHeight: "70%",
+            }}
+          >
+            <Text
+              style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10 }}
+            >
+              Wykryto zmiany w decku
+            </Text>
+            <Text style={{ marginBottom: 15 }}>
+              Znaleziono {cardChanges.length} zmian. Czy chcesz zsynchronizować
+              karty?
+            </Text>
+            <ScrollView style={{ maxHeight: 300, marginBottom: 15 }}>
+              {cardChanges.slice(0, 5).map((change, idx) => (
+                <View key={idx} style={{ marginBottom: 10 }}>
+                  <Text style={{ fontWeight: "600" }}>
+                    Karta {change.cardId.substring(0, 8)}...
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#666" }}>
+                    {change.type === "modified"
+                      ? "Zmodyfikowana"
+                      : change.type === "deleted"
+                      ? "Usunięta z oryginału"
+                      : "Nowa karta"}
+                  </Text>
+                </View>
+              ))}
+              {cardChanges.length > 5 && (
+                <Text style={{ fontSize: 12, color: "#666" }}>
+                  ... i {cardChanges.length - 5} więcej
+                </Text>
+              )}
+            </ScrollView>
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-between" }}
+            >
+              <Pressable
+                onPress={() => setSyncModalVisible(false)}
+                style={{
+                  padding: 10,
+                  backgroundColor: "#f0f0f0",
+                  borderRadius: 10,
+                  flex: 1,
+                  marginRight: 10,
+                }}
+              >
+                <Text style={{ textAlign: "center" }}>Zignoruj</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSyncAll}
+                style={{
+                  padding: 10,
+                  backgroundColor: Colors.primary_700,
+                  borderRadius: 10,
+                  flex: 1,
+                }}
+              >
+                <Text
+                  style={{
+                    textAlign: "center",
+                    color: "white",
+                    fontWeight: "600",
+                  }}
+                >
+                  Synchronizuj wszystkie
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }

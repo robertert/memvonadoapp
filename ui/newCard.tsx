@@ -22,13 +22,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { FontAwesome5 } from "@expo/vector-icons";
-import ColorPicker, {
-  HueSlider,
-  OpacitySlider,
-  Panel1,
-  Preview,
-  Swatches,
-} from "reanimated-color-picker";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import {
@@ -40,26 +33,19 @@ import {
   AudioModule,
   setAudioModeAsync,
 } from "expo-audio";
+import { CardCore } from "@/types";
 
-interface Card {
+interface EditableCard extends CardCore {
   id: string;
-  front: string;
-  back: string;
-  frontColor?: string;
-  backColor?: string;
-  isMoreFront: boolean;
-  isMoreBack: boolean;
-  tags: string[];
-  frontImage?: string;
-  backImage?: string;
   frontAudio?: string;
   backAudio?: string;
+  frontImage?: string;
+  backImage?: string;
 }
 
 interface NewCardProps {
-  card: Card;
-  setCards: React.Dispatch<React.SetStateAction<Card[]>>;
-  tagsShownHandler: (card: Card) => void;
+  card: EditableCard;
+  setCards: React.Dispatch<React.SetStateAction<EditableCard[]>>;
   deckLanguage?: string;
 }
 
@@ -119,14 +105,12 @@ function getSuggestions(lang: string | undefined, query: string): string[] {
 export default function NewCard({
   card,
   setCards,
-  tagsShownHandler,
   deckLanguage,
 }: NewCardProps): React.JSX.Element {
-  const [showModal, setShowModal] = useState<boolean>(false);
-  const [frontColor, setFrontColor] = useState<string>(Colors.primary_100);
-  const [backColor, setBackColor] = useState<string>(Colors.primary_100);
-  const [isFront, setIsFront] = useState<boolean>(true);
   // Zostaw frontFields/backFields bo sterują aktywnymi sekcjami
+  const [isMoreFront, setIsMoreFront] = useState<boolean>(false);
+  const [isMoreBack, setIsMoreBack] = useState<boolean>(false);
+
   const [frontFields, setFrontFields] = useState<ActiveFields>({
     tag: false,
     image: false,
@@ -141,6 +125,7 @@ export default function NewCard({
   });
   const [currentFrontTag, setCurrentFrontTag] = useState("");
   const [currentBackTag, setCurrentBackTag] = useState("");
+
   // Busy/loading stany
   const [isRecordBusyFront, setIsRecordBusyFront] = useState(false);
   const [isRecordBusyBack, setIsRecordBusyBack] = useState(false);
@@ -210,26 +195,6 @@ export default function NewCard({
     }
   }, [recorderStateBack.isRecording, audioRecorderBack.uri]);
 
-  const onSelectColor = ({ hex }: { hex: string }) => {
-    if (isFront) {
-      setFrontColor(hex);
-    } else {
-      setBackColor(hex);
-    }
-    setCards((prev) => {
-      return prev.map((thisCard) => {
-        if (thisCard.id === card.id) {
-          if (isFront) {
-            thisCard.frontColor = hex;
-          } else {
-            thisCard.backColor = hex;
-          }
-        }
-        return thisCard;
-      });
-    });
-  };
-
   const translateX = useSharedValue(0);
   const opacity = useSharedValue(1);
   const scale = useSharedValue(1);
@@ -255,15 +220,15 @@ export default function NewCard({
   // Animuj otwarcie/zamknięcie panelu z wykorzystaniem zmierzonej wysokości
   useEffect(() => {
     const minFront = 100;
-    const target = card.isMoreFront ? Math.max(measuredFrontH, minFront) : 0;
+    const target = isMoreFront ? Math.max(measuredFrontH, minFront) : 0;
     advancedHeightFront.value = withTiming(target, { duration: 220 });
-  }, [card.isMoreFront, measuredFrontH]);
+  }, [isMoreFront, measuredFrontH]);
 
   useEffect(() => {
     const minBack = 100;
-    const target = card.isMoreBack ? Math.max(measuredBackH, minBack) : 0;
+    const target = isMoreBack ? Math.max(measuredBackH, minBack) : 0;
     advancedHeightBack.value = withTiming(target, { duration: 220 });
-  }, [card.isMoreBack, measuredBackH]);
+  }, [isMoreBack, measuredBackH]);
 
   const cardStyle = useAnimatedStyle(() => {
     return {
@@ -339,27 +304,16 @@ export default function NewCard({
   }
 
   // Reset fields when collapsing panels
-  function openMoreHandler(gotCard: Card, fb: string): void {
+  function openMoreHandler(fb: string): void {
     let shouldResetFront = false;
     let shouldResetBack = false;
-    const toggledId = gotCard.id;
-
-    setCards((prev) => {
-      return prev.map((c) => {
-        if (c.id === toggledId) {
-          if (fb === "f") {
-            const next = !c.isMoreFront;
-            c.isMoreFront = next;
-            if (!next) shouldResetFront = true;
-          } else {
-            const next = !c.isMoreBack;
-            c.isMoreBack = next;
-            if (!next) shouldResetBack = true;
-          }
-        }
-        return c;
-      });
-    });
+    if (fb === "f") {
+      setIsMoreFront((prev) => !prev);
+      if (!isMoreFront) shouldResetFront = true;
+    } else {
+      setIsMoreBack((prev) => !prev);
+      if (!isMoreBack) shouldResetBack = true;
+    }
 
     // Apply resets outside of setCards to avoid setState-in-render warnings
     if (shouldResetFront) {
@@ -390,15 +344,15 @@ export default function NewCard({
   function textChangeHandler(
     text: string,
     isFront: boolean,
-    gotCard: Card
+    gotCard: EditableCard
   ): void {
     setCards((prev) => {
       return prev.map((c) => {
         if (c.id === gotCard.id) {
           if (isFront) {
-            c.front = text;
+            c.cardData.front = text;
           } else {
-            c.back = text;
+            c.cardData.back = text;
           }
         }
         return c;
@@ -596,12 +550,13 @@ export default function NewCard({
                   onChangeText={(text: string) =>
                     textChangeHandler(text, true, card)
                   }
-                  value={card.front}
+                  value={card.cardData.front}
                 />
               </View>
               {/* Podpowiedzi słownikowe */}
               {deckLanguage &&
-                getSuggestions(deckLanguage, card.front).length > 0 && (
+                getSuggestions(deckLanguage, card.cardData.front).length >
+                  0 && (
                   <View
                     style={{
                       flexDirection: "row",
@@ -610,33 +565,35 @@ export default function NewCard({
                       marginTop: 6,
                     }}
                   >
-                    {getSuggestions(deckLanguage, card.front).map((sug) => (
-                      <Pressable
-                        key={sug}
-                        onPress={() => applySuggestion("front", sug)}
-                        style={{
-                          backgroundColor: Colors.accent_500_30,
-                          paddingHorizontal: 10,
-                          paddingVertical: 6,
-                          borderRadius: 12,
-                        }}
-                      >
-                        <Text
+                    {getSuggestions(deckLanguage, card.cardData.front).map(
+                      (sug) => (
+                        <Pressable
+                          key={sug}
+                          onPress={() => applySuggestion("front", sug)}
                           style={{
-                            color: Colors.primary_700,
-                            fontFamily: Fonts.primary,
+                            backgroundColor: Colors.accent_500_30,
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                            borderRadius: 12,
                           }}
                         >
-                          {sug}
-                        </Text>
-                      </Pressable>
-                    ))}
+                          <Text
+                            style={{
+                              color: Colors.primary_700,
+                              fontFamily: Fonts.primary,
+                            }}
+                          >
+                            {sug}
+                          </Text>
+                        </Pressable>
+                      )
+                    )}
                   </View>
                 )}
               {/* Panel rozwijany strzałką: ikony */}
               <Animated.View
                 style={[advancedStyleFront]}
-                pointerEvents={card.isMoreFront ? "auto" : "none"}
+                pointerEvents={isMoreFront ? "auto" : "none"}
               >
                 <View
                   onLayout={(e) => {
@@ -996,10 +953,10 @@ export default function NewCard({
               </Animated.View>
             </View>
             <Pressable
-              onPress={() => openMoreHandler(card, "f")}
+              onPress={() => openMoreHandler("f")}
               style={{ alignSelf: "center" }}
             >
-              {!card.isMoreFront ? (
+              {!isMoreFront ? (
                 <AntDesign name="down" size={24} color={Colors.primary_700} />
               ) : (
                 <AntDesign name="up" size={24} color={Colors.primary_700} />
@@ -1014,14 +971,14 @@ export default function NewCard({
               <View style={styles.cardInputContainer}>
                 <TextInput
                   style={styles.cardInput}
-                  value={card.back}
+                  value={card.cardData.back}
                   onChangeText={(text: string) =>
                     textChangeHandler(text, false, card)
                   }
                 />
               </View>
               {deckLanguage &&
-                getSuggestions(deckLanguage, card.back).length > 0 && (
+                getSuggestions(deckLanguage, card.cardData.back).length > 0 && (
                   <View
                     style={{
                       flexDirection: "row",
@@ -1030,32 +987,34 @@ export default function NewCard({
                       marginTop: 6,
                     }}
                   >
-                    {getSuggestions(deckLanguage, card.back).map((sug) => (
-                      <Pressable
-                        key={sug}
-                        onPress={() => applySuggestion("back", sug)}
-                        style={{
-                          backgroundColor: Colors.accent_500_30,
-                          paddingHorizontal: 10,
-                          paddingVertical: 6,
-                          borderRadius: 12,
-                        }}
-                      >
-                        <Text
+                    {getSuggestions(deckLanguage, card.cardData.back).map(
+                      (sug) => (
+                        <Pressable
+                          key={sug}
+                          onPress={() => applySuggestion("back", sug)}
                           style={{
-                            color: Colors.primary_700,
-                            fontFamily: Fonts.primary,
+                            backgroundColor: Colors.accent_500_30,
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                            borderRadius: 12,
                           }}
                         >
-                          {sug}
-                        </Text>
-                      </Pressable>
-                    ))}
+                          <Text
+                            style={{
+                              color: Colors.primary_700,
+                              fontFamily: Fonts.primary,
+                            }}
+                          >
+                            {sug}
+                          </Text>
+                        </Pressable>
+                      )
+                    )}
                   </View>
                 )}
               <Animated.View
                 style={[advancedStyleBack]}
-                pointerEvents={card.isMoreBack ? "auto" : "none"}
+                pointerEvents={isMoreBack ? "auto" : "none"}
               >
                 <View
                   onLayout={(e) => {
@@ -1412,10 +1371,10 @@ export default function NewCard({
               </Animated.View>
             </View>
             <Pressable
-              onPress={() => openMoreHandler(card, "b")}
+              onPress={() => openMoreHandler("b")}
               style={{ alignSelf: "center" }}
             >
-              {!card.isMoreBack ? (
+              {!isMoreBack ? (
                 <AntDesign name="down" size={24} color={Colors.primary_700} />
               ) : (
                 <AntDesign name="up" size={24} color={Colors.primary_700} />
@@ -1428,43 +1387,6 @@ export default function NewCard({
             <FontAwesome5 name="trash" size={35} color={Colors.secRed} />
           </Animated.View>
         </View>
-        {/* Modal kolorów zostaje */}
-        <Modal
-          visible={showModal}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setShowModal(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <ColorPicker
-                style={{ width: "100%", backgroundColor: "#00000000" }}
-                value={isFront ? frontColor : backColor}
-                onComplete={onSelectColor}
-              >
-                <Preview style={{ marginBottom: 10 }} />
-                <Panel1 style={{ marginBottom: 20 }} />
-                <HueSlider style={{ marginBottom: 10 }} />
-                <OpacitySlider style={{ marginBottom: 30 }} />
-                <Swatches style={{ marginBottom: 10 }} />
-              </ColorPicker>
-              <Pressable
-                onPress={() => {
-                  setShowModal(false);
-                }}
-              >
-                <View
-                  style={[
-                    styles.saveButton,
-                    { backgroundColor: isFront ? frontColor : backColor },
-                  ]}
-                >
-                  <Text style={styles.saveText}>Ok</Text>
-                </View>
-              </Pressable>
-            </View>
-          </View>
-        </Modal>
       </Animated.View>
     </GestureDetector>
   );

@@ -1,13 +1,14 @@
+interface LeagueInfo {
+    id: number;
+    name: string;
+    color: string;
+    description: string;
+}
 /**
  * Get league information
  */
 export declare const getLeagueInfo: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    league: {
-        id: number;
-        name: string;
-        color: string;
-        description: string;
-    };
+    league: LeagueInfo;
 }>, unknown>;
 /**
  * Get user's current group information
@@ -35,10 +36,6 @@ export declare const updateUserLeague: import("firebase-functions/v2/https").Cal
  * Get all league information
  */
 export declare const getAllLeaguesInfo: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    leagues: {
-        id: number;
-        name: string;
-        color: string;
-        description: string;
-    }[];
+    leagues: LeagueInfo[];
 }>, unknown>;
+export {};

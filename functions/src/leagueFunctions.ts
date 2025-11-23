@@ -1,11 +1,28 @@
 import { onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import {
+  LeagueGroup,
+  LeagueGroupSchema,
+  Season,
+  SeasonSchema,
+  SeasonUserPoints,
+  SeasonUserPointsSchema,
+  User,
+  UserSchema,
+} from "./types/common";
 
 const db = getFirestore();
 
+interface LeagueInfo {
+  id: number;
+  name: string;
+  color: string;
+  description: string;
+}
+
 // League definitions matching frontend
-const LEAGUE_INFO = [
+const LEAGUE_INFO: LeagueInfo[] = [
   { id: 1, name: "Liga 1", color: "#8D8D8D", description: "Startowa liga" },
   { id: 2, name: "Liga 2", color: "#7DA1B9", description: "Wejdź do Top 10" },
   { id: 3, name: "Liga 3", color: "#7EC384", description: "Stabilny rozwój" },
@@ -74,8 +91,9 @@ export const getUserGroup = onCall(async (request) => {
       if (!seasonDoc.exists) {
         throw new Error("No active season");
       }
-      const seasonData = seasonDoc.data() as { seasonId?: string };
-      currentSeasonId = seasonData?.seasonId;
+      const seasonData = seasonDoc.data() as Season;
+      const validatedSeason = SeasonSchema.parse(seasonData);
+      currentSeasonId = validatedSeason.id;
       if (!currentSeasonId) {
         throw new Error("No active season");
       }
@@ -90,44 +108,39 @@ export const getUserGroup = onCall(async (request) => {
       return null;
     }
 
-    const userData = userSeasonPoints.data() as {
-      league?: number;
-      groupId?: string;
-    };
+    const userData = userSeasonPoints.data() as SeasonUserPoints;
+    const validatedUserData = SeasonUserPointsSchema.parse(userData);
 
-    const userLeague = userData?.league ?? 1;
-    const userGroupId = userData?.groupId;
-
-    if (!userGroupId) {
+    if (!validatedUserData.groupId) {
       return null;
     }
 
     // Get group info
     const groupRef = db
       .collection("leagueGroups")
-      .doc(`${currentSeasonId}_${userLeague}`)
+      .doc(`${currentSeasonId}_${validatedUserData.league}`)
       .collection("groups")
-      .doc(userGroupId);
+      .doc(validatedUserData.groupId);
     const groupDoc = await groupRef.get();
 
     if (!groupDoc.exists) {
-      // Group doesn't exist but user has groupId - this is inconsistent state
-      // Return null to indicate user doesn't have a valid group
+      logger.error("Group not found", {
+        seasonId: currentSeasonId,
+        league: validatedUserData.league,
+        groupId: validatedUserData.groupId,
+      });
       return null;
     }
 
-    const groupData = groupDoc.data() as {
-      currentCount?: number;
-      capacity?: number;
-      isFull?: boolean;
-    };
+    const groupData = { id: groupRef.id, ...groupDoc.data() } as LeagueGroup;
+    const validatedGroup = LeagueGroupSchema.parse(groupData);
 
     return {
-      groupId: userGroupId,
-      leagueNumber: userLeague,
-      memberCount: groupData?.currentCount ?? 0,
-      capacity: groupData?.capacity ?? 20,
-      isFull: groupData?.isFull ?? false,
+      groupId: validatedGroup.id,
+      leagueNumber: validatedGroup.leagueNumber,
+      memberCount: validatedGroup.currentCount,
+      capacity: validatedGroup.capacity,
+      isFull: validatedGroup.isFull,
     };
   } catch (error) {
     logger.error("Error getting user group", error);
@@ -156,8 +169,10 @@ export const updateUserLeague = onCall(async (request) => {
       if (!seasonDoc.exists) {
         throw new Error("No active season");
       }
-      const seasonData = seasonDoc.data() as { seasonId?: string };
-      currentSeasonId = seasonData?.seasonId;
+      const seasonData = { id: seasonDoc.id, ...seasonDoc.data() } as Season;
+      const validatedSeason = SeasonSchema.parse(seasonData);
+      currentSeasonId = validatedSeason.id;
+
       if (!currentSeasonId) {
         throw new Error("No active season");
       }
@@ -169,24 +184,68 @@ export const updateUserLeague = onCall(async (request) => {
       throw new Error("User not found");
     }
 
-    const userData = userDoc.data() as { league?: number };
-    const currentLeague = userData?.league ?? 1;
+    const userData = { id: userDoc.id, ...userDoc.data() } as User;
+    const validatedUserData = UserSchema.parse(userData);
+
+    const currentLeague = validatedUserData.league;
 
     if (currentLeague === newLeague) {
       return { success: true, league: newLeague };
     }
 
-    // Update user's league
+    // Get old data BEFORE updating (important: must read before write)
+    const userSeasonPointsRef = db.doc(
+      `seasonUserPoints/${currentSeasonId}/users/${userId}`
+    );
+    const oldUserSeasonPoints = await userSeasonPointsRef.get();
+
+    const oldData = oldUserSeasonPoints.exists
+      ? (oldUserSeasonPoints.data() as {
+          league?: number;
+          groupId?: string;
+        })
+      : null;
+    const oldLeague = oldData?.league ?? currentLeague;
+    const oldGroupId = oldData?.groupId;
+
+    if (oldGroupId) {
+      const oldGroupRef = db
+        .collection("leagueGroups")
+        .doc(`${currentSeasonId}_${oldLeague}`)
+        .collection("groups")
+        .doc(oldGroupId);
+      const oldGroupDoc = await oldGroupRef.get();
+
+      if (oldGroupDoc.exists) {
+        const oldGroupData = oldGroupDoc.data() as {
+          currentCount?: number;
+        };
+        const newCount = Math.max(0, (oldGroupData?.currentCount ?? 1) - 1);
+
+        await oldGroupRef.update({
+          currentCount: newCount,
+          isFull: false,
+        });
+
+        // Remove user from old group members
+        const oldMemberRef = db
+          .collection("leagueGroups")
+          .doc(`${currentSeasonId}_${oldLeague}`)
+          .collection("groups")
+          .doc(oldGroupId)
+          .collection("members")
+          .doc(userId);
+        await oldMemberRef.delete();
+      }
+    }
+
+    // NOW update user's league (after removing from old group)
     await userDoc.ref.update({
       league: newLeague,
       currentGroupId: FieldValue.delete(), // Will be reassigned
     });
 
-    // Update season user points
-    const userSeasonPointsRef = db.doc(
-      `seasonUserPoints/${currentSeasonId}/users/${userId}`
-    );
-
+    // Update season user points (after removing from old group)
     await userSeasonPointsRef.set(
       {
         league: newLeague,
@@ -194,48 +253,6 @@ export const updateUserLeague = onCall(async (request) => {
       },
       { merge: true }
     );
-
-    // Remove from old group if exists
-    const oldUserSeasonPoints = await userSeasonPointsRef.get();
-    if (oldUserSeasonPoints.exists) {
-      const oldData = oldUserSeasonPoints.data() as {
-        league?: number;
-        groupId?: string;
-      };
-      const oldLeague = oldData?.league ?? currentLeague;
-      const oldGroupId = oldData?.groupId;
-
-      if (oldGroupId) {
-        const oldGroupRef = db
-          .collection("leagueGroups")
-          .doc(`${currentSeasonId}_${oldLeague}`)
-          .collection("groups")
-          .doc(oldGroupId);
-        const oldGroupDoc = await oldGroupRef.get();
-
-        if (oldGroupDoc.exists) {
-          const oldGroupData = oldGroupDoc.data() as {
-            currentCount?: number;
-          };
-          const newCount = Math.max(0, (oldGroupData?.currentCount ?? 1) - 1);
-
-          await oldGroupRef.update({
-            currentCount: newCount,
-            isFull: false,
-          });
-
-          // Remove user from old group members
-          const oldMemberRef = db
-            .collection("leagueGroups")
-            .doc(`${currentSeasonId}_${oldLeague}`)
-            .collection("groups")
-            .doc(oldGroupId)
-            .collection("members")
-            .doc(userId);
-          await oldMemberRef.delete();
-        }
-      }
-    }
 
     // Assign to new group in new league
     // We'll use the assignUserToGroup function logic inline since we can't call another onCall from here
@@ -271,13 +288,20 @@ export const updateUserLeague = onCall(async (request) => {
       const newGroupRef = groupsRef.doc();
       targetGroupId = newGroupRef.id;
 
-      await newGroupRef.set({
-        createdAt: FieldValue.serverTimestamp(),
+      // Waliduj i typuj LeagueGroup przed zapisem (bez createdAt - użyjemy FieldValue)
+      const leagueGroupData: Omit<LeagueGroup, "createdAt" | "id"> = {
         isFull: false,
         capacity: 20,
         currentCount: 0,
-        seasonId: currentSeasonId,
         leagueNumber: newLeague,
+      };
+      LeagueGroupSchema.omit({ createdAt: true, id: true }).parse(
+        leagueGroupData
+      );
+
+      await newGroupRef.set({
+        ...leagueGroupData,
+        createdAt: FieldValue.serverTimestamp(),
       });
     }
 
@@ -318,10 +342,16 @@ export const updateUserLeague = onCall(async (request) => {
         throw new Error("Group is full");
       }
 
+      // Waliduj dane członka grupy przed zapisem
+      const memberPoints = userPointsData.points ?? 0;
+      if (memberPoints < 0) {
+        throw new Error("Points cannot be negative");
+      }
+
       // Add member
       trx.set(memberRef, {
         userId,
-        points: userPointsData.points ?? 0,
+        points: memberPoints,
         lastActivityAt: FieldValue.serverTimestamp(),
       });
 

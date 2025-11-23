@@ -7,14 +7,11 @@
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
 
-import { setGlobalOptions } from "firebase-functions";
 import { initializeApp } from "firebase-admin/app";
 
 // Initialize Firebase Admin FIRST before any imports that use Firebase Admin
+// This must be synchronous to ensure getFirestore() works in imported modules
 initializeApp();
-
-// Set global options
-setGlobalOptions({ maxInstances: 10, region: "europe-west1" });
 
 // Import functions that need to be used in triggers (after initialization)
 // Import all functions from modules
@@ -32,6 +29,8 @@ export {
   updateCardProgress,
   getUserProgress,
   getUserSettings,
+  updateUserStreakOnLogin,
+  updateUserStreakIfQualified,
   updateUserSettings,
   getUserProfile,
   getUserActivityHeatmap,
@@ -53,6 +52,9 @@ export {
   getUserDeckCards,
   getUserDueDeckCards,
   getUserNewDeckCards,
+  deleteDeck,
+  checkCardChanges,
+  syncDeckCards,
 } from "./deckFunctions";
 export {
   getLeaderboard,
@@ -75,3 +77,4 @@ export {
   getAllLeaguesInfo,
 } from "./leagueFunctions";
 export { addPlaceholderData } from "./placeholderFunctions";
+export { ensureUserDocument, completeOnboarding } from "./authHandlers";

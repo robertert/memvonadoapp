@@ -7,7 +7,7 @@ import { SuperMemo2 } from "./superMemo2";
  * Calculate next review date when card progress is updated
  */
 export const calculateNextReview = onDocumentUpdated(
-  "users/{userId}/decks/{deckId}/cardProgress/{cardId}",
+  "users/{userId}/decks/{deckId}/cards/{cardId}",
   async (event) => {
     const beforeData = event.data?.before.data();
     const afterData = event.data?.after.data();

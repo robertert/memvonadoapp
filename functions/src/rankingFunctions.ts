@@ -1,6 +1,7 @@
 import { onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { LeagueGroupSchema, type LeagueGroup } from "./types/common";
 
 const db = getFirestore();
 
@@ -377,13 +378,20 @@ export const assignUserToGroup = onCall(async (request) => {
       const newGroupRef = groupsRef.doc();
       targetGroupId = newGroupRef.id;
 
-      await newGroupRef.set({
-        createdAt: FieldValue.serverTimestamp(),
+      // Waliduj i typuj LeagueGroup przed zapisem (bez createdAt - użyjemy FieldValue)
+      const leagueGroupData: Omit<LeagueGroup, "createdAt" | "id"> = {
         isFull: false,
         capacity: 20,
         currentCount: 0,
-        seasonId,
         leagueNumber: userLeague,
+      };
+      LeagueGroupSchema.omit({ createdAt: true, id: true }).parse(
+        leagueGroupData
+      );
+
+      await newGroupRef.set({
+        ...leagueGroupData,
+        createdAt: FieldValue.serverTimestamp(),
       });
     }
 
@@ -428,10 +436,16 @@ export const assignUserToGroup = onCall(async (request) => {
         throw new Error("Group is full");
       }
 
+      // Waliduj dane członka grupy przed zapisem
+      const memberPoints = userPointsData.points ?? 0;
+      if (memberPoints < 0) {
+        throw new Error("Points cannot be negative");
+      }
+
       // Add member
       trx.set(memberRef, {
         userId,
-        points: userPointsData.points ?? 0,
+        points: memberPoints,
         lastActivityAt: FieldValue.serverTimestamp(),
       });
 

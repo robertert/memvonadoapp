@@ -17,6 +17,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { FireIcon, TrophyIcon } from "react-native-heroicons/solid";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
+import { PLACEHOLDER_MODE } from "../../constants/flags";
+import { placeholderRanking } from "../../constants/placeholderData";
 
 interface RankingUser {
   userId: string;
@@ -33,7 +35,7 @@ export default function rankingsScreen(): React.JSX.Element {
   const userCtx = useContext(UserContext);
   const [activeTab, setActiveTab] = useState<"random" | "following">("random");
   const [leagueTitle, setLeagueTitle] = useState<string>("🏆 Bronze League");
-  const [timeLeft, setTimeLeft] = useState<string>("10:00");
+  const [timeLeft, setTimeLeft] = useState<string>();
   const [randomUsers, setRandomUsers] = useState<RankingUser[]>([]);
   const [followingUsers, setFollowingUsers] = useState<RankingUser[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -108,13 +110,47 @@ export default function rankingsScreen(): React.JSX.Element {
   }, []);
 
   async function fetchRankings(): Promise<void> {
-    if (!userCtx.id) return;
+    if (!userCtx.id && !PLACEHOLDER_MODE) return;
 
     try {
       setIsLoading(true);
 
+      if (PLACEHOLDER_MODE) {
+        if (activeTab === "random") {
+          setLeagueTitle("🏆 Bronze League");
+          setGroupInfo(`Grupa ${placeholderRanking.length}/20`);
+          const users: RankingUser[] = placeholderRanking.map(
+            (entry, index) => ({
+              userId: entry.id,
+              name: entry.username || "Unknown",
+              username: entry.username,
+              avatar: "👤",
+              points: entry.points,
+              position: index + 1,
+            })
+          );
+          setRandomUsers(users);
+        } else {
+          // Following - użyj tych samych danych jako placeholder
+          const users: RankingUser[] = placeholderRanking.map(
+            (entry, index) => ({
+              userId: entry.id,
+              name: entry.username || "Unknown",
+              username: entry.username,
+              avatar: "👤",
+              points: entry.points,
+              position: index + 1,
+            })
+          );
+          setFollowingUsers(users);
+        }
+        setIsLoading(false);
+        return;
+      }
+
       if (activeTab === "random") {
         // Get user's group leaderboard
+        if (!userCtx.id) return;
         const leaderboard = await cloudFunctions.getLeaderboard(userCtx.id);
 
         // Get league info to set title
@@ -141,6 +177,7 @@ export default function rankingsScreen(): React.JSX.Element {
         setRandomUsers(users);
       } else {
         // Get following rankings
+        if (!userCtx.id) return;
         const following = await cloudFunctions.getFollowingRankings(userCtx.id);
 
         // Transform to RankingUser format
@@ -159,6 +196,35 @@ export default function rankingsScreen(): React.JSX.Element {
       }
     } catch (error) {
       console.error("Error fetching rankings:", error);
+      if (PLACEHOLDER_MODE) {
+        if (activeTab === "random") {
+          setLeagueTitle("🏆 Bronze League");
+          setGroupInfo(`Grupa ${placeholderRanking.length}/20`);
+          const users: RankingUser[] = placeholderRanking.map(
+            (entry, index) => ({
+              userId: entry.id,
+              name: entry.username || "Unknown",
+              username: entry.username,
+              avatar: "👤",
+              points: entry.points,
+              position: index + 1,
+            })
+          );
+          setRandomUsers(users);
+        } else {
+          const users: RankingUser[] = placeholderRanking.map(
+            (entry, index) => ({
+              userId: entry.id,
+              name: entry.username || "Unknown",
+              username: entry.username,
+              avatar: "👤",
+              points: entry.points,
+              position: index + 1,
+            })
+          );
+          setFollowingUsers(users);
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -233,6 +299,36 @@ export default function rankingsScreen(): React.JSX.Element {
     </View>
   );
 
+  const SkeletonUserItem = () => (
+    <View style={styles.userItem}>
+      <View style={styles.userLeft}>
+        <View style={[styles.positionContainer, styles.skeletonPosition]}>
+          <View style={styles.skeletonPositionNumber} />
+        </View>
+        <View style={[styles.avatarContainer, styles.skeletonAvatar]} />
+        <View style={styles.userInfo}>
+          <View style={styles.skeletonUserName} />
+          <View style={styles.userStats}>
+            <View style={styles.skeletonStatItem} />
+            <View style={styles.skeletonStatItem} />
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+
+  const SkeletonLoading = () => (
+    <>
+      <View style={styles.skeletonTitle} />
+      <View style={styles.skeletonSubtitle} />
+      <View style={styles.skeletonSubtitle} />
+      <View style={styles.skeletonTimer} />
+      {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
+        <SkeletonUserItem key={item} />
+      ))}
+    </>
+  );
+
   return (
     <GestureHandlerRootView style={styles.container}>
       <View style={[styles.headerContainer, { paddingTop: safeArea.top + 8 }]}>
@@ -264,9 +360,7 @@ export default function rankingsScreen(): React.JSX.Element {
         showsVerticalScrollIndicator={false}
       >
         {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={Colors.accent_500} />
-          </View>
+          <SkeletonLoading />
         ) : activeTab === "random" ? (
           <>
             <Pressable onPress={() => router.push("../stack/leagueScreen")}>
@@ -505,5 +599,57 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
     marginTop: 40,
+  },
+  // Skeleton Loading Styles
+  skeletonTitle: {
+    width: 200,
+    height: 32,
+    backgroundColor: Colors.primary_700_30,
+    borderRadius: 16,
+    alignSelf: "center",
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  skeletonSubtitle: {
+    width: 150,
+    height: 18,
+    backgroundColor: Colors.primary_700_30,
+    borderRadius: 9,
+    alignSelf: "center",
+    marginBottom: 8,
+  },
+  skeletonTimer: {
+    width: 180,
+    height: 44,
+    backgroundColor: Colors.primary_700_30,
+    borderRadius: 16,
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  skeletonPosition: {
+    borderColor: Colors.primary_700_30,
+  },
+  skeletonPositionNumber: {
+    width: 20,
+    height: 20,
+    backgroundColor: Colors.primary_700_30,
+    borderRadius: 10,
+  },
+  skeletonAvatar: {
+    backgroundColor: Colors.primary_700_30,
+  },
+  skeletonStatItem: {
+    width: 60,
+    height: 16,
+    backgroundColor: Colors.primary_700_30,
+    borderRadius: 8,
+    marginRight: 16,
+  },
+  skeletonUserName: {
+    width: 120,
+    height: 18,
+    backgroundColor: Colors.primary_700_30,
+    borderRadius: 9,
+    marginBottom: 8,
   },
 });

@@ -1,7 +1,9 @@
 {
   "name": "functions",
   "scripts": {
+    "sync:types": "node scripts/sync-types.js",
     "lint": "eslint --ext .js,.ts .",
+    "prebuild": "npm run sync:types",
     "build": "tsc",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",
@@ -19,7 +21,9 @@
   "main": "lib/index.js",
   "dependencies": {
     "firebase-admin": "^12.6.0",
-    "firebase-functions": "^6.0.1"
+    "firebase-functions": "^6.0.1",
+    "memvocado-types": "file:memvocado-types",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/jest": "^29.5.8",

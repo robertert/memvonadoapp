@@ -89,6 +89,26 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "decks",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "id",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "cards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "firstLearn.isNew",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

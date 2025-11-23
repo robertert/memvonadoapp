@@ -27,6 +27,8 @@ import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
+import { PLACEHOLDER_MODE } from "../../constants/flags";
+import { placeholderNotifications } from "../../constants/placeholderData";
 
 interface NotificationItem {
   id: string;
@@ -154,10 +156,25 @@ export default function notificationsScreen(): React.JSX.Element {
   }, [userCtx.id]);
 
   async function fetchNotifications(): Promise<void> {
-    if (!userCtx.id) return;
+    if (!userCtx.id && !PLACEHOLDER_MODE) return;
 
     try {
       setIsLoading(true);
+      if (PLACEHOLDER_MODE) {
+        const transformed: NotificationItem[] = placeholderNotifications.map(
+          (n) => ({
+            id: n.id,
+            title: n.title,
+            body: n.body,
+            date: n.createdAt.toISOString(),
+            type: n.type,
+          })
+        );
+        setNotifications(transformed);
+        setIsLoading(false);
+        return;
+      }
+
       const result = await cloudFunctions.getNotifications(userCtx.id, 50);
 
       // Transform to NotificationItem format
@@ -187,6 +204,18 @@ export default function notificationsScreen(): React.JSX.Element {
       setNotifications(transformedNotifications);
     } catch (error) {
       console.error("Error fetching notifications:", error);
+      if (PLACEHOLDER_MODE) {
+        const transformed: NotificationItem[] = placeholderNotifications.map(
+          (n) => ({
+            id: n.id,
+            title: n.title,
+            body: n.body,
+            date: n.createdAt.toISOString(),
+            type: n.type,
+          })
+        );
+        setNotifications(transformed);
+      }
     } finally {
       setIsLoading(false);
     }

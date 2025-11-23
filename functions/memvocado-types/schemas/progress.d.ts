@@ -1,0 +1,66 @@
+import { z } from "zod";
+/**
+ * Postęp użytkownika
+ */
+export declare const UserProgressSchema: z.ZodObject<{
+    stats: z.ZodObject<{
+        totalCards: z.ZodDefault<z.ZodNumber>;
+        totalDecks: z.ZodDefault<z.ZodNumber>;
+        totalReviews: z.ZodDefault<z.ZodNumber>;
+        averageDifficulty: z.ZodOptional<z.ZodNumber>;
+        currentStreak: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
+        longestStreak: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
+        lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+        lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+    }, "strict", z.ZodTypeAny, {
+        totalCards: number;
+        totalDecks: number;
+        totalReviews: number;
+        averageDifficulty?: number | undefined;
+        currentStreak?: number | undefined;
+        longestStreak?: number | undefined;
+        lastStreakDate?: Date | undefined;
+        lastStudyDate?: Date | undefined;
+    }, {
+        totalCards?: number | undefined;
+        totalDecks?: number | undefined;
+        totalReviews?: number | undefined;
+        averageDifficulty?: number | undefined;
+        currentStreak?: number | undefined;
+        longestStreak?: number | undefined;
+        lastStreakDate?: unknown;
+        lastStudyDate?: unknown;
+    }>;
+    dailyGoal: z.ZodDefault<z.ZodNumber>;
+    recentSessions: z.ZodDefault<z.ZodArray<z.ZodAny, "many">>;
+    todaySessionsCount: z.ZodDefault<z.ZodNumber>;
+}, "strict", z.ZodTypeAny, {
+    dailyGoal: number;
+    stats: {
+        totalCards: number;
+        totalDecks: number;
+        totalReviews: number;
+        averageDifficulty?: number | undefined;
+        currentStreak?: number | undefined;
+        longestStreak?: number | undefined;
+        lastStreakDate?: Date | undefined;
+        lastStudyDate?: Date | undefined;
+    };
+    recentSessions: any[];
+    todaySessionsCount: number;
+}, {
+    stats: {
+        totalCards?: number | undefined;
+        totalDecks?: number | undefined;
+        totalReviews?: number | undefined;
+        averageDifficulty?: number | undefined;
+        currentStreak?: number | undefined;
+        longestStreak?: number | undefined;
+        lastStreakDate?: unknown;
+        lastStudyDate?: unknown;
+    };
+    dailyGoal?: number | undefined;
+    recentSessions?: any[] | undefined;
+    todaySessionsCount?: number | undefined;
+}>;
+export type UserProgress = z.infer<typeof UserProgressSchema>;

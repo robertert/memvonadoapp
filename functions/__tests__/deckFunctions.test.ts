@@ -11,6 +11,7 @@ import {
   waitForFirestore,
 } from "./helpers/testHelpers";
 import { mockUserId, mockDeckId, mockCardId } from "./helpers/mockData";
+import { CardGrade } from "../../types";
 
 const db = admin.firestore();
 
@@ -94,7 +95,7 @@ describe("Deck Functions", () => {
         .get();
       const cardData = cardsSnapshot.docs[0].data();
       expect(cardData?.difficulty).toBe(2.5);
-      expect(cardData?.grade).toBe(-1);
+      expect(cardData?.grade).toBe(CardGrade.NotGraded);
       expect(cardData?.nextReviewInterval).toBe(1);
     });
 
@@ -313,7 +314,7 @@ describe("Deck Functions", () => {
           state: 0,
           consecutiveGood: 0,
         },
-        grade: -1,
+        grade: CardGrade.NotGraded,
       } as any);
 
       await createTestCard(mockDeckId, "old-card", {
@@ -323,7 +324,7 @@ describe("Deck Functions", () => {
           state: 2,
           consecutiveGood: 1,
         },
-        grade: 3,
+        grade: CardGrade.Easy,
       } as any);
       await waitForFirestore();
 
@@ -403,7 +404,7 @@ describe("Deck Functions", () => {
       await createTestUser(mockUserId);
       await createTestDeck(mockDeckId, mockUserId);
       await createTestCard(mockDeckId, mockCardId, {
-        grade: 5,
+        grade: CardGrade.Easy,
         difficulty: 3.0,
         cardAlgo: {
           difficulty: 3.0,
@@ -440,7 +441,7 @@ describe("Deck Functions", () => {
       const cardData = cardDoc.data();
       expect(cardData?.cardAlgo).toBeUndefined();
       expect(cardData?.firstLearn).toBeUndefined();
-      expect(cardData?.grade).toBe(-1);
+      expect(cardData?.grade).toBe(CardGrade.NotGraded);
       expect(cardData?.difficulty).toBe(2.5);
       expect(cardData?.nextReviewInterval).toBe(1);
     });

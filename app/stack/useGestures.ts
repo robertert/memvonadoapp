@@ -12,6 +12,7 @@ import { EdgeInsets } from "react-native-safe-area-context";
 import { AnimationValues } from "./learnScreen.types";
 import { useState } from "react";
 import * as Haptics from "expo-haptics";
+import { CardGrade } from "@/types/schemas";
 
 const dimensions = Dimensions.get("screen");
 
@@ -43,7 +44,7 @@ function triggerHaptic(
 
 interface UseGesturesProps {
   animationValues: AnimationValues;
-  newCard: (type: string) => void;
+  newCard: (type: CardGrade) => void;
   setIsBack: (value: React.SetStateAction<boolean>) => void;
   TOP: number;
   safeArea?: EdgeInsets;
@@ -171,7 +172,7 @@ export function useGestures({
           mass: 0.7,
         });
         runOnJS(triggerHaptic)("error");
-        runOnJS(newCard)("wrong");
+        runOnJS(newCard)(CardGrade.Wrong);
       } else if (translateY.value <= dimensions.height * -Y_THRESHOLD) {
         translateY.value = withSpring(-dimensions.height - 200, {
           damping: 15,
@@ -179,7 +180,7 @@ export function useGestures({
           mass: 0.7,
         });
         runOnJS(triggerHaptic)("success");
-        runOnJS(newCard)("easy");
+        runOnJS(newCard)(CardGrade.Easy);
       } else if (translateY.value >= dimensions.height * Y_THRESHOLD) {
         translateY.value = withSpring(dimensions.height + 200, {
           damping: 15,
@@ -187,7 +188,7 @@ export function useGestures({
           mass: 0.7,
         });
         runOnJS(triggerHaptic)("warning");
-        runOnJS(newCard)("hard");
+        runOnJS(newCard)(CardGrade.Hard);
       } else {
         translateX.value = withSpring(dimensions.width + 50, {
           damping: 15,
@@ -195,7 +196,7 @@ export function useGestures({
           mass: 0.7,
         });
         runOnJS(triggerHaptic)("success");
-        runOnJS(newCard)("good");
+        runOnJS(newCard)(CardGrade.Good);
       }
     });
 

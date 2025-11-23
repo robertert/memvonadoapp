@@ -20,6 +20,7 @@ import {
   mockCardId,
   mockSeasonId,
 } from "./helpers/mockData";
+import { CardGrade } from "../../types";
 
 const db = admin.firestore();
 
@@ -88,7 +89,7 @@ describe("User Functions", () => {
           userId: mockUserId,
           deckId: mockDeckId,
           cardId: mockCardId,
-          grade: 3,
+          grade: CardGrade.Easy,
           difficulty: 3.0,
           interval: 2,
         },
@@ -101,7 +102,7 @@ describe("User Functions", () => {
         .doc(`decks/${mockDeckId}/cards/${mockCardId}`)
         .get();
       const cardData = cardDoc.data();
-      expect(cardData?.grade).toBe(3);
+      expect(cardData?.grade).toBe(CardGrade.Easy);
       expect(cardData?.cardAlgo?.difficulty).toBe(3.0);
       expect(cardData?.cardAlgo?.scheduled_days).toBe(2);
 
@@ -133,7 +134,7 @@ describe("User Functions", () => {
           userId: mockUserId,
           deckId: mockDeckId,
           cardId: mockCardId,
-          grade: 3,
+          grade: CardGrade.Easy,
           firstLearn: firstLearnUpdate,
         },
       } as any);

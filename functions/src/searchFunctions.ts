@@ -5,6 +5,7 @@ import {
   Query,
   CollectionReference,
 } from "firebase-admin/firestore";
+import { SearchLogSchema, type SearchLog } from "./types/common";
 
 const db = getFirestore();
 
@@ -21,11 +22,17 @@ export const searchDecks = onCall(async (request) => {
   try {
     let query: Query | CollectionReference = db.collection("decks");
 
+    // Always filter out deleted decks (use != true to handle undefined)
+    // Note: Firestore doesn't support != directly, so we filter after if needed
+    // For now, we'll filter in memory after the query
+    // TODO: Consider using composite index if performance becomes an issue
+
     // Apply text search
     if (searchText) {
       query = query
         .where("title", ">=", searchText)
-        .where("title", "<=", searchText + "\uf8ff");
+        .where("title", "<=", searchText + "\uf8ff")
+        .where("is_deleted", "==", false);
     }
 
     // Apply filters
@@ -50,15 +57,16 @@ export const searchDecks = onCall(async (request) => {
 
     // Log search for analytics
     if (userId) {
-      const logData: any = {
+      // Waliduj i typuj search log przed zapisem
+      const logData: Omit<SearchLog, "id"> = {
         userId,
-        searchText: searchText || null,
+        searchText: searchText || "",
         resultsCount: results.length,
         timestamp: new Date(),
+        filters: filters || {},
       };
-      if (filters) {
-        logData.filters = filters;
-      }
+      SearchLogSchema.omit({ id: true }).parse(logData);
+
       await db
         .collection("users")
         .doc(userId)

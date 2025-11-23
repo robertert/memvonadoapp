@@ -22,6 +22,7 @@ export default {
         ITSAppUsesNonExemptEncryption: false,
         NSMicrophoneUsageDescription:
           "We use the microphone to record pronunciation audio for your cards.",
+        // Apple Sign In jest automatycznie konfigurowany przez plugin expo-apple-authentication
       },
     },
     android: {
@@ -38,6 +39,8 @@ export default {
     plugins: [
       "expo-audio",
       "expo-router",
+      "expo-apple-authentication",
+      "expo-web-browser",
       [
         "expo-font",
         {
@@ -56,6 +59,13 @@ export default {
       FIREBASE_MESSAGING_SENDER_ID: process.env.FIREBASE_MESSAGING_SENDER_ID,
       FIREBASE_APP_ID: process.env.FIREBASE_APP_ID,
       FIREBASE_MEASUREMENT_ID: process.env.FIREBASE_MEASUREMENT_ID,
+      // Google Sign In Client IDs
+      EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID:
+        process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+      EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID:
+        process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+      EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID:
+        process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
       eas: {
         projectId: "a455ada4-2415-44b3-8533-eaafd438b84c",
       },

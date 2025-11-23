@@ -259,10 +259,11 @@ export default function learnScreen(): React.JSX.Element {
   } = animatedStyles;
 
   const tabBarValue = ((progress.all - progress.todo) * 100) / progress.all;
-  const progressText =
-    cards.length > 0
+  const progressText = cards
+    ? cards.length > 0
       ? `${progress.all - progress.todo + 1} / ${progress.all}`
-      : "0 / 0";
+      : "0 / 0"
+    : "0 / 0";
 
   /**
    * Handles navigation back to previous screen
@@ -372,7 +373,7 @@ export default function learnScreen(): React.JSX.Element {
         style={[learnScreenStyles.container, { paddingTop: safeArea.top + 8 }]}
       >
         <Flashcard
-          card={cards[0]}
+          card={cards ? cards[0] : undefined}
           isBack={isBack}
           rStyle={rStyle}
           gesture={comp}

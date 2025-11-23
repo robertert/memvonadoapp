@@ -1,43 +1,11 @@
 /**
  * Common types used across Cloud Functions
+ *
+ * Re-eksportuje typy z centralnego katalogu types/ dla zachowania kompatybilności
+ * z istniejącym kodem. Wszystkie nowe typy powinny być importowane bezpośrednio z types/
  */
-export interface CardData {
-    front: string;
-    back: string;
-    tags: string[];
-    lastReviewDate?: Date;
-    difficulty?: number;
-    nextReviewInterval?: number;
-    grade?: number;
-    nextReviewDate?: Date;
-}
-export interface SuperMemoResult {
-    interval: number;
-    difficulty: number;
-}
-export interface SearchFilters {
-    subject?: string;
-    difficulty?: number;
-    isPublic?: boolean;
-}
-export interface UserStats {
-    totalCards: number;
-    totalDecks: number;
-    totalReviews: number;
-    averageDifficulty: number;
-    lastStudyDate?: Date;
-}
-export interface StudySession {
-    id: string;
-    deckId: string;
-    cardsReviewed: number;
-    correctAnswers: number;
-    date: Date;
-    duration: number;
-}
-/**
- * Helper function to transform flat card structure to nested structure
- * @param {any} doc - Firestore document snapshot or data object
- * @return {any} Transformed card with nested cardData structure
- */
-export declare function transformCardData(doc: any): any;
+export { CardGrade } from "memvocado-types";
+export type { Deck, DeckCore, DeckLearningData, DeckLearningCore, DeckSettings, CardData, CardCore, Card, CardAlgo, FirstLearn, SuperMemoResult, SearchFilters, UserStats, UserCore, UserSettings, User, StudySession, StudySessionCreate, Notification, Season, SeasonUserPoints, LeagueGroup, LeagueGroupMember, SearchLog, UserProgress, CardChangeWithType, DeckCoreUpdate, DeckSettingsUpdate, DeckUpdate, DeckLearningDataUpdate, CardDataUpdate, CardCoreUpdate, CardAlgoUpdate, FirstLearnUpdate, CardLearningUpdate, CardUpdate, } from "memvocado-types";
+export type { AuthRegisterRequest, AuthLoginRequest, AuthRegisterResponse, AuthLoginResponse, AuthUserSnapshot, } from "memvocado-types";
+export { DeckSchema, DeckCoreSchema, DeckLearningDataSchema, DeckLearningCoreSchema, DeckSettingsSchema, CardDataSchema, CardCoreSchema, CardSchema, CardAlgoSchema, FirstLearnSchema, SuperMemoResultSchema, SearchFiltersSchema, UserStatsSchema, UserCoreSchema, UserSettingsSchema, UserSchema, StudySessionSchema, StudySessionCreateSchema, NotificationSchema, SeasonSchema, SeasonUserPointsSchema, LeagueGroupSchema, LeagueGroupMemberSchema, SearchLogSchema, UserProgressSchema, CardChangeWithTypeSchema, DeckCoreUpdateSchema, DeckSettingsUpdateSchema, DeckUpdateSchema, DeckLearningDataUpdateSchema, CardDataUpdateSchema, CardCoreUpdateSchema, CardAlgoUpdateSchema, FirstLearnUpdateSchema, CardLearningUpdateSchema, CardUpdateSchema, } from "memvocado-types";
+export { AuthRegisterRequestSchema, AuthLoginRequestSchema, AuthRegisterResponseSchema, AuthLoginResponseSchema, AuthUserSnapshotSchema, } from "memvocado-types";

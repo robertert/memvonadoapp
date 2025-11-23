@@ -29,7 +29,7 @@ export declare const createNotification: import("firebase-functions/v2/https").C
  * Trigger: Create notification when user advances league
  * Triggered when user's league field changes
  */
-export declare const onLeagueAdvance: import("firebase-functions/core").CloudFunction<import("firebase-functions/firestore").FirestoreEvent<import("firebase-functions/firestore").Change<import("firebase-functions/firestore").DocumentSnapshot> | undefined, {
+export declare const onLeagueAdvance: import("firebase-functions/core").CloudFunction<import("firebase-functions/v2/firestore").FirestoreEvent<import("firebase-functions/v2/firestore").Change<import("firebase-functions/v2/firestore").DocumentSnapshot> | undefined, {
     userId: string;
 }>>;
 /**

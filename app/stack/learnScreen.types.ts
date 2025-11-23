@@ -1,4 +1,4 @@
-import { CardData } from "@/services/cloudFunctions";
+import type { Card, Deck } from "@/types";
 import { SharedValue } from "react-native-reanimated";
 
 export interface ProgressState {
@@ -9,40 +9,6 @@ export interface ProgressState {
   todo: number;
   all: number;
   [key: string]: number;
-}
-
-export interface Card {
-  id: string;
-  cardData: CardData;
-  cardAlgo?: any;
-  firstLearn?: {
-    isNew: boolean;
-    due: number | Date;
-    state: number;
-    consecutiveGood: number; // Dodane pole do śledzenia dobrych odpowiedzi pod rząd
-  };
-  [key: string]: any;
-}
-
-export interface DoneCard {
-  id: string;
-  cardAlgo: any;
-  cardData: CardData;
-  firstLearn: {
-    isNew: boolean;
-    due: number | Date;
-    state: number;
-    consecutiveGood: number;
-  };
-  grade?: number;
-  difficulty?: number;
-  interval?: number;
-}
-
-export interface Deck {
-  id?: string;
-  title?: string;
-  [key: string]: any;
 }
 
 export interface TooltipState {
@@ -57,15 +23,14 @@ export interface LearnScreenParams {
 }
 
 export interface CardLogicState {
-  cards: Card[];
+  cards: Card[] | undefined;
   isLoading: boolean;
   isBack: boolean;
   tooltip: TooltipState;
   time: NodeJS.Timeout | number | undefined;
   index: number;
-  doneCards: DoneCard[];
-  deck: Deck;
-  isNew: boolean;
+  doneCards: Card[] | undefined;
+  deck: Deck | undefined;
   progress: ProgressState;
 }
 

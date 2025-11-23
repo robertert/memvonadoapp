@@ -63,9 +63,9 @@ functions/src/
 ### Opcje globalne
 
 ```typescript
-setGlobalOptions({ 
-  maxInstances: 10, 
-  region: "europe-west1" 
+setGlobalOptions({
+  maxInstances: 10,
+  region: "europe-west1",
 });
 ```
 
@@ -74,6 +74,7 @@ setGlobalOptions({
 Dla prawidłowego działania niektórych zapytań wymagane są złożone indeksy:
 
 1. **Leaderboard**: `leagueGroups/{seasonId}/{league}/groups/{groupId}/members`
+
    - Pole: `points` (descending)
 
 2. **Search**: `decks`
@@ -94,19 +95,23 @@ Zwraca autorytatywny czas serwera.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
-{} // Brak parametrów
+{
+} // Brak parametrów
 ```
 
 **Zwraca**:
+
 ```typescript
 {
-  nowMs: number;      // Czas w milisekundach (Unix timestamp)
-  iso: string;        // Czas w formacie ISO 8601
+  nowMs: number; // Czas w milisekundach (Unix timestamp)
+  iso: string; // Czas w formacie ISO 8601
 }
 ```
 
 **Przykład użycia**:
+
 ```typescript
 const time = await serverNow();
 // { nowMs: 1704067200000, iso: "2024-01-01T00:00:00.000Z" }
@@ -121,22 +126,26 @@ Pobiera lub inicjalizuje aktualny sezon (tygodniowe okno).
 **Typ**: `onCall`
 
 **Logika sezonu**:
+
 - Sezon rozpoczyna się w poniedziałek 00:00 UTC
 - Trwa 7 dni (tydzień)
 - Format ID: `{startDate}_{endDate}` (np. `2024-01-01_2024-01-08`)
 
 **Parametry wejściowe**:
+
 ```typescript
-{} // Brak parametrów
+{
+} // Brak parametrów
 ```
 
 **Zwraca**:
+
 ```typescript
 {
-  seasonId: string;        // ID sezonu (format: YYYY-MM-DD_YYYY-MM-DD)
-  startAt: Date;           // Data rozpoczęcia sezonu
-  endAt: Date;             // Data zakończenia sezonu
-  status: "active";        // Status sezonu
+  seasonId: string; // ID sezonu (format: YYYY-MM-DD_YYYY-MM-DD)
+  startAt: Date; // Data rozpoczęcia sezonu
+  endAt: Date; // Data zakończenia sezonu
+  status: "active"; // Status sezonu
 }
 ```
 
@@ -151,14 +160,16 @@ Przesyła punkty użytkownika dla aktualnego sezonu (autorytatywne, z timestampe
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  userId: string;      // ID użytkownika (wymagane)
-  delta: number;      // Zmiana punktów (wymagane, liczba)
+  userId: string; // ID użytkownika (wymagane)
+  delta: number; // Zmiana punktów (wymagane, liczba)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   success: boolean;
@@ -166,11 +177,13 @@ Przesyła punkty użytkownika dla aktualnego sezonu (autorytatywne, z timestampe
 ```
 
 **Działanie**:
+
 - Automatycznie przypisuje użytkownika do grupy ligowej jeśli nie ma
 - Aktualizuje punkty w sezonie, grupie ligowej i dokumencie użytkownika
 - Używa transakcji dla zapewnienia spójności danych
 
 **Lokalizacje w Firestore**:
+
 - `seasonUserPoints/{seasonId}/users/{userId}`
 - `leagueGroups/{seasonId}/{league}/groups/{groupId}/members/{userId}`
 - `users/{userId}`
@@ -184,19 +197,23 @@ Zamyka aktualny sezon i publikuje snapshot tabeli liderów. Inicjalizuje nowy se
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
-{} // Brak parametrów
+{
+} // Brak parametrów
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   success: boolean;
-  nextSeasonId: string;  // ID nowego sezonu
+  nextSeasonId: string; // ID nowego sezonu
 }
 ```
 
 **Działanie**:
+
 1. Pobiera top 100 użytkowników z aktualnego sezonu
 2. Zapisuje snapshot w `leaderboards/{seasonId}/groups/global`
 3. Tworzy nowy sezon (następny tydzień)
@@ -212,13 +229,15 @@ Pobiera wszystkie talie użytkownika wraz z kartami.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  userId: string;  // ID użytkownika (wymagane)
+  userId: string; // ID użytkownika (wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   decks: Array<{
@@ -249,6 +268,7 @@ Aktualizuje postęp karty po recenzji.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
   userId: string;           // ID użytkownika (wymagane)
@@ -262,6 +282,7 @@ Aktualizuje postęp karty po recenzji.
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   success: boolean;
@@ -269,6 +290,7 @@ Aktualizuje postęp karty po recenzji.
 ```
 
 **Działanie**:
+
 - Aktualizuje `cardAlgo` (dane FSRS)
 - Aktualizuje `firstLearn` (dane pierwszego uczenia)
 - Zapisuje sesję nauki w `users/{userId}/studySessions`
@@ -284,13 +306,15 @@ Pobiera postęp użytkownika i statystyki.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  userId: string;  // ID użytkownika (wymagane)
+  userId: string; // ID użytkownika (wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   stats: {
@@ -321,13 +345,15 @@ Pobiera ustawienia użytkownika.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  userId: string;  // ID użytkownika (wymagane)
+  userId: string; // ID użytkownika (wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   settings: {
@@ -341,6 +367,7 @@ Pobiera ustawienia użytkownika.
 ```
 
 **Logika**:
+
 1. Sprawdza `users/{userId}/settings/app` (dedykowany dokument)
 2. Jeśli nie istnieje, sprawdza `users/{userId}.settings` (pole w dokumencie użytkownika)
 
@@ -353,14 +380,16 @@ Aktualizuje ustawienia użytkownika.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  userId: string;      // ID użytkownika (wymagane)
-  settings: object;    // Obiekt ustawień (wymagane)
+  userId: string; // ID użytkownika (wymagane)
+  settings: object; // Obiekt ustawień (wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   success: boolean;
@@ -378,13 +407,15 @@ Pobiera pełny profil użytkownika.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  userId: string;  // ID użytkownika (wymagane)
+  userId: string; // ID użytkownika (wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   userId: string;
@@ -395,13 +426,13 @@ Pobiera pełny profil użytkownika.
     totalDecks: number;
     totalReviews: number;
     averageDifficulty: number;
-  };
+  }
   streak: number;
-  league: number;           // Numer ligi (1-15)
+  league: number; // Numer ligi (1-15)
   points: number;
   friendsCount: number;
-  followers: number;        // Obecnie = friendsCount
-  following: number;        // Obecnie = friendsCount
+  followers: number; // Obecnie = friendsCount
+  following: number; // Obecnie = friendsCount
 }
 ```
 
@@ -414,6 +445,7 @@ Pobiera dane do heatmapy aktywności użytkownika.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
   userId: string;   // ID użytkownika (wymagane)
@@ -422,11 +454,12 @@ Pobiera dane do heatmapy aktywności użytkownika.
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   heatmapData: Array<{
-    date: string;   // Format: YYYY-MM-DD
-    count: number;  // Liczba sesji w tym dniu
+    date: string; // Format: YYYY-MM-DD
+    count: number; // Liczba sesji w tym dniu
   }>;
 }
 ```
@@ -440,13 +473,15 @@ Pobiera nagrody użytkownika.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  userId: string;  // ID użytkownika (wymagane)
+  userId: string; // ID użytkownika (wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   awards: Array<{
@@ -470,13 +505,15 @@ Pobiera serię aktywności znajomych użytkownika.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  userId: string;  // ID użytkownika (wymagane)
+  userId: string; // ID użytkownika (wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   friendsStreaks: Array<{
@@ -498,15 +535,17 @@ Przetwarza zaproszenie do znajomych (akceptacja lub odrzucenie).
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  fromUserId: string;                    // ID użytkownika wysyłającego (wymagane)
-  toUserId: string;                      // ID użytkownika otrzymującego (wymagane)
-  action: "accept" | "reject";           // Akcja (wymagane)
+  fromUserId: string; // ID użytkownika wysyłającego (wymagane)
+  toUserId: string; // ID użytkownika otrzymującego (wymagane)
+  action: "accept" | "reject"; // Akcja (wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   success: boolean;
@@ -514,6 +553,7 @@ Przetwarza zaproszenie do znajomych (akceptacja lub odrzucenie).
 ```
 
 **Działanie**:
+
 - **accept**: Dodaje obu użytkowników do listy `friends`, usuwa z `pending`/`incoming`
 - **reject**: Usuwa z list `pending`/`incoming`
 
@@ -530,6 +570,7 @@ Przetwarza zaproszenie do znajomych (akceptacja lub odrzucenie).
 **Trigger**: `users/{userId}`
 
 **Działanie**:
+
 - Sprawdza duplikaty emaila
 - Inicjalizuje statystyki użytkownika
 - Inicjalizuje puste listy (`friends`, `pending`, `incoming`)
@@ -546,6 +587,7 @@ Tworzy talię z kartami w jednej operacji (bulk).
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
   title: string;              // Tytuł talii (wymagane)
@@ -561,6 +603,7 @@ interface CardData {
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   deckId: string;
@@ -568,11 +611,13 @@ interface CardData {
 ```
 
 **Działanie**:
+
 1. Tworzy dokument talii w `decks/{deckId}`
 2. Tworzy wszystkie karty w `decks/{deckId}/cards/{cardId}`
 3. Dodaje ID talii do `users/{userId}.decks`
 
 **Inicjalne wartości kart**:
+
 - `difficulty`: 2.5
 - `nextReviewInterval`: 1
 - `grade`: -1
@@ -586,13 +631,15 @@ Pobiera szczegóły talii (bez kart).
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  deckId: string;  // ID talii (wymagane)
+  deckId: string; // ID talii (wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   deck: {
@@ -603,7 +650,7 @@ Pobiera szczegóły talii (bez kart).
     createdAt: Date;
     isPublic: boolean;
     // ... inne pola talii
-  };
+  }
 }
 ```
 
@@ -616,6 +663,7 @@ Pobiera karty talii z paginacją.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
   deckId: string;      // ID talii (wymagane)
@@ -625,6 +673,7 @@ Pobiera karty talii z paginacją.
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   cards: Array<{
@@ -633,7 +682,7 @@ Pobiera karty talii z paginacją.
     back: string;
     // ... inne pola karty
   }>;
-  hasMore: boolean;      // Czy są kolejne karty
+  hasMore: boolean; // Czy są kolejne karty
   lastDocId: string | null; // ID ostatniej karty (do paginacji)
 }
 ```
@@ -647,10 +696,12 @@ Pobiera karty do powtórki (filtrowanie po stronie serwera).
 **Typ**: `onCall`
 
 **Logika filtrowania**:
+
 - Zwraca karty z `cardAlgo.due <= now` (karty FSRS)
 - Lub karty z `firstLearn.isNew && firstLearn.due <= now` (pierwsze uczenie)
 
 **Parametry wejściowe**:
+
 ```typescript
 {
   deckId: string;    // ID talii (wymagane)
@@ -659,6 +710,7 @@ Pobiera karty do powtórki (filtrowanie po stronie serwera).
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   cards: Array<{
@@ -689,12 +741,14 @@ Pobiera nowe karty kandydujące do wprowadzenia w sesji.
 **Typ**: `onCall`
 
 **Logika filtrowania**:
+
 - `firstLearn.isNew === true`
 - `firstLearn.due <= now` (jeśli ustawione)
 - `!prevAns` (nie było wcześniejszej odpowiedzi)
 - `consecutiveGood === 0`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
   deckId: string;    // ID talii (wymagane)
@@ -703,6 +757,7 @@ Pobiera nowe karty kandydujące do wprowadzenia w sesji.
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   cards: Array<{
@@ -727,6 +782,7 @@ Pobiera popularne publiczne talie.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
   limit?: number;  // Limit talii (domyślnie: 8)
@@ -734,12 +790,13 @@ Pobiera popularne publiczne talie.
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   decks: Array<{
     id: string;
     title: string;
-    views: number;    // Sortowane malejąco po views
+    views: number; // Sortowane malejąco po views
     isPublic: true;
     // ... inne pola talii
   }>;
@@ -759,21 +816,24 @@ Resetuje postęp talii - usuwa wszystkie dane postępu kart.
 **Uwaga**: Wymaga autoryzacji (`request.auth`).
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  deckId: string;  // ID talii (wymagane)
+  deckId: string; // ID talii (wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   success: boolean;
-  cardsReset: number;  // Liczba zresetowanych kart
+  cardsReset: number; // Liczba zresetowanych kart
 }
 ```
 
 **Działanie**:
+
 1. Sprawdza uprawnienia (użytkownik musi być właścicielem talii)
 2. Usuwa dla wszystkich kart:
    - `cardAlgo`
@@ -796,14 +856,16 @@ Aktualizuje ustawienia talii.
 **Uwaga**: Wymaga autoryzacji (`request.auth`).
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  deckId: string;      // ID talii (wymagane)
-  settings: object;   // Obiekt ustawień (wymagane)
+  deckId: string; // ID talii (wymagane)
+  settings: object; // Obiekt ustawień (wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   success: boolean;
@@ -811,6 +873,7 @@ Aktualizuje ustawienia talii.
 ```
 
 **Działanie**:
+
 1. Sprawdza uprawnienia (użytkownik musi być właścicielem talii)
 2. Aktualizuje `decks/{deckId}.settings`
 3. Ustawia `updatedAt` na timestamp serwera
@@ -826,6 +889,7 @@ Aktualizuje ustawienia talii.
 **Trigger**: `users/{userId}/decks/{deckId}`
 
 **Działanie**:
+
 - Liczy łączne karty we wszystkich taliach użytkownika
 - Liczy łączne recenzje
 - Oblicza średnią trudność
@@ -842,6 +906,7 @@ Pobiera ranking dla grupy użytkownika (grupa ligowa 20-osobowa).
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
   userId: string;      // ID użytkownika (wymagane)
@@ -850,29 +915,31 @@ Pobiera ranking dla grupy użytkownika (grupa ligowa 20-osobowa).
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   entries: Array<{
     userId: string;
     username: string;
     points: number;
-    position: number;           // Pozycja w grupie (1-based)
+    position: number; // Pozycja w grupie (1-based)
     lastActivityAt: Date | null;
   }>;
-  groupId: string | null;        // ID grupy ligowej
-  leagueNumber: number | null;    // Numer ligi (1-15)
+  groupId: string | null; // ID grupy ligowej
+  leagueNumber: number | null; // Numer ligi (1-15)
   seasonId: string;
-  totalMembers: number;          // Liczba członków grupy
+  totalMembers: number; // Liczba członków grupy
 }
 ```
 
 **Logika**:
+
 1. Pobiera informacje o użytkowniku z `seasonUserPoints/{seasonId}/users/{userId}`
 2. Jeśli brak grupy, zwraca pusty ranking
 3. Pobiera wszystkich członków grupy, sortowanych po `points` desc
 4. Dla każdego członka pobiera username z `users/{userId}`
 
-**Lokalizacja w Firestore**: 
+**Lokalizacja w Firestore**:
 `leagueGroups/{seasonId}/{leagueNumber}/groups/{groupId}/members`
 
 ---
@@ -884,6 +951,7 @@ Pobiera pozycję użytkownika w jego grupie.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
   userId: string;      // ID użytkownika (wymagane)
@@ -892,6 +960,7 @@ Pobiera pozycję użytkownika w jego grupie.
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   position: number | null;      // Pozycja w grupie (1-based) lub null
@@ -903,6 +972,7 @@ Pobiera pozycję użytkownika w jego grupie.
 ```
 
 **Logika**:
+
 - Liczy użytkowników w grupie z większą liczbą punktów
 - Pozycja = liczba użytkowników z więcej punktami + 1
 
@@ -915,6 +985,7 @@ Pobiera rankingi znajomych (pozycje w ich grupach).
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
   userId: string;      // ID użytkownika (wymagane)
@@ -923,6 +994,7 @@ Pobiera rankingi znajomych (pozycje w ich grupach).
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   rankings: Array<{
@@ -948,23 +1020,26 @@ Przypisuje użytkownika do grupy ligowej.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  userId: string;         // ID użytkownika (wymagane)
-  leagueNumber: number;   // Numer ligi (1-15, wymagane)
-  seasonId: string;       // ID sezonu (wymagane)
+  userId: string; // ID użytkownika (wymagane)
+  leagueNumber: number; // Numer ligi (1-15, wymagane)
+  seasonId: string; // ID sezonu (wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   success: boolean;
-  groupId: string;        // ID przypisanej grupy
+  groupId: string; // ID przypisanej grupy
 }
 ```
 
 **Logika**:
+
 1. Szuka grupy z `currentCount < capacity` (domyślnie 20)
 2. Jeśli nie znajdzie, tworzy nową grupę
 3. W transakcji:
@@ -987,25 +1062,28 @@ Pobiera informacje o lidze.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  leagueNumber: number;  // Numer ligi (1-15, wymagane)
+  leagueNumber: number; // Numer ligi (1-15, wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   league: {
     id: number;
-    name: string;           // np. "Liga 1", "Złota Liga"
-    color: string;          // Kolor w formacie hex (#FFD700)
-    description: string;    // Opis ligi
-  };
+    name: string; // np. "Liga 1", "Złota Liga"
+    color: string; // Kolor w formacie hex (#FFD700)
+    description: string; // Opis ligi
+  }
 }
 ```
 
 **Dostępne ligi**:
+
 - Liga 1-10: Podstawowe ligi (szare → różowe)
 - Liga 11: Brązowa Liga (#CD7F32)
 - Liga 12: Srebrna Liga (#C0C0C0)
@@ -1022,11 +1100,14 @@ Pobiera informacje o wszystkich ligach.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
-{} // Brak parametrów
+{
+} // Brak parametrów
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   leagues: Array<{
@@ -1047,6 +1128,7 @@ Pobiera informacje o grupie użytkownika.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
   userId: string;      // ID użytkownika (wymagane)
@@ -1055,12 +1137,13 @@ Pobiera informacje o grupie użytkownika.
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   groupId: string | null;
   leagueNumber: number | null;
-  memberCount: number;      // Aktualna liczba członków
-  capacity: number;         // Pojemność grupy (domyślnie: 20)
+  memberCount: number; // Aktualna liczba członków
+  capacity: number; // Pojemność grupy (domyślnie: 20)
   isFull: boolean;
 }
 ```
@@ -1074,6 +1157,7 @@ Aktualizuje ligę użytkownika i przypisuje do nowej grupy.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
   userId: string;        // ID użytkownika (wymagane)
@@ -1083,6 +1167,7 @@ Aktualizuje ligę użytkownika i przypisuje do nowej grupy.
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   success: boolean;
@@ -1092,6 +1177,7 @@ Aktualizuje ligę użytkownika i przypisuje do nowej grupy.
 ```
 
 **Działanie**:
+
 1. Usuwa użytkownika ze starej grupy (zmniejsza `currentCount`)
 2. Aktualizuje `users/{userId}.league`
 3. Przypisuje do nowej grupy w nowej lidze (używa tej samej logiki co `assignUserToGroup`)
@@ -1111,6 +1197,7 @@ Aktualizuje ligę użytkownika i przypisuje do nowej grupy.
 **Warunek**: Wywołuje się tylko gdy `grade` się zmienił.
 
 **Działanie**:
+
 1. Używa algorytmu SuperMemo2 do obliczenia interwału i trudności
 2. Aktualizuje kartę:
    - `difficulty`
@@ -1131,6 +1218,7 @@ Pobiera powiadomienia użytkownika.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
   userId: string;       // ID użytkownika (wymagane)
@@ -1139,6 +1227,7 @@ Pobiera powiadomienia użytkownika.
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   notifications: Array<{
@@ -1146,7 +1235,7 @@ Pobiera powiadomienia użytkownika.
     title: string;
     body: string;
     type: "info" | "success" | "warning" | "error";
-    linkTo?: string;    // Opcjonalny link
+    linkTo?: string; // Opcjonalny link
     read: boolean;
     createdAt: Date;
   }>;
@@ -1166,14 +1255,16 @@ Oznacza powiadomienie jako przeczytane.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  userId: string;           // ID użytkownika (wymagane)
-  notificationId: string;  // ID powiadomienia (wymagane)
+  userId: string; // ID użytkownika (wymagane)
+  notificationId: string; // ID powiadomienia (wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   success: boolean;
@@ -1191,21 +1282,23 @@ Tworzy powiadomienie dla użytkownika (do użycia przez system).
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  userId: string;                    // ID użytkownika (wymagane)
-  notification: NotificationData;   // Dane powiadomienia (wymagane)
+  userId: string; // ID użytkownika (wymagane)
+  notification: NotificationData; // Dane powiadomienia (wymagane)
 }
 
 interface NotificationData {
   title: string;
   body: string;
-  type?: "info" | "success" | "warning" | "error";  // Domyślnie: "info"
+  type?: "info" | "success" | "warning" | "error"; // Domyślnie: "info"
   linkTo?: string;
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   success: boolean;
@@ -1225,6 +1318,7 @@ interface NotificationData {
 **Warunek**: `afterData.league > beforeData.league && afterData.league <= 15`
 
 **Powiadomienie**:
+
 ```typescript
 {
   title: "Ranking Up!",
@@ -1242,13 +1336,15 @@ Tworzy powiadomienie o przerwaniu serii.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  userId: string;  // ID użytkownika (wymagane)
+  userId: string; // ID użytkownika (wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   success: boolean;
@@ -1256,6 +1352,7 @@ Tworzy powiadomienie o przerwaniu serii.
 ```
 
 **Powiadomienie**:
+
 ```typescript
 {
   title: "Streak broken",
@@ -1275,6 +1372,7 @@ Tworzy powiadomienie o zakończeniu sezonu.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
   userId: string;           // ID użytkownika (wymagane)
@@ -1285,6 +1383,7 @@ Tworzy powiadomienie o zakończeniu sezonu.
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   success: boolean;
@@ -1292,6 +1391,7 @@ Tworzy powiadomienie o zakończeniu sezonu.
 ```
 
 **Logika powiadomienia**:
+
 - Jeśli `finalPosition <= 3 && leagueNumber < 15`: Specjalne powiadomienie o awansie
 - W przeciwnym razie: Standardowe powiadomienie o zakończeniu sezonu
 
@@ -1308,6 +1408,7 @@ Wyszukuje talie z zaawansowanym filtrowaniem.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
   searchText?: string;     // Tekst wyszukiwania (opcjonalne)
@@ -1321,6 +1422,7 @@ Wyszukuje talie z zaawansowanym filtrowaniem.
 ```
 
 **Zwraca**:
+
 ```typescript
 {
   results: Array<{
@@ -1336,6 +1438,7 @@ Wyszukuje talie z zaawansowanym filtrowaniem.
 ```
 
 **Logika wyszukiwania**:
+
 - **Tekst**: Wyszukiwanie prefixowe w `title` (`>=` i `<=` z `\uf8ff`)
 - **Filtry**: Dodatkowe warunki WHERE
 
@@ -1352,13 +1455,15 @@ Pobiera historię wyszukiwań użytkownika.
 **Typ**: `onCall`
 
 **Parametry wejściowe**:
+
 ```typescript
 {
-  userId: string;  // ID użytkownika (wymagane)
+  userId: string; // ID użytkownika (wymagane)
 }
 ```
 
 **Zwraca**:
+
 ```typescript
 Array<{
   id: string;
@@ -1371,7 +1476,7 @@ Array<{
   };
   resultsCount: number;
   timestamp: Date;
-}>
+}>;
 ```
 
 ---
@@ -1381,6 +1486,7 @@ Array<{
 ### Kolekcje Firestore
 
 #### `users/{userId}`
+
 ```typescript
 {
   username?: string;
@@ -1406,6 +1512,7 @@ Array<{
 ```
 
 #### `users/{userId}/decks/{deckId}`
+
 ```typescript
 {
   title: string;
@@ -1414,6 +1521,7 @@ Array<{
 ```
 
 #### `users/{userId}/decks/{deckId}/cards/{cardId}`
+
 ```typescript
 {
   front: string;
@@ -1442,17 +1550,19 @@ Array<{
 ```
 
 #### `users/{userId}/studySessions/{sessionId}`
+
 ```typescript
 {
   deckId: string;
   cardId: string;
   grade: number;
   date: Date;
-  reviewTime: number;          // Timestamp
+  reviewTime: number; // Timestamp
 }
 ```
 
 #### `users/{userId}/notifications/{notificationId}`
+
 ```typescript
 {
   title: string;
@@ -1466,6 +1576,7 @@ Array<{
 ```
 
 #### `users/{userId}/settings/app`
+
 ```typescript
 {
   theme?: "light" | "dark";
@@ -1477,6 +1588,7 @@ Array<{
 ```
 
 #### `decks/{deckId}`
+
 ```typescript
 {
   title: string;
@@ -1493,6 +1605,7 @@ Array<{
 ```
 
 #### `decks/{deckId}/cards/{cardId}`
+
 ```typescript
 {
   front: string;
@@ -1510,6 +1623,7 @@ Array<{
 ```
 
 #### `ranking/currentSeason`
+
 ```typescript
 {
   seasonId: string;            // Format: YYYY-MM-DD_YYYY-MM-DD
@@ -1522,6 +1636,7 @@ Array<{
 ```
 
 #### `seasonUserPoints/{seasonId}/users/{userId}`
+
 ```typescript
 {
   points: number;
@@ -1532,11 +1647,12 @@ Array<{
 ```
 
 #### `leagueGroups/{seasonId}/{leagueNumber}/groups/{groupId}`
+
 ```typescript
 {
   createdAt: Date;
   isFull: boolean;
-  capacity: number;            // Domyślnie: 20
+  capacity: number; // Domyślnie: 20
   currentCount: number;
   seasonId: string;
   leagueNumber: number;
@@ -1544,6 +1660,7 @@ Array<{
 ```
 
 #### `leagueGroups/{seasonId}/{leagueNumber}/groups/{groupId}/members/{userId}`
+
 ```typescript
 {
   userId: string;
@@ -1553,13 +1670,14 @@ Array<{
 ```
 
 #### `leaderboards/{seasonId}/groups/global`
+
 ```typescript
 {
   entries: Array<{
     userId: string;
     points: number;
     lastActivityAt: Date;
-    position: number;          // 1-based
+    position: number; // 1-based
   }>;
   updatedAt: Date;
 }
@@ -1595,6 +1713,7 @@ try {
 ### Logowanie
 
 Wszystkie funkcje logują:
+
 - Błędy: `logger.error("Description", error)`
 - Informacje: `logger.info("Description", data)`
 - Ostrzeżenia: `logger.warn("Description", data)`
@@ -1608,12 +1727,14 @@ Logi są dostępne w Firebase Console → Functions → Logs.
 ### Autoryzacja
 
 Niektóre funkcje wymagają autoryzacji:
+
 - `resetDeck`: Wymaga `request.auth`
 - `updateDeckSettings`: Wymaga `request.auth`
 
 ### Sprawdzanie uprawnień
 
 Funkcje sprawdzające uprawnienia:
+
 - **Reset/Update Deck**: Sprawdza czy `deckData.createdBy === userId` lub `userData.decks.includes(deckId)`
 
 ### Walidacja danych
@@ -1638,16 +1759,20 @@ const season = await getCurrentSeason();
 // 2. Prześlij punkty
 await submitPoints({
   userId: "user123",
-  delta: 10
+  delta: 10,
 });
 
 // 3. Pobierz ranking
 const leaderboard = await getLeaderboard({
   userId: "user123",
-  seasonId: season.seasonId
+  seasonId: season.seasonId,
 });
 
-console.log(`Pozycja: ${leaderboard.entries.find(e => e.userId === "user123")?.position}`);
+console.log(
+  `Pozycja: ${
+    leaderboard.entries.find((e) => e.userId === "user123")?.position
+  }`
+);
 ```
 
 ### Przykład 2: Utworzenie talii i dodanie kart
@@ -1655,13 +1780,13 @@ console.log(`Pozycja: ${leaderboard.entries.find(e => e.userId === "user123")?.p
 ```typescript
 const cards = [
   { front: "Hello", back: "Cześć", tags: ["greetings"] },
-  { front: "Goodbye", back: "Do widzenia", tags: ["greetings"] }
+  { front: "Goodbye", back: "Do widzenia", tags: ["greetings"] },
 ];
 
 const result = await createDeckWithCards({
   title: "Podstawowe zwroty",
   cards: cards,
-  userId: "user123"
+  userId: "user123",
 });
 
 console.log(`Utworzono talię: ${result.deckId}`);
@@ -1670,13 +1795,15 @@ console.log(`Utworzono talię: ${result.deckId}`);
 ### Przykład 3: Aktualizacja postępu karty
 
 ```typescript
+import { CardGrade } from "@/types/schemas";
+
 await updateCardProgress({
   userId: "user123",
   deckId: "deck456",
   cardId: "card789",
-  grade: 4,           // Ocena 4/5
-  difficulty: 2.3,    // Trudność FSRS
-  interval: 5         // Interwał 5 dni
+  grade: CardGrade.Good, // Czytelna ocena zamiast surowej liczby
+  difficulty: 2.3, // Trudność FSRS
+  interval: 5, // Interwał 5 dni
 });
 
 // Trigger calculateNextReview automatycznie obliczy nextReviewDate
@@ -1688,13 +1815,13 @@ await updateCardProgress({
 // Pobierz nowe karty do wprowadzenia
 const newCards = await getNewDeckCards({
   deckId: "deck456",
-  limit: 10
+  limit: 10,
 });
 
 // Pobierz karty do powtórki
 const dueCards = await getDueDeckCards({
   deckId: "deck456",
-  limit: 20
+  limit: 20,
 });
 ```
 
@@ -1704,14 +1831,14 @@ const dueCards = await getDueDeckCards({
 // Pobierz powiadomienia
 const notifications = await getNotifications({
   userId: "user123",
-  limit: 20
+  limit: 20,
 });
 
 // Oznacz jako przeczytane
 if (notifications.notifications.length > 0) {
   await markNotificationRead({
     userId: "user123",
-    notificationId: notifications.notifications[0].id
+    notificationId: notifications.notifications[0].id,
   });
 }
 ```
@@ -1753,8 +1880,7 @@ Data aktualizacji: 2024
 ## Wsparcie
 
 W razie pytań lub problemów, sprawdź:
+
 - Firebase Console → Functions → Logs
 - Kod źródłowy w `functions/src/`
 - Typy TypeScript w `functions/src/types/`
-
-

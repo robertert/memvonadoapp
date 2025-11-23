@@ -40,3 +40,7 @@ yarn-error.*
 
 #firebase
 firebase.js
+
+credentials/
+
+credentials.json

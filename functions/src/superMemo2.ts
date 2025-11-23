@@ -1,3 +1,5 @@
+import { SuperMemoResult } from "./types/common";
+
 /**
  * SuperMemo2 Algorithm Implementation
  */
@@ -16,7 +18,7 @@ export class SuperMemo2 {
   calculate(
     grade: number,
     prevDifficulty: number,
-    prevInterval: number,
+    prevInterval: number
   ): SuperMemoResult {
     const newDifficulty =
       prevDifficulty +
@@ -28,8 +30,6 @@ export class SuperMemo2 {
     const interval = prevInterval * Math.pow(2, prevDifficulty - 1) * factor;
     const adjustedInterval = Math.max(interval, this.initialInterval);
 
-    return {interval: adjustedInterval, difficulty};
+    return { interval: adjustedInterval, difficulty };
   }
 }
-
-import {SuperMemoResult} from "./types/common";

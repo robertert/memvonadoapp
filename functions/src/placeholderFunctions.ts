@@ -1,6 +1,7 @@
 import { onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { CardGrade } from "./types/common";
 
 const db = getFirestore();
 
@@ -260,6 +261,7 @@ export const addPlaceholderData = onCall(async (request) => {
         createdBy: targetUserId,
         createdAt: new Date(),
         isPublic: true,
+        is_deleted: false,
         subject: deckData.subject,
         views: Math.floor(Math.random() * 100),
       });
@@ -275,7 +277,7 @@ export const addPlaceholderData = onCall(async (request) => {
             createdAt: new Date(),
             difficulty: 2.5,
             nextReviewInterval: 1,
-            grade: -1,
+            grade: CardGrade.NotGraded,
             // Dodaj firstLearn dla nowych kart
             firstLearn: {
               isNew: true,

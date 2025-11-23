@@ -21,7 +21,9 @@ interface UserContextProviderProps {
   children: ReactNode;
 }
 
-function UserContextProvider({ children }: UserContextProviderProps): React.JSX.Element {
+function UserContextProvider({
+  children,
+}: UserContextProviderProps): React.JSX.Element {
   const [name, setName] = useState<string | null>("");
   const [id, setId] = useState<string | null>(null);
 
@@ -44,8 +46,10 @@ function UserContextProvider({ children }: UserContextProviderProps): React.JSX.
           const userRef = doc(db, "users", user.uid);
           const snap = await getDoc(userRef);
           const data = snap.data();
-          if (data && (data as any).name) {
-            setName((data as any).name as string);
+          if (data && ((data as any).username || (data as any).name)) {
+            setName(
+              ((data as any).username || (data as any).name || "User") as string
+            );
           } else if (!name) {
             setName("User");
           }

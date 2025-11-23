@@ -1,66 +1,121 @@
 import { PLACEHOLDER_MODE } from "./flags";
+import {
+  DeckSchema,
+  NotificationSchema,
+  UserSchema,
+  CardSchema,
+  LeagueGroupMemberSchema,
+} from "../types/schemas";
+import type {
+  Deck,
+  Notification,
+  User,
+  Card,
+  LeagueGroupMember,
+} from "../types";
 
-export const placeholderUser = {
-  userId: "placeholder-user",
+// Walidacja i eksport danych placeholder użytkownika zgodnych z UserSchema
+const _placeholderUser = {
+  id: "placeholder-user",
   username: "DemoUser",
   email: "demo@example.com",
+  settings: {
+    theme: "light",
+    notificationsEnabled: true,
+    dailyGoal: 120,
+    dailyNew: 20,
+    language: "en",
+  },
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  league: 3,
+  currentGroupId: "group-demo",
+  experiencePoints: 1250,
+  currencyCount: 0,
   stats: {
     totalCards: 42,
     totalDecks: 5,
     totalReviews: 128,
     averageDifficulty: 2.6,
+    currentStreak: 5,
+    longestStreak: 7,
+    // lastStreakDate i lastStudyDate mogą być pominięte
   },
-  streak: 5,
-  league: 3,
-  points: 1250,
-  friendsCount: 3,
-  followers: 10,
-  following: 8,
+  followingCount: 8,
+  followersCount: 10,
 };
 
-export const placeholderDecks = [
+export const placeholderUser: User = UserSchema.parse(_placeholderUser);
+
+// Walidacja i eksport danych placeholder talii zgodnych z DeckSchema
+const _placeholderDecks = [
   {
     id: "deck-1",
     title: "Angielski - Słówka podstawowe",
-    subject: "Języki obce",
+    category: "Języki obce",
+    icon: "cards",
+    tags: ["podstawowe"],
+    isPublic: true,
     views: 73,
     likes: 12,
     cardsNum: 10,
     createdBy: "placeholder-user",
+    createdByUsername: "DemoUser",
     createdAt: new Date(),
-    isPublic: true,
-    settings: {},
+    is_deleted: false,
   },
   {
     id: "deck-2",
     title: "Geografia - Stolice Europy",
-    subject: "Geografia",
+    category: "Geografia",
+    icon: "cards",
+    tags: ["stolice"],
+    isPublic: true,
     views: 51,
     likes: 9,
     cardsNum: 10,
     createdBy: "placeholder-user",
+    createdByUsername: "DemoUser",
     createdAt: new Date(),
-    isPublic: true,
-    settings: {},
+    is_deleted: false,
   },
 ];
 
-export const placeholderCards = [
+export const placeholderDecks: Deck[] = _placeholderDecks.map((deck) =>
+  DeckSchema.parse(deck)
+);
+
+// Walidacja i eksport danych placeholder kart zgodnych z CardSchema
+const _placeholderCards = [
   {
     id: "c1",
-    cardData: { front: "Cześć", back: "Hello", tags: ["podstawowe"] },
+    cardData: { front: "Cześć", back: "Hello" },
+    tags: ["podstawowe"],
+    firstLearn: { isNew: true },
+    createdAt: new Date(),
   },
   {
     id: "c2",
-    cardData: { front: "Dziękuję", back: "Thank you", tags: ["podstawowe"] },
+    cardData: { front: "Dziękuję", back: "Thank you" },
+    tags: ["podstawowe"],
+    firstLearn: { isNew: true },
+    createdAt: new Date(),
   },
   {
     id: "c3",
-    cardData: { front: "Stolica Polski", back: "Warszawa", tags: ["stolice"] },
+    cardData: { front: "Stolica Polski", back: "Warszawa" },
+    tags: ["stolice"],
+    firstLearn: { isNew: true },
+    createdAt: new Date(),
   },
 ];
 
-export const placeholderNotifications = [
+export const placeholderCards: Card[] = _placeholderCards.map((card) =>
+  CardSchema.parse(card)
+);
+
+// Walidacja i eksport danych placeholder powiadomień zgodnych z NotificationSchema
+const _placeholderNotifications = [
   {
     id: "n1",
     title: "Witaj w Memvocado! 🎉",
@@ -79,35 +134,67 @@ export const placeholderNotifications = [
   },
 ];
 
-export const placeholderRanking = {
+export const placeholderNotifications: Notification[] =
+  _placeholderNotifications.map((notif) => NotificationSchema.parse(notif));
+
+// Walidacja i eksport danych placeholder rankingu zgodnych z LeagueGroupMemberSchema
+const _placeholderRanking = {
   entries: [
     {
-      userId: "u1",
+      id: "u1",
       username: "Alice",
       points: 1540,
-      position: 1,
       lastActivityAt: new Date(),
     },
     {
-      userId: "placeholder-user",
+      id: "placeholder-user",
       username: "DemoUser",
       points: 1250,
-      position: 2,
       lastActivityAt: new Date(),
     },
     {
-      userId: "u3",
+      id: "u3",
       username: "Bob",
       points: 980,
-      position: 3,
+      lastActivityAt: new Date(),
+    },
+    {
+      id: "u4",
+      username: "Charlie",
+      points: 880,
+      lastActivityAt: new Date(),
+    },
+    {
+      id: "u5",
+      username: "Diana",
+      points: 780,
+      lastActivityAt: new Date(),
+    },
+    {
+      id: "u6",
+      username: "Ethan",
+      points: 680,
+      lastActivityAt: new Date(),
+    },
+    {
+      id: "u7",
+      username: "Fiona",
+      points: 580,
+      lastActivityAt: new Date(),
+    },
+    {
+      id: "u8",
+      username: "George",
+      points: 480,
       lastActivityAt: new Date(),
     },
   ],
-  groupId: "grp-1",
-  leagueNumber: 3,
-  seasonId: "S-2025-45",
-  totalMembers: 20,
 };
+
+export const placeholderRanking: LeagueGroupMember[] =
+  _placeholderRanking.entries.map((entry) =>
+    LeagueGroupMemberSchema.parse(entry)
+  );
 
 // Prosty helper do zwracania placeholderów, gdy włączony jest PLACEHOLDER_MODE
 export function usePlaceholderIfNeeded<T>(

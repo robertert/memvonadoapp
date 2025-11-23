@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -25,94 +25,182 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import { UserContext } from "../../store/user-context";
 import { ScrollView } from "react-native-gesture-handler";
-
-interface Card {
-  id: string;
-  front: string;
-  back: string;
-  isMoreFront: boolean;
-  isMoreBack: boolean;
-  tags: string[];
-  frontColor?: string;
-  backColor?: string;
-}
+import {
+  CardCoreSchema,
+  CardCore,
+  safeValidateArray,
+  Card,
+  DeckCore,
+} from "@/types";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface CreateSelfParams {
   cards?: string;
 }
+
+// Lokalny typ dla edycji - CardCore z id do identyfikacji podczas edycji
+type EditableCard = CardCore & { id: string };
 
 export default function createSelfScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const typedParams = params as CreateSelfParams;
 
-  const [cards, setCards] = useState<Card[]>([
-    {
-      id: "test",
-      front: "",
-      back: "",
-      isMoreFront: false,
-      isMoreBack: false,
-      tags: [],
-    },
-    {
-      id: "test1",
-      front: "",
-      back: "",
-      isMoreFront: false,
-      isMoreBack: false,
-      tags: [],
-    },
-  ]);
+  const [cards, setCards] = useState<EditableCard[]>([]);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [title, setTitle] = useState<string>("");
-  const [isTagsShown, setIsTagsShown] = useState<boolean>(false);
-  const [tagCard, setTagCard] = useState<Card | null>(null);
-  const [newTag, setNewTag] = useState<string>("");
   const [deckLanguage, setDeckLanguage] = useState<string>("en");
+
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const draftKeyRef = useRef<string>("deck_draft_" + Date.now());
 
   const userCtx = useContext(UserContext);
 
+  // Load draft on mount
   useEffect(() => {
-    if (typedParams.cards) {
-      const gotCards = JSON.parse(typedParams.cards).map((card: any) => {
-        card = {
-          ...card,
-          id: generageRandomUid(),
-          tags: [],
-          isMoreFront: false,
-          isMoreBack: false,
-        };
-        return card;
-      });
-      setCards(gotCards);
-    }
+    const loadDraft = async () => {
+      try {
+        if (typedParams.cards) {
+          const gotCards = JSON.parse(typedParams.cards).map((card: any) => ({
+            id: generageRandomUid(),
+            cardData: {
+              front: card.front,
+              back: card.back,
+            },
+            tags: card.tags || [],
+          })) as EditableCard[];
+          setCards(gotCards);
+        } else {
+          // Try to load draft from AsyncStorage
+          const draftData = await AsyncStorage.getItem(draftKeyRef.current);
+          if (draftData) {
+            const draft = JSON.parse(draftData);
+            if (draft.title || (draft.cards && draft.cards.length > 0)) {
+              setTitle(draft.title || "");
+              // Ensure all cards have id
+              const cardsWithId = (draft.cards || []).map((card: any) => ({
+                id: card.id || generageRandomUid(),
+                cardData: card.cardData || { front: "", back: "" },
+                tags: card.tags || [],
+              })) as EditableCard[];
+              setCards(cardsWithId);
+              setDeckLanguage(draft.deckLanguage || "en");
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error loading draft:", error);
+      }
+    };
+    loadDraft();
   }, []);
 
+  // Autosave draft (3 seconds debounce)
+  useEffect(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Only save if there's actual content
+    const hasContent = title.trim().length > 0 || cards.length > 0;
+    if (!hasContent) return;
+
+    saveTimeoutRef.current = setTimeout(() => {
+      saveDraft();
+    }, 3000); // 3 seconds debounce
+
+    // Cleanup on unmount
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [cards, title, deckLanguage]);
+
+  // Save draft on unmount
+  useEffect(() => {
+    return () => {
+      saveDraft();
+    };
+  }, []);
+
+  // Save draft to AsyncStorage (autosave)
+  async function saveDraft(): Promise<void> {
+    try {
+      const hasContent = title.trim().length > 0 || cards.length > 0;
+      if (!hasContent) {
+        // Clear draft if empty
+        await AsyncStorage.removeItem(draftKeyRef.current);
+        return;
+      }
+
+      const draft = {
+        title,
+        cards: cards.map((card) => ({
+          id: card.id,
+          cardData: card.cardData,
+          tags: card.tags,
+        })),
+        deckLanguage,
+        savedAt: Date.now(),
+      };
+
+      await AsyncStorage.setItem(draftKeyRef.current, JSON.stringify(draft));
+      console.log("Draft saved");
+    } catch (error) {
+      console.error("Error saving draft:", error);
+    }
+  }
+
+  // Final save (create deck in Firestore)
   async function saveHandler(): Promise<void> {
     try {
       setIsLoading(true);
 
+      // Clear draft after successful save
+      await AsyncStorage.removeItem(draftKeyRef.current);
+
       // Prepare cards data for Cloud Function
       const cardsData = cards.map((card) => ({
-        front: card.front,
-        back: card.back,
+        cardData: {
+          front: card.cardData.front,
+          back: card.cardData.back,
+        },
         tags: card.tags || [],
       }));
 
+      const deckData = {
+        title,
+        category: deckLanguage,
+        icon: "cards",
+        isPublic: true,
+      } as DeckCore;
+
+      const resultCards = safeValidateArray(cardsData, CardCoreSchema);
+      if (!resultCards.success) {
+        console.error("Invalid cards data", resultCards.error);
+        throw new Error("Invalid cards data");
+      }
+
+      if (!userCtx.id) {
+        throw new Error("User ID is required");
+      }
+
       // Use Cloud Function to create deck with cards
       const result = await cloudFunctions.createDeckWithCards(
-        title,
-        cardsData,
-        userCtx.id || ""
+        deckData,
+        resultCards.data,
+        userCtx.id
       );
 
-      console.log("Deck created successfully:", result.deckId);
-      router.back();
-      setIsLoading(false);
-    } catch (e) {
-      console.log(e);
+      router.push({
+        pathname: "/stack/deckDetails",
+        params: { deckId: result.deckId },
+      });
+    } catch (error) {
+      console.error("Error creating deck:", error);
+    } finally {
       setIsLoading(false);
     }
   }
@@ -123,10 +211,10 @@ export default function createSelfScreen(): React.JSX.Element {
         ...prev,
         {
           id: generageRandomUid(),
-          front: "",
-          back: "",
-          isMoreFront: false,
-          isMoreBack: false,
+          cardData: {
+            front: "",
+            back: "",
+          },
           tags: [],
         },
       ];
@@ -135,51 +223,6 @@ export default function createSelfScreen(): React.JSX.Element {
 
   function titleChangeHandler(text: string): void {
     setTitle(text);
-  }
-
-  function tagsShownHandler(card: Card): void {
-    setIsTagsShown((prev) => !prev);
-    setTagCard(card);
-  }
-
-  function tagChangeHandler(text: string): void {
-    setNewTag(text);
-  }
-
-  function newTagHandler(): void {
-    if (!tagCard) return;
-
-    setCards((prev) => {
-      let newCards = [...prev];
-      newCards = newCards.map((card) => {
-        if (card.id === tagCard.id) {
-          if (card.tags) {
-            card.tags.push(newTag);
-          } else {
-            card.tags = [newTag];
-          }
-        }
-        return card;
-      });
-      return newCards;
-    });
-
-    setNewTag("");
-  }
-
-  function delTagHandler(delTag: string): void {
-    if (!tagCard) return;
-
-    setCards((prev) => {
-      let newCards = [...prev];
-      newCards = newCards.map((card) => {
-        if (card.id === tagCard.id) {
-          card.tags = card.tags.filter((tag) => tag !== delTag);
-        }
-        return card;
-      });
-      return newCards;
-    });
   }
 
   return (
@@ -277,7 +320,6 @@ export default function createSelfScreen(): React.JSX.Element {
                       key={card.id}
                       card={card}
                       setCards={setCards}
-                      tagsShownHandler={tagsShownHandler}
                       deckLanguage={deckLanguage}
                     />
                   );
@@ -300,75 +342,6 @@ export default function createSelfScreen(): React.JSX.Element {
               </Pressable>
             </ScrollView>
           )}
-          <Modal
-            visible={isTagsShown}
-            transparent={true}
-            animationType="slide"
-            onRequestClose={() => setIsTagsShown(false)}
-          >
-            <Pressable
-              style={styles.modalOverlay}
-              onPress={() => setIsTagsShown(false)}
-            >
-              <View style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.tagsTitle}>Tagi</Text>
-                  <Pressable
-                    onPress={() => setIsTagsShown(false)}
-                    style={styles.closeButton}
-                  >
-                    <AntDesign
-                      name="close"
-                      size={24}
-                      color={Colors.primary_700}
-                    />
-                  </Pressable>
-                </View>
-
-                <ScrollView style={styles.tagsScrollView}>
-                  {(cards.filter((card) => card.id === tagCard?.id)[0]?.tags
-                    ? cards.filter((card) => card.id === tagCard?.id)[0].tags
-                    : []
-                  ).map((itemData, index) => {
-                    return (
-                      <View key={index} style={styles.tagItem}>
-                        <Text style={styles.tagText}>{itemData}</Text>
-                        <Pressable onPress={() => delTagHandler(itemData)}>
-                          <FontAwesome5
-                            name="trash"
-                            size={20}
-                            color={Colors.red}
-                          />
-                        </Pressable>
-                      </View>
-                    );
-                  })}
-                </ScrollView>
-
-                <View style={styles.addTagContainer}>
-                  <View style={styles.tagInputContainer}>
-                    <TextInput
-                      onChangeText={tagChangeHandler}
-                      value={newTag}
-                      style={styles.tagInput}
-                      placeholder="Dodaj nowy tag..."
-                      placeholderTextColor={Colors.primary_700_50}
-                    />
-                  </View>
-                  <Pressable
-                    onPress={newTagHandler}
-                    style={styles.addTagButton}
-                  >
-                    <AntDesign
-                      name="plus"
-                      size={20}
-                      color={Colors.primary_100}
-                    />
-                  </Pressable>
-                </View>
-              </View>
-            </Pressable>
-          </Modal>
         </View>
       </LinearGradient>
     </GestureHandlerRootView>

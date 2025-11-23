@@ -14,6 +14,7 @@ import {
   clearUserData,
 } from "./helpers/testHelpers";
 import { mockUserId, mockDeckId, mockCardId } from "./helpers/mockData";
+import { CardGrade } from "../../types";
 
 const db = admin.firestore();
 
@@ -38,7 +39,7 @@ describe("Learning Functions", () => {
           front: "Test question",
           back: "Test answer",
           tags: [],
-          grade: -1,
+          grade: CardGrade.NotGraded,
           cardAlgo: {
             difficulty: 2.5,
             stability: 0,
@@ -57,7 +58,7 @@ describe("Learning Functions", () => {
       await db
         .doc(`users/${mockUserId}/decks/${mockDeckId}/cards/${mockCardId}`)
         .update({
-          grade: 3,
+          grade: CardGrade.Easy,
         });
       await waitForFirestore();
 
@@ -78,7 +79,7 @@ describe("Learning Functions", () => {
       } else {
         // Trigger didn't fire in emulator - this is expected behavior
         // In production, trigger would fire automatically
-        expect(cardData?.grade).toBe(3);
+        expect(cardData?.grade).toBe(CardGrade.Easy);
       }
     });
 
@@ -86,7 +87,7 @@ describe("Learning Functions", () => {
       await createTestUser(mockUserId);
       await createTestDeck(mockDeckId, mockUserId);
       await createTestCard(mockDeckId, mockCardId, {
-        grade: 3,
+        grade: CardGrade.Easy,
         cardAlgo: {
           difficulty: 2.5,
           stability: 10,

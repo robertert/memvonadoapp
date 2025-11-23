@@ -2,6 +2,7 @@ import React from "react";
 import { renderHook, act } from "@testing-library/react-native";
 import { useCardLogic } from "../app/stack/useCardLogic";
 import { UserContext } from "../store/user-context";
+import { CardGrade } from "@/types/schemas";
 
 // Mock data
 const mockUserContext = {
@@ -276,7 +277,7 @@ describe("Error Handling", () => {
           state: 1,
           due: Date.now(),
         },
-        grade: 0,
+        grade: CardGrade.Wrong,
         difficulty: 2.5,
         interval: 1,
       };
@@ -349,7 +350,7 @@ describe("Error Handling", () => {
             state: 1,
             due: Date.now(),
           },
-          grade: 0,
+          grade: CardGrade.Wrong,
           difficulty: 2.5,
           interval: 1,
         },

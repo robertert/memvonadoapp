@@ -1,3 +1,4 @@
+import { SuperMemoResult } from "./types/common";
 /**
  * SuperMemo2 Algorithm Implementation
  */
@@ -14,4 +15,3 @@ export declare class SuperMemo2 {
      */
     calculate(grade: number, prevDifficulty: number, prevInterval: number): SuperMemoResult;
 }
-import { SuperMemoResult } from "./types/common";

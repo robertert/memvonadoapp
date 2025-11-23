@@ -1,10 +1,273 @@
 import { onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { onDocumentWritten } from "firebase-functions/firestore";
-import { transformCardData } from "./types/common";
+import { onDocumentWritten } from "firebase-functions/v2/firestore";
+import {
+  Deck,
+  DeckSchema,
+  CardAlgoSchema,
+  FirstLearnSchema,
+  StudySessionCreateSchema,
+  UserSettingsSchema,
+  UserStatsSchema,
+  SeasonUserPointsSchema,
+  LeagueGroupSchema,
+  type CardAlgo,
+  type FirstLearn,
+  type StudySessionCreate,
+  type UserSettings,
+  type UserStats,
+  type SeasonUserPoints,
+  type LeagueGroup,
+  UserProgressSchema,
+  User,
+} from "./types/common";
 
 const db = getFirestore();
+
+/**
+ * Pomocniczo: formatuje datę na łańcuch w formacie YYYY-MM-DD w zadanej strefie czasowej.
+ * @param {Date} date Data wejściowa w czasie UTC/systemowym
+ * @param {string} timeZone Identyfikator strefy czasowej IANA, np. "Europe/Warsaw"
+ * @return {string} Łańcuch daty w formacie YYYY-MM-DD dla kalendarzowego dnia w danej strefie
+ */
+function formatYmdInTimeZone(date: Date, timeZone: string): string {
+  // en-CA daje format yyyy-mm-dd
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+/**
+ * Wspólna logika aktualizacji streaka dla bieżącego dnia.
+ * Jeśli liczba dzisiejszych sesji (w strefie użytkownika) >= progu, aktualizuje pola streaka.
+ *
+ * @param {Object} params
+ * @param {string} params.userId Identyfikator użytkownika
+ * @param {string} [params.timeZone] Strefa czasowa IANA (np. "Europe/Warsaw")
+ * @param {number} [params.threshold=10] Dzienny próg liczby kart
+ * @return {Promise<{qualified:boolean, updated:boolean, currentStreak:number, longestStreak:number, lastStreakDate:(string|null), threshold:number, todayCount:(number|undefined)}>}
+ */
+async function updateStreakForTodayIfQualified(params: {
+  userId: string;
+  timeZone?: string;
+  threshold?: number;
+}): Promise<{
+  qualified: boolean;
+  updated: boolean;
+  currentStreak: number;
+  longestStreak: number;
+  lastStreakDate: string | null;
+  threshold: number;
+  todayCount: number | undefined;
+}> {
+  const { userId, timeZone, threshold } = params;
+  const dailyThreshold: number =
+    typeof threshold === "number" && threshold > 0 ? threshold : 10;
+
+  const userRef = db.doc(`users/${userId}`);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) {
+    throw new Error("User not found");
+  }
+  const userData = userSnap.data() as {
+    settings?: { timeZone?: string };
+    stats?: {
+      currentStreak?: number;
+      longestStreak?: number;
+      lastStreakDate?: string | null;
+    };
+  };
+
+  const tz: string = timeZone || userData?.settings?.timeZone || "UTC";
+  const nowLocal = new Date();
+  const todayYmd = formatYmdInTimeZone(nowLocal, tz);
+
+  // Idempotencja – jeśli już zaliczony dzień, nic nie rób
+  if (userData?.stats?.lastStreakDate === todayYmd) {
+    return {
+      qualified: false,
+      updated: false,
+      currentStreak: Number(userData?.stats?.currentStreak || 0),
+      longestStreak: Number(userData?.stats?.longestStreak || 0),
+      lastStreakDate: userData?.stats?.lastStreakDate || null,
+      threshold: dailyThreshold,
+      todayCount: undefined,
+    };
+  }
+
+  // Zlicz dzisiejsze sesje (wyciągamy ~36h i filtrujemy po YYYY-MM-DD w strefie)
+  const thirtySixHoursAgo = new Date(nowLocal.getTime() - 36 * 60 * 60 * 1000);
+  const todaySessionsSnap = await db
+    .collection(`users/${userId}/studySessions`)
+    .where("reviewTime", ">=", thirtySixHoursAgo)
+    .orderBy("reviewTime", "desc")
+    .get();
+
+  let todayCount = 0;
+  todaySessionsSnap.docs.forEach((doc) => {
+    const data = doc.data() as { reviewTime?: FirebaseFirestore.Timestamp };
+    const ts = data.reviewTime;
+    if (ts) {
+      const ymd = formatYmdInTimeZone(ts.toDate(), tz);
+      if (ymd === todayYmd) {
+        todayCount += 1;
+      }
+    }
+  });
+
+  const qualified = todayCount >= dailyThreshold;
+  if (!qualified) {
+    return {
+      qualified,
+      updated: false,
+      currentStreak: Number(userData?.stats?.currentStreak || 0),
+      longestStreak: Number(userData?.stats?.longestStreak || 0),
+      lastStreakDate: userData?.stats?.lastStreakDate || null,
+      threshold: dailyThreshold,
+      todayCount,
+    };
+  }
+
+  const current = Number(userData?.stats?.currentStreak || 0);
+  const longest = Number(userData?.stats?.longestStreak || 0);
+  const nextCurrent = current + 1;
+  const nextLongest = Math.max(longest, nextCurrent);
+
+  await userRef.update({
+    "stats.currentStreak": nextCurrent,
+    "stats.longestStreak": nextLongest,
+    "stats.lastStreakDate": todayYmd,
+  } as Partial<User>);
+
+  return {
+    qualified: true,
+    updated: true,
+    currentStreak: nextCurrent,
+    longestStreak: nextLongest,
+    lastStreakDate: todayYmd,
+    threshold: dailyThreshold,
+    todayCount,
+  };
+}
+
+/**
+ * Aktualizuje streak użytkownika „na żądanie” przy starcie aplikacji.
+ * Bazuje na tym, czy wczoraj (w strefie czasowej użytkownika) była jakakolwiek sesja.
+ * Idempotentne dzięki polu stats.lastStreakDate (YYYY-MM-DD).
+ */
+export const updateUserStreakOnLogin = onCall(async (request) => {
+  const { userId, timeZone } = request.data || {};
+
+  if (!userId) {
+    throw new Error("userId is required");
+  }
+
+  try {
+    const userRef = db.doc(`users/${userId}`);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) {
+      throw new Error("User not found");
+    }
+    const userData = userSnap.data() as any;
+
+    const tz: string = timeZone || userData?.settings?.timeZone || "UTC";
+
+    // YYYY-MM-DD dla wczoraj w strefie użytkownika
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayYmd = formatYmdInTimeZone(yesterday, tz);
+
+    // Jeżeli już zaktualizowane dla wczoraj, nic nie rób (idempotencja)
+    if (userData?.stats?.lastStreakDate === yesterdayYmd) {
+      return {
+        currentStreak: Number(userData?.stats?.currentStreak || 0),
+        longestStreak: Number(userData?.stats?.longestStreak || 0),
+        lastStreakDate: userData?.stats?.lastStreakDate || null,
+        updated: false,
+      };
+    }
+
+    // Pobierz sesje z ostatnich 48h i sprawdź, czy którakolwiek ma reviewTime przypadający na wczoraj w danej strefie
+    const twoDaysAgo = new Date(now);
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+    const sessionsSnap = await db
+      .collection(`users/${userId}/studySessions`)
+      .where("reviewTime", ">=", twoDaysAgo)
+      .orderBy("reviewTime", "desc")
+      .get();
+
+    let hadStudyYesterday = false;
+    sessionsSnap.docs.some((doc) => {
+      const data = doc.data() as { reviewTime?: FirebaseFirestore.Timestamp };
+      const ts = data.reviewTime;
+      if (ts) {
+        const ymd = formatYmdInTimeZone(ts.toDate(), tz);
+        if (ymd === yesterdayYmd) {
+          hadStudyYesterday = true;
+          return true;
+        }
+      }
+      return false;
+    });
+
+    const current = Number(userData?.stats?.currentStreak || 0);
+    const longest = Number(userData?.stats?.longestStreak || 0);
+
+    const nextCurrent = hadStudyYesterday ? current + 1 : 0;
+    const nextLongest = hadStudyYesterday
+      ? Math.max(longest, nextCurrent)
+      : longest;
+
+    await userRef.update({
+      "stats.currentStreak": nextCurrent,
+      "stats.longestStreak": nextLongest,
+      "stats.lastStreakDate": yesterdayYmd,
+    });
+
+    return {
+      currentStreak: nextCurrent,
+      longestStreak: nextLongest,
+      lastStreakDate: yesterdayYmd,
+      updated: true,
+    };
+  } catch (error) {
+    logger.error("updateUserStreakOnLogin failed", error);
+    throw new Error("Failed to update streak");
+  }
+});
+
+/**
+ * Aktualizuje streak natychmiast po spełnieniu progu dziennego
+ * (np. 10 kart w danym dniu). Jeżeli użytkownik już ma zapisany
+ * stats.lastStreakDate == dzisiaj (w jego strefie), nie robi nic.
+ * Liczy liczbę sesji przypadających na dzisiejszy dzień w strefie
+ * i gdy osiągnie próg, inkrementuje streak i zapisuje lastStreakDate.
+ *
+ * request.data: { userId: string, timeZone?: string, threshold?: number }
+ */
+export const updateUserStreakIfQualified = onCall(async (request) => {
+  const { userId, timeZone, threshold } = request.data || {};
+  if (!userId) {
+    throw new Error("userId is required");
+  }
+  try {
+    const result = await updateStreakForTodayIfQualified({
+      userId,
+      timeZone,
+      threshold,
+    });
+    return result;
+  } catch (error) {
+    logger.error("updateUserStreakIfQualified failed", error);
+    throw new Error("Failed to update streak by threshold");
+  }
+});
 
 /**
  * Get user decks with cards
@@ -23,24 +286,16 @@ export const getUserDecks = onCall(async (request) => {
       .where("createdBy", "==", userId)
       .get();
 
-    const decks = await Promise.all(
-      decksSnapshot.docs.map(async (deckDoc) => {
-        const deckData = deckDoc.data();
-        // Get cards for this deck
-        const cardsSnapshot = await deckDoc.ref.collection("cards").get();
-        const cards = cardsSnapshot.docs.map((cardDoc) =>
-          transformCardData(cardDoc)
-        );
+    const decks: Deck[] = decksSnapshot.docs.map((deckDoc) => {
+      return {
+        id: deckDoc.id,
+        ...deckDoc.data(),
+      } as Deck;
+    });
 
-        return {
-          id: deckDoc.id,
-          ...deckData,
-          cards,
-        };
-      })
-    );
+    const validatedDecks: Deck[] = decks.map((deck) => DeckSchema.parse(deck));
 
-    return { decks };
+    return { decks: validatedDecks };
   } catch (error) {
     logger.error("Error getting user decks", error);
     throw new Error("Failed to get user decks");
@@ -59,52 +314,76 @@ export const updateCardProgress = onCall(async (request) => {
   }
 
   try {
-    // Lazy copying: Update progress in cardProgress collection (creates if doesn't exist)
-    const progressRef = db.doc(
-      `users/${userId}/decks/${deckId}/cardProgress/${cardId}`
-    );
+    // Deep copy: Update progress in cards collection (creates if doesn't exist)
+    // On first save, also copy card content (front, back, tags) from source deck
+    const cardRef = db.doc(`users/${userId}/decks/${deckId}/cards/${cardId}`);
     const now = new Date();
     const nextDue = new Date(now);
     nextDue.setDate(nextDue.getDate() + (interval || 1));
 
-    const progressDoc = await progressRef.get();
-    const existingAlgo = progressDoc.data()?.cardAlgo || {};
-    const existingFirstLearn = progressDoc.data()?.firstLearn || {};
+    const cardDoc = await cardRef.get();
+    const existingCardData = cardDoc.data();
+    const existingAlgo = existingCardData?.cardAlgo || {};
+    const existingFirstLearn = existingCardData?.firstLearn || {};
+
+    // Cards are already copied to user's collection, so no need to fetch from source
+    // Card should always exist with full copy approach
+
+    // Waliduj i typuj cardAlgo
+    const cardAlgo: CardAlgo = CardAlgoSchema.parse({
+      difficulty: difficulty ?? existingAlgo.difficulty ?? 2.5,
+      scheduled_days: interval ?? existingAlgo.scheduled_days ?? 1,
+      due: nextDue,
+      last_review: now,
+      reps: (existingAlgo.reps ?? 0) + 1,
+      state: 2, // reviewed state
+      stability: existingAlgo.stability,
+      elapsed_days: existingAlgo.elapsed_days,
+      lapses: existingAlgo.lapses,
+    });
+
+    // Waliduj i typuj firstLearn
+    const firstLearnData: FirstLearn = firstLearn
+      ? FirstLearnSchema.parse({
+          ...existingFirstLearn,
+          ...firstLearn,
+        })
+      : FirstLearnSchema.parse(existingFirstLearn || { isNew: true });
+
+    // Przygotuj dane karty do zapisu (używamy merge, więc tylko aktualizowane pola)
+    const cardUpdateData = {
+      cardAlgo,
+      firstLearn: firstLearnData,
+      grade: grade ?? 0,
+      lastReviewDate: now,
+      difficulty: difficulty ?? existingAlgo.difficulty ?? 2.5,
+      nextReviewInterval: interval ?? existingAlgo.scheduled_days ?? 1,
+    };
 
     // Use set with merge to create if doesn't exist, update if exists
-    await progressRef.set(
-      {
-        cardAlgo: {
-          ...existingAlgo,
-          difficulty: difficulty ?? existingAlgo.difficulty ?? 2.5,
-          scheduled_days: interval ?? existingAlgo.scheduled_days ?? 1,
-          due: nextDue,
-          last_review: now,
-          reps: (existingAlgo.reps ?? 0) + 1,
-          state: 2, // reviewed state
-        },
-        firstLearn: firstLearn
-          ? {
-              ...existingFirstLearn,
-              ...firstLearn,
-            }
-          : existingFirstLearn,
-        grade: grade ?? 0,
-        lastReviewDate: now,
-        difficulty: difficulty ?? existingAlgo.difficulty ?? 2.5,
-        nextReviewInterval: interval ?? existingAlgo.scheduled_days ?? 1,
-      },
-      { merge: true }
-    );
+    await cardRef.set(cardUpdateData, { merge: true });
 
-    // Log study session
-    await db.collection(`users/${userId}/studySessions`).add({
+    // Waliduj i typuj study session przed zapisem
+    const studySession: StudySessionCreate = StudySessionCreateSchema.parse({
       deckId,
       cardId,
-      grade,
-      date: new Date(),
-      reviewTime: new Date().getTime(),
+      grade: grade ?? 0,
+      reviewTime: now,
     });
+
+    // Log study session
+    await db.collection(`users/${userId}/studySessions`).add(studySession);
+
+    // Po zapisaniu sesji: sprawdź wspólną logiką, czy dzienny próg (10 kart) został osiągnięty
+    try {
+      await updateStreakForTodayIfQualified({ userId });
+    } catch (streakErr) {
+      logger.warn(
+        "updateCardProgress: streak threshold check failed",
+        streakErr as any
+      );
+      // Nie przerywaj głównej operacji – to tylko best-effort
+    }
 
     logger.info("Card progress updated successfully", {
       userId,
@@ -133,16 +412,25 @@ export const getUserProgress = onCall(async (request) => {
 
   try {
     const userDoc = await db.doc(`users/${userId}`).get();
-    const userData = userDoc.data();
+    const userData = userDoc.data() as User;
 
     if (!userData) {
       throw new Error("User not found");
     }
 
+    const now = new Date();
+
+    const todaySessionsCount = await db
+      .collection(`users/${userId}/studySessions`)
+      .where("reviewTime", ">=", now)
+      .where("reviewTime", "<", new Date(now.setDate(now.getDate() + 1)))
+      .count()
+      .get();
+
     // Get recent study sessions
     const recentSessions = await db
       .collection(`users/${userId}/studySessions`)
-      .orderBy("date", "desc")
+      .orderBy("reviewTime", "desc")
       .limit(10)
       .get();
 
@@ -151,30 +439,19 @@ export const getUserProgress = onCall(async (request) => {
       ...doc.data(),
     }));
 
-    // Calculate study streak
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const streakQuery = await db
-      .collection(`users/${userId}/studySessions`)
-      .where("date", ">=", yesterday)
-      .get();
-
-    const streak = streakQuery.size;
-
-    return {
+    const userProgress = UserProgressSchema.parse({
       stats: userData.stats || {},
       recentSessions: sessions,
-      streak,
-      lastStudyDate: userData.lastStudyDate,
-    };
+      dailyGoal: userData.settings.dailyGoal || 120,
+      todaySessionsCount: todaySessionsCount.data().count,
+    });
+
+    return userProgress;
   } catch (error) {
     logger.error("Error getting user progress", error);
     throw new Error("Failed to get user progress");
   }
 });
-
 /**
  * Get user settings
  */
@@ -328,12 +605,13 @@ export const validateUserData = onDocumentWritten(
 
         // Only set stats if they don't exist
         if (!afterData.stats) {
-          updates.stats = {
+          const defaultStats: UserStats = UserStatsSchema.parse({
             totalCards: 0,
             totalDecks: 0,
             totalReviews: 0,
             averageDifficulty: 0,
-          };
+          });
+          updates.stats = defaultStats;
         }
 
         // Only set arrays if they don't exist
@@ -527,14 +805,21 @@ export const submitPoints = onCall(async (request) => {
       const newGroupRef = groupsRef.doc();
       targetGroupId = newGroupRef.id;
 
-      // Create group before transaction
-      await newGroupRef.set({
-        createdAt: FieldValue.serverTimestamp(),
+      // Waliduj i typuj LeagueGroup przed zapisem (bez createdAt - użyjemy FieldValue)
+      const leagueGroupData: Omit<LeagueGroup, "createdAt" | "id"> = {
         isFull: false,
         capacity: 20,
         currentCount: 0,
-        seasonId,
         leagueNumber: userLeague,
+      };
+      LeagueGroupSchema.omit({ createdAt: true, id: true }).parse(
+        leagueGroupData
+      );
+
+      // Create group before transaction
+      await newGroupRef.set({
+        ...leagueGroupData,
+        createdAt: FieldValue.serverTimestamp(),
       });
     }
 
@@ -562,19 +847,28 @@ export const submitPoints = onCall(async (request) => {
     }
 
     // Now all writes can happen
+    // Waliduj i typuj season user points (bez lastActivityAt - użyjemy FieldValue)
+    const seasonUserPointsData: Omit<SeasonUserPoints, "lastActivityAt"> = {
+      points: nextPoints,
+      league: userLeague,
+      groupId: groupId,
+    };
+    // Walidacja częściowa (bez lastActivityAt)
+    SeasonUserPointsSchema.omit({ lastActivityAt: true }).parse(
+      seasonUserPointsData
+    );
+
     // Update season user points
     trx.set(
       docRef,
       {
-        points: nextPoints,
+        ...seasonUserPointsData,
         lastActivityAt: FieldValue.serverTimestamp(),
-        league: userLeague,
-        groupId: groupId,
       },
       { merge: true }
     );
 
-    // Update user document
+    // Update user document (partial update - nie wymaga pełnej walidacji)
     trx.update(db.doc(`users/${userId}`), {
       currentGroupId: groupId,
       league: userLeague,
@@ -589,11 +883,20 @@ export const submitPoints = onCall(async (request) => {
       .collection("members")
       .doc(userId);
 
+    // Waliduj dane członka grupy (bez id i username - to są opcjonalne w members collection)
+    const memberData = {
+      userId,
+      points: nextPoints,
+    };
+    // Sprawdź tylko wymagane pola
+    if (memberData.points < 0) {
+      throw new Error("Points cannot be negative");
+    }
+
     trx.set(
       memberRef,
       {
-        userId,
-        points: nextPoints,
+        ...memberData,
         lastActivityAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
@@ -701,9 +1004,12 @@ export const updateUserSettings = onCall(async (request) => {
   }
 
   try {
+    // Waliduj i typuj ustawienia przed zapisem
+    const validatedSettings: UserSettings = UserSettingsSchema.parse(settings);
+
     // Update dedicated settings doc: users/{userId}/settings/app
     const settingsDocPath = db.doc(`users/${userId}/settings/app`);
-    await settingsDocPath.set(settings, { merge: true });
+    await settingsDocPath.set(validatedSettings, { merge: true });
 
     logger.info("User settings updated", { userId });
 

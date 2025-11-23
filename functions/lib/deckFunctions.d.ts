@@ -1,3 +1,4 @@
+import { Card, Deck, CardGrade } from "./types/common";
 /**
  * Bulk create deck with cards
  */
@@ -8,58 +9,96 @@ export declare const createDeckWithCards: import("firebase-functions/v2/https").
  * Get deck details only (without cards)
  */
 export declare const getDeckDetails: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    deck: {
-        id: string;
-    };
+    deck: Deck;
 }>, unknown>;
 /**
  * Get cards for a deck with pagination
  */
 export declare const getDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    cards: any[];
+    cards: Card[];
     hasMore: boolean;
     lastDocId: string | null;
-}>, unknown>;
-/**
- * Get due cards for a deck (server-side filtering)
- * - Returns FSRS due cards (cardAlgo.due <= now)
- * - Returns firstLearn due cards (firstLearn.isNew && firstLearn.due <= now)
- */
-export declare const getDueDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    cards: any[];
-}>, unknown>;
-/**
- * Get new candidate cards (firstLearn.isNew && not yet introduced this session)
- */
-export declare const getNewDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    cards: any[];
 }>, unknown>;
 /**
  * Get popular public decks
  */
 export declare const getPopularDecks: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    decks: {
-        id: string;
-    }[];
+    decks: Deck[];
 }>, unknown>;
 /**
  * User-deck equivalents (operate on users/{userId}/decks/{deckId})
  */
 export declare const getUserDeckDetails: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    deck: {
-        id: string;
-    };
+    deck: null;
+} | {
+    deck: Deck;
 }>, unknown>;
 export declare const getUserDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    cards: any[];
+    cards: {
+        createdAt: Date;
+        id: string;
+        cardData: {
+            front: string;
+            back: string;
+        };
+        tags: string[];
+        firstLearn: {
+            isNew: boolean;
+            due?: Date | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        };
+        cardAlgo?: {
+            difficulty: number;
+            scheduled_days: number;
+            due: Date;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            last_review?: Date | undefined;
+        } | undefined;
+        grade?: CardGrade | undefined;
+        hasChanges?: boolean | undefined;
+        contentVersion?: Date | undefined;
+    }[];
     hasMore: boolean;
     lastDocId: string | null;
 }>, unknown>;
 export declare const getUserDueDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    cards: any[];
+    cards: Card[];
 }>, unknown>;
 export declare const getUserNewDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    cards: any[];
+    cards: {
+        createdAt: Date;
+        id: string;
+        cardData: {
+            front: string;
+            back: string;
+        };
+        tags: string[];
+        firstLearn: {
+            isNew: boolean;
+            due?: Date | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        };
+        cardAlgo?: {
+            difficulty: number;
+            scheduled_days: number;
+            due: Date;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            last_review?: Date | undefined;
+        } | undefined;
+        grade?: CardGrade | undefined;
+        hasChanges?: boolean | undefined;
+        contentVersion?: Date | undefined;
+    }[];
 }>, unknown>;
 /**
  * Update user stats when deck is modified
@@ -88,4 +127,39 @@ export declare const updateDeckSettings: import("firebase-functions/v2/https").C
  */
 export declare const startLearningDeck: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
+}>, unknown>;
+/**
+ * Soft delete a deck - marks as deleted and notifies all users learning it
+ */
+export declare const deleteDeck: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+    message: string;
+    notifiedUsers?: undefined;
+} | {
+    success: boolean;
+    notifiedUsers: number;
+    message?: undefined;
+}>, unknown>;
+/**
+ * Check for changes between source deck and user's local copy
+ * Returns list of cards with differences
+ */
+export declare const checkCardChanges: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    changes: {
+        cardId: string;
+        type: "modified" | "deleted" | "new";
+        changes?: Array<{
+            field: string;
+            oldValue: any;
+            newValue: any;
+        }>;
+    }[];
+}>, unknown>;
+/**
+ * Synchronize user's local card copies with source deck
+ * Options: syncAll (all changes) or syncSelected (specific cardIds)
+ */
+export declare const syncDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+    syncedCount: number;
 }>, unknown>;

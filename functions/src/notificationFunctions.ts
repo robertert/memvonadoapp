@@ -1,7 +1,8 @@
 import { onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { onDocumentWritten } from "firebase-functions/firestore";
+import { onDocumentWritten } from "firebase-functions/v2/firestore";
+import { NotificationSchema, type Notification } from "./types/common";
 
 const db = getFirestore();
 
@@ -90,14 +91,23 @@ export const createNotification = onCall(async (request) => {
   }
 
   try {
+    // Waliduj i typuj powiadomienie przed zapisem
+    const notificationData: Omit<Notification, "createdAt" | "readAt" | "id"> =
+      {
+        title: notification.title,
+        body: notification.body,
+        type: notification.type || "info",
+        linkTo: notification.linkTo,
+        read: false,
+      };
+    NotificationSchema.omit({ createdAt: true, readAt: true, id: true }).parse(
+      notificationData
+    );
+
     const notificationRef = db.collection(`users/${userId}/notifications`);
 
     const notificationDoc = await notificationRef.add({
-      title: notification.title,
-      body: notification.body,
-      type: notification.type || "info",
-      linkTo: notification.linkTo || null,
-      read: false,
+      ...notificationData,
       createdAt: FieldValue.serverTimestamp(),
     });
 
@@ -133,11 +143,24 @@ export const onLeagueAdvance = onDocumentWritten(
       const userId = event.params.userId;
 
       try {
-        await db.collection(`users/${userId}/notifications`).add({
+        // Waliduj i typuj powiadomienie przed zapisem
+        const notificationData: Omit<
+          Notification,
+          "createdAt" | "readAt" | "id"
+        > = {
           title: "Ranking Up!",
           body: `Congrats! You advanced to League ${afterLeague}.`,
           type: "success",
           read: false,
+        };
+        NotificationSchema.omit({
+          createdAt: true,
+          readAt: true,
+          id: true,
+        }).parse(notificationData);
+
+        await db.collection(`users/${userId}/notifications`).add({
+          ...notificationData,
           createdAt: FieldValue.serverTimestamp(),
         });
 
@@ -165,11 +188,20 @@ export const notifyStreakBroken = onCall(async (request) => {
   }
 
   try {
+    // Waliduj i typuj powiadomienie przed zapisem
+    const notificationData: Omit<Notification, "createdAt" | "readAt" | "id"> =
+      {
+        title: "Streak broken",
+        body: "You missed your daily practice. Start again today!",
+        type: "warning",
+        read: false,
+      };
+    NotificationSchema.omit({ createdAt: true, readAt: true, id: true }).parse(
+      notificationData
+    );
+
     await db.collection(`users/${userId}/notifications`).add({
-      title: "Streak broken",
-      body: "You missed your daily practice. Start again today!",
-      type: "warning",
-      read: false,
+      ...notificationData,
       createdAt: FieldValue.serverTimestamp(),
     });
 
@@ -207,11 +239,20 @@ export const notifySeasonEnd = onCall(async (request) => {
       } in your group and advanced to League ${leagueNumber + 1}!`;
     }
 
+    // Waliduj i typuj powiadomienie przed zapisem
+    const notificationData: Omit<Notification, "createdAt" | "readAt" | "id"> =
+      {
+        title: "Weekly League Reset!",
+        body: notificationBody,
+        type: "info",
+        read: false,
+      };
+    NotificationSchema.omit({ createdAt: true, readAt: true, id: true }).parse(
+      notificationData
+    );
+
     await db.collection(`users/${userId}/notifications`).add({
-      title: "Weekly League Reset!",
-      body: notificationBody,
-      type: "info",
-      read: false,
+      ...notificationData,
       createdAt: FieldValue.serverTimestamp(),
     });
 

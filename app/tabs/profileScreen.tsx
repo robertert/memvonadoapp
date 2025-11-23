@@ -20,6 +20,12 @@ import { FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
 import ContributionHeatmap from "../../ui/ContributionHeatmap";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
+import { PLACEHOLDER_MODE } from "../../constants/flags";
+import {
+  placeholderUser,
+  placeholderDecks,
+  placeholderNotifications,
+} from "../../constants/placeholderData";
 
 export default function profileScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
@@ -45,6 +51,7 @@ export default function profileScreen(): React.JSX.Element {
     }>
   >([]);
   const [profileData, setProfileData] = useState<{
+    username?: string;
     stats?: {
       totalCards?: number;
       totalDecks?: number;
@@ -65,20 +72,60 @@ export default function profileScreen(): React.JSX.Element {
   }, [userCtx.id]);
 
   async function fetchProfileData(): Promise<void> {
-    if (!userCtx.id) return;
+    if (!userCtx.id && !PLACEHOLDER_MODE) return;
 
     try {
       setIsLoading(true);
 
+      if (PLACEHOLDER_MODE) {
+        setProfileData({
+          stats: placeholderUser.stats,
+          streak: placeholderUser.streak,
+          friendsCount: placeholderUser.friendsCount,
+          followers: placeholderUser.followers,
+          following: placeholderUser.following,
+        });
+        // Symuluj heatmap z kilkoma aktywnymi dniami
+        const today = new Date();
+        const heatmapData = Array.from({ length: 100 }, (_, i) => {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+          return {
+            date: date.toISOString().split("T")[0],
+            count: Math.floor(Math.random() * 6) + 1,
+          };
+        });
+        setHeatmapData(heatmapData);
+        setAwards([
+          { id: "a1", key: 1, name: "Liga 3" },
+          { id: "a2", key: 2, name: "Streak 5" },
+        ]);
+        setFriendsStreaks([
+          { userId: "f1", key: 1, name: "Alice", streak: 7 },
+          { userId: "f2", key: 2, name: "Bob", streak: 3 },
+        ]);
+        setMyDecks(
+          placeholderDecks.slice(0, 3).map((deck, idx) => ({
+            id: deck.id,
+            key: idx + 1,
+            name: deck.title,
+            cards: deck.cardsNum || 10,
+          }))
+        );
+        setIsLoading(false);
+        return;
+      }
+
       const [profile, heatmap, awardsData, streaks, decks] = await Promise.all([
-        cloudFunctions.getUserProfile(userCtx.id),
-        cloudFunctions.getUserActivityHeatmap(userCtx.id, weeks),
-        cloudFunctions.getUserAwards(userCtx.id),
-        cloudFunctions.getFriendsStreaks(userCtx.id),
-        cloudFunctions.getUserDecks(userCtx.id),
+        cloudFunctions.getUserProfile(userCtx.id!!),
+        cloudFunctions.getUserActivityHeatmap(userCtx.id!!, weeks),
+        cloudFunctions.getUserAwards(userCtx.id!!),
+        cloudFunctions.getFriendsStreaks(userCtx.id!!),
+        cloudFunctions.getUserDecks(userCtx.id!!),
       ]);
 
       setProfileData({
+        username: profile.username,
         stats: profile.stats,
         streak: profile.streak,
         friendsCount: profile.friendsCount,
@@ -120,6 +167,41 @@ export default function profileScreen(): React.JSX.Element {
       );
     } catch (error) {
       console.error("Error fetching profile data:", error);
+      if (PLACEHOLDER_MODE) {
+        setProfileData({
+          stats: placeholderUser.stats,
+          streak: placeholderUser.streak,
+          friendsCount: placeholderUser.friendsCount,
+          followers: placeholderUser.followers,
+          following: placeholderUser.following,
+        });
+        const today = new Date();
+        const heatmapData = Array.from({ length: 40 }, (_, i) => {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+          return {
+            date: date.toISOString().split("T")[0],
+            count: Math.floor(Math.random() * 6) + 1,
+          };
+        });
+        setHeatmapData(heatmapData);
+        setAwards([
+          { id: "a1", key: 1, name: "Liga 3" },
+          { id: "a2", key: 2, name: "Streak 5" },
+        ]);
+        setFriendsStreaks([
+          { userId: "f1", key: 1, name: "Alice", streak: 7 },
+          { userId: "f2", key: 2, name: "Bob", streak: 3 },
+        ]);
+        setMyDecks(
+          placeholderDecks.slice(0, 3).map((deck, idx) => ({
+            id: deck.id,
+            key: idx + 1,
+            name: deck.title,
+            cards: deck.cardsNum || 10,
+          }))
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -134,7 +216,9 @@ export default function profileScreen(): React.JSX.Element {
   return (
     <GestureHandlerRootView style={styles.container}>
       <View style={[styles.headerContainer, { paddingTop: safeArea.top + 8 }]}>
-        <Text style={styles.headerTitle}>mankowskae</Text>
+        <Text style={styles.headerTitle}>
+          {profileData.username ?? "Unknown"}
+        </Text>
         <View style={styles.headerIconsContainer}>
           <Pressable
             onPress={() => {

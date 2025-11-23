@@ -4,53 +4,41 @@ import {
   connectFunctionsEmulator,
 } from "firebase/functions";
 import { app } from "../firebase";
-import { Platform } from "react-native";
 
-const functions = getFunctions(app, "europe-west1");
+const functions = getFunctions(app, "us-central1");
 
-// Types for Cloud Functions
-export interface SearchFilters {
-  subject?: string;
-  difficulty?: number;
-  isPublic?: boolean;
-}
-
-export interface CardData {
-  front: string;
-  back: string;
-  tags: string[];
-}
-
-export interface UserProgress {
-  stats: {
-    totalCards: number;
-    totalDecks: number;
-    totalReviews: number;
-    averageDifficulty: number;
-  };
-  recentSessions: any[];
-  streak: number;
-  lastStudyDate?: Date;
-}
-
-export interface UserSettings {
-  theme?: "light" | "dark";
-  notificationsEnabled?: boolean;
-  dailyGoal?: number;
-  language?: string;
-  [key: string]: any;
-}
-
-export interface SearchLog {
-  id: string;
-  searchText: string;
-  filters: SearchFilters;
-  resultsCount: number;
-  timestamp: Date;
-}
+// Types for Cloud Functions - re-eksport z centralnego katalogu types
+import type {
+  SearchFilters,
+  CardCore,
+  UserProgress,
+  UserSettings,
+  SearchLog,
+  Deck,
+  DeckCore,
+  CardGrade,
+} from "../types";
 
 // Cloud Functions calls
 export const cloudFunctions = {
+  // Ensure user document exists - tworzy podstawowy dokument po rejestracji
+  ensureUserDocument: async () => {
+    const fn = httpsCallable(functions, "ensureUserDocument");
+    const result = await fn({});
+    return result.data as { success: boolean; message: string };
+  },
+
+  // Complete onboarding - zapisuje wszystkie dane użytkownika (username, photo, interests)
+  completeOnboarding: async (data: {
+    username: string;
+    photoUrl?: string;
+    interests: string[];
+  }) => {
+    const fn = httpsCallable(functions, "completeOnboarding");
+    const result = await fn(data);
+    return result.data as { success: boolean; message: string };
+  },
+
   // Server authoritative time
   serverNow: async () => {
     const fn = httpsCallable(functions, "serverNow");
@@ -58,6 +46,24 @@ export const cloudFunctions = {
     return result.data as { nowMs: number; iso: string };
   },
 
+  // Update user's streak immediately when the daily threshold is reached
+  updateUserStreakIfQualified: async (
+    userId: string,
+    timeZone?: string,
+    threshold: number = 10
+  ) => {
+    const fn = httpsCallable(functions, "updateUserStreakIfQualified");
+    const result = await fn({ userId, timeZone, threshold });
+    return result.data as {
+      qualified: boolean;
+      currentStreak: number;
+      longestStreak: number;
+      lastStreakDate: string | null;
+      threshold: number;
+      todayCount?: number;
+      updated: boolean;
+    };
+  },
   // Current season window (weekly)
   getCurrentSeason: async () => {
     const fn = httpsCallable(functions, "getCurrentSeason");
@@ -84,7 +90,7 @@ export const cloudFunctions = {
   getDeckDetails: async (deckId: string) => {
     const getDeckDetailsFunction = httpsCallable(functions, "getDeckDetails");
     const result = await getDeckDetailsFunction({ deckId });
-    return result.data as { deck: any };
+    return result.data as { deck: Deck | null };
   },
 
   // Get cards for a deck with pagination
@@ -120,7 +126,7 @@ export const cloudFunctions = {
   getUserDecks: async (userId: string) => {
     const getUserDecksFunction = httpsCallable(functions, "getUserDecks");
     const result = await getUserDecksFunction({ userId });
-    return result.data as { decks: any[] };
+    return result.data as { decks: Deck[] };
   },
 
   // Update card progress after review
@@ -128,7 +134,7 @@ export const cloudFunctions = {
     userId: string,
     deckId: string,
     cardId: string,
-    grade?: number,
+    grade: CardGrade,
     difficulty?: number,
     interval?: number,
     firstLearn?: any
@@ -151,12 +157,12 @@ export const cloudFunctions = {
 
   // Create deck with cards in bulk
   createDeckWithCards: async (
-    title: string,
-    cards: CardData[],
+    deckData: DeckCore,
+    cards: CardCore[],
     userId: string
   ) => {
     const createDeckFunction = httpsCallable(functions, "createDeckWithCards");
-    const result = await createDeckFunction({ title, cards, userId });
+    const result = await createDeckFunction({ deckData, cards, userId });
     return result.data as { deckId: string };
   },
 
@@ -172,6 +178,18 @@ export const cloudFunctions = {
     const getUserProgressFunction = httpsCallable(functions, "getUserProgress");
     const result = await getUserProgressFunction({ userId });
     return result.data as UserProgress;
+  },
+
+  // Update user's streak on app launch (timezone-aware)
+  updateUserStreakOnLogin: async (userId: string, timeZone?: string) => {
+    const fn = httpsCallable(functions, "updateUserStreakOnLogin");
+    const result = await fn({ userId, timeZone });
+    return result.data as {
+      currentStreak: number;
+      longestStreak: number;
+      lastStreakDate: string;
+      updated: boolean;
+    };
   },
 
   // Get user settings
@@ -228,6 +246,38 @@ export const cloudFunctions = {
     const fn = httpsCallable(functions, "startLearningDeck");
     const result = await fn({ userId, deckId });
     return result.data as { success: boolean };
+  },
+
+  // Delete deck (soft delete)
+  deleteDeck: async (deckId: string) => {
+    const fn = httpsCallable(functions, "deleteDeck");
+    const result = await fn({ deckId });
+    return result.data as { success: boolean; notifiedUsers: number };
+  },
+
+  // Check for card changes between source and local copy
+  checkCardChanges: async (userId: string, deckId: string) => {
+    const fn = httpsCallable(functions, "checkCardChanges");
+    const result = await fn({ userId, deckId });
+    return result.data as {
+      changes: Array<{
+        cardId: string;
+        type: "modified" | "deleted" | "new";
+        changes?: Array<{ field: string; oldValue: any; newValue: any }>;
+      }>;
+    };
+  },
+
+  // Synchronize user's local cards with source deck
+  syncDeckCards: async (
+    userId: string,
+    deckId: string,
+    syncAll: boolean = false,
+    cardIds: string[] = []
+  ) => {
+    const fn = httpsCallable(functions, "syncDeckCards");
+    const result = await fn({ userId, deckId, syncAll, cardIds });
+    return result.data as { success: boolean; syncedCount: number };
   },
 
   // User deck APIs

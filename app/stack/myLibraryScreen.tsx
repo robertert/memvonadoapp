@@ -14,6 +14,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { PLACEHOLDER_MODE } from "../../constants/flags";
+import { placeholderDecks } from "../../constants/placeholderData";
 import {
   ArrowLeftIcon,
   MagnifyingGlassIcon,
@@ -32,62 +34,82 @@ export default function MyLibraryScreen(): React.JSX.Element {
     { key: "inne", name: "Inne" },
   ];
 
-  const myDecks = [
-    {
-      id: 1,
-      name: "Angielski - Podstawy",
-      category: "jezyki",
-      cards: 45,
-      lastStudied: "2 dni temu",
-      progress: 75,
-      difficulty: "Łatwy",
-    },
-    {
-      id: 2,
-      name: "Historia Polski",
-      category: "historia",
-      cards: 78,
-      lastStudied: "1 tydzień temu",
-      progress: 60,
-      difficulty: "Średni",
-    },
-    {
-      id: 3,
-      name: "Matematyka - Algebra",
-      category: "nauka",
-      cards: 32,
-      lastStudied: "3 dni temu",
-      progress: 90,
-      difficulty: "Trudny",
-    },
-    {
-      id: 4,
-      name: "Francuski - Słownictwo",
-      category: "jezyki",
-      cards: 67,
-      lastStudied: "5 dni temu",
-      progress: 45,
-      difficulty: "Średni",
-    },
-    {
-      id: 5,
-      name: "Biologia - Anatomia",
-      category: "nauka",
-      cards: 89,
-      lastStudied: "1 dzień temu",
-      progress: 30,
-      difficulty: "Trudny",
-    },
-    {
-      id: 6,
-      name: "Geografia - Stolice",
-      category: "nauka",
-      cards: 195,
-      lastStudied: "4 dni temu",
-      progress: 85,
-      difficulty: "Łatwy",
-    },
-  ];
+  const getMyDecks = () => {
+    if (PLACEHOLDER_MODE) {
+      return placeholderDecks.map((deck, idx) => ({
+        id: deck.id,
+        name: deck.title,
+        category:
+          deck.category === "Języki obce"
+            ? "jezyki"
+            : deck.category === "Historia"
+            ? "historia"
+            : "nauka",
+        cards: deck.cardsNum || 10,
+        lastStudied: idx === 0 ? "2 dni temu" : `${idx + 1} dni temu`,
+        progress: 50 + idx * 10,
+        difficulty: idx % 2 === 0 ? "Łatwy" : "Średni",
+      }));
+    }
+    return [
+      {
+        id: 1,
+        name: "Angielski - Podstawy",
+        category: "jezyki",
+        cards: 45,
+        lastStudied: "2 dni temu",
+        progress: 75,
+        difficulty: "Łatwy",
+      },
+      {
+        id: 2,
+        name: "Historia Polski",
+        category: "historia",
+        cards: 78,
+        lastStudied: "1 tydzień temu",
+        progress: 60,
+        difficulty: "Średni",
+      },
+      {
+        id: 3,
+        name: "Matematyka - Algebra",
+        category: "nauka",
+        cards: 32,
+        lastStudied: "3 dni temu",
+        progress: 90,
+        difficulty: "Trudny",
+      },
+      {
+        id: 4,
+        name: "Francuski - Słownictwo",
+        category: "jezyki",
+        cards: 67,
+        lastStudied: "5 dni temu",
+        progress: 45,
+        difficulty: "Średni",
+      },
+      {
+        id: 5,
+        name: "Biologia - Anatomia",
+        category: "nauka",
+        cards: 89,
+        lastStudied: "1 dzień temu",
+        progress: 30,
+        difficulty: "Trudny",
+      },
+      {
+        id: 6,
+        name: "Geografia - Stolice",
+        category: "nauka",
+        cards: 195,
+        lastStudied: "4 dni temu",
+        progress: 85,
+        difficulty: "Łatwy",
+      },
+    ];
+  };
+
+  const myDecks = getMyDecks();
 
   const filteredDecks = myDecks.filter((deck) => {
     const matchesSearch = deck.name

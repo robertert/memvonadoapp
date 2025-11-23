@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ClockIcon, MagnifyingGlassIcon } from "react-native-heroicons/solid";
 import { cloudFunctions, SearchLog } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
+import { PLACEHOLDER_MODE } from "../../constants/flags";
+import { placeholderDecks } from "../../constants/placeholderData";
 
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { ScrollView } from "react-native";
@@ -61,7 +63,8 @@ export default function marketplaceScreen(): React.JSX.Element {
 
     // Auto-search if category parameter is provided
     if (category) {
-      setSearchText(category);
+      setSelectedCategory(category);
+      handleSearch();
       setIsSearchDisplayed(true);
     }
   }, [category]);
@@ -85,6 +88,15 @@ export default function marketplaceScreen(): React.JSX.Element {
       setIsSearchDisplayed(true);
       setIsLoading(true);
       try {
+        if (PLACEHOLDER_MODE) {
+          // Filtr placeholder decków
+          const filtered = placeholderDecks.filter((deck) =>
+            deck.title.toLowerCase().includes(searchText.toLowerCase())
+          );
+          setSearches(filtered);
+          setIsLoading(false);
+          return;
+        }
         const filters = {
           subject: selectedCategory || undefined,
           isPublic: true,
@@ -109,6 +121,12 @@ export default function marketplaceScreen(): React.JSX.Element {
         setSearches(results);
       } catch (error) {
         console.error("Error searching for decks:", error);
+        if (PLACEHOLDER_MODE) {
+          const filtered = placeholderDecks.filter((deck) =>
+            deck.title.toLowerCase().includes(searchText.toLowerCase())
+          );
+          setSearches(filtered);
+        }
         setIsLoading(false);
       }
     } else {
@@ -151,11 +169,19 @@ export default function marketplaceScreen(): React.JSX.Element {
   async function fetchPopular(): Promise<void> {
     try {
       setPopularLoading(true);
+      if (PLACEHOLDER_MODE) {
+        setPopular(placeholderDecks.slice(0, 8));
+        setPopularLoading(false);
+        return;
+      }
       const result = await cloudFunctions.getPopularDecks(8);
       setPopular(result.decks || []);
       setPopularLoading(false);
     } catch (error) {
       console.error("Error fetching popular decks:", error);
+      if (PLACEHOLDER_MODE) {
+        setPopular(placeholderDecks.slice(0, 8));
+      }
       setPopularLoading(false);
     }
   }

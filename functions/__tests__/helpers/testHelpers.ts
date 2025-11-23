@@ -3,6 +3,7 @@
  */
 
 import * as admin from "firebase-admin";
+import { CardGrade } from "../../types";
 
 const db = admin.firestore();
 
@@ -193,7 +194,7 @@ export async function createTestCard(
       state: 0,
       due: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 86400000)),
     },
-    grade: -1,
+    grade: CardGrade.NotGraded,
     difficulty: 2.5,
     nextReviewInterval: 1,
     ...data,
@@ -329,7 +330,7 @@ export async function createTestStudySession(
   await db.doc(`users/${userId}/studySessions/${sessionId}`).set({
     deckId: "test-deck-id",
     cardId: "test-card-id",
-    grade: 3,
+    grade: CardGrade.Easy,
     date: admin.firestore.FieldValue.serverTimestamp(),
     reviewTime: Date.now(),
     ...data,

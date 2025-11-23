@@ -1,6 +1,7 @@
 /**
  * Mock data for Cloud Functions tests
  */
+import { CardGrade } from "@/types/schemas";
 
 export const mockUserId = "test-user-id-123";
 export const mockUserId2 = "test-user-id-456";
@@ -62,7 +63,7 @@ export const mockCard = {
     state: 2,
     consecutiveGood: 2,
   },
-  grade: -1,
+  grade: CardGrade.NotGraded,
   difficulty: 2.5,
   nextReviewInterval: 1,
 };
@@ -78,7 +79,7 @@ export const mockCardNew = {
     state: 0,
     consecutiveGood: 0,
   },
-  grade: -1,
+  grade: CardGrade.NotGraded,
   difficulty: 2.5,
 };
 
@@ -130,8 +131,7 @@ export const mockStudySession = {
   id: "session-id-123",
   deckId: mockDeckId,
   cardId: mockCardId,
-  grade: 3,
+  grade: CardGrade.Easy,
   date: new Date(),
   reviewTime: Date.now(),
 };
-
