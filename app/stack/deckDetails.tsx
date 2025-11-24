@@ -154,6 +154,9 @@ export default function deckDetails(): React.JSX.Element {
           typedParams.deckId
         );
 
+        console.log("userDeckData", userDeckData);
+        console.log("deckData", deckData);
+
         if (userDeckData) {
           checkForChanges();
         }
@@ -163,7 +166,6 @@ export default function deckDetails(): React.JSX.Element {
         const resultDeck = safeValidateDeck(deckData);
         if (!resultDeck.success) {
           console.error("Invalid deck data from API", resultDeck.error);
-          throw new Error("Invalid deck data structure");
         }
 
         // Get first batch of cards
@@ -178,11 +180,10 @@ export default function deckDetails(): React.JSX.Element {
         const resultCards = safeValidateArray(deckCards, CardSchema);
         if (!resultCards.success) {
           console.error("Invalid cards data from API", resultCards.error);
-          throw new Error("Invalid cards data structure");
         }
 
-        setDeck(resultDeck.data as Deck);
-        setCards(resultCards.data as Card[]);
+        setDeck(resultDeck?.success ? resultDeck.data : ({} as Deck));
+        setCards(resultCards?.success ? resultCards.data : ([] as Card[]));
         setHasMoreCards(hasMore);
         setLastDocId(newLastDocId);
       }

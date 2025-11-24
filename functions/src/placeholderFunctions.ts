@@ -2,6 +2,7 @@ import { onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { CardGrade } from "./types/common";
+import { serializeTimestamps } from "./utils/serialization";
 
 const db = getFirestore();
 
@@ -356,13 +357,13 @@ export const addPlaceholderData = onCall(async (request) => {
       totalCards,
     });
 
-    return {
+    return serializeTimestamps({
       success: true,
       userId: targetUserId,
       decksCreated: placeholderDecks.length,
       totalCards,
       deckIds: createdDeckIds,
-    };
+    });
   } catch (error) {
     logger.error("Error adding placeholder data", error);
     throw new Error("Failed to add placeholder data");

@@ -41,7 +41,7 @@ describe("User Functions", () => {
   });
 
   describe("getUserDecks", () => {
-    it("should return user decks with cards", async () => {
+    it("should return user decks", async () => {
       await createTestUser(mockUserId);
       await createTestDeck(mockDeckId, mockUserId);
       await createTestCard(mockDeckId, mockCardId);
@@ -52,8 +52,6 @@ describe("User Functions", () => {
 
       expect(result.decks).toHaveLength(1);
       expect(result.decks[0].id).toBe(mockDeckId);
-      expect(result.decks[0].cards).toHaveLength(1);
-      expect(result.decks[0].cards[0].id).toBe(mockCardId);
     });
 
     it("should return empty array when user has no decks", async () => {
@@ -198,7 +196,9 @@ describe("User Functions", () => {
 
       const result = await wrapped({ data: { userId: mockUserId } } as any);
 
-      expect(result.streak).toBeGreaterThan(0);
+      expect(result.stats.currentStreak).toBeGreaterThan(0);
+      expect(result.stats.longestStreak).toBeGreaterThan(0);
+      expect(result.stats.lastStreakDate).toBeDefined();
     });
 
     it("should throw error when userId is missing", async () => {

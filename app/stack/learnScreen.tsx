@@ -33,6 +33,7 @@ import { Confetti } from "./Confetti";
 import { learnScreenStyles } from "./learnScreen.styles";
 import { Colors } from "../../constants/colors";
 import { FireIcon } from "react-native-heroicons/solid";
+import { Card } from "@/types";
 
 /**
  * Main learning screen component for flashcard learning with gesture-based interactions
@@ -373,7 +374,7 @@ export default function learnScreen(): React.JSX.Element {
         style={[learnScreenStyles.container, { paddingTop: safeArea.top + 8 }]}
       >
         <Flashcard
-          card={cards ? cards[0] : undefined}
+          card={cards ? (cards[0] as Card) : {}}
           isBack={isBack}
           rStyle={rStyle}
           gesture={comp}

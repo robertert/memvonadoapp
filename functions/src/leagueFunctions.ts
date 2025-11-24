@@ -11,6 +11,7 @@ import {
   User,
   UserSchema,
 } from "./types/common";
+import { serializeTimestamps } from "./utils/serialization";
 
 const db = getFirestore();
 
@@ -67,7 +68,7 @@ export const getLeagueInfo = onCall(async (request) => {
       throw new Error("League not found");
     }
 
-    return { league };
+    return serializeTimestamps({ league });
   } catch (error) {
     logger.error("Error getting league info", error);
     throw new Error("Failed to get league info");
@@ -135,13 +136,13 @@ export const getUserGroup = onCall(async (request) => {
     const groupData = { id: groupRef.id, ...groupDoc.data() } as LeagueGroup;
     const validatedGroup = LeagueGroupSchema.parse(groupData);
 
-    return {
+    return serializeTimestamps({
       groupId: validatedGroup.id,
       leagueNumber: validatedGroup.leagueNumber,
       memberCount: validatedGroup.currentCount,
       capacity: validatedGroup.capacity,
       isFull: validatedGroup.isFull,
-    };
+    });
   } catch (error) {
     logger.error("Error getting user group", error);
     throw new Error("Failed to get user group");
@@ -190,7 +191,7 @@ export const updateUserLeague = onCall(async (request) => {
     const currentLeague = validatedUserData.league;
 
     if (currentLeague === newLeague) {
-      return { success: true, league: newLeague };
+      return serializeTimestamps({ success: true, league: newLeague });
     }
 
     // Get old data BEFORE updating (important: must read before write)
@@ -382,7 +383,11 @@ export const updateUserLeague = onCall(async (request) => {
       seasonId: currentSeasonId,
     });
 
-    return { success: true, league: newLeague, groupId: targetGroupId };
+    return serializeTimestamps({
+      success: true,
+      league: newLeague,
+      groupId: targetGroupId,
+    });
   } catch (error) {
     logger.error("Error updating user league", error);
     if (error instanceof Error) {
@@ -397,7 +402,7 @@ export const updateUserLeague = onCall(async (request) => {
  */
 export const getAllLeaguesInfo = onCall(async () => {
   try {
-    return { leagues: LEAGUE_INFO };
+    return serializeTimestamps({ leagues: LEAGUE_INFO });
   } catch (error) {
     logger.error("Error getting all leagues info", error);
     throw new Error("Failed to get all leagues info");

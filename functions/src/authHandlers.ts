@@ -157,7 +157,7 @@ export const completeOnboarding = onCall(
       throw new HttpsError("unauthenticated", "User must be authenticated");
     }
 
-    const { username, photoUrl, interests } = request.data || {};
+    const { username, interests } = request.data || {};
 
     if (!username || username.trim().length < 3) {
       throw new HttpsError(
@@ -197,9 +197,7 @@ export const completeOnboarding = onCall(
         // Aktualizuj istniejący dokument
         await userRef.update({
           username: sanitizedUsername,
-          photoUrl: photoUrl || null,
-          intrests: interests, // Używamy "intrests" (z błędem) dla kompatybilności
-          interests: interests, // Dodajemy też poprawną wersję
+          interests: interests,
           profileCompleted: true,
           updatedAt: new Date(),
         });
@@ -214,9 +212,7 @@ export const completeOnboarding = onCall(
 
         await userRef.set({
           ...userDoc,
-          photoUrl: photoUrl || null,
-          intrests: interests, // Używamy "intrests" (z błędem) dla kompatybilności
-          interests: interests, // Dodajemy też poprawną wersję
+          interests: interests,
           profileCompleted: true,
         });
         logger.info(`completeOnboarding: Created user document for ${uid}`);

@@ -7,13 +7,11 @@ export declare const getLeaderboard: import("firebase-functions/v2/https").Calla
     groupId: null;
     leagueNumber: null;
     seasonId: any;
-    totalMembers?: undefined;
 } | {
     entries: never[];
     groupId: null;
     leagueNumber: number;
     seasonId: any;
-    totalMembers?: undefined;
 } | {
     entries: {
         userId: string;

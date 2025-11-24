@@ -34,7 +34,6 @@ exports.DeckMetaSchema = zod_1.z
     likes: zod_1.z.number().min(0).default(0),
     cardsNum: zod_1.z.number().min(0),
     createdBy: zod_1.z.string(),
-    createdByUsername: zod_1.z.string(),
     is_deleted: zod_1.z.boolean().default(false),
     deletedAt: base_1.TimestampSchema.optional(),
 })

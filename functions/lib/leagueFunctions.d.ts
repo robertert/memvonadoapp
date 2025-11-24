@@ -26,11 +26,6 @@ export declare const getUserGroup: import("firebase-functions/v2/https").Callabl
 export declare const updateUserLeague: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
     league: any;
-    groupId?: undefined;
-} | {
-    success: boolean;
-    league: any;
-    groupId: string;
 }>, unknown>;
 /**
  * Get all league information

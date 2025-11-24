@@ -6,6 +6,7 @@ import {
   CollectionReference,
 } from "firebase-admin/firestore";
 import { SearchLogSchema, type SearchLog } from "./types/common";
+import { serializeTimestamps } from "./utils/serialization";
 
 const db = getFirestore();
 
@@ -74,7 +75,7 @@ export const searchDecks = onCall(async (request) => {
         .add(logData);
     }
 
-    return { results, total: results.length };
+    return serializeTimestamps({ results, total: results.length });
   } catch (error) {
     logger.error("Error searching decks", error);
     throw new Error("Search failed");

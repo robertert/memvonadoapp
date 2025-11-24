@@ -17,6 +17,7 @@ import type {
   Deck,
   DeckCore,
   CardGrade,
+  DeckLearningData,
 } from "../types";
 
 // Cloud Functions calls
@@ -284,7 +285,7 @@ export const cloudFunctions = {
   getUserDeckDetails: async (userId: string, deckId: string) => {
     const fn = httpsCallable(functions, "getUserDeckDetails");
     const result = await fn({ userId, deckId });
-    return result.data as { deck: any };
+    return result.data as { deck: DeckLearningData };
   },
   getUserDeckCards: async (
     userId: string,

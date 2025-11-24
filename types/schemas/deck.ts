@@ -39,7 +39,6 @@ export const DeckMetaSchema = z
     likes: z.number().min(0).default(0),
     cardsNum: z.number().min(0),
     createdBy: z.string(),
-    createdByUsername: z.string(),
     is_deleted: z.boolean().default(false),
     deletedAt: TimestampSchema.optional(),
   })

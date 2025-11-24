@@ -2,6 +2,7 @@ import { onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { LeagueGroupSchema, type LeagueGroup } from "./types/common";
+import { serializeTimestamps } from "./utils/serialization";
 
 const db = getFirestore();
 
@@ -39,12 +40,12 @@ export const getLeaderboard = onCall(async (request) => {
 
     if (!userSeasonPoints.exists) {
       // User not yet in season, return empty leaderboard
-      return {
+      return serializeTimestamps({
         entries: [],
         groupId: null,
         leagueNumber: null,
         seasonId: currentSeasonId,
-      };
+      });
     }
 
     const userData = userSeasonPoints.data() as {
@@ -58,12 +59,12 @@ export const getLeaderboard = onCall(async (request) => {
 
     if (!userGroupId) {
       // User doesn't have a group yet, return empty leaderboard
-      return {
+      return serializeTimestamps({
         entries: [],
         groupId: null,
         leagueNumber: userLeague,
         seasonId: currentSeasonId,
-      };
+      });
     }
 
     // Get all members in the group
@@ -112,13 +113,13 @@ export const getLeaderboard = onCall(async (request) => {
       })
     );
 
-    return {
+    return serializeTimestamps({
       entries,
       groupId: userGroupId,
       leagueNumber: userLeague,
       seasonId: currentSeasonId,
       totalMembers: entries.length,
-    };
+    });
   } catch (error) {
     logger.error("Error getting leaderboard", error);
     throw new Error("Failed to get leaderboard");
@@ -188,13 +189,13 @@ export const getUserRanking = onCall(async (request) => {
 
     const position = membersWithMorePoints.length + 1;
 
-    return {
+    return serializeTimestamps({
       position,
       groupId: userGroupId,
       leagueNumber: userLeague,
       points: userPoints,
       totalMembers: (await groupRef.get()).size,
-    };
+    });
   } catch (error) {
     logger.error("Error getting user ranking", error);
     throw new Error("Failed to get user ranking");
@@ -228,7 +229,7 @@ export const getFollowingRankings = onCall(async (request) => {
     // Get user's friends
     const userDoc = await db.doc(`users/${userId}`).get();
     if (!userDoc.exists) {
-      return { rankings: [] };
+      return serializeTimestamps({ rankings: [] });
     }
 
     const userData = userDoc.data() as { friends?: string[] };

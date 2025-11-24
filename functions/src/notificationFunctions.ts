@@ -3,6 +3,7 @@ import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { NotificationSchema, type Notification } from "./types/common";
+import { serializeTimestamps } from "./utils/serialization";
 
 const db = getFirestore();
 
@@ -36,7 +37,7 @@ export const getNotifications = onCall(async (request) => {
       ...doc.data(),
     }));
 
-    return { notifications };
+    return serializeTimestamps({ notifications });
   } catch (error) {
     logger.error("Error getting notifications", error);
     throw new Error("Failed to get notifications");
@@ -70,7 +71,7 @@ export const markNotificationRead = onCall(async (request) => {
 
     logger.info("Notification marked as read", { userId, notificationId });
 
-    return { success: true };
+    return serializeTimestamps({ success: true });
   } catch (error) {
     logger.error("Error marking notification as read", error);
     if (error instanceof Error && error.message === "Notification not found") {
@@ -113,7 +114,10 @@ export const createNotification = onCall(async (request) => {
 
     logger.info("Notification created", { userId, notification });
 
-    return { success: true, notificationId: notificationDoc.id };
+    return serializeTimestamps({
+      success: true,
+      notificationId: notificationDoc.id,
+    });
   } catch (error) {
     logger.error("Error creating notification", error);
     throw new Error("Failed to create notification");
@@ -207,7 +211,7 @@ export const notifyStreakBroken = onCall(async (request) => {
 
     logger.info("Streak broken notification created", { userId });
 
-    return { success: true };
+    return serializeTimestamps({ success: true });
   } catch (error) {
     logger.error("Error creating streak broken notification", error);
     throw new Error("Failed to create streak broken notification");
@@ -262,7 +266,7 @@ export const notifySeasonEnd = onCall(async (request) => {
       finalPosition,
     });
 
-    return { success: true };
+    return serializeTimestamps({ success: true });
   } catch (error) {
     logger.error("Error creating season end notification", error);
     throw new Error("Failed to create season end notification");

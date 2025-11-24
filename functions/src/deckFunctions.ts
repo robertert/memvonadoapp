@@ -25,6 +25,7 @@ import {
   UserStatsSchema,
   CardGrade,
 } from "./types/common";
+import { serializeTimestamps } from "./utils/serialization";
 
 const db = getFirestore();
 
@@ -72,8 +73,12 @@ export const createDeckWithCards = onCall(async (request) => {
         } as FirstLearn,
       } as Card;
 
-      const validatedCard = CardSchema.parse(cardData);
       const cardRef = deckRef.collection("cards").doc();
+
+      const validatedCard = CardSchema.parse({
+        ...cardData,
+        id: cardRef.id,
+      });
       batch.set(cardRef, validatedCard);
     });
 
@@ -84,7 +89,7 @@ export const createDeckWithCards = onCall(async (request) => {
       cardCount: cards.length,
     });
 
-    return { deckId: deckRef.id };
+    return serializeTimestamps({ deckId: deckRef.id });
   } catch (error) {
     logger.error("Error creating deck", error);
     throw new Error("Failed to create deck");
@@ -119,12 +124,10 @@ export const getDeckDetails = onCall(async (request) => {
 
     // Use document ID (override any id field in data)
     deckData.id = deckSnap.id;
-
     const validatedDeck = DeckSchema.parse(deckData);
-
-    return {
+    return serializeTimestamps({
       deck: validatedDeck as Deck,
-    };
+    });
   } catch (error) {
     logger.error("Error getting deck details", error);
     if (error instanceof Error && error.message === "Deck not found") {
@@ -181,14 +184,14 @@ export const getDeckCards = onCall(async (request) => {
 
     const validatedCards = cards.map((card) => CardSchema.parse(card));
 
-    return {
+    return serializeTimestamps({
       cards: validatedCards as Card[],
       hasMore,
       lastDocId:
         cardsSnap.docs.length > 0
           ? cardsSnap.docs[cardsSnap.docs.length - 1].id
           : null,
-    };
+    });
   } catch (error) {
     logger.error("Error getting deck cards", error);
     if (error instanceof Error && error.message === "Deck not found") {
@@ -216,7 +219,7 @@ export const getPopularDecks = onCall(async (request) => {
     const decks = snapshot.docs.map((doc) => doc.data() as Deck);
     const validatedDecks = decks.map((deck) => DeckSchema.parse(deck));
 
-    return { decks: validatedDecks as Deck[] };
+    return serializeTimestamps({ decks: validatedDecks as Deck[] });
   } catch (error) {
     logger.error("Error getting popular decks", error);
     throw new Error("Failed to get popular decks");
@@ -234,10 +237,10 @@ export const getUserDeckDetails = onCall(async (request) => {
   try {
     const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
     const deckSnap = await deckRef.get();
-    if (!deckSnap.exists) return { deck: null };
+    if (!deckSnap.exists) throw new Error("Deck not found");
     const deckData = deckSnap.data() as Deck;
-    const validatedDeck = DeckSchema.parse(deckData);
-    return { deck: validatedDeck as Deck };
+    const validatedDeck = DeckLearningDataSchema.parse(deckData);
+    return serializeTimestamps({ deck: validatedDeck as DeckLearningData });
   } catch (error) {
     logger.error("Error getting user deck details", error);
     if (error instanceof Error) throw error;
@@ -284,14 +287,14 @@ export const getUserDeckCards = onCall(async (request) => {
       const nextSnap = await nextQuery.get();
       hasMore = nextSnap.docs.length > 0;
     }
-    return {
+    return serializeTimestamps({
       cards,
       hasMore,
       lastDocId:
         cardsSnap.docs.length > 0
           ? cardsSnap.docs[cardsSnap.docs.length - 1].id
           : null,
-    };
+    });
   } catch (error) {
     logger.error("Error getting user deck cards", error);
     if (error instanceof Error) throw error;
@@ -396,7 +399,7 @@ export const getUserDueDeckCards = onCall(async (request) => {
     const deckSnap = await deckRef.get();
     if (!deckSnap.exists) throw new Error("Deck not found");
 
-    const cardsSnap = await deckRef.collection("cards").limit(limit).get();
+    const cardsSnap = await deckRef.collection("cards").get();
     const now = Date.now();
     const raw = cardsSnap.docs.map((doc) => doc.data() as Card);
 
@@ -413,9 +416,11 @@ export const getUserDueDeckCards = onCall(async (request) => {
 
     if (limit == -1) {
       // jesli limit jest na -1 to zwracamy wszystkie karty (bez limitu)
-      return { cards: validatedCards as Card[] };
+      return serializeTimestamps({ cards: validatedCards as Card[] });
     } else {
-      return { cards: validatedCards.slice(0, limit) as Card[] };
+      return serializeTimestamps({
+        cards: validatedCards.slice(0, limit) as Card[],
+      });
     }
   } catch (error) {
     logger.error("Error getting user due deck cards", error);
@@ -460,7 +465,7 @@ export const getUserNewDeckCards = onCall(async (request) => {
 
     const validatedCards: Card[] = cards.map((c) => CardSchema.parse(c));
 
-    return { cards: validatedCards };
+    return serializeTimestamps({ cards: validatedCards });
   } catch (error) {
     logger.error("Error getting user new deck cards", error);
     if (error instanceof Error) throw error;
@@ -568,7 +573,7 @@ export const resetDeck = onCall(async (request) => {
 
     if (cardsSnapshot.empty) {
       logger.info("No cards found in deck", { deckId });
-      return { success: true, cardsReset: 0 };
+      return serializeTimestamps({ success: true, cardsReset: 0 });
     }
 
     // Use batch to update all cards (Firestore batch limit is 500)
@@ -611,7 +616,7 @@ export const resetDeck = onCall(async (request) => {
       cardsReset,
     });
 
-    return { success: true, cardsReset };
+    return serializeTimestamps({ success: true, cardsReset });
   } catch (error) {
     logger.error("Error resetting deck progress", error);
     if (error instanceof Error) {
@@ -669,7 +674,7 @@ export const updateDeckSettings = onCall(async (request) => {
       userId,
     });
 
-    return { success: true };
+    return serializeTimestamps({ success: true });
   } catch (error) {
     logger.error("Error updating deck settings", error);
     if (error instanceof Error) {
@@ -743,12 +748,12 @@ export const startLearningDeck = onCall(async (request) => {
         let batchCount = 0;
 
         for (const sourceCardDoc of sourceCardsSnap.docs) {
-          const sourceCardData = sourceCardDoc.data();
+          const sourceCardData = sourceCardDoc.data() as Card;
 
           // Waliduj i typuj dane karty
           const cardDataUpdate: CardDataUpdate = CardDataUpdateSchema.parse({
-            front: sourceCardData.front || "",
-            back: sourceCardData.back || "",
+            front: sourceCardData.cardData.front || "",
+            back: sourceCardData.cardData.back || "",
           });
 
           const cardCoreUpdate: CardCoreUpdate = CardCoreUpdateSchema.parse({
@@ -800,7 +805,7 @@ export const startLearningDeck = onCall(async (request) => {
     }
 
     logger.info("Deck copied to user space", { userId, deckId });
-    return { success: true };
+    return serializeTimestamps({ success: true });
   } catch (error) {
     logger.error("Error starting learning deck", error);
     if (error instanceof Error) {
@@ -845,7 +850,10 @@ export const deleteDeck = onCall(async (request) => {
 
     // Check if already deleted
     if (deckData.is_deleted) {
-      return { success: true, message: "Deck already deleted" };
+      return serializeTimestamps({
+        success: true,
+        message: "Deck already deleted",
+      });
     }
 
     // Soft delete: set is_deleted flag
@@ -889,10 +897,10 @@ export const deleteDeck = onCall(async (request) => {
       notifiedUsers: userIds.size,
     });
 
-    return {
+    return serializeTimestamps({
       success: true,
       notifiedUsers: userIds.size,
-    };
+    });
   } catch (error) {
     logger.error("Error deleting deck", error);
     if (error instanceof Error) {
@@ -948,7 +956,7 @@ export const checkCardChanges = onCall(async (request) => {
     const changes: Array<{
       cardId: string;
       type: "modified" | "deleted" | "new";
-      changes?: Array<{ field: string; oldValue: any; newValue: any }>;
+      changes?: Array<{ field: string; oldValue: unknown; newValue: unknown }>;
     }> = [];
 
     // Check for modified or deleted cards
@@ -965,8 +973,8 @@ export const checkCardChanges = onCall(async (request) => {
         // Compare content fields
         const cardChanges: Array<{
           field: string;
-          oldValue: any;
-          newValue: any;
+          oldValue: unknown;
+          newValue: unknown;
         }> = [];
 
         // Check front

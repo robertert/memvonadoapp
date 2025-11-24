@@ -1,4 +1,4 @@
-import { Card, Deck, CardGrade } from "./types/common";
+import { Card, DeckLearningData, Deck, CardGrade } from "./types/common";
 /**
  * Bulk create deck with cards
  */
@@ -29,9 +29,7 @@ export declare const getPopularDecks: import("firebase-functions/v2/https").Call
  * User-deck equivalents (operate on users/{userId}/decks/{deckId})
  */
 export declare const getUserDeckDetails: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    deck: null;
-} | {
-    deck: Deck;
+    deck: DeckLearningData;
 }>, unknown>;
 export declare const getUserDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     cards: {
@@ -134,11 +132,9 @@ export declare const startLearningDeck: import("firebase-functions/v2/https").Ca
 export declare const deleteDeck: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
     message: string;
-    notifiedUsers?: undefined;
 } | {
     success: boolean;
     notifiedUsers: number;
-    message?: undefined;
 }>, unknown>;
 /**
  * Check for changes between source deck and user's local copy
@@ -150,8 +146,8 @@ export declare const checkCardChanges: import("firebase-functions/v2/https").Cal
         type: "modified" | "deleted" | "new";
         changes?: Array<{
             field: string;
-            oldValue: any;
-            newValue: any;
+            oldValue: unknown;
+            newValue: unknown;
         }>;
     }[];
 }>, unknown>;

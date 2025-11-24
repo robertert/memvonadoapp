@@ -14,7 +14,14 @@ import {
   TooltipState,
   CardLogicState,
 } from "./learnScreen.types";
-import { Card, Deck, FirstLearn, CardGrade, CardAlgo } from "@/types/schemas";
+import {
+  Card,
+  Deck,
+  FirstLearn,
+  CardGrade,
+  CardAlgo,
+  DeckLearningData,
+} from "@/types/schemas";
 import { db } from "../../firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 
@@ -38,7 +45,7 @@ export function useCardLogic(id: string) {
   );
   const [index, setIndex] = useState<number>(0);
   const [doneCards, setDoneCards] = useState<Card[]>([]);
-  const [deck, setDeck] = useState<Deck>();
+  const [deck, setDeck] = useState<DeckLearningData>();
   const [error, setError] = useState<string | null>(null);
 
   const [progress, setProgress] = useState<ProgressState>({
@@ -354,7 +361,8 @@ export function useCardLogic(id: string) {
           id: placeholderDeck.id,
           title: placeholderDeck.title,
           cardsNum: placeholderDeck.cardsNum,
-        } as Deck);
+          settings: { zenMode: false },
+        } as DeckLearningData);
 
         // Przekształć placeholderCards na format Card
         const transformedCards: Card[] = placeholderCards.map(
@@ -383,7 +391,7 @@ export function useCardLogic(id: string) {
         setIsLoading(false);
         return;
       }
-
+      console.log(userCtx.id);
       // Ensure user personal copy exists; if not, create it
       try {
         await cloudFunctions.getUserDeckDetails(userCtx.id!, id);
@@ -391,12 +399,16 @@ export function useCardLogic(id: string) {
         await cloudFunctions.startLearningDeck(userCtx.id!, id);
       }
 
+      console.log("getUserDeckDetails");
+
       // Get user deck details
       const { deck: currentDeck } = await cloudFunctions.getUserDeckDetails(
         userCtx.id!,
         id
       );
+      console.log("currentDeck", currentDeck);
       const { settings } = await cloudFunctions.getUserSettings(userCtx.id!);
+      console.log("settings", settings);
       const dailyGoal = -1; // liczba dziennych powtórek (FSRS) - nie używamy tego w tej wersji
       const dailyNew = settings.dailyNew ?? 20; // liczba nowych kart do wprowadzenia
 
@@ -408,6 +420,9 @@ export function useCardLogic(id: string) {
           cloudFunctions.getUserDueDeckCards(userCtx.id!, id, dailyGoal),
           cloudFunctions.getUserNewDeckCards(userCtx.id!, id, dailyNew),
         ]);
+
+        console.log("dueRes", dueRes);
+        console.log("newRes", newRes);
 
         const sessionCards = [...dueRes.cards, ...newRes.cards] as any[];
 

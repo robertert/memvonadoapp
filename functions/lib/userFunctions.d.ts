@@ -43,7 +43,6 @@ export declare const getUserDecks: import("firebase-functions/v2/https").Callabl
         likes: number;
         cardsNum: number;
         createdBy: string;
-        createdByUsername: string;
         is_deleted: boolean;
         updatedAt?: Date | undefined;
         deletedAt?: Date | undefined;
@@ -59,19 +58,21 @@ export declare const updateCardProgress: import("firebase-functions/v2/https").C
  * Get user progress and statistics
  */
 export declare const getUserProgress: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    dailyGoal: number;
-    stats: {
-        totalCards: number;
-        totalDecks: number;
-        totalReviews: number;
-        averageDifficulty?: number | undefined;
-        currentStreak?: number | undefined;
-        longestStreak?: number | undefined;
-        lastStreakDate?: Date | undefined;
-        lastStudyDate?: Date | undefined;
+    userProgress: {
+        dailyGoal: number;
+        stats: {
+            totalCards: number;
+            totalDecks: number;
+            totalReviews: number;
+            averageDifficulty?: number | undefined;
+            currentStreak?: number | undefined;
+            longestStreak?: number | undefined;
+            lastStreakDate?: Date | undefined;
+            lastStudyDate?: Date | undefined;
+        };
+        recentSessions: any[];
+        todaySessionsCount: number;
     };
-    recentSessions: any[];
-    todaySessionsCount: number;
 }>, unknown>;
 /**
  * Get user settings

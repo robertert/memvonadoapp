@@ -45,7 +45,6 @@ export declare const DeckMetaSchema: z.ZodObject<{
     likes: z.ZodDefault<z.ZodNumber>;
     cardsNum: z.ZodNumber;
     createdBy: z.ZodString;
-    createdByUsername: z.ZodString;
     is_deleted: z.ZodDefault<z.ZodBoolean>;
     deletedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
 }, "strict", z.ZodTypeAny, {
@@ -54,14 +53,12 @@ export declare const DeckMetaSchema: z.ZodObject<{
     likes: number;
     cardsNum: number;
     createdBy: string;
-    createdByUsername: string;
     is_deleted: boolean;
     deletedAt?: Date | undefined;
 }, {
     id: string;
     cardsNum: number;
     createdBy: string;
-    createdByUsername: string;
     views?: number | undefined;
     likes?: number | undefined;
     is_deleted?: boolean | undefined;
@@ -84,7 +81,6 @@ export declare const DeckSchema: z.ZodObject<{
     likes: z.ZodDefault<z.ZodNumber>;
     cardsNum: z.ZodNumber;
     createdBy: z.ZodString;
-    createdByUsername: z.ZodString;
     is_deleted: z.ZodDefault<z.ZodBoolean>;
     deletedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
 } & {
@@ -101,7 +97,6 @@ export declare const DeckSchema: z.ZodObject<{
     likes: number;
     cardsNum: number;
     createdBy: string;
-    createdByUsername: string;
     is_deleted: boolean;
     updatedAt?: Date | undefined;
     deletedAt?: Date | undefined;
@@ -112,7 +107,6 @@ export declare const DeckSchema: z.ZodObject<{
     isPublic: boolean;
     cardsNum: number;
     createdBy: string;
-    createdByUsername: string;
     createdAt?: unknown;
     updatedAt?: unknown;
     tags?: string[] | undefined;

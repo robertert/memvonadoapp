@@ -1,4 +1,4 @@
-import type { Card, Deck } from "@/types";
+import type { Card, DeckLearningData } from "@/types";
 import { SharedValue } from "react-native-reanimated";
 
 export interface ProgressState {
@@ -30,7 +30,7 @@ export interface CardLogicState {
   time: NodeJS.Timeout | number | undefined;
   index: number;
   doneCards: Card[] | undefined;
-  deck: Deck | undefined;
+  deck: DeckLearningData | undefined;
   progress: ProgressState;
 }
 

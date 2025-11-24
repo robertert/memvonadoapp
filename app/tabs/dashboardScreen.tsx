@@ -24,6 +24,8 @@ import PieChart from "../../ui/CustomPieChart";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
 import { placeholderDecks } from "../../constants/placeholderData";
 import { DeckSchema, UserProgress, UserProgressSchema } from "@/types/schemas";
+import { safeValidateArray, safeValidateUserProgress } from "@/types/dist";
+import { log } from "console";
 
 interface Deck {
   id: string;
@@ -61,14 +63,28 @@ export default function decksScreen(): React.JSX.Element {
           cloudFunctions.getUserDecks(userCtx.id),
         ]);
 
-        const validatedUserProgress: UserProgress =
-          UserProgressSchema.parse(userProgress);
-        const validatedDecks: Deck[] = DeckSchema.array().parse(
-          userDecks.decks
-        );
+        console.log("userDecks", userDecks.decks[0].createdAt);
 
-        setUserProgress(validatedUserProgress);
-        setDecks(validatedDecks);
+        const validatedUserProgress = safeValidateUserProgress(userProgress);
+        if (!validatedUserProgress.success) {
+          console.error(
+            "Invalid user progress data from API",
+            validatedUserProgress.error
+          );
+          setUserProgress(undefined);
+        }
+
+        const validatedDecks = safeValidateArray(userDecks.decks, DeckSchema);
+
+        if (!validatedDecks.success) {
+          console.error("Invalid decks data from API", validatedDecks.error);
+          setDecks([]);
+        }
+
+        setUserProgress(
+          validatedUserProgress.success ? validatedUserProgress.data : undefined
+        );
+        setDecks(validatedDecks.success ? validatedDecks.data : ([] as Deck[]));
       }
 
       setIsLoading(false);

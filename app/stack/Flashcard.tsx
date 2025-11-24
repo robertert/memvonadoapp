@@ -12,12 +12,13 @@ import Animated, {
 } from "react-native-reanimated";
 
 // Local imports
-import { Card, AnimatedStyle, GestureType } from "./learnScreen.types";
+import { AnimatedStyle, GestureType } from "./learnScreen.types";
 import { ANIMATION_CONSTANTS, DIMENSIONS } from "./learnScreen.constants";
 import { Colors } from "../../constants/colors";
+import { Card } from "@/types/schemas";
 
 interface FlashcardProps {
-  card: Card;
+  card: Card | undefined;
   isBack: boolean;
   rStyle: AnimatedStyle;
   gesture: GestureType;

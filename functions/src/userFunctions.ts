@@ -22,6 +22,7 @@ import {
   UserProgressSchema,
   User,
 } from "./types/common";
+import { serializeTimestamps } from "./utils/serialization";
 
 const db = getFirestore();
 
@@ -184,12 +185,12 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
 
     // Jeżeli już zaktualizowane dla wczoraj, nic nie rób (idempotencja)
     if (userData?.stats?.lastStreakDate === yesterdayYmd) {
-      return {
+      return serializeTimestamps({
         currentStreak: Number(userData?.stats?.currentStreak || 0),
         longestStreak: Number(userData?.stats?.longestStreak || 0),
         lastStreakDate: userData?.stats?.lastStreakDate || null,
         updated: false,
-      };
+      });
     }
 
     // Pobierz sesje z ostatnich 48h i sprawdź, czy którakolwiek ma reviewTime przypadający na wczoraj w danej strefie
@@ -230,12 +231,12 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
       "stats.lastStreakDate": yesterdayYmd,
     });
 
-    return {
+    return serializeTimestamps({
       currentStreak: nextCurrent,
       longestStreak: nextLongest,
       lastStreakDate: yesterdayYmd,
       updated: true,
-    };
+    });
   } catch (error) {
     logger.error("updateUserStreakOnLogin failed", error);
     throw new Error("Failed to update streak");
@@ -295,7 +296,7 @@ export const getUserDecks = onCall(async (request) => {
 
     const validatedDecks: Deck[] = decks.map((deck) => DeckSchema.parse(deck));
 
-    return { decks: validatedDecks };
+    return serializeTimestamps({ decks: validatedDecks });
   } catch (error) {
     logger.error("Error getting user decks", error);
     throw new Error("Failed to get user decks");
@@ -393,7 +394,7 @@ export const updateCardProgress = onCall(async (request) => {
       firstLearn,
     });
 
-    return { success: true };
+    return serializeTimestamps({ success: true });
   } catch (error) {
     logger.error("Error updating card progress", error);
     throw new Error("Failed to update card progress");
@@ -446,7 +447,7 @@ export const getUserProgress = onCall(async (request) => {
       todaySessionsCount: todaySessionsCount.data().count,
     });
 
-    return userProgress;
+    return serializeTimestamps({ userProgress });
   } catch (error) {
     logger.error("Error getting user progress", error);
     throw new Error("Failed to get user progress");
@@ -468,13 +469,13 @@ export const getUserSettings = onCall(async (request) => {
     const settingsDoc = await settingsDocPath.get();
 
     if (settingsDoc.exists) {
-      return { settings: settingsDoc.data() || {} };
+      return serializeTimestamps({ settings: settingsDoc.data() || {} });
     }
 
     // Fallback: settings embedded in user root document under `settings`
     const userDoc = await db.doc(`users/${userId}`).get();
     if (!userDoc.exists) {
-      return { settings: {} };
+      return serializeTimestamps({ settings: {} });
     }
     const userData = userDoc.data() || ({} as Record<string, unknown>);
 
@@ -487,11 +488,11 @@ export const getUserSettings = onCall(async (request) => {
       typeof userSettings === "object" &&
       Object.keys(userSettings).length > 0
     ) {
-      return { settings: userSettings };
+      return serializeTimestamps({ settings: userSettings });
     }
 
     // No settings found
-    return { settings: {} };
+    return serializeTimestamps({ settings: {} });
   } catch (error) {
     logger.error("Error getting user settings", error);
     throw new Error("Failed to get user settings");
@@ -551,7 +552,7 @@ export const processFriendRequest = onCall(async (request) => {
       action,
     });
 
-    return { success: true };
+    return serializeTimestamps({ success: true });
   } catch (error) {
     logger.error("Error processing friend request", error);
     throw new Error("Failed to process friend request");
