@@ -51,9 +51,12 @@ export default function createSelfScreen(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [title, setTitle] = useState<string>("");
   const [deckLanguage, setDeckLanguage] = useState<string>("en");
+  const [showDraftModal, setShowDraftModal] = useState<boolean>(false);
+  const [draftFound, setDraftFound] = useState<any>(null);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const draftKeyRef = useRef<string>("deck_draft_" + Date.now());
+  const periodicSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const draftKeyRef = "deck_draft";
 
   const userCtx = useContext(UserContext);
 
@@ -62,6 +65,7 @@ export default function createSelfScreen(): React.JSX.Element {
     const loadDraft = async () => {
       try {
         if (typedParams.cards) {
+          // If cards are passed via params, load them directly
           const gotCards = JSON.parse(typedParams.cards).map((card: any) => ({
             id: generageRandomUid(),
             cardData: {
@@ -72,20 +76,20 @@ export default function createSelfScreen(): React.JSX.Element {
           })) as EditableCard[];
           setCards(gotCards);
         } else {
-          // Try to load draft from AsyncStorage
-          const draftData = await AsyncStorage.getItem(draftKeyRef.current);
+          // Check if draft exists in AsyncStorage
+          const draftData = await AsyncStorage.getItem(draftKeyRef);
           if (draftData) {
-            const draft = JSON.parse(draftData);
-            if (draft.title || (draft.cards && draft.cards.length > 0)) {
-              setTitle(draft.title || "");
-              // Ensure all cards have id
-              const cardsWithId = (draft.cards || []).map((card: any) => ({
-                id: card.id || generageRandomUid(),
-                cardData: card.cardData || { front: "", back: "" },
-                tags: card.tags || [],
-              })) as EditableCard[];
-              setCards(cardsWithId);
-              setDeckLanguage(draft.deckLanguage || "en");
+            try {
+              const draft = JSON.parse(draftData);
+              if (draft.title || (draft.cards && draft.cards.length > 0)) {
+                // Draft found - show modal to ask user
+                setDraftFound(draft);
+                setShowDraftModal(true);
+              }
+            } catch (parseError) {
+              console.error("Error parsing draft:", parseError);
+              // Clear corrupted draft
+              await AsyncStorage.removeItem(draftKeyRef);
             }
           }
         }
@@ -95,6 +99,34 @@ export default function createSelfScreen(): React.JSX.Element {
     };
     loadDraft();
   }, []);
+
+  // Handle user choice: continue with draft
+  const handleContinueDraft = () => {
+    if (draftFound) {
+      setTitle(draftFound.title || "");
+      const cardsWithId = (draftFound.cards || []).map((card: any) => ({
+        id: card.id || generageRandomUid(),
+        cardData: card.cardData || { front: "", back: "" },
+        tags: card.tags || [],
+      })) as EditableCard[];
+      setCards(cardsWithId);
+      setDeckLanguage(draftFound.deckLanguage || "en");
+    }
+    setShowDraftModal(false);
+    setDraftFound(null);
+  };
+
+  // Handle user choice: start fresh
+  const handleStartFresh = async () => {
+    // Clear the draft
+    await AsyncStorage.removeItem(draftKeyRef);
+    setShowDraftModal(false);
+    setDraftFound(null);
+    // Reset to empty state
+    setTitle("");
+    setCards([]);
+    setDeckLanguage("en");
+  };
 
   // Autosave draft (3 seconds debounce)
   useEffect(() => {
@@ -108,7 +140,7 @@ export default function createSelfScreen(): React.JSX.Element {
 
     saveTimeoutRef.current = setTimeout(() => {
       saveDraft();
-    }, 3000); // 3 seconds debounce
+    }, 2000); // 2 seconds debounce
 
     // Cleanup on unmount
     return () => {
@@ -119,11 +151,6 @@ export default function createSelfScreen(): React.JSX.Element {
   }, [cards, title, deckLanguage]);
 
   // Save draft on unmount
-  useEffect(() => {
-    return () => {
-      saveDraft();
-    };
-  }, []);
 
   // Save draft to AsyncStorage (autosave)
   async function saveDraft(): Promise<void> {
@@ -131,7 +158,7 @@ export default function createSelfScreen(): React.JSX.Element {
       const hasContent = title.trim().length > 0 || cards.length > 0;
       if (!hasContent) {
         // Clear draft if empty
-        await AsyncStorage.removeItem(draftKeyRef.current);
+        await AsyncStorage.removeItem(draftKeyRef);
         return;
       }
 
@@ -146,8 +173,10 @@ export default function createSelfScreen(): React.JSX.Element {
         savedAt: Date.now(),
       };
 
-      await AsyncStorage.setItem(draftKeyRef.current, JSON.stringify(draft));
-      console.log("Draft saved");
+      await AsyncStorage.setItem(draftKeyRef, JSON.stringify(draft));
+      const draftData = await AsyncStorage.getItem(draftKeyRef);
+      console.log(draft);
+      console.log("Draft saved", draftData);
     } catch (error) {
       console.error("Error saving draft:", error);
     }
@@ -159,7 +188,7 @@ export default function createSelfScreen(): React.JSX.Element {
       setIsLoading(true);
 
       // Clear draft after successful save
-      await AsyncStorage.removeItem(draftKeyRef.current);
+      await AsyncStorage.removeItem(draftKeyRef);
 
       // Prepare cards data for Cloud Function
       const cardsData = cards.map((card) => ({
@@ -248,101 +277,151 @@ export default function createSelfScreen(): React.JSX.Element {
               <ActivityIndicator size={"large"} color={Colors.accent_500} />
             </View>
           ) : (
-            <ScrollView
-              style={styles.scrollView}
-              contentContainerStyle={styles.scrollContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.titleSection}>
-                <Text style={styles.titleLabel}>Tytuł decku</Text>
-                <View style={styles.titleInputContainer}>
-                  <TextInput
-                    style={styles.titleInput}
-                    onChangeText={titleChangeHandler}
-                    value={title}
-                    placeholder="Wprowadź tytuł..."
-                    placeholderTextColor={Colors.primary_700_50}
-                  />
-                </View>
-              </View>
-
-              {/* Wybór języka decku */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "center",
-                  gap: 8,
-                  marginBottom: 10,
-                }}
+            <>
+              <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
               >
-                {[
-                  { code: "en", label: "English" },
-                  { code: "pl", label: "Polski" },
-                  { code: "es", label: "Español" },
-                  { code: "de", label: "Deutsch" },
-                ].map((lng) => (
-                  <Pressable
-                    key={lng.code}
-                    onPress={() => setDeckLanguage(lng.code)}
-                    style={{
-                      paddingVertical: 6,
-                      paddingHorizontal: 12,
-                      borderRadius: 12,
-                      borderWidth: 2,
-                      borderColor: Colors.primary_700,
-                      backgroundColor:
-                        deckLanguage === lng.code
-                          ? Colors.primary_700
-                          : Colors.primary_100,
-                    }}
-                  >
-                    <Text
+                <View style={styles.titleSection}>
+                  <Text style={styles.titleLabel}>Tytuł decku</Text>
+                  <View style={styles.titleInputContainer}>
+                    <TextInput
+                      style={styles.titleInput}
+                      onChangeText={titleChangeHandler}
+                      value={title}
+                      placeholder="Wprowadź tytuł..."
+                      placeholderTextColor={Colors.primary_700_50}
+                    />
+                  </View>
+                </View>
+
+                {/* Wybór języka decku */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    gap: 8,
+                    marginBottom: 10,
+                  }}
+                >
+                  {[
+                    { code: "en", label: "English" },
+                    { code: "pl", label: "Polski" },
+                    { code: "es", label: "Español" },
+                    { code: "de", label: "Deutsch" },
+                  ].map((lng) => (
+                    <Pressable
+                      key={lng.code}
+                      onPress={() => setDeckLanguage(lng.code)}
                       style={{
-                        color:
+                        paddingVertical: 6,
+                        paddingHorizontal: 12,
+                        borderRadius: 12,
+                        borderWidth: 2,
+                        borderColor: Colors.primary_700,
+                        backgroundColor:
                           deckLanguage === lng.code
-                            ? Colors.primary_100
-                            : Colors.primary_700,
-                        fontFamily: Fonts.primary,
-                        fontWeight: "800",
+                            ? Colors.primary_700
+                            : Colors.primary_100,
                       }}
                     >
-                      {lng.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
+                      <Text
+                        style={{
+                          color:
+                            deckLanguage === lng.code
+                              ? Colors.primary_100
+                              : Colors.primary_700,
+                          fontFamily: Fonts.primary,
+                          fontWeight: "800",
+                        }}
+                      >
+                        {lng.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
 
-              <View style={styles.cardsSection}>
-                <Text style={styles.sectionTitle}>Karty</Text>
-                {cards.map((card) => {
-                  return (
-                    <NewCard
-                      key={card.id}
-                      card={card}
-                      setCards={setCards}
-                      deckLanguage={deckLanguage}
+                <View style={styles.cardsSection}>
+                  <Text style={styles.sectionTitle}>Karty</Text>
+                  {cards.map((card) => {
+                    return (
+                      <NewCard
+                        key={card.id}
+                        card={card}
+                        setCards={setCards}
+                        deckLanguage={deckLanguage}
+                      />
+                    );
+                  })}
+                  <Pressable
+                    onPress={createNewHandler}
+                    style={styles.addCardButton}
+                  >
+                    <AntDesign
+                      name="plus-circle"
+                      size={45}
+                      color={Colors.accent_500}
                     />
-                  );
-                })}
-                <Pressable
-                  onPress={createNewHandler}
-                  style={styles.addCardButton}
-                >
-                  <AntDesign
-                    name="plus-circle"
-                    size={45}
-                    color={Colors.accent_500}
-                  />
-                  <Text style={styles.addCardText}>Dodaj kartę</Text>
-                </Pressable>
-              </View>
-
+                    <Text style={styles.addCardText}>Dodaj kartę</Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
               <Pressable onPress={saveHandler} style={styles.saveButton}>
                 <Text style={styles.saveText}>Utwórz Deck</Text>
               </Pressable>
-            </ScrollView>
+            </>
           )}
         </View>
+
+        {/* Draft Modal */}
+        <Modal
+          visible={showDraftModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowDraftModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Znaleziono wersję roboczą</Text>
+              </View>
+
+              <Text style={styles.modalText}>
+                Znaleziono zapisaną wersję roboczą decku. Czy chcesz kontynuować
+                pracę nad nią?
+              </Text>
+
+              {draftFound && (
+                <View style={styles.draftInfo}>
+                  <Text style={styles.draftInfoText}>
+                    Tytuł: {draftFound.title || "(brak tytułu)"}
+                  </Text>
+                  <Text style={styles.draftInfoText}>
+                    Karty: {draftFound.cards?.length || 0}
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.modalButtons}>
+                <Pressable
+                  onPress={handleStartFresh}
+                  style={[styles.modalButton, styles.modalButtonSecondary]}
+                >
+                  <Text style={styles.modalButtonTextSecondary}>
+                    Zacznij od nowa
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleContinueDraft}
+                  style={[styles.modalButton, styles.modalButtonPrimary]}
+                >
+                  <Text style={styles.modalButtonTextPrimary}>Kontynuuj</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </LinearGradient>
     </GestureHandlerRootView>
   );
@@ -383,6 +462,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     paddingHorizontal: 15,
+    position: "relative",
   },
   loadingContainer: {
     flex: 1,
@@ -394,7 +474,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 20,
+    paddingBottom: 120, // Extra padding for fixed button
   },
   titleSection: {
     marginTop: 20,
@@ -457,8 +537,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 20,
-    marginBottom: 20,
+    position: "absolute",
+    bottom: 0,
+    left: 15,
+    right: 15,
+    marginBottom: 40,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   saveText: {
     fontSize: 20,
@@ -552,5 +643,64 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: "center",
     justifyContent: "center",
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "900",
+  },
+  modalText: {
+    fontSize: 16,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  draftInfo: {
+    backgroundColor: Colors.accent_500_30,
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 20,
+  },
+  draftInfoText: {
+    fontSize: 14,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "600",
+    marginBottom: 5,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 12,
+    justifyContent: "space-between",
+  },
+  modalButton: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalButtonPrimary: {
+    backgroundColor: Colors.primary_700,
+  },
+  modalButtonSecondary: {
+    backgroundColor: Colors.primary_100,
+    borderWidth: 2,
+    borderColor: Colors.primary_700,
+  },
+  modalButtonTextPrimary: {
+    fontSize: 16,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_100,
+    fontWeight: "700",
+  },
+  modalButtonTextSecondary: {
+    fontSize: 16,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "700",
   },
 });
