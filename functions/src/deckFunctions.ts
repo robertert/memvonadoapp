@@ -24,6 +24,7 @@ import {
   UserStats,
   UserStatsSchema,
   CardGrade,
+  User,
 } from "./types/common";
 import { serializeTimestamps } from "./utils/serialization";
 
@@ -117,6 +118,10 @@ export const getDeckDetails = onCall(async (request) => {
     const deckDataRaw = deckSnap.data() || {};
     const deckData = { ...deckDataRaw } as Deck;
 
+    const userRef = db.doc(`users/${deckData.createdBy}`);
+    const userSnap = await userRef.get();
+    const userData = userSnap.data() as User;
+
     // Check if deck is deleted
     if (deckData.is_deleted === true) {
       throw new Error("Deck not found");
@@ -127,6 +132,7 @@ export const getDeckDetails = onCall(async (request) => {
     const validatedDeck = DeckSchema.parse(deckData);
     return serializeTimestamps({
       deck: validatedDeck as Deck,
+      username: userData.username,
     });
   } catch (error) {
     logger.error("Error getting deck details", error);

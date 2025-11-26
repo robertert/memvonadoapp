@@ -10,6 +10,7 @@ export declare const createDeckWithCards: import("firebase-functions/v2/https").
  */
 export declare const getDeckDetails: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     deck: Deck;
+    username: string;
 }>, unknown>;
 /**
  * Get cards for a deck with pagination

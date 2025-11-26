@@ -48,6 +48,8 @@ import {
   type Deck,
 } from "@/types";
 
+import { calculateDateAgo } from "@/utils/date";
+
 interface DeckParams {
   deckId: string;
 }
@@ -70,6 +72,7 @@ export default function deckDetails(): React.JSX.Element {
   const [cardChanges, setCardChanges] = useState<any[]>([]);
   const [isCheckingChanges, setIsCheckingChanges] = useState<boolean>(false);
   const [dateAgo, setDateAgo] = useState<string>("2 weeks ago");
+  const [username, setUsername] = useState<string>("");
 
   useEffect(() => {
     fetchDeck();
@@ -145,9 +148,8 @@ export default function deckDetails(): React.JSX.Element {
         setLastDocId(null);
       } else {
         // Get deck details first
-        const { deck: deckData } = await cloudFunctions.getDeckDetails(
-          typedParams.deckId
-        );
+        const { deck: deckData, username } =
+          await cloudFunctions.getDeckDetails(typedParams.deckId);
 
         const { deck: userDeckData } = await cloudFunctions.getUserDeckDetails(
           userCtx.id!,
@@ -179,6 +181,8 @@ export default function deckDetails(): React.JSX.Element {
           console.error("Invalid cards data from API", resultCards.error);
         }
 
+        setDateAgo(calculateDateAgo(new Date(deckData.createdAt)));
+        setUsername(username);
         setDeck(resultDeck?.success ? resultDeck.data : ({} as Deck));
         setCards(resultCards?.success ? resultCards.data : ([] as Card[]));
         setHasMoreCards(hasMore);
@@ -477,7 +481,7 @@ export default function deckDetails(): React.JSX.Element {
         <View style={styles.userContainer}>
           <View style={styles.userInfo}>
             <UserIcon size={24} color={Colors.primary_700} />
-            <Text style={styles.userName}>{deck?.createdBy}</Text>
+            <Text style={styles.userName}>{username}</Text>
           </View>
           <Text style={styles.dateText}>{dateAgo}</Text>
         </View>

@@ -92,7 +92,7 @@ export const cloudFunctions = {
   getDeckDetails: async (deckId: string) => {
     const getDeckDetailsFunction = httpsCallable(functions, "getDeckDetails");
     const result = await getDeckDetailsFunction({ deckId });
-    return result.data as { deck: Deck | null };
+    return result.data as { deck: Deck | null; username: string };
   },
 
   // Get cards for a deck with pagination
