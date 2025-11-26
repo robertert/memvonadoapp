@@ -63,8 +63,6 @@ export default function decksScreen(): React.JSX.Element {
           cloudFunctions.getUserDecks(userCtx.id),
         ]);
 
-        console.log("userDecks", userDecks.decks[0].createdAt);
-
         const validatedUserProgress = safeValidateUserProgress(userProgress);
         if (!validatedUserProgress.success) {
           console.error(

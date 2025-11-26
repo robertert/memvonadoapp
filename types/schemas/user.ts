@@ -11,8 +11,8 @@ export const UserStatsSchema = z
     totalDecks: z.number().min(0).default(0),
     totalReviews: z.number().min(0).default(0),
     averageDifficulty: z.number().min(0).max(5).optional(),
-    currentStreak: z.number().min(0).default(0).optional(),
-    longestStreak: z.number().min(0).default(0).optional(),
+    currentStreak: z.number().min(0).default(0),
+    longestStreak: z.number().min(0).default(0),
     lastStreakDate: TimestampSchema.optional(),
     lastStudyDate: TimestampSchema.optional(),
   })
@@ -66,6 +66,7 @@ export const UserMetaSchema = z
     followingCount: z.number().min(0).default(0),
     followersCount: z.number().min(0).default(0),
     profileCompleted: z.boolean().default(false).optional(),
+    interests: z.array(z.string()).default([]),
   })
   .strict();
 

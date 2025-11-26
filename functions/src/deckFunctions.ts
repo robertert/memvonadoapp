@@ -8,6 +8,7 @@ import {
   CardCore,
   DeckSchema,
   DeckSettings,
+  DeckSettingsSchema,
   Deck,
   DeckCore,
   DeckCoreSchema,
@@ -18,7 +19,6 @@ import {
   DeckSettingsUpdateSchema,
   CardDataUpdateSchema,
   CardCoreUpdateSchema,
-  type DeckSettingsUpdate,
   type CardDataUpdate,
   type CardCoreUpdate,
   UserStats,
@@ -237,7 +237,7 @@ export const getUserDeckDetails = onCall(async (request) => {
   try {
     const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
     const deckSnap = await deckRef.get();
-    if (!deckSnap.exists) throw new Error("Deck not found");
+    if (!deckSnap.exists) return serializeTimestamps({ deck: null });
     const deckData = deckSnap.data() as Deck;
     const validatedDeck = DeckLearningDataSchema.parse(deckData);
     return serializeTimestamps({ deck: validatedDeck as DeckLearningData });
@@ -403,10 +403,12 @@ export const getUserDueDeckCards = onCall(async (request) => {
     const now = Date.now();
     const raw = cardsSnap.docs.map((doc) => doc.data() as Card);
 
-    const dueFirst: Card[] = raw.filter(
-      (c) => c.firstLearn?.due && c.firstLearn.due.getTime() <= now
+    const validatedRaw: Card[] = raw.map((c) => CardSchema.parse(c));
+
+    const dueFirst: Card[] = validatedRaw.filter(
+      (c) => c.firstLearn?.isFirst && !c.firstLearn?.isNew
     );
-    const dueFSRS: Card[] = raw.filter(
+    const dueFSRS: Card[] = validatedRaw.filter(
       (c) => c.cardAlgo?.due && c.cardAlgo.due.getTime() <= now
     );
 
@@ -445,22 +447,11 @@ export const getUserNewDeckCards = onCall(async (request) => {
       .limit(limit)
       .get();
 
-    const cards: Card[] = userCardsSnap.docs.map((doc) => {
-      const cardData = doc.data();
-      const card: Card = {
+    const cards = userCardsSnap.docs.map((doc) => {
+      return {
         id: doc.id,
-        cardData: {
-          front: cardData.cardData?.front || cardData.front || "",
-          back: cardData.cardData?.back || cardData.back || "",
-        },
-        tags: Array.isArray(cardData.tags) ? cardData.tags : [],
-        createdAt: cardData.createdAt || new Date(),
-        cardAlgo: cardData.cardAlgo || undefined,
-        firstLearn: cardData.firstLearn || {
-          isNew: true,
-        },
-      };
-      return card;
+        ...doc.data(),
+      } as Card;
     });
 
     const validatedCards: Card[] = cards.map((c) => CardSchema.parse(c));
@@ -512,6 +503,8 @@ export const updateUserStats = onDocumentWritten(
         totalReviews: totalReviews,
         averageDifficulty: averageDifficulty,
         lastStudyDate: new Date(),
+        currentStreak: 0,
+        longestStreak: 0,
       };
 
       const validatedUserStats = UserStatsSchema.parse(userStats);
@@ -660,12 +653,18 @@ export const updateDeckSettings = onCall(async (request) => {
     }
 
     // Waliduj i typuj częściową aktualizację ustawień
-    const validatedSettings: DeckSettingsUpdate =
-      DeckSettingsUpdateSchema.parse(settings);
+    const partialSettings = DeckSettingsUpdateSchema.parse(settings);
+
+    // Merge with existing settings
+    const currentSettings = deckData.settings || {};
+    const finalSettings = DeckSettingsSchema.parse({
+      ...currentSettings,
+      ...partialSettings,
+    });
 
     // Update deck settings
     await deckRef.update({
-      settings: validatedSettings,
+      settings: finalSettings,
       updatedAt: FieldValue.serverTimestamp(),
     });
 
@@ -731,6 +730,7 @@ export const startLearningDeck = onCall(async (request) => {
         title: srcDeck.title,
         cardsNum: srcDeck.cardsNum,
         settings: { zenMode: false } as DeckSettings,
+        updatedAt: srcDeck.updatedAt,
       };
       // Validate before saving
       const validatedData = DeckLearningDataSchema.parse(userDeckData);
@@ -750,26 +750,17 @@ export const startLearningDeck = onCall(async (request) => {
         for (const sourceCardDoc of sourceCardsSnap.docs) {
           const sourceCardData = sourceCardDoc.data() as Card;
 
-          // Waliduj i typuj dane karty
-          const cardDataUpdate: CardDataUpdate = CardDataUpdateSchema.parse({
-            front: sourceCardData.cardData.front || "",
-            back: sourceCardData.cardData.back || "",
-          });
-
-          const cardCoreUpdate: CardCoreUpdate = CardCoreUpdateSchema.parse({
-            cardData: cardDataUpdate,
-            tags: Array.isArray(sourceCardData.tags) ? sourceCardData.tags : [],
-          });
-
           const card: Card = {
             id: sourceCardDoc.id,
-            cardData: cardCoreUpdate.cardData || { front: "", back: "" },
-            tags: cardCoreUpdate.tags || [],
+            cardData: {
+              front: sourceCardData.cardData.front || "",
+              back: sourceCardData.cardData.back || "",
+            },
+            tags: sourceCardData.tags || [],
             createdAt: sourceCardData.createdAt || new Date(),
-            contentVersion: new Date(),
-            // Initialize progress
             firstLearn: {
               isNew: true,
+              due: new Date(),
             },
           };
 

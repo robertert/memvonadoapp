@@ -51,12 +51,9 @@ export default function RootLayout(): React.JSX.Element | null {
 
       // Sprawdź aktualną ścieżkę
       const currentPath = segments.join("/");
-      console.log("Current path:", currentPath);
 
       try {
         if (user) {
-          console.log("User authenticated:", user.uid);
-
           // Jednorazowe zasilenie danych placeholder dla demo
           if (PLACEHOLDER_MODE) {
             try {
@@ -103,7 +100,6 @@ export default function RootLayout(): React.JSX.Element | null {
 
             const userData = snapshot.data();
             const profileCompleted = userData?.profileCompleted === true;
-            console.log("Profile completed:", profileCompleted);
 
             if (!profileCompleted) {
               // Przekieruj do onboardingu (wieloetapowa rejestracja) tylko jeśli nie jesteśmy już tam

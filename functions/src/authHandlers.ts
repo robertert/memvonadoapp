@@ -89,6 +89,7 @@ function buildUserDocument(params: UserDocumentParams): User {
     followingCount: 0,
     followersCount: 0,
     profileCompleted: false,
+    interests: [],
   } as User;
 
   return UserSchema.parse(user);

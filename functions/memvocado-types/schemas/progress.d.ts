@@ -8,17 +8,17 @@ export declare const UserProgressSchema: z.ZodObject<{
         totalDecks: z.ZodDefault<z.ZodNumber>;
         totalReviews: z.ZodDefault<z.ZodNumber>;
         averageDifficulty: z.ZodOptional<z.ZodNumber>;
-        currentStreak: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
-        longestStreak: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
+        currentStreak: z.ZodDefault<z.ZodNumber>;
+        longestStreak: z.ZodDefault<z.ZodNumber>;
         lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
     }, "strict", z.ZodTypeAny, {
         totalCards: number;
         totalDecks: number;
         totalReviews: number;
+        currentStreak: number;
+        longestStreak: number;
         averageDifficulty?: number | undefined;
-        currentStreak?: number | undefined;
-        longestStreak?: number | undefined;
         lastStreakDate?: Date | undefined;
         lastStudyDate?: Date | undefined;
     }, {
@@ -40,9 +40,9 @@ export declare const UserProgressSchema: z.ZodObject<{
         totalCards: number;
         totalDecks: number;
         totalReviews: number;
+        currentStreak: number;
+        longestStreak: number;
         averageDifficulty?: number | undefined;
-        currentStreak?: number | undefined;
-        longestStreak?: number | undefined;
         lastStreakDate?: Date | undefined;
         lastStudyDate?: Date | undefined;
     };

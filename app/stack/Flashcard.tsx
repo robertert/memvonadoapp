@@ -24,9 +24,9 @@ interface FlashcardProps {
   gesture: GestureType;
   isTurn: boolean;
   streakLost?: boolean;
-}
+} 
 
-export function Flashcard({
+export default function Flashcard({
   card,
   isBack,
   rStyle,

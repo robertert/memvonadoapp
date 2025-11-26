@@ -19,7 +19,7 @@ export interface TooltipState {
 }
 
 export interface LearnScreenParams {
-  id: string;
+  deckId: string;
 }
 
 export interface CardLogicState {
@@ -29,7 +29,6 @@ export interface CardLogicState {
   tooltip: TooltipState;
   time: NodeJS.Timeout | number | undefined;
   index: number;
-  doneCards: Card[] | undefined;
   deck: DeckLearningData | undefined;
   progress: ProgressState;
 }

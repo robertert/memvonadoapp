@@ -29,6 +29,8 @@ export declare const getPopularDecks: import("firebase-functions/v2/https").Call
  * User-deck equivalents (operate on users/{userId}/decks/{deckId})
  */
 export declare const getUserDeckDetails: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    deck: null;
+} | {
     deck: DeckLearningData;
 }>, unknown>;
 export declare const getUserDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{

@@ -21,7 +21,7 @@ interface SwipeIndicatorsProps {
   safeArea: EdgeInsets;
 }
 
-export function SwipeIndicators({
+export default function SwipeIndicators({
   lInfoStyle,
   rInfoStyle,
   tInfoStyle,

@@ -3,10 +3,12 @@
 # dependencies
 node_modules/
 
+AI_CONTEXT.md   
+
 *.log
 
 # Expo
-.expo/
+.expo/  
 dist/
 web-build/
 
@@ -38,8 +40,8 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-#firebase
-firebase.js
+.firebase
+
 
 credentials/
 

@@ -7,17 +7,17 @@ export declare const UserStatsSchema: z.ZodObject<{
     totalDecks: z.ZodDefault<z.ZodNumber>;
     totalReviews: z.ZodDefault<z.ZodNumber>;
     averageDifficulty: z.ZodOptional<z.ZodNumber>;
-    currentStreak: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
-    longestStreak: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
+    currentStreak: z.ZodDefault<z.ZodNumber>;
+    longestStreak: z.ZodDefault<z.ZodNumber>;
     lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
     lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
 }, "strict", z.ZodTypeAny, {
     totalCards: number;
     totalDecks: number;
     totalReviews: number;
+    currentStreak: number;
+    longestStreak: number;
     averageDifficulty?: number | undefined;
-    currentStreak?: number | undefined;
-    longestStreak?: number | undefined;
     lastStreakDate?: Date | undefined;
     lastStudyDate?: Date | undefined;
 }, {
@@ -123,17 +123,17 @@ export declare const UserMetaSchema: z.ZodObject<{
         totalDecks: z.ZodDefault<z.ZodNumber>;
         totalReviews: z.ZodDefault<z.ZodNumber>;
         averageDifficulty: z.ZodOptional<z.ZodNumber>;
-        currentStreak: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
-        longestStreak: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
+        currentStreak: z.ZodDefault<z.ZodNumber>;
+        longestStreak: z.ZodDefault<z.ZodNumber>;
         lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
     }, "strict", z.ZodTypeAny, {
         totalCards: number;
         totalDecks: number;
         totalReviews: number;
+        currentStreak: number;
+        longestStreak: number;
         averageDifficulty?: number | undefined;
-        currentStreak?: number | undefined;
-        longestStreak?: number | undefined;
         lastStreakDate?: Date | undefined;
         lastStudyDate?: Date | undefined;
     }, {
@@ -149,6 +149,7 @@ export declare const UserMetaSchema: z.ZodObject<{
     followingCount: z.ZodDefault<z.ZodNumber>;
     followersCount: z.ZodDefault<z.ZodNumber>;
     profileCompleted: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
+    interests: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
 }, "strict", z.ZodTypeAny, {
     id: string;
     league: number;
@@ -159,14 +160,15 @@ export declare const UserMetaSchema: z.ZodObject<{
         totalCards: number;
         totalDecks: number;
         totalReviews: number;
+        currentStreak: number;
+        longestStreak: number;
         averageDifficulty?: number | undefined;
-        currentStreak?: number | undefined;
-        longestStreak?: number | undefined;
         lastStreakDate?: Date | undefined;
         lastStudyDate?: Date | undefined;
     };
     followingCount: number;
     followersCount: number;
+    interests: string[];
     profileCompleted?: boolean | undefined;
 }, {
     id: string;
@@ -187,6 +189,7 @@ export declare const UserMetaSchema: z.ZodObject<{
     followingCount?: number | undefined;
     followersCount?: number | undefined;
     profileCompleted?: boolean | undefined;
+    interests?: string[] | undefined;
 }>;
 export type UserMeta = z.infer<typeof UserMetaSchema>;
 export declare const UserSchema: z.ZodObject<{
@@ -222,17 +225,17 @@ export declare const UserSchema: z.ZodObject<{
         totalDecks: z.ZodDefault<z.ZodNumber>;
         totalReviews: z.ZodDefault<z.ZodNumber>;
         averageDifficulty: z.ZodOptional<z.ZodNumber>;
-        currentStreak: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
-        longestStreak: z.ZodOptional<z.ZodDefault<z.ZodNumber>>;
+        currentStreak: z.ZodDefault<z.ZodNumber>;
+        longestStreak: z.ZodDefault<z.ZodNumber>;
         lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
     }, "strict", z.ZodTypeAny, {
         totalCards: number;
         totalDecks: number;
         totalReviews: number;
+        currentStreak: number;
+        longestStreak: number;
         averageDifficulty?: number | undefined;
-        currentStreak?: number | undefined;
-        longestStreak?: number | undefined;
         lastStreakDate?: Date | undefined;
         lastStudyDate?: Date | undefined;
     }, {
@@ -248,6 +251,7 @@ export declare const UserSchema: z.ZodObject<{
     followingCount: z.ZodDefault<z.ZodNumber>;
     followersCount: z.ZodDefault<z.ZodNumber>;
     profileCompleted: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
+    interests: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
 } & {
     createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -272,14 +276,15 @@ export declare const UserSchema: z.ZodObject<{
         totalCards: number;
         totalDecks: number;
         totalReviews: number;
+        currentStreak: number;
+        longestStreak: number;
         averageDifficulty?: number | undefined;
-        currentStreak?: number | undefined;
-        longestStreak?: number | undefined;
         lastStreakDate?: Date | undefined;
         lastStudyDate?: Date | undefined;
     };
     followingCount: number;
     followersCount: number;
+    interests: string[];
     profileCompleted?: boolean | undefined;
 }, {
     username: string;
@@ -311,5 +316,6 @@ export declare const UserSchema: z.ZodObject<{
     followingCount?: number | undefined;
     followersCount?: number | undefined;
     profileCompleted?: boolean | undefined;
+    interests?: string[] | undefined;
 }>;
 export type User = z.infer<typeof UserSchema>;

@@ -18,7 +18,7 @@ interface ProgressBarProps {
   progressText: string;
 }
 
-export function ProgressBar({ tabBarValue, progressText }: ProgressBarProps) {
+export default function ProgressBar({ tabBarValue, progressText }: ProgressBarProps) {
   const progress = useSharedValue(Math.max(0, Math.min(100, tabBarValue)));
 
   useEffect(() => {

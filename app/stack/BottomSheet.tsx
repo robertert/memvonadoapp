@@ -21,8 +21,7 @@ interface BottomSheetProps {
 /**
  * BottomSheet component that displays detailed progress statistics with expandable interface
  */
-export const BottomSheet = React.memo<BottomSheetProps>(
-  ({
+export default function BottomSheet({
     progress,
     tabBarValue,
     tooltip,
@@ -33,7 +32,7 @@ export const BottomSheet = React.memo<BottomSheetProps>(
     bottomStyle,
     insideDisplayStyles,
     safeArea,
-  }) => {
+  } : BottomSheetProps) {
     return (
       <Animated.View
         style={[
@@ -354,6 +353,6 @@ export const BottomSheet = React.memo<BottomSheetProps>(
       </Animated.View>
     );
   }
-);
+
 
 BottomSheet.displayName = "BottomSheet";

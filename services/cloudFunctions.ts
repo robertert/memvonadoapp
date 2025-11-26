@@ -18,6 +18,7 @@ import type {
   DeckCore,
   CardGrade,
   DeckLearningData,
+  Card,
 } from "../types";
 
 // Cloud Functions calls
@@ -134,24 +135,20 @@ export const cloudFunctions = {
   updateCardProgress: async (
     userId: string,
     deckId: string,
-    cardId: string,
-    grade: CardGrade,
-    difficulty?: number,
-    interval?: number,
-    firstLearn?: any
+    card: Card,
+    scheduledTime: number
   ) => {
     const updateCardProgressFunction = httpsCallable(
       functions,
       "updateCardProgress"
     );
+    console.log(card);
+
     const result = await updateCardProgressFunction({
       userId,
       deckId,
-      cardId,
-      grade,
-      difficulty,
-      interval,
-      firstLearn,
+      card,
+      scheduledTime,
     });
     return result.data as { success: boolean };
   },
@@ -178,7 +175,7 @@ export const cloudFunctions = {
   getUserProgress: async (userId: string) => {
     const getUserProgressFunction = httpsCallable(functions, "getUserProgress");
     const result = await getUserProgressFunction({ userId });
-    return result.data as UserProgress;
+    return (result.data as { userProgress: UserProgress }).userProgress;
   },
 
   // Update user's streak on app launch (timezone-aware)

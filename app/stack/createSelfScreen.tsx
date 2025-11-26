@@ -194,7 +194,7 @@ export default function createSelfScreen(): React.JSX.Element {
         userCtx.id
       );
 
-      router.push({
+      router.replace({
         pathname: "/stack/deckDetails",
         params: { deckId: result.deckId },
       });

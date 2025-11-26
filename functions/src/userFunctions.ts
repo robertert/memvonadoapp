@@ -5,15 +5,12 @@ import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import {
   Deck,
   DeckSchema,
-  CardAlgoSchema,
-  FirstLearnSchema,
   StudySessionCreateSchema,
   UserSettingsSchema,
   UserStatsSchema,
   SeasonUserPointsSchema,
   LeagueGroupSchema,
   type CardAlgo,
-  type FirstLearn,
   type StudySessionCreate,
   type UserSettings,
   type UserStats,
@@ -21,8 +18,22 @@ import {
   type LeagueGroup,
   UserProgressSchema,
   User,
+  CardSchema,
+  CardGrade,
+  Card,
 } from "./types/common";
 import { serializeTimestamps } from "./utils/serialization";
+
+const DEFAULT_CARD_ALGO: CardAlgo = {
+  difficulty: 2.5,
+  scheduled_days: 1,
+  due: new Date(),
+  reps: 0,
+  state: 0,
+  stability: 0,
+  elapsed_days: 0,
+  lapses: 0,
+};
 
 const db = getFirestore();
 
@@ -307,69 +318,51 @@ export const getUserDecks = onCall(async (request) => {
  * Update card progress after review
  */
 export const updateCardProgress = onCall(async (request) => {
-  const { userId, deckId, cardId, grade, difficulty, interval, firstLearn } =
-    request.data;
+  const { userId, deckId, card, scheduledTime } = request.data;
 
-  if (!userId || !deckId || !cardId) {
-    throw new Error("userId, deckId, and cardId are required");
+  if (!userId || !deckId || !card.id || !scheduledTime) {
+    throw new Error("userId, deckId, cardId and scheduledTime are required");
   }
 
+  delete card.seenInSession;
+  const validatedCard = CardSchema.parse(card);
+
   try {
-    // Deep copy: Update progress in cards collection (creates if doesn't exist)
-    // On first save, also copy card content (front, back, tags) from source deck
-    const cardRef = db.doc(`users/${userId}/decks/${deckId}/cards/${cardId}`);
-    const now = new Date();
-    const nextDue = new Date(now);
-    nextDue.setDate(nextDue.getDate() + (interval || 1));
+    const cardRef = db.doc(
+      `users/${userId}/decks/${deckId}/cards/${validatedCard.id}`
+    );
+    const now = new Date().getTime();
 
-    const cardDoc = await cardRef.get();
-    const existingCardData = cardDoc.data();
-    const existingAlgo = existingCardData?.cardAlgo || {};
-    const existingFirstLearn = existingCardData?.firstLearn || {};
+    let cardUpdateData: Card;
+    if (validatedCard.firstLearn?.isFirst) {
+      cardUpdateData = CardSchema.parse({
+        ...validatedCard,
+        firstLearn: {
+          ...validatedCard.firstLearn,
+          due: new Date(now + scheduledTime),
+        },
+      });
+    } else {
+      cardUpdateData = {
+        ...validatedCard,
+        cardAlgo: {
+          ...(validatedCard.cardAlgo ?? DEFAULT_CARD_ALGO),
+          due: new Date(now + scheduledTime),
+        },
+      };
+    }
 
-    // Cards are already copied to user's collection, so no need to fetch from source
-    // Card should always exist with full copy approach
-
-    // Waliduj i typuj cardAlgo
-    const cardAlgo: CardAlgo = CardAlgoSchema.parse({
-      difficulty: difficulty ?? existingAlgo.difficulty ?? 2.5,
-      scheduled_days: interval ?? existingAlgo.scheduled_days ?? 1,
-      due: nextDue,
-      last_review: now,
-      reps: (existingAlgo.reps ?? 0) + 1,
-      state: 2, // reviewed state
-      stability: existingAlgo.stability,
-      elapsed_days: existingAlgo.elapsed_days,
-      lapses: existingAlgo.lapses,
-    });
-
-    // Waliduj i typuj firstLearn
-    const firstLearnData: FirstLearn = firstLearn
-      ? FirstLearnSchema.parse({
-          ...existingFirstLearn,
-          ...firstLearn,
-        })
-      : FirstLearnSchema.parse(existingFirstLearn || { isNew: true });
-
-    // Przygotuj dane karty do zapisu (używamy merge, więc tylko aktualizowane pola)
-    const cardUpdateData = {
-      cardAlgo,
-      firstLearn: firstLearnData,
-      grade: grade ?? 0,
-      lastReviewDate: now,
-      difficulty: difficulty ?? existingAlgo.difficulty ?? 2.5,
-      nextReviewInterval: interval ?? existingAlgo.scheduled_days ?? 1,
-    };
+    const validatedCardUpdateData = CardSchema.parse(cardUpdateData);
 
     // Use set with merge to create if doesn't exist, update if exists
-    await cardRef.set(cardUpdateData, { merge: true });
+    await cardRef.set(validatedCardUpdateData, { merge: true });
 
     // Waliduj i typuj study session przed zapisem
     const studySession: StudySessionCreate = StudySessionCreateSchema.parse({
       deckId,
-      cardId,
-      grade: grade ?? 0,
-      reviewTime: now,
+      cardId: validatedCard.id,
+      grade: validatedCard.grade ?? CardGrade.NotGraded,
+      reviewTime: new Date(),
     });
 
     // Log study session
@@ -389,9 +382,9 @@ export const updateCardProgress = onCall(async (request) => {
     logger.info("Card progress updated successfully", {
       userId,
       deckId,
-      cardId,
-      grade,
-      firstLearn,
+      cardId: validatedCard.id,
+      grade: validatedCard.grade ?? CardGrade.NotGraded,
+      firstLearn: validatedCard.firstLearn,
     });
 
     return serializeTimestamps({ success: true });
@@ -500,66 +493,6 @@ export const getUserSettings = onCall(async (request) => {
 });
 
 /**
- * Process friend requests
- */
-export const processFriendRequest = onCall(async (request) => {
-  const { fromUserId, toUserId, action } = request.data;
-
-  if (!fromUserId || !toUserId || !action) {
-    throw new Error("fromUserId, toUserId, and action are required");
-  }
-
-  try {
-    const batch = db.batch();
-
-    if (action === "accept") {
-      // Add to friends list for both users
-      const fromUserRef = db.doc(`users/${fromUserId}`);
-      const toUserRef = db.doc(`users/${toUserId}`);
-
-      batch.update(fromUserRef, {
-        friends: FieldValue.arrayUnion(toUserId),
-      });
-      batch.update(toUserRef, {
-        friends: FieldValue.arrayUnion(fromUserId),
-      });
-
-      // Remove from pending/incoming lists
-      batch.update(fromUserRef, {
-        pending: FieldValue.arrayRemove(toUserId),
-      });
-      batch.update(toUserRef, {
-        incoming: FieldValue.arrayRemove(fromUserId),
-      });
-    } else if (action === "reject") {
-      // Remove from pending/incoming lists
-      const fromUserRef = db.doc(`users/${fromUserId}`);
-      const toUserRef = db.doc(`users/${toUserId}`);
-
-      batch.update(fromUserRef, {
-        pending: FieldValue.arrayRemove(toUserId),
-      });
-      batch.update(toUserRef, {
-        incoming: FieldValue.arrayRemove(fromUserId),
-      });
-    }
-
-    await batch.commit();
-
-    logger.info("Friend request processed", {
-      fromUserId,
-      toUserId,
-      action,
-    });
-
-    return serializeTimestamps({ success: true });
-  } catch (error) {
-    logger.error("Error processing friend request", error);
-    throw new Error("Failed to process friend request");
-  }
-});
-
-/**
  * Validate user data on creation
  * @param {any} event - event object
  * @return {Promise<void>}
@@ -596,10 +529,9 @@ export const validateUserData = onDocumentWritten(
       const needsInit =
         isNewDocument ||
         !afterData.stats ||
-        !afterData.friends ||
-        !afterData.pending ||
-        !afterData.incoming ||
-        !afterData.theme;
+        !afterData.theme ||
+        afterData.followersCount === undefined ||
+        afterData.followingCount === undefined;
 
       if (needsInit) {
         const updates: any = {};
@@ -611,19 +543,18 @@ export const validateUserData = onDocumentWritten(
             totalDecks: 0,
             totalReviews: 0,
             averageDifficulty: 0,
+            currentStreak: 0,
+            longestStreak: 0,
           });
           updates.stats = defaultStats;
         }
 
-        // Only set arrays if they don't exist
-        if (!afterData.friends) {
-          updates.friends = [];
+        // Initialize counts if missing
+        if (afterData.followersCount === undefined) {
+          updates.followersCount = 0;
         }
-        if (!afterData.pending) {
-          updates.pending = [];
-        }
-        if (!afterData.incoming) {
-          updates.incoming = [];
+        if (afterData.followingCount === undefined) {
+          updates.followingCount = 0;
         }
 
         // Only set theme if it doesn't exist
@@ -1039,41 +970,18 @@ export const getUserProfile = onCall(async (request) => {
       throw new Error("User not found");
     }
 
-    const userData = userDoc.data() as {
-      username?: string;
-      name?: string;
-      email?: string;
-      friends?: string[];
-      stats?: {
-        totalCards?: number;
-        totalDecks?: number;
-        totalReviews?: number;
-        averageDifficulty?: number;
-      };
-      streak?: number;
-      league?: number;
-      points?: number;
-    };
-
-    // Get friends count
-    const friends = userData?.friends || [];
-    const friendsCount = friends.length;
-
-    // For now, followers and following are the same (can be extended later)
-    const followers = friends.length;
-    const following = friends.length;
+    const userData = userDoc.data() as User;
 
     return {
       userId,
-      username: userData?.username || userData?.name || "Unknown",
+      username: userData?.username || "Unknown",
       email: userData?.email || null,
       stats: userData?.stats || {},
-      streak: userData?.streak || 0,
+      streak: userData?.stats?.currentStreak || 0,
       league: userData?.league || 1,
-      points: userData?.points || 0,
-      friendsCount,
-      followers,
-      following,
+      points: userData?.currencyCount || 0,
+      followers: userData?.followersCount || 0,
+      following: userData?.followingCount || 0,
     };
   } catch (error) {
     logger.error("Error getting user profile", error);
@@ -1172,73 +1080,5 @@ export const getUserAwards = onCall(async (request) => {
   } catch (error) {
     logger.error("Error getting user awards", error);
     throw new Error("Failed to get user awards");
-  }
-});
-
-/**
- * Get friends streaks
- */
-export const getFriendsStreaks = onCall(async (request) => {
-  const { userId } = request.data || {};
-
-  if (!userId) {
-    throw new Error("userId is required");
-  }
-
-  try {
-    // Get user's friends
-    const userDoc = await db.doc(`users/${userId}`).get();
-
-    if (!userDoc.exists) {
-      return { friendsStreaks: [] };
-    }
-
-    const userData = userDoc.data() as { friends?: string[] };
-    const friends = userData?.friends || [];
-
-    if (friends.length === 0) {
-      return { friendsStreaks: [] };
-    }
-
-    // Get streak data for each friend
-    const friendsStreaks = await Promise.all(
-      friends.map(async (friendId) => {
-        try {
-          const friendDoc = await db.doc(`users/${friendId}`).get();
-
-          if (!friendDoc.exists) {
-            return null;
-          }
-
-          const friendData = friendDoc.data() as {
-            username?: string;
-            name?: string;
-            streak?: number;
-          };
-
-          return {
-            userId: friendId,
-            name: friendData?.username || friendData?.name || "Unknown",
-            streak: friendData?.streak || 0,
-          };
-        } catch (error) {
-          logger.warn("Error getting friend streak", { friendId, error });
-          return null;
-        }
-      })
-    );
-
-    // Filter out nulls and sort by streak descending
-    const validStreaks = friendsStreaks
-      .filter(
-        (fs): fs is { userId: string; name: string; streak: number } =>
-          fs !== null
-      )
-      .sort((a, b) => b.streak - a.streak);
-
-    return { friendsStreaks: validStreaks };
-  } catch (error) {
-    logger.error("Error getting friends streaks", error);
-    throw new Error("Failed to get friends streaks");
   }
 });

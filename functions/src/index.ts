@@ -15,7 +15,6 @@ initializeApp();
 
 // Import functions that need to be used in triggers (after initialization)
 // Import all functions from modules
-export { calculateNextReview } from "./learningFunctions";
 export { searchDecks } from "./searchFunctions";
 export { getSearchLogs } from "./searchFunctions";
 export {
@@ -35,8 +34,6 @@ export {
   getUserProfile,
   getUserActivityHeatmap,
   getUserAwards,
-  getFriendsStreaks,
-  processFriendRequest,
   validateUserData,
 } from "./userFunctions";
 export {

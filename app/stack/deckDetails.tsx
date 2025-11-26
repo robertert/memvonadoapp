@@ -154,9 +154,6 @@ export default function deckDetails(): React.JSX.Element {
           typedParams.deckId
         );
 
-        console.log("userDeckData", userDeckData);
-        console.log("deckData", deckData);
-
         if (userDeckData) {
           checkForChanges();
         }
@@ -223,28 +220,11 @@ export default function deckDetails(): React.JSX.Element {
   }
 
   async function startLearningDeckHandler(): Promise<void> {
-    if (!userDeck) {
-      try {
-        if (!userCtx.id || !deck?.id) return;
-        const result = await cloudFunctions.startLearningDeck(
-          userCtx.id,
-          deck.id
-        );
-        if (!result.success)
-          throw new Error("Nie udało się rozpocząć nauki nad tym deckiem.");
-        router.push({
-          pathname: "./learnScreen",
-          params: { deckId: deck?.id },
-        });
-      } catch (error: any) {
-        Alert.alert("Błąd", error.message);
-      }
-    } else {
-      router.push({
-        pathname: "./learnScreen",
-        params: { deckId: deck?.id },
-      });
-    }
+    if (!deck?.id) return;
+    router.push({
+      pathname: "./learnScreen",
+      params: { deckId: deck?.id },
+    });
   }
 
   const scrollX = useRef(new Animated.Value(0)).current;

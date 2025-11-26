@@ -12,8 +12,8 @@ exports.UserStatsSchema = zod_1.z
     totalDecks: zod_1.z.number().min(0).default(0),
     totalReviews: zod_1.z.number().min(0).default(0),
     averageDifficulty: zod_1.z.number().min(0).max(5).optional(),
-    currentStreak: zod_1.z.number().min(0).default(0).optional(),
-    longestStreak: zod_1.z.number().min(0).default(0).optional(),
+    currentStreak: zod_1.z.number().min(0).default(0),
+    longestStreak: zod_1.z.number().min(0).default(0),
     lastStreakDate: base_1.TimestampSchema.optional(),
     lastStudyDate: base_1.TimestampSchema.optional(),
 })
@@ -55,6 +55,7 @@ exports.UserMetaSchema = zod_1.z
     followingCount: zod_1.z.number().min(0).default(0),
     followersCount: zod_1.z.number().min(0).default(0),
     profileCompleted: zod_1.z.boolean().default(false).optional(),
+    interests: zod_1.z.array(zod_1.z.string()).default([]),
 })
     .strict();
 exports.UserSchema = exports.UserCoreSchema.merge(exports.UserMetaSchema)

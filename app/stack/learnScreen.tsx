@@ -25,11 +25,11 @@ import { LearnScreenParams } from "./learnScreen.types";
 import { useCardLogic } from "./useCardLogic";
 import { useAnimations } from "./useAnimations";
 import { useGestures } from "./useGestures";
-import { Flashcard } from "./Flashcard";
-import { SwipeIndicators } from "./SwipeIndicators";
-import { ProgressBar } from "./ProgressBar";
-import { BottomSheet } from "./BottomSheet";
-import { Confetti } from "./Confetti";
+import Flashcard from "./Flashcard";
+import SwipeIndicators from "./SwipeIndicators";
+import ProgressBar from "./ProgressBar";
+import BottomSheet from "./BottomSheet";
+import Confetti from "./Confetti";
 import { learnScreenStyles } from "./learnScreen.styles";
 import { Colors } from "../../constants/colors";
 import { FireIcon } from "react-native-heroicons/solid";
@@ -42,8 +42,7 @@ import { Card } from "@/types";
 export default function learnScreen(): React.JSX.Element {
   const params = useLocalSearchParams();
   const typedParams = params as unknown as LearnScreenParams;
-  const id = typedParams.id;
-
+  const id = typedParams.deckId;
   const safeArea = useSafeAreaInsets();
   const screenDimensions = Dimensions.get("window");
 
@@ -374,7 +373,7 @@ export default function learnScreen(): React.JSX.Element {
         style={[learnScreenStyles.container, { paddingTop: safeArea.top + 8 }]}
       >
         <Flashcard
-          card={cards ? (cards[0] as Card) : {}}
+          card={cards ? (cards[0] as Card) : undefined}
           isBack={isBack}
           rStyle={rStyle}
           gesture={comp}

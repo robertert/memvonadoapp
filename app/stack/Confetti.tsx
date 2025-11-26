@@ -38,7 +38,7 @@ const COLORS = [
   "#FFA500", // Orange
 ];
 
-export function Confetti({ trigger, onComplete }: ConfettiProps) {
+export default function Confetti({ trigger, onComplete }: ConfettiProps) {
   // More particles and larger sizes for streak celebration
   const particles: ConfettiParticle[] = Array.from({ length: 40 }, (_, i) => ({
     id: i,

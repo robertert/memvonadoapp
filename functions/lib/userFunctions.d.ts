@@ -64,9 +64,9 @@ export declare const getUserProgress: import("firebase-functions/v2/https").Call
             totalCards: number;
             totalDecks: number;
             totalReviews: number;
+            currentStreak: number;
+            longestStreak: number;
             averageDifficulty?: number | undefined;
-            currentStreak?: number | undefined;
-            longestStreak?: number | undefined;
             lastStreakDate?: Date | undefined;
             lastStudyDate?: Date | undefined;
         };
@@ -79,12 +79,6 @@ export declare const getUserProgress: import("firebase-functions/v2/https").Call
  */
 export declare const getUserSettings: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     settings: any;
-}>, unknown>;
-/**
- * Process friend requests
- */
-export declare const processFriendRequest: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    success: boolean;
 }>, unknown>;
 /**
  * Validate user data on creation
@@ -145,15 +139,18 @@ export declare const getUserProfile: import("firebase-functions/v2/https").Calla
     username: string;
     email: string | null;
     stats: {
-        totalCards?: number;
-        totalDecks?: number;
-        totalReviews?: number;
-        averageDifficulty?: number;
+        totalCards: number;
+        totalDecks: number;
+        totalReviews: number;
+        currentStreak: number;
+        longestStreak: number;
+        averageDifficulty?: number | undefined;
+        lastStreakDate?: Date | undefined;
+        lastStudyDate?: Date | undefined;
     };
     streak: number;
     league: number;
     points: number;
-    friendsCount: number;
     followers: number;
     following: number;
 }>, unknown>;
@@ -172,15 +169,5 @@ export declare const getUserActivityHeatmap: import("firebase-functions/v2/https
 export declare const getUserAwards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     awards: {
         id: string;
-    }[];
-}>, unknown>;
-/**
- * Get friends streaks
- */
-export declare const getFriendsStreaks: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    friendsStreaks: {
-        userId: string;
-        name: string;
-        streak: number;
     }[];
 }>, unknown>;
