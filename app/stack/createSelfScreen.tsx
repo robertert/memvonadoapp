@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   Modal,
   Pressable,
   StyleSheet,
@@ -13,13 +12,8 @@ import { Colors, Fonts, generageRandomUid } from "../../constants/colors";
 import { View } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  Gesture,
-  GestureDetector,
-  GestureHandlerRootView,
-} from "react-native-gesture-handler";
-import { FontAwesome5 } from "@expo/vector-icons";
-import NewCard from "../../ui/newCard";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import NewCard from "../../components/createSelfScreen/newCard";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { router, useLocalSearchParams } from "expo-router";
 

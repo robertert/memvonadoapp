@@ -17,19 +17,18 @@ import Animated, {
   withTiming,
   withDelay,
   Easing,
-  runOnUI,
 } from "react-native-reanimated";
 
 // Local imports
 import { LearnScreenParams } from "./learnScreen.types";
-import { useCardLogic } from "./useCardLogic";
-import { useAnimations } from "./useAnimations";
-import { useGestures } from "./useGestures";
-import Flashcard from "./Flashcard";
-import SwipeIndicators from "./SwipeIndicators";
-import ProgressBar from "./ProgressBar";
-import BottomSheet from "./BottomSheet";
-import Confetti from "./Confetti";
+import { useCardLogic } from "../../hooks/learnScreen/useCardLogic";
+import { useAnimations } from "../../hooks/learnScreen/useAnimations";
+import { useGestures } from "../../hooks/learnScreen/useGestures";
+import Flashcard from "../../components/learnScreen/Flashcard";
+import SwipeIndicators from "../../components/learnScreen/SwipeIndicators";
+import ProgressBar from "../../components/learnScreen/ProgressBar";
+import BottomSheet from "../../components/learnScreen/BottomSheet";
+import Confetti from "../../components/learnScreen/Confetti";
 import { learnScreenStyles } from "./learnScreen.styles";
 import { Colors } from "../../constants/colors";
 import { FireIcon } from "react-native-heroicons/solid";

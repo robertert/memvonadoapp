@@ -19,7 +19,7 @@
       "@/app/*": ["./app/*"],
       "@/constants/*": ["./constants/*"],
       "@/store/*": ["./store/*"],
-      "@/ui/*": ["./ui/*"],
+      "@/ui/*": ["components/*"],
       "@/assets/*": ["./assets/*"]
     }
   },

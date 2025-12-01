@@ -12,8 +12,8 @@ import Animated, {
 } from "react-native-reanimated";
 
 // Local imports
-import { AnimatedStyle, GestureType } from "./learnScreen.types";
-import { ANIMATION_CONSTANTS, DIMENSIONS } from "./learnScreen.constants";
+import { AnimatedStyle, GestureType } from "../../app/stack/learnScreen.types";
+import { ANIMATION_CONSTANTS } from "../../constants/animations";
 import { Colors } from "../../constants/colors";
 import { Card } from "@/types/schemas";
 
@@ -24,7 +24,7 @@ interface FlashcardProps {
   gesture: GestureType;
   isTurn: boolean;
   streakLost?: boolean;
-} 
+}
 
 export default function Flashcard({
   card,

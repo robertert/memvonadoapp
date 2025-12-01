@@ -7,9 +7,12 @@ import {
   Easing,
   runOnJS,
 } from "react-native-reanimated";
-import { X_THRESHOLD, Y_THRESHOLD } from "./learnScreen.constants";
+import {
+  X_THRESHOLD,
+  Y_THRESHOLD,
+} from "../../app/stack/learnScreen.constants";
 import { EdgeInsets } from "react-native-safe-area-context";
-import { AnimationValues } from "./learnScreen.types";
+import { AnimationValues } from "../../app/stack/learnScreen.types";
 import { useState } from "react";
 import * as Haptics from "expo-haptics";
 import { CardGrade } from "@/types/schemas";

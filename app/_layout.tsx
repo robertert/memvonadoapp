@@ -10,7 +10,7 @@ import { router, Stack, useSegments } from "expo-router";
 import { View, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-import Header from "../ui/Header";
+import Header from "../components/Header";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts, loadAsync } from "expo-font";
 import UserContextProvider from "../store/user-context";

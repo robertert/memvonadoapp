@@ -5,14 +5,6 @@ import { Dimensions } from "react-native";
 export const X_THRESHOLD = 0.25;
 export const Y_THRESHOLD = 0.2;
 
-// Animation constants - tylko te które są naprawdę potrzebne
-export const ANIMATION_CONSTANTS = {
-  BORDER_RADIUS: 40,
-  BORDER_WIDTH: 3,
-  PROGRESS_BAR_HEIGHT: 20,
-  TOOLTIP_PADDING: 20,
-} as const;
-
 // Dimensions - tylko specyficzne dla tego komponentu
 export const DIMENSIONS = {
   CARD_MARGIN_TOP: -200,

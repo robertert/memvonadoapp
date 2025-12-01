@@ -1,18 +1,9 @@
 import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  ActivityIndicator,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Colors, Fonts, generageRandomUid } from "../constants/colors";
-import { ScrollView, View, Image } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput } from "react-native";
+import { Colors, Fonts } from "../../constants/colors";
+import { View, Image } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Foundation } from "@expo/vector-icons";
 import Animated, {
   runOnJS,
   useAnimatedStyle,

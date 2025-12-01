@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { fsrs, Rating, Grades } from "ts-fsrs";
 import { UserContext } from "../../store/user-context";
 import { cloudFunctions } from "../../services/cloudFunctions";
-import { FSRS_PARAMS } from "./learnScreen.constants";
+import { FSRS_PARAMS } from "../../app/stack/learnScreen.constants";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
 import {
   placeholderCards,
@@ -13,7 +13,7 @@ import {
   ProgressState,
   TooltipState,
   CardLogicState,
-} from "./learnScreen.types";
+} from "../../app/stack/learnScreen.types";
 import {
   Card,
   Deck,

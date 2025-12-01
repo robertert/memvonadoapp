@@ -175,7 +175,10 @@ export default function notificationsScreen(): React.JSX.Element {
         return;
       }
 
-      const result = await cloudFunctions.getNotifications(userCtx.id, 50);
+      const result = await cloudFunctions.getNotifications(
+        userCtx.id || "",
+        50
+      );
 
       // Transform to NotificationItem format
       const transformedNotifications: NotificationItem[] =

@@ -17,7 +17,7 @@ import { Cog6ToothIcon, ShareIcon } from "react-native-heroicons/solid";
 import { router } from "expo-router";
 import { FireIcon } from "react-native-heroicons/solid";
 import { FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
-import ContributionHeatmap from "../../ui/ContributionHeatmap";
+import ContributionHeatmap from "../../components/profileScreen/ContributionHeatmap";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
@@ -80,10 +80,9 @@ export default function profileScreen(): React.JSX.Element {
       if (PLACEHOLDER_MODE) {
         setProfileData({
           stats: placeholderUser.stats,
-          streak: placeholderUser.streak,
-          friendsCount: placeholderUser.friendsCount,
-          followers: placeholderUser.followers,
-          following: placeholderUser.following,
+          streak: placeholderUser.stats.currentStreak,
+          followers: placeholderUser.followersCount,
+          following: placeholderUser.followingCount,
         });
         // Symuluj heatmap z kilkoma aktywnymi dniami
         const today = new Date();
@@ -170,10 +169,9 @@ export default function profileScreen(): React.JSX.Element {
       if (PLACEHOLDER_MODE) {
         setProfileData({
           stats: placeholderUser.stats,
-          streak: placeholderUser.streak,
-          friendsCount: placeholderUser.friendsCount,
-          followers: placeholderUser.followers,
-          following: placeholderUser.following,
+          streak: placeholderUser.stats.currentStreak,
+          followers: placeholderUser.followersCount,
+          following: placeholderUser.followingCount,
         });
         const today = new Date();
         const heatmapData = Array.from({ length: 40 }, (_, i) => {

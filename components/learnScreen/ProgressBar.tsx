@@ -6,19 +6,21 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 
 // Local imports
-import { ANIMATION_CONSTANTS, DIMENSIONS } from "./learnScreen.constants";
+import { ANIMATION_CONSTANTS } from "../../constants/animations";
+import { DIMENSIONS } from "../../app/stack/learnScreen.constants";
 import { Colors } from "../../constants/colors";
-import { FireIcon } from "react-native-heroicons/solid";
 
 interface ProgressBarProps {
   tabBarValue: number;
   progressText: string;
 }
 
-export default function ProgressBar({ tabBarValue, progressText }: ProgressBarProps) {
+export default function ProgressBar({
+  tabBarValue,
+  progressText,
+}: ProgressBarProps) {
   const progress = useSharedValue(Math.max(0, Math.min(100, tabBarValue)));
 
   useEffect(() => {

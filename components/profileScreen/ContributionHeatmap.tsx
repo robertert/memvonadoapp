@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { Colors, Fonts } from "../constants/colors";
+import { Colors, Fonts } from "../../constants/colors";
 
 interface DayData {
   date: string; // YYYY-MM-DD

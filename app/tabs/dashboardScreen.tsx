@@ -20,7 +20,7 @@ import { router } from "expo-router";
 import { UserContext } from "../../store/user-context";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { BellIcon, FireIcon, LanguageIcon } from "react-native-heroicons/solid";
-import PieChart from "../../ui/CustomPieChart";
+import PieChart from "../../components/CustomPieChart";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
 import { placeholderDecks } from "../../constants/placeholderData";
 import { DeckSchema, UserProgress, UserProgressSchema } from "@/types/schemas";

@@ -7,8 +7,8 @@ import { EdgeInsets } from "react-native-safe-area-context";
 import Animated from "react-native-reanimated";
 
 // Local imports
-import { AnimatedStyle } from "./learnScreen.types";
-import { ANIMATION_CONSTANTS } from "./learnScreen.constants";
+import { AnimatedStyle } from "../../app/stack/learnScreen.types";
+import { ANIMATION_CONSTANTS } from "../../constants/animations";
 import { Colors } from "../../constants/colors";
 
 const INDICATOR_FONT_SIZE = 26;
@@ -52,21 +52,23 @@ export default function SwipeIndicators({
         accessibilityLabel="Wrong answer indicator - swipe left"
         accessibilityRole="text"
       >
-        <View style={{ 
-          width: 200, // Szerokość kontenera tekstu
-          height: 30, // Wysokość kontenera tekstu
-          position: "absolute",
-          left: -10,
-          top: "50%",
-          alignItems: "center",
-          justifyContent: "center",
-          transform: [{ rotate: "90deg" }] // Obracam cały kontener zamiast tylko tekstu
-        }}>
+        <View
+          style={{
+            width: 200, // Szerokość kontenera tekstu
+            height: 30, // Wysokość kontenera tekstu
+            position: "absolute",
+            left: -10,
+            top: "50%",
+            alignItems: "center",
+            justifyContent: "center",
+            transform: [{ rotate: "90deg" }], // Obracam cały kontener zamiast tylko tekstu
+          }}
+        >
           <Text
             numberOfLines={1}
-            style={{ 
-              fontSize: INDICATOR_FONT_SIZE, 
-              color: Colors.white, 
+            style={{
+              fontSize: INDICATOR_FONT_SIZE,
+              color: Colors.white,
               fontWeight: "bold",
               textAlign: "center",
               includeFontPadding: false, // Usuwa dodatkowy padding czcionki
@@ -99,21 +101,23 @@ export default function SwipeIndicators({
         accessibilityLabel="Good answer indicator - swipe right"
         accessibilityRole="text"
       >
-        <View style={{ 
-          width: 200, // Szerokość kontenera tekstu
-          height: 30, // Wysokość kontenera tekstu
-          position: "absolute",
-          right: -10,
-          top: "50%",
-          alignItems: "center",
-          justifyContent: "center",
-          transform: [{ rotate: "-90deg" }] // Obracam cały kontener zamiast tylko tekstu
-        }}>
+        <View
+          style={{
+            width: 200, // Szerokość kontenera tekstu
+            height: 30, // Wysokość kontenera tekstu
+            position: "absolute",
+            right: -10,
+            top: "50%",
+            alignItems: "center",
+            justifyContent: "center",
+            transform: [{ rotate: "-90deg" }], // Obracam cały kontener zamiast tylko tekstu
+          }}
+        >
           <Text
             numberOfLines={1}
-            style={{ 
-              fontSize: INDICATOR_FONT_SIZE, 
-              color: Colors.white, 
+            style={{
+              fontSize: INDICATOR_FONT_SIZE,
+              color: Colors.white,
               fontWeight: "bold",
               textAlign: "center",
               includeFontPadding: false, // Usuwa dodatkowy padding czcionki
@@ -147,9 +151,9 @@ export default function SwipeIndicators({
         accessibilityRole="text"
       >
         <Text
-          style={{ 
-            fontSize: INDICATOR_FONT_SIZE, 
-            color: Colors.white, 
+          style={{
+            fontSize: INDICATOR_FONT_SIZE,
+            color: Colors.white,
             fontWeight: "bold",
             textAlign: "center",
             includeFontPadding: false,
@@ -182,9 +186,9 @@ export default function SwipeIndicators({
         accessibilityRole="text"
       >
         <Text
-          style={{ 
-            fontSize: INDICATOR_FONT_SIZE, 
-            color: Colors.white, 
+          style={{
+            fontSize: INDICATOR_FONT_SIZE,
+            color: Colors.white,
             fontWeight: "bold",
             textAlign: "center",
             includeFontPadding: false,
