@@ -13,12 +13,9 @@ import {
   Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Colors, Fonts, generageRandomUid } from "../../constants/colors";
-import { Image, ScrollView, View } from "react-native";
+import { Colors, Fonts } from "../../constants/colors";
+import { ScrollView, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { AntDesign, EvilIcons } from "@expo/vector-icons";
-import { Entypo } from "@expo/vector-icons";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
 import { cloudFunctions } from "../../services/cloudFunctions";
@@ -66,7 +63,6 @@ export default function deckDetails(): React.JSX.Element {
   const [hasMoreCards, setHasMoreCards] = useState<boolean>(true);
   const [lastDocId, setLastDocId] = useState<string | null>(null);
   const [deck, setDeck] = useState<Deck>();
-  const [userDeck, setUserDeck] = useState<DeckLearningData>();
   const [cards, setCards] = useState<Card[]>([]);
   const [syncModalVisible, setSyncModalVisible] = useState<boolean>(false);
   const [cardChanges, setCardChanges] = useState<any[]>([]);
@@ -93,7 +89,6 @@ export default function deckDetails(): React.JSX.Element {
       }
     } catch (error) {
       console.error("Error checking for changes:", error);
-      // Silently fail - user can manually check if needed
     } finally {
       setIsCheckingChanges(false);
     }
@@ -425,9 +420,13 @@ export default function deckDetails(): React.JSX.Element {
           <Text style={styles.headerTitle}>{deck?.title}</Text>
           <Pressable
             onPress={() => {
+              if (!deck) return;
               router.push({
                 pathname: "./deckSettings",
-                params: { deckId: deck?.id || typedParams.deckId },
+                params: {
+                  isOwner: (deck.createdBy === userCtx.id).toString(),
+                  deckId: deck.id,
+                },
               });
             }}
             style={styles.settingsButton}

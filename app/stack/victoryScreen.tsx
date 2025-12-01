@@ -86,9 +86,10 @@ export default function victoryScreen(): React.JSX.Element {
   }, [buttonScale, headerOpacity, statsOpacity, statsTranslateY, trophyScale]);
 
   function restartHandler(): void {
+    // Clear all navigation stack and navigate to myLibraryScreen
+    router.dismissAll();
     router.replace({
-      pathname: "../stack/learnScreen",
-      params: { id: "jLoSnjEekqUFYzKCuEEP" },
+      pathname: "../stack/myLibraryScreen",
     });
   }
 
@@ -103,7 +104,7 @@ export default function victoryScreen(): React.JSX.Element {
       colors={[Colors.primary_100, Colors.primary_100]}
     >
       <View style={[styles.container, { paddingTop: safeArea.top + 8 }]}>
-        {!progress.empty ? (
+        {progress.empty === "false" ? (
           <>
             <Animated.View
               style={[
@@ -162,13 +163,13 @@ export default function victoryScreen(): React.JSX.Element {
 
               <View style={styles.insideRow}>
                 <View style={styles.insideSection}>
-                  <Text style={[styles.num, { color: Colors.white }]}>
+                  <Text style={[styles.num, { color: Colors.accent_500 }]}>
                     {progress.all}
                   </Text>
                   <Text style={styles.desc}>Razem dzisiaj</Text>
                 </View>
                 <View style={styles.insideSection}>
-                  <Text style={[styles.num, { color: Colors.white }]}>
+                  <Text style={[styles.num, { color: Colors.accent_500 }]}>
                     {progress.todo}
                   </Text>
                   <Text style={styles.desc}>Zostało na później</Text>
@@ -191,9 +192,7 @@ export default function victoryScreen(): React.JSX.Element {
             >
               <Pressable onPress={restartHandler}>
                 <View style={styles.restartButton}>
-                  <Text style={styles.restartText}>
-                    Powtórz dzisiejszą sesję
-                  </Text>
+                  <Text style={styles.restartText}>Poucz się innej talii</Text>
                 </View>
               </Pressable>
             </Animated.View>
@@ -259,7 +258,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accent_500,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
+    marginBottom: 20,
+    borderWidth: 3,
+    borderColor: Colors.primary_700,
     shadowColor: "#000",
     shadowOpacity: 0.25,
     shadowRadius: 12,
@@ -277,7 +278,7 @@ const styles = StyleSheet.create({
     marginTop: 32,
     padding: 20,
     backgroundColor: Colors.accent_500,
-    borderRadius: 20,
+    borderRadius: 16,
     minWidth: 220,
     alignItems: "center",
     shadowColor: "#000",
@@ -287,9 +288,10 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   restartText: {
-    color: Colors.white,
+    color: Colors.primary_700,
     fontFamily: Fonts.primary,
-    fontSize: 16,
+    fontSize: 20,
+    fontWeight: "900",
   },
   buttonWrapper: {
     marginTop: 24,
@@ -305,18 +307,22 @@ const styles = StyleSheet.create({
   },
   desc: {
     fontFamily: Fonts.primary,
-    fontSize: 20,
+    fontSize: 18,
+    fontWeight: "600",
     color: Colors.primary_700,
+    marginTop: 4,
   },
   num: {
     fontFamily: Fonts.primary,
     fontSize: 32,
+    fontWeight: "900",
   },
   title: {
     textAlign: "center",
     fontFamily: Fonts.primary,
     color: Colors.primary_700,
-    fontSize: 35,
+    fontSize: 30,
+    fontWeight: "900",
     marginHorizontal: 20,
     marginTop: 30,
   },
@@ -325,16 +331,20 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.primary,
     color: Colors.primary_700,
     fontSize: 20,
+    fontWeight: "600",
     marginHorizontal: 28,
     marginTop: 12,
     marginBottom: 16,
+    lineHeight: 26,
   },
   summaryText: {
     textAlign: "center",
     fontFamily: Fonts.primary,
     color: Colors.primary_700,
     fontSize: 16,
+    fontWeight: "600",
     marginHorizontal: 24,
-    marginTop: 12,
+    marginTop: 20,
+    lineHeight: 22,
   },
 });

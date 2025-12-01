@@ -71,7 +71,7 @@ export function useCardLogic(id: string) {
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [streakAchieved, setStreakAchieved] = useState<boolean>(false);
   const [streakLost, setStreakLost] = useState<boolean>(false);
-  const [isLoadingCards, setIsLoadingCards] = useState<boolean>(false);
+  const [isFinished, setIsFinished] = useState<boolean>(false);
 
   const cardLogicState: CardLogicState = {
     cards,
@@ -129,13 +129,6 @@ export function useCardLogic(id: string) {
           card,
           scheduledTime
         );
-
-        console.log(
-          "Card progress updated:",
-          card.id,
-          "firstLearn:",
-          card.firstLearn
-        );
       }
     } catch (e) {
       console.log("Error updating card progress:", e);
@@ -149,8 +142,6 @@ export function useCardLogic(id: string) {
       if (!cards || cards.length === 0) {
         throw new Error("No cards available");
       }
-
-      console.log("Card is:", cards[0]);
 
       // Easy
       // Second Good Answer
@@ -166,8 +157,6 @@ export function useCardLogic(id: string) {
         /////////////////////////////////////////////////////////////
         // CASE 1: Card graduates to FSRS algorithm
         /////////////////////////////////////////////////////////////
-
-        console.log("Card graduates to FSRS algorithm");
         if (!cards[0]) {
           throw new Error("Card algo is not defined");
         }
@@ -195,8 +184,6 @@ export function useCardLogic(id: string) {
             newCardAlgo = newCrd[Rating.Again].card;
             break;
         }
-
-        console.log("New card answer:", type);
 
         const currentCard = cards[0];
         const updatedCard = {
@@ -246,8 +233,14 @@ export function useCardLogic(id: string) {
           }
           return newVal;
         });
+
+        if (nextCards.length === 0) {
+          router.replace({
+            pathname: "./victoryScreen",
+            params: { ...progress, empty: "false" },
+          });
+        }
       } else {
-        console.log("Card is in first learning phase");
         /////////////////////////////////////////////////////////////
         // CASE 2: Card is in first learning phase
         /////////////////////////////////////////////////////////////
@@ -308,6 +301,9 @@ export function useCardLogic(id: string) {
           }
           return newVal;
         });
+        if (nextCards.length === 0) {
+          setIsFinished(true);
+        }
       }
     } catch (error) {
       const errorMessage =
@@ -321,7 +317,6 @@ export function useCardLogic(id: string) {
 
   async function fetchCards(): Promise<void> {
     try {
-      console.log("Fetching cards for deck:", id);
       setIsLoading(true);
 
       if (PLACEHOLDER_MODE) {
@@ -392,6 +387,14 @@ export function useCardLogic(id: string) {
 
         const sessionCards = [...dueRes.cards, ...newRes.cards] as Card[];
 
+        if (sessionCards.length === 0) {
+          router.replace({
+            pathname: "./victoryScreen",
+            params: { empty: "true" },
+          });
+          return;
+        }
+
         // Sort and set
         const sortedSessionCards = sessionCards.sort(compDueDate);
         setCards(sortedSessionCards as Card[]);
@@ -445,20 +448,14 @@ export function useCardLogic(id: string) {
     };
   }, [tooltip]);
 
-  // Effect to handle progress changes and navigation
   useEffect(() => {
-    if (progress.all === 0) {
-      router.replace({
-        pathname: "./victoryScreen",
-        params: { empty: "true" },
-      });
-    } else if (progress.todo === 0) {
+    if (isFinished) {
       router.replace({
         pathname: "./victoryScreen",
         params: { ...progress, empty: "false" },
       });
     }
-  }, [progress]);
+  }, [isFinished]);
 
   // Effect to fetch cards on mount
   useEffect(() => {

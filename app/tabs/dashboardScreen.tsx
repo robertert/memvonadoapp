@@ -39,7 +39,7 @@ interface Deck {
 export default function decksScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
 
-  const [decks, setDecks] = useState<Deck[]>([]);
+  const [decks, setDecks] = useState<Deck[]>();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isRefresh, setIsRefresh] = useState<boolean>(false);
   const [userProgress, setUserProgress] = useState<UserProgress>();
@@ -70,19 +70,17 @@ export default function decksScreen(): React.JSX.Element {
             validatedUserProgress.error
           );
           setUserProgress(undefined);
+        } else {
+          setUserProgress(validatedUserProgress.data);
         }
 
         const validatedDecks = safeValidateArray(userDecks.decks, DeckSchema);
-
         if (!validatedDecks.success) {
           console.error("Invalid decks data from API", validatedDecks.error);
           setDecks([]);
+        } else {
+          setDecks(validatedDecks.data);
         }
-
-        setUserProgress(
-          validatedUserProgress.success ? validatedUserProgress.data : undefined
-        );
-        setDecks(validatedDecks.success ? validatedDecks.data : ([] as Deck[]));
       }
 
       setIsLoading(false);
@@ -99,9 +97,10 @@ export default function decksScreen(): React.JSX.Element {
   }
 
   function openDeckHandler(gotDeck: Deck): void {
+    if (!gotDeck) return;
     router.push({
-      pathname: "../stack/learnScreen",
-      params: { id: gotDeck.id },
+      pathname: "../stack/deckDetails",
+      params: { deckId: gotDeck.id },
     });
   }
 
@@ -124,7 +123,7 @@ export default function decksScreen(): React.JSX.Element {
   }
 
   function pressLearnHandler(): void {
-    if (decks.length > 0) {
+    if (decks && decks.length > 0) {
       router.push({
         pathname: "../stack/learnScreen",
         params: {
@@ -188,7 +187,7 @@ export default function decksScreen(): React.JSX.Element {
           </Pressable>
           <Text style={styles.subtitle}>Your decks</Text>
           <View style={styles.decksList}>
-            {decks.slice(0, 2).map((deck: Deck) => {
+            {decks?.slice(0, 2).map((deck: Deck) => {
               return (
                 <Pressable key={deck.id} onPress={() => openDeckHandler(deck)}>
                   <View style={styles.deckContainer}>

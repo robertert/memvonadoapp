@@ -536,7 +536,7 @@ export const updateUserStats = onDocumentWritten(
  */
 
 export const resetDeck = onCall(async (request) => {
-  const { deckId } = request.data;
+  const { deckId, userId } = request.data;
   const auth = request.auth;
 
   if (!deckId) {
@@ -546,8 +546,6 @@ export const resetDeck = onCall(async (request) => {
   if (!auth) {
     throw new Error("Authentication required");
   }
-
-  const userId = auth.uid;
 
   try {
     // Verify user owns the deck
@@ -728,6 +726,7 @@ export const startLearningDeck = onCall(async (request) => {
     // Create target user deck document (use same deckId for easier mapping)
     const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
     const userDeckSnap = await userDeckRef.get();
+    let userDeck: DeckLearningData | null = null;
 
     // If already exists, do not duplicate; return ok
     if (!userDeckSnap.exists) {
@@ -742,7 +741,7 @@ export const startLearningDeck = onCall(async (request) => {
       const validatedData = DeckLearningDataSchema.parse(userDeckData);
 
       await userDeckRef.set(validatedData);
-
+      userDeck = validatedData;
       // Copy all cards from source deck to user's collection (full copy)
       const sourceCardsRef = srcDeckRef.collection("cards");
       const sourceCardsSnap = await sourceCardsRef.get();
@@ -802,7 +801,7 @@ export const startLearningDeck = onCall(async (request) => {
     }
 
     logger.info("Deck copied to user space", { userId, deckId });
-    return serializeTimestamps({ success: true });
+    return serializeTimestamps({ success: true, deck: userDeck });
   } catch (error) {
     logger.error("Error starting learning deck", error);
     if (error instanceof Error) {

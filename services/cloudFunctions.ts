@@ -114,14 +114,14 @@ export const cloudFunctions = {
   getDueDeckCards: async (deckId: string, limit: number = 100) => {
     const fn = httpsCallable(functions, "getDueDeckCards");
     const result = await fn({ deckId, limit });
-    return result.data as { cards: any[] };
+    return result.data as { cards: Card[] };
   },
 
   // Get new intro candidates (server-side filter)
   getNewDeckCards: async (deckId: string, limit: number = 50) => {
     const fn = httpsCallable(functions, "getNewDeckCards");
     const result = await fn({ deckId, limit });
-    return result.data as { cards: any[] };
+    return result.data as { cards: Card[] };
   },
 
   // Get user decks with cards
@@ -201,7 +201,7 @@ export const cloudFunctions = {
   getPopularDecks: async (limit: number = 8) => {
     const fn = httpsCallable(functions, "getPopularDecks");
     const result = await fn({ limit });
-    return result.data as { decks: any[] };
+    return result.data as { decks: Deck[] };
   },
 
   // Process friend requests
@@ -223,19 +223,19 @@ export const cloudFunctions = {
   },
 
   // Reset deck progress
-  resetDeck: async (deckId: string) => {
+  resetDeck: async (deckId: string, userId: string) => {
     const resetDeckFunction = httpsCallable(functions, "resetDeck");
-    const result = await resetDeckFunction({ deckId });
+    const result = await resetDeckFunction({ deckId, userId });
     return result.data as { success: boolean };
   },
 
   // Update deck settings
-  updateDeckSettings: async (deckId: string, settings: any) => {
+  updateDeckSettings: async (deckId: string, deck: DeckLearningData) => {
     const updateDeckSettingsFunction = httpsCallable(
       functions,
       "updateDeckSettings"
     );
-    const result = await updateDeckSettingsFunction({ deckId, settings });
+    const result = await updateDeckSettingsFunction({ deckId, deck });
     return result.data as { success: boolean };
   },
 
@@ -243,7 +243,7 @@ export const cloudFunctions = {
   startLearningDeck: async (userId: string, deckId: string) => {
     const fn = httpsCallable(functions, "startLearningDeck");
     const result = await fn({ userId, deckId });
-    return result.data as { success: boolean };
+    return result.data as { success: boolean; deck: DeckLearningData };
   },
 
   // Delete deck (soft delete)

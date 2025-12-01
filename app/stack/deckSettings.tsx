@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -19,84 +19,20 @@ import { router, useLocalSearchParams } from "expo-router";
 import { ArrowLeftIcon } from "react-native-heroicons/solid";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { cloudFunctions } from "../../services/cloudFunctions";
+import { UserContext } from "@/store/user-context";
+import {
+  Deck,
+  DeckLearningData,
+  safeValidateDeck,
+  safeValidateDeckLearningData,
+} from "../../types/index";
 
-interface DeckParams {
+import { LEARNING_PACE_OPTIONS } from "../../constants/settings";
+
+type DeckParams = {
+  isOwner: string;
   deckId: string;
-}
-
-interface DeckSettings {
-  learningPace: "slow" | "medium" | "fast" | "custom";
-  customCardsPerDay?: number;
-  zenMode: boolean;
-  language: string;
-  icon: string;
-  category: string;
-}
-
-const LEARNING_PACE_OPTIONS = [
-  {
-    value: "slow",
-    label: "Spokojnie",
-    description: "5 kart/dzień",
-    emoji: "🐢",
-  },
-  {
-    value: "medium",
-    label: "Normalne",
-    description: "15 kart/dzień",
-    emoji: "🚶",
-  },
-  {
-    value: "fast",
-    label: "Turbo",
-    description: "30 kart/dzień",
-    emoji: "⚡",
-  },
-  {
-    value: "custom",
-    label: "Własne",
-    description: "Ustaw ręcznie",
-    emoji: "⚙️",
-  },
-];
-
-const LANGUAGE_OPTIONS = [
-  {
-    code: "en",
-    label: "English",
-    flag: require("../../assets/images/gbFlag.png"),
-  },
-  {
-    code: "pl",
-    label: "Polski",
-    flag: require("../../assets/images/gbFlag.png"),
-  }, // Placeholder
-  {
-    code: "es",
-    label: "Español",
-    flag: require("../../assets/images/esFlag.png"),
-  },
-  {
-    code: "de",
-    label: "Deutsch",
-    flag: require("../../assets/images/deFlag.png"),
-  },
-  {
-    code: "fr",
-    label: "Français",
-    flag: require("../../assets/images/frFlag.png"),
-  },
-  {
-    code: "it",
-    label: "Italiano",
-    flag: require("../../assets/images/gbFlag.png"),
-  }, // Placeholder
-];
-
-function getLanguageFlag(code: string) {
-  const lang = LANGUAGE_OPTIONS.find((l) => l.code === code);
-  return lang?.flag || require("../../assets/images/gbFlag.png");
-}
+};
 
 const ICON_OPTIONS = [
   "cards",
@@ -115,19 +51,16 @@ export default function deckSettings(): React.JSX.Element {
   const typedParams = params as unknown as DeckParams;
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [deck, setDeck] = useState<any>(null);
-  const [settings, setSettings] = useState<DeckSettings>({
-    learningPace: "medium",
-    customCardsPerDay: 10,
-    zenMode: false,
-    language: "en",
-    icon: "cards",
-    category: "",
-  });
-  const [showLanguageModal, setShowLanguageModal] = useState<boolean>(false);
+  const [deck, setDeck] = useState<DeckLearningData>();
+
+  const [authorDeck, setAuthorDeck] = useState<Deck>();
+
   const [showIconModal, setShowIconModal] = useState<boolean>(false);
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [isResetting, setIsResetting] = useState<boolean>(false);
+  const [isCustomPace, setIsCustomPace] = useState<boolean>(false);
+
+  const userCtx = useContext(UserContext);
 
   useEffect(() => {
     fetchDeckData();
@@ -136,32 +69,37 @@ export default function deckSettings(): React.JSX.Element {
   async function fetchDeckData(): Promise<void> {
     try {
       setIsLoading(true);
-      const { deck: deckData } = await cloudFunctions.getDeckDetails(
+
+      if (!userCtx?.id) throw new Error("No userCtx");
+
+      if (params.isOwner === "true") {
+        const { deck: deckData } = await cloudFunctions.getDeckDetails(
+          typedParams.deckId
+        );
+        if (!deckData) throw new Error("Deck not found");
+        const validatedDeck = safeValidateDeck(deckData);
+        if (!validatedDeck.success) throw new Error("Invalid deckData");
+        setAuthorDeck(validatedDeck.data);
+      }
+
+      const { deck: deckData } = await cloudFunctions.getUserDeckDetails(
+        userCtx.id || "",
         typedParams.deckId
       );
-      setDeck(deckData);
 
-      // Załaduj ustawienia jeśli istnieją
-      if (deckData?.settings) {
-        setSettings({
-          learningPace: deckData.settings.learningPace || "medium",
-          customCardsPerDay: deckData.settings.customCardsPerDay || 10,
-          zenMode: deckData.settings.zenMode || false,
-          language: deckData.settings.language || "en",
-          icon: deckData.settings.icon || "cards",
-          category: deckData.settings.category || deckData?.subject || "",
-        });
-      } else {
-        // Domyślne ustawienia z danymi decku
-        setSettings({
-          learningPace: "medium",
-          customCardsPerDay: 10,
-          zenMode: false,
-          language: deckData?.language || "en",
-          icon: "cards",
-          category: deckData?.subject || "",
-        });
+      if (!deckData) {
+        const result = await cloudFunctions.startLearningDeck(
+          userCtx.id || "",
+          typedParams.deckId
+        );
+        if (!result.success) throw new Error("Failed to start learning deck");
+        if (!result.deck) throw new Error("No deck returned");
+        setDeck(result.deck);
       }
+      const validatedDeck = safeValidateDeckLearningData(deckData);
+      if (!validatedDeck.success) throw new Error("Invalid deckData");
+
+      setDeck(validatedDeck.data);
     } catch (error) {
       console.error("Error fetching deck data:", error);
     } finally {
@@ -172,7 +110,8 @@ export default function deckSettings(): React.JSX.Element {
   async function saveSettings(): Promise<void> {
     try {
       setIsLoading(true);
-      await cloudFunctions.updateDeckSettings(typedParams.deckId, settings);
+      if (!deck) throw new Error("No deck");
+      await cloudFunctions.updateDeckSettings(typedParams.deckId, deck);
       console.log("Settings saved successfully");
       router.back();
     } catch (error) {
@@ -186,7 +125,8 @@ export default function deckSettings(): React.JSX.Element {
   async function handleResetDeck(): Promise<void> {
     try {
       setIsResetting(true);
-      await cloudFunctions.resetDeck(typedParams.deckId);
+      if (!userCtx.id) throw new Error("No userCtx");
+      await cloudFunctions.resetDeck(typedParams.deckId, userCtx.id);
       Alert.alert("Sukces", "Postęp decku został zresetowany pomyślnie.", [
         {
           text: "OK",
@@ -199,16 +139,6 @@ export default function deckSettings(): React.JSX.Element {
     } finally {
       setIsResetting(false);
     }
-  }
-
-  function getPaceDescription(pace: string): string {
-    const option = LEARNING_PACE_OPTIONS.find((opt) => opt.value === pace);
-    return option?.description || "";
-  }
-
-  function getLanguageLabel(code: string): string {
-    const lang = LANGUAGE_OPTIONS.find((l) => l.code === code);
-    return lang?.label || code;
   }
 
   if (isLoading) {
@@ -262,14 +192,34 @@ export default function deckSettings(): React.JSX.Element {
                 <Pressable
                   key={option.value}
                   onPress={() => {
-                    setSettings({
-                      ...settings,
-                      learningPace: option.value as any,
+                    if (!deck) return;
+                    if (option.value === "custom") {
+                      setIsCustomPace(true);
+                      return;
+                    }
+                    setIsCustomPace(false);
+                    setDeck({
+                      ...deck,
+                      settings: {
+                        ...deck.settings,
+                        newCardsNumPerDay:
+                          option.value === "slow"
+                            ? LEARNING_PACE_OPTIONS.find(
+                                (opt) => opt.value === "slow"
+                              )?.numPerDay || 5
+                            : option.value === "medium"
+                            ? LEARNING_PACE_OPTIONS.find(
+                                (opt) => opt.value === "medium"
+                              )?.numPerDay || 15
+                            : LEARNING_PACE_OPTIONS.find(
+                                (opt) => opt.value === "fast"
+                              )?.numPerDay || 30,
+                      },
                     });
                   }}
                   style={[
                     styles.paceOption,
-                    settings.learningPace === option.value &&
+                    deck?.settings.newCardsNumPerDay === option.numPerDay &&
                       styles.paceOptionActive,
                   ]}
                 >
@@ -277,7 +227,7 @@ export default function deckSettings(): React.JSX.Element {
                   <Text
                     style={[
                       styles.paceOptionLabel,
-                      settings.learningPace === option.value &&
+                      deck?.settings.newCardsNumPerDay === option.numPerDay &&
                         styles.paceOptionLabelActive,
                     ]}
                   >
@@ -290,32 +240,29 @@ export default function deckSettings(): React.JSX.Element {
             {/* Wyświetlanie liczby kart dziennie */}
             <View style={styles.paceInfoContainer}>
               <Text style={styles.paceInfoText}>
-                {settings.learningPace === "slow" && "5 nowych kart dziennie"}
-                {settings.learningPace === "medium" &&
-                  "15 nowych kart dziennie"}
-                {settings.learningPace === "fast" && "30 nowych kart dziennie"}
-                {settings.learningPace === "custom" &&
-                  settings.customCardsPerDay &&
-                  `${settings.customCardsPerDay} nowych kart dziennie`}
-                {settings.learningPace === "custom" &&
-                  !settings.customCardsPerDay &&
-                  "Ustaw liczbę kart ręcznie"}
+                {LEARNING_PACE_OPTIONS.find(
+                  (opt) => opt.numPerDay === deck?.settings.newCardsNumPerDay
+                )?.description || ""}
               </Text>
             </View>
 
-            {settings.learningPace === "custom" && (
+            {isCustomPace && (
               <View style={styles.customInputContainer}>
                 <Text style={styles.customInputLabel}>
                   Liczba nowych kart dziennie:
                 </Text>
                 <TextInput
                   style={styles.customInput}
-                  value={settings.customCardsPerDay?.toString() || ""}
+                  value={deck?.settings.newCardsNumPerDay?.toString() || ""}
                   onChangeText={(text) => {
+                    if (!deck) return;
                     const num = parseInt(text) || 0;
-                    setSettings({
-                      ...settings,
-                      customCardsPerDay: num > 0 ? num : undefined,
+                    setDeck({
+                      ...deck,
+                      settings: {
+                        ...deck.settings,
+                        newCardsNumPerDay: num > 0 ? num : -1,
+                      },
                     });
                   }}
                   keyboardType="numeric"
@@ -335,9 +282,13 @@ export default function deckSettings(): React.JSX.Element {
                 </Text>
               </View>
               <Switch
-                value={settings.zenMode}
+                value={deck?.settings.zenMode}
                 onValueChange={(value) => {
-                  setSettings({ ...settings, zenMode: value });
+                  if (!deck) return;
+                  setDeck({
+                    ...deck,
+                    settings: { ...deck.settings, zenMode: value },
+                  });
                 }}
                 trackColor={{
                   false: Colors.primary_500,
@@ -347,102 +298,78 @@ export default function deckSettings(): React.JSX.Element {
               />
             </View>
           </View>
-
-          {/* Język decku */}
-          <View style={styles.section}>
-            <Pressable
-              onPress={() => setShowLanguageModal(true)}
-              style={styles.settingRow}
-            >
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Język decku</Text>
-                <View style={styles.languageValueContainer}>
-                  <Image
-                    source={getLanguageFlag(settings.language)}
-                    style={styles.flagIcon}
-                  />
-                  <Text style={styles.settingValue}>
-                    {getLanguageLabel(settings.language)}
-                  </Text>
-                </View>
-              </View>
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={24}
-                color={Colors.primary_700}
-              />
-            </Pressable>
-          </View>
-
           {/* Ikonka decku */}
-          <View style={styles.section}>
-            <Pressable
-              onPress={() => setShowIconModal(true)}
-              style={styles.settingRow}
-            >
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Ikonka decku</Text>
-                <View style={styles.iconPreview}>
+          {typedParams.isOwner === "true" && (
+            <>
+              <View style={styles.section}>
+                <Pressable
+                  onPress={() => setShowIconModal(true)}
+                  style={styles.settingRow}
+                >
+                  <View style={styles.settingInfo}>
+                    <Text style={styles.settingTitle}>Ikonka decku</Text>
+                    <View style={styles.iconPreview}>
+                      <MaterialCommunityIcons
+                        name={authorDeck?.icon as any}
+                        size={24}
+                        color={Colors.primary_700}
+                      />
+                    </View>
+                  </View>
                   <MaterialCommunityIcons
-                    name={settings.icon as any}
+                    name="chevron-right"
                     size={24}
                     color={Colors.primary_700}
                   />
-                </View>
+                </Pressable>
               </View>
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={24}
-                color={Colors.primary_700}
-              />
-            </Pressable>
-          </View>
 
-          {/* Kategoria decku */}
-          <View style={styles.section}>
-            <Pressable
-              onPress={() => setShowCategoryModal(true)}
-              style={styles.settingRow}
-            >
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Kategoria decku</Text>
-                <Text style={styles.settingValue}>
-                  {settings.category || "Nie wybrano"}
-                </Text>
+              {/* Kategoria decku */}
+              <View style={styles.section}>
+                <Pressable
+                  onPress={() => setShowCategoryModal(true)}
+                  style={styles.settingRow}
+                >
+                  <View style={styles.settingInfo}>
+                    <Text style={styles.settingTitle}>Kategoria decku</Text>
+                    <Text style={styles.settingValue}>
+                      {authorDeck?.category || "Nie wybrano"}
+                    </Text>
+                  </View>
+                  <MaterialCommunityIcons
+                    name="chevron-right"
+                    size={24}
+                    color={Colors.primary_700}
+                  />
+                </Pressable>
               </View>
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={24}
-                color={Colors.primary_700}
-              />
-            </Pressable>
-          </View>
 
-          {/* Edycja decku */}
-          <View style={styles.section}>
-            <Pressable
-              onPress={() => {
-                router.push({
-                  pathname: "./createSelfScreen",
-                  params: { deckId: typedParams.deckId, edit: "true" },
-                });
-              }}
-              style={[styles.settingRow, styles.editButton]}
-            >
-              <MaterialCommunityIcons
-                name="pencil"
-                size={24}
-                color={Colors.primary_700}
-              />
-              <Text style={styles.editButtonText}>Edytuj deck</Text>
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={24}
-                color={Colors.primary_700}
-              />
-            </Pressable>
-          </View>
-
+              {/* Edycja decku */}
+              <View style={styles.section}>
+                <Pressable
+                  onPress={() => {
+                    router.push({
+                      pathname: "./createSelfScreen",
+                      params: { deckId: typedParams.deckId, edit: "true" },
+                    });
+                  }}
+                  style={[styles.settingRow, styles.editButton]}
+                >
+                  <MaterialCommunityIcons
+                    name="pencil"
+                    size={24}
+                    color={Colors.primary_700}
+                  />
+                  <Text style={styles.editButtonText}>Edytuj deck</Text>
+                  <MaterialCommunityIcons
+                    name="chevron-right"
+                    size={24}
+                    color={Colors.primary_700}
+                  />
+                </Pressable>
+              </View>
+            </>
+          )}
           {/* Reset decku */}
           <View style={styles.section}>
             <Pressable
@@ -496,51 +423,6 @@ export default function deckSettings(): React.JSX.Element {
             </View>
           </Pressable>
         </ScrollView>
-
-        {/* Modal wyboru języka */}
-        <Modal
-          visible={showLanguageModal}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setShowLanguageModal(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Wybierz język</Text>
-              <ScrollView style={styles.modalScroll}>
-                {LANGUAGE_OPTIONS.map((lang) => (
-                  <Pressable
-                    key={lang.code}
-                    style={styles.modalItem}
-                    onPress={() => {
-                      setSettings({ ...settings, language: lang.code });
-                      setShowLanguageModal(false);
-                    }}
-                  >
-                    <View style={styles.modalItemContent}>
-                      <Image source={lang.flag} style={styles.modalFlagIcon} />
-                      <Text style={styles.modalItemText}>{lang.label}</Text>
-                    </View>
-                    {settings.language === lang.code && (
-                      <MaterialCommunityIcons
-                        name="check"
-                        size={24}
-                        color={Colors.primary_700}
-                      />
-                    )}
-                  </Pressable>
-                ))}
-              </ScrollView>
-              <Pressable
-                style={styles.modalCloseButton}
-                onPress={() => setShowLanguageModal(false)}
-              >
-                <Text style={styles.modalCloseText}>Anuluj</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Modal>
-
         {/* Modal wyboru ikony */}
         <Modal
           visible={showIconModal}
@@ -558,10 +440,11 @@ export default function deckSettings(): React.JSX.Element {
                       key={icon}
                       style={[
                         styles.iconOption,
-                        settings.icon === icon && styles.iconOptionActive,
+                        authorDeck?.icon === icon && styles.iconOptionActive,
                       ]}
                       onPress={() => {
-                        setSettings({ ...settings, icon });
+                        if (!authorDeck) return;
+                        setAuthorDeck({ ...authorDeck, icon: icon as any });
                         setShowIconModal(false);
                       }}
                     >
@@ -569,7 +452,7 @@ export default function deckSettings(): React.JSX.Element {
                         name={icon as any}
                         size={32}
                         color={
-                          settings.icon === icon
+                          authorDeck?.icon === icon
                             ? Colors.primary_100
                             : Colors.primary_700
                         }
@@ -604,12 +487,13 @@ export default function deckSettings(): React.JSX.Element {
                     key={category}
                     style={styles.modalItem}
                     onPress={() => {
-                      setSettings({ ...settings, category });
+                      if (!authorDeck) return;
+                      setAuthorDeck({ ...authorDeck, category });
                       setShowCategoryModal(false);
                     }}
                   >
                     <Text style={styles.modalItemText}>{category}</Text>
-                    {settings.category === category && (
+                    {authorDeck?.category === category && (
                       <MaterialCommunityIcons
                         name="check"
                         size={24}
