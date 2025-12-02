@@ -52,6 +52,7 @@ export {
   deleteDeck,
   checkCardChanges,
   syncDeckCards,
+  updateCardContent,
 } from "./deckFunctions";
 export {
   getLeaderboard,

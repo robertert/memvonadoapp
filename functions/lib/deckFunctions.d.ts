@@ -128,6 +128,18 @@ export declare const updateDeckSettings: import("firebase-functions/v2/https").C
  */
 export declare const startLearningDeck: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
+    deck: {
+        settings: {
+            zenMode: boolean;
+            dueCardsNumPerDay?: number | undefined;
+            newCardsNumPerDay?: number | undefined;
+        };
+        id: string;
+        title: string;
+        cardsNum: number;
+        updatedAt?: Date | undefined;
+        lastReviewDate?: Date | undefined;
+    } | null;
 }>, unknown>;
 /**
  * Soft delete a deck - marks as deleted and notifies all users learning it
@@ -161,4 +173,10 @@ export declare const checkCardChanges: import("firebase-functions/v2/https").Cal
 export declare const syncDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
     syncedCount: number;
+}>, unknown>;
+/**
+ * Update card content (cardData and tags) - only for source deck authors
+ */
+export declare const updateCardContent: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
 }>, unknown>;

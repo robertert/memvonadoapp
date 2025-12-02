@@ -378,6 +378,7 @@ export default function learnScreen(): React.JSX.Element {
           gesture={comp}
           isTurn={isTurn}
           streakLost={streakLost}
+          deckId={id}
         />
 
         <SwipeIndicators
@@ -435,6 +436,22 @@ export default function learnScreen(): React.JSX.Element {
           trigger={showConfetti}
           onComplete={() => setShowConfetti(false)}
         />
+
+        <Pressable
+          onPress={() => {
+            if (!cards?.[0]?.id) return;
+            router.push({
+              pathname: "./editCard",
+              params: { cardId: cards[0].id, deckId: id },
+            });
+          }}
+          style={{ position: "absolute", top: safeArea.top + 110, right: 20 }}
+          accessibilityLabel="Edit card"
+          accessibilityRole="button"
+          accessibilityHint="Tap to edit card"
+        >
+          <Ionicons name="pencil" size={24} color={Colors.primary_700} />
+        </Pressable>
         {/* Flying fire icon that appears in center and flies out */}
         {/* Native size 96px (4x) for better quality when scaled down */}
         <Animated.View style={flyingFireIconAnimatedStyle} pointerEvents="none">

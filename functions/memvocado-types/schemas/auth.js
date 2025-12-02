@@ -10,7 +10,6 @@ const user_1 = require("./user");
 exports.AuthRegisterRequestSchema = zod_1.z
     .object({
     email: zod_1.z.string().email(),
-    password: zod_1.z.string().min(8),
     username: zod_1.z
         .string()
         .min(3)
@@ -26,7 +25,6 @@ exports.AuthRegisterRequestSchema = zod_1.z
 exports.AuthLoginRequestSchema = zod_1.z
     .object({
     email: zod_1.z.string().email(),
-    password: zod_1.z.string().min(1),
 })
     .strict();
 /**

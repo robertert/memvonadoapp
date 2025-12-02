@@ -5,7 +5,7 @@ import {
   Query,
   CollectionReference,
 } from "firebase-admin/firestore";
-import { SearchLogSchema, type SearchLog } from "./types/common";
+import { SearchFilters, SearchLogSchema, type SearchLog } from "./types/common";
 import { serializeTimestamps } from "./utils/serialization";
 
 const db = getFirestore();
@@ -14,7 +14,17 @@ const db = getFirestore();
  * Search decks with advanced filtering
  */
 export const searchDecks = onCall(async (request) => {
-  const { searchText, filters, userId, limit = 20 } = request.data;
+  const {
+    searchText,
+    filters,
+    userId,
+    limit = 20,
+  } = request.data as {
+    searchText?: string;
+    filters?: SearchFilters;
+    userId?: string;
+    limit?: number;
+  };
 
   if (!searchText && !filters) {
     throw new Error("Search text or filters required");
@@ -38,14 +48,15 @@ export const searchDecks = onCall(async (request) => {
 
     // Apply filters
     if (filters) {
-      if (filters.subject) {
-        query = query.where("subject", "==", filters.subject);
+      const { category, tags } = filters;
+
+      if (category) {
+        query = query.where("category", "==", category);
       }
-      if (filters.difficulty) {
-        query = query.where("difficulty", "==", filters.difficulty);
-      }
-      if (filters.isPublic !== undefined) {
-        query = query.where("isPublic", "==", filters.isPublic);
+
+      // Use array-contains-any only when we have a non‑empty array
+      if (Array.isArray(tags) && tags.length > 0) {
+        query = query.where("tags", "array-contains-any", tags);
       }
     }
 

@@ -1233,3 +1233,61 @@ export const syncDeckCards = onCall(async (request) => {
     throw new Error("Failed to sync deck cards");
   }
 });
+
+/**
+ * Update card content (cardData and tags) - only for source deck authors
+ */
+export const updateCardContent = onCall(async (request) => {
+  const { userId, deckId, cardId, cardData } = request.data || {};
+
+  if (!userId || !deckId || !cardId || !cardData) {
+    throw new Error("userId, deckId, cardId, and cardData are required");
+  }
+
+  try {
+    // Validate card data
+    const validatedCardData = CardCoreUpdateSchema.parse(cardData);
+
+    // Only allow updating source deck cards (user must be deck owner)
+    const deckRef = db.collection("decks").doc(deckId);
+    const deckSnap = await deckRef.get();
+
+    if (!deckSnap.exists) {
+      throw new Error("Deck not found");
+    }
+
+    const deckData = deckSnap.data() as Deck;
+    if (deckData.createdBy !== userId) {
+      throw new Error("You don't have permission to edit this card");
+    }
+
+    const cardRef = deckRef.collection("cards").doc(cardId);
+    const cardSnap = await cardRef.get();
+
+    if (!cardSnap.exists) {
+      throw new Error("Card not found");
+    }
+
+    // Update card
+    await cardRef.update({
+      cardData: validatedCardData.cardData,
+      tags: validatedCardData.tags || [],
+    });
+
+    logger.info("Card content updated", {
+      userId,
+      deckId,
+      cardId,
+    });
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    logger.error("Error updating card content", error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("Failed to update card content");
+  }
+});

@@ -295,6 +295,13 @@ export default function deckDetails(): React.JSX.Element {
                 : item.cardData.front
             );
           }}
+          onLongPress={() => {
+            if (deck?.createdBy !== userCtx.id) return;
+            router.push({
+              pathname: "./editCard",
+              params: { cardId: item.id, deckId: typedParams.deckId },
+            });
+          }}
           style={styles.cardPressable}
         >
           <View style={[styles.cardContainer]}>

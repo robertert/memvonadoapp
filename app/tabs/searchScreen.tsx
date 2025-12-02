@@ -15,7 +15,7 @@ import { Colors, Fonts, Subjects } from "../../constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ClockIcon, MagnifyingGlassIcon } from "react-native-heroicons/solid";
-import { cloudFunctions, SearchLog } from "../../services/cloudFunctions";
+import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
 import { placeholderDecks } from "../../constants/placeholderData";
@@ -23,6 +23,7 @@ import { placeholderDecks } from "../../constants/placeholderData";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { ScrollView } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { SearchFilters, SearchLog } from "../../types/schemas/search";
 
 interface Deck {
   id: string;
@@ -50,6 +51,7 @@ export default function marketplaceScreen(): React.JSX.Element {
   const [authorText, setAuthorText] = useState<string>("");
   const [showAuthorModal, setShowAuthorModal] = useState<boolean>(false);
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   function shortenTitle(text: string): string {
     if (!text) return "";
@@ -83,7 +85,7 @@ export default function marketplaceScreen(): React.JSX.Element {
     };
   }, [searchText]);
 
-  async function handleSearch(): Promise<void> {
+  async function handleSearch(filters?: SearchFilters): Promise<void> {
     if (searchText.trim() !== "") {
       setIsSearchDisplayed(true);
       setIsLoading(true);
@@ -97,14 +99,16 @@ export default function marketplaceScreen(): React.JSX.Element {
           setIsLoading(false);
           return;
         }
-        const filters = {
-          subject: selectedCategory || undefined,
-          isPublic: true,
-        };
+        const searchFilters =
+          filters ||
+          ({
+            category: selectedCategory || "",
+            tags: selectedTags || undefined,
+          } as SearchFilters);
 
         const result = await cloudFunctions.searchDecks(
           searchText.trim(),
-          filters,
+          searchFilters,
           userCtx.id || undefined
         );
 
@@ -139,6 +143,7 @@ export default function marketplaceScreen(): React.JSX.Element {
   function clearFilters(): void {
     setSelectedCategory("");
     setAuthorText("");
+    handleSearch({ category: "", tags: [] });
   }
 
   async function enterDeckHandler(deck: Deck): Promise<void> {
@@ -252,18 +257,6 @@ export default function marketplaceScreen(): React.JSX.Element {
           </Text>
           <MaterialCommunityIcons
             name="chevron-down"
-            size={16}
-            color={Colors.primary_700}
-          />
-        </Pressable>
-
-        <Pressable
-          style={styles.filterButton}
-          onPress={() => setShowAuthorModal(true)}
-        >
-          <Text style={styles.filterButtonText}>{authorText || "Author"}</Text>
-          <MaterialCommunityIcons
-            name="account"
             size={16}
             color={Colors.primary_700}
           />
@@ -397,6 +390,7 @@ export default function marketplaceScreen(): React.JSX.Element {
                   style={styles.modalItem}
                   onPress={() => {
                     setSelectedCategory(item);
+                    handleSearch({ category: item });
                     setShowCategoryModal(false);
                   }}
                 >
@@ -434,13 +428,19 @@ export default function marketplaceScreen(): React.JSX.Element {
             <View style={styles.modalButtons}>
               <Pressable
                 style={styles.modalButton}
-                onPress={() => setShowAuthorModal(false)}
+                onPress={() => {
+                  setShowAuthorModal(false);
+                  handleSearch({ tags: [authorText] });
+                }}
               >
                 <Text style={styles.modalButtonText}>Cancel</Text>
               </Pressable>
               <Pressable
                 style={[styles.modalButton, styles.modalButtonPrimary]}
-                onPress={() => setShowAuthorModal(false)}
+                onPress={() => {
+                  setShowAuthorModal(false);
+                  handleSearch({ tags: [authorText] });
+                }}
               >
                 <Text
                   style={[

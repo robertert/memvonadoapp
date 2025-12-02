@@ -5,17 +5,14 @@ import { z } from "zod";
  */
 export declare const AuthRegisterRequestSchema: z.ZodObject<{
     email: z.ZodString;
-    password: z.ZodString;
     username: z.ZodOptional<z.ZodString>;
     language: z.ZodOptional<z.ZodString>;
 }, "strict", z.ZodTypeAny, {
     email: string;
-    password: string;
     language?: string | undefined;
     username?: string | undefined;
 }, {
     email: string;
-    password: string;
     language?: string | undefined;
     username?: string | undefined;
 }>;
@@ -25,13 +22,10 @@ export type AuthRegisterRequest = z.infer<typeof AuthRegisterRequestSchema>;
  */
 export declare const AuthLoginRequestSchema: z.ZodObject<{
     email: z.ZodString;
-    password: z.ZodString;
 }, "strict", z.ZodTypeAny, {
     email: string;
-    password: string;
 }, {
     email: string;
-    password: string;
 }>;
 export type AuthLoginRequest = z.infer<typeof AuthLoginRequestSchema>;
 /**

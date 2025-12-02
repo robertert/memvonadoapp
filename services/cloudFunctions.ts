@@ -515,4 +515,16 @@ export const cloudFunctions = {
       deckIds: string[];
     };
   },
+
+  // Update card content (cardData and tags) - only for source deck authors
+  updateCardContent: async (
+    userId: string,
+    deckId: string,
+    cardId: string,
+    cardData: CardCore
+  ) => {
+    const fn = httpsCallable(functions, "updateCardContent");
+    const result = await fn({ userId, deckId, cardId, cardData });
+    return result.data as { success: boolean };
+  },
 };

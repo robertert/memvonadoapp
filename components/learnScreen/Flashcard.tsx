@@ -1,6 +1,6 @@
 // React and React Native imports
 import React, { useEffect } from "react";
-import { Text, View } from "react-native";
+import { Text } from "react-native";
 
 // Third-party library imports
 import { GestureDetector } from "react-native-gesture-handler";
@@ -24,6 +24,7 @@ interface FlashcardProps {
   gesture: GestureType;
   isTurn: boolean;
   streakLost?: boolean;
+  deckId: string;
 }
 
 export default function Flashcard({
@@ -33,6 +34,7 @@ export default function Flashcard({
   gesture,
   isTurn,
   streakLost,
+  deckId,
 }: FlashcardProps) {
   const backgroundColor = useSharedValue(Colors.primary_100);
 
