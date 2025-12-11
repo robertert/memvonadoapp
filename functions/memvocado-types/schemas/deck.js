@@ -9,7 +9,7 @@ const base_1 = require("./base");
 exports.DeckCoreSchema = zod_1.z
     .object({
     title: zod_1.z.string(),
-    category: zod_1.z.string(),
+    category: zod_1.z.string().optional(),
     icon: zod_1.z.string().default("cards"),
     tags: zod_1.z.array(zod_1.z.string()).default([]),
     isPublic: zod_1.z.boolean(),

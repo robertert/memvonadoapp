@@ -30,18 +30,6 @@ export const Fonts = {
   secondary: "Inter",
 };
 
-export const Subjects: string[] = [
-  "English",
-  "Spanish",
-  "French",
-  "Math",
-  "Science",
-  "Biology",
-  "Phisics",
-  "Art",
-  "Medicine",
-];
-
 export const SubjectsIndex: number[] = [0, 1, 2, 3];
 
 export const generageRandomUid = function (): string {
@@ -64,25 +52,29 @@ interface CardData {
   back: string;
 }
 
-export const csvToJson = (csv: string, seperator1: string, seperator2: string): CardData[] => {
+export const csvToJson = (
+  csv: string,
+  seperator1: string,
+  seperator2: string
+): CardData[] => {
   let finalSeparator1 = seperator1;
   let finalSeparator2 = seperator2;
-  
+
   if (translator[seperator2]) {
     finalSeparator2 = translator[seperator2];
   }
   if (translator[seperator1]) {
     finalSeparator1 = translator[seperator1];
   }
-  
+
   const lines = csv.split(finalSeparator2);
   const result: CardData[] = [];
-  
+
   for (let i = 0; i < lines.length; i++) {
     const obj: CardData = {} as CardData;
     const currentLine = lines[i].split(finalSeparator1);
-    obj.front = currentLine[0]?.trim() || '';
-    obj.back = currentLine[1]?.trim() || '';
+    obj.front = currentLine[0]?.trim() || "";
+    obj.back = currentLine[1]?.trim() || "";
     result.push(obj);
   }
 

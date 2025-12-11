@@ -10,7 +10,7 @@ export { searchDecks } from "./searchFunctions";
 export { getSearchLogs } from "./searchFunctions";
 export { serverNow, getCurrentSeason, submitPoints, weeklyRollOver, } from "./userFunctions";
 export { getUserDecks, updateCardProgress, getUserProgress, getUserSettings, updateUserStreakOnLogin, updateUserStreakIfQualified, updateUserSettings, getUserProfile, getUserActivityHeatmap, getUserAwards, validateUserData, } from "./userFunctions";
-export { createDeckWithCards, updateUserStats, getDeckDetails, getDeckCards, getPopularDecks, resetDeck, updateDeckSettings, startLearningDeck, getUserDeckDetails, getUserDeckCards, getUserDueDeckCards, getUserNewDeckCards, deleteDeck, checkCardChanges, syncDeckCards, updateCardContent, } from "./deckFunctions";
+export { createDeckWithCards, updateUserStats, getDeckDetails, getDeckCards, getPopularDecks, resetDeck, updateDeckSettings, updateUserDeckSettings, startLearningDeck, getUserDeckDetails, getUserDeckCards, getUserDueDeckCards, getUserNewDeckCards, deleteDeck, checkCardChanges, syncDeckCards, updateCardContent, } from "./deckFunctions";
 export { getLeaderboard, getUserRanking, getFollowingRankings, assignUserToGroup, } from "./rankingFunctions";
 export { getNotifications, markNotificationRead, createNotification, notifyStreakBroken, notifySeasonEnd, onLeagueAdvance, } from "./notificationFunctions";
 export { getLeagueInfo, getUserGroup, updateUserLeague, getAllLeaguesInfo, } from "./leagueFunctions";

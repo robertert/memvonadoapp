@@ -27,6 +27,7 @@ import {
   DeckCore,
 } from "@/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CATEGORY_OPTIONS, LANGUAGE_OPTIONS } from "@/constants/settings";
 
 interface CreateSelfParams {
   cards?: string;
@@ -44,7 +45,13 @@ export default function createSelfScreen(): React.JSX.Element {
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [title, setTitle] = useState<string>("");
-  const [deckLanguage, setDeckLanguage] = useState<string>("en");
+  const [deckCategory, setDeckCategory] = useState<string>(CATEGORY_OPTIONS[0]);
+  const [frontLanguage, setFrontLanguage] = useState<string>(
+    LANGUAGE_OPTIONS[0]?.code || "en"
+  );
+  const [backLanguage, setBackLanguage] = useState<string>(
+    LANGUAGE_OPTIONS[1]?.code || LANGUAGE_OPTIONS[0]?.code || "pl"
+  );
   const [showDraftModal, setShowDraftModal] = useState<boolean>(false);
   const [draftFound, setDraftFound] = useState<any>(null);
 
@@ -104,7 +111,16 @@ export default function createSelfScreen(): React.JSX.Element {
         tags: card.tags || [],
       })) as EditableCard[];
       setCards(cardsWithId);
-      setDeckLanguage(draftFound.deckLanguage || "en");
+      setDeckCategory(draftFound.deckCategory || CATEGORY_OPTIONS[0]);
+      setFrontLanguage(
+        draftFound.frontLanguage || LANGUAGE_OPTIONS[0]?.code || "en"
+      );
+      setBackLanguage(
+        draftFound.backLanguage ||
+          LANGUAGE_OPTIONS[1]?.code ||
+          LANGUAGE_OPTIONS[0]?.code ||
+          "pl"
+      );
     }
     setShowDraftModal(false);
     setDraftFound(null);
@@ -119,7 +135,7 @@ export default function createSelfScreen(): React.JSX.Element {
     // Reset to empty state
     setTitle("");
     setCards([]);
-    setDeckLanguage("en");
+    setDeckCategory(CATEGORY_OPTIONS[0]);
   };
 
   // Autosave draft (3 seconds debounce)
@@ -142,7 +158,7 @@ export default function createSelfScreen(): React.JSX.Element {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [cards, title, deckLanguage]);
+  }, [cards, title, deckCategory]);
 
   // Save draft on unmount
 
@@ -163,13 +179,14 @@ export default function createSelfScreen(): React.JSX.Element {
           cardData: card.cardData,
           tags: card.tags,
         })),
-        deckLanguage,
+        deckCategory,
+        frontLanguage,
+        backLanguage,
         savedAt: Date.now(),
       };
 
       await AsyncStorage.setItem(draftKeyRef, JSON.stringify(draft));
       const draftData = await AsyncStorage.getItem(draftKeyRef);
-      console.log(draft);
       console.log("Draft saved", draftData);
     } catch (error) {
       console.error("Error saving draft:", error);
@@ -195,7 +212,7 @@ export default function createSelfScreen(): React.JSX.Element {
 
       const deckData = {
         title,
-        category: deckLanguage,
+        category: deckCategory,
         icon: "cards",
         isPublic: true,
       } as DeckCore;
@@ -290,52 +307,110 @@ export default function createSelfScreen(): React.JSX.Element {
                   </View>
                 </View>
 
-                {/* Wybór języka decku */}
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "center",
-                    gap: 8,
-                    marginBottom: 10,
-                  }}
-                >
-                  {[
-                    { code: "en", label: "English" },
-                    { code: "pl", label: "Polski" },
-                    { code: "es", label: "Español" },
-                    { code: "de", label: "Deutsch" },
-                  ].map((lng) => (
-                    <Pressable
-                      key={lng.code}
-                      onPress={() => setDeckLanguage(lng.code)}
-                      style={{
-                        paddingVertical: 6,
-                        paddingHorizontal: 12,
-                        borderRadius: 12,
-                        borderWidth: 2,
-                        borderColor: Colors.primary_700,
-                        backgroundColor:
-                          deckLanguage === lng.code
-                            ? Colors.primary_700
-                            : Colors.primary_100,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color:
-                            deckLanguage === lng.code
-                              ? Colors.primary_100
-                              : Colors.primary_700,
-                          fontFamily: Fonts.primary,
-                          fontWeight: "800",
-                        }}
-                      >
-                        {lng.label}
-                      </Text>
-                    </Pressable>
-                  ))}
+                {/* Wybór kategorii */}
+                <View style={styles.categorySection}>
+                  <Text style={styles.sectionTitle}>Kategoria</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.categoryScrollContent}
+                  >
+                    {CATEGORY_OPTIONS.map((category) => {
+                      const isActive = category === deckCategory;
+                      return (
+                        <Pressable
+                          key={category}
+                          onPress={() => setDeckCategory(category)}
+                          style={[
+                            styles.categoryChip,
+                            isActive && styles.categoryChipActive,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.categoryChipText,
+                              isActive && styles.categoryChipTextActive,
+                            ]}
+                          >
+                            {category}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
                 </View>
+                {/* Wybór języków przodu i tyłu fiszek */}
+                {["English", "Spanish", "French", "German"].includes(
+                  deckCategory
+                ) && (
+                  <View style={styles.languageSection}>
+                    <Text style={styles.sectionTitle}>Języki fiszek</Text>
 
+                    <View style={styles.languageRow}>
+                      <Text style={styles.languageLabel}>Przód</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.languageScrollContent}
+                      >
+                        {LANGUAGE_OPTIONS.map((lang) => {
+                          const isActive = lang.code === frontLanguage;
+                          return (
+                            <Pressable
+                              key={`front-${lang.code}`}
+                              onPress={() => setFrontLanguage(lang.code)}
+                              style={[
+                                styles.languageChip,
+                                isActive && styles.languageChipActive,
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.languageChipText,
+                                  isActive && styles.languageChipTextActive,
+                                ]}
+                              >
+                                {lang.label}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </ScrollView>
+                    </View>
+
+                    <View style={styles.languageRow}>
+                      <Text style={styles.languageLabel}>Tył</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.languageScrollContent}
+                      >
+                        {LANGUAGE_OPTIONS.map((lang) => {
+                          const isActive = lang.code === backLanguage;
+                          return (
+                            <Pressable
+                              key={`back-${lang.code}`}
+                              onPress={() => setBackLanguage(lang.code)}
+                              style={[
+                                styles.languageChip,
+                                isActive && styles.languageChipActive,
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.languageChipText,
+                                  isActive && styles.languageChipTextActive,
+                                ]}
+                              >
+                                {lang.label}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </ScrollView>
+                    </View>
+                  </View>
+                )}
                 <View style={styles.cardsSection}>
                   <Text style={styles.sectionTitle}>Karty</Text>
                   {cards.map((card) => {
@@ -344,7 +419,7 @@ export default function createSelfScreen(): React.JSX.Element {
                         key={card.id}
                         card={card}
                         setCards={setCards}
-                        deckLanguage={deckLanguage}
+                        deckLanguage={frontLanguage}
                       />
                     );
                   })}
@@ -494,6 +569,71 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.primary,
     fontSize: 20,
     fontWeight: "600",
+  },
+  categorySection: {
+    marginBottom: 24,
+  },
+  categoryScrollContent: {
+    paddingVertical: 4,
+  },
+  categoryChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: Colors.primary_700,
+    backgroundColor: Colors.primary_100,
+    marginRight: 8,
+  },
+  categoryChipActive: {
+    backgroundColor: Colors.primary_700,
+  },
+  categoryChipText: {
+    fontSize: 14,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "700",
+  },
+  categoryChipTextActive: {
+    color: Colors.primary_100,
+  },
+  languageSection: {
+    marginBottom: 24,
+  },
+  languageRow: {
+    marginBottom: 12,
+  },
+  languageLabel: {
+    fontSize: 16,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  languageScrollContent: {
+    paddingVertical: 4,
+  },
+  languageChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: Colors.primary_700,
+    backgroundColor: Colors.primary_100,
+    marginRight: 8,
+  },
+  languageChipActive: {
+    backgroundColor: Colors.accent_500,
+    borderColor: Colors.accent_500,
+  },
+  languageChipText: {
+    fontSize: 14,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "600",
+  },
+  languageChipTextActive: {
+    color: Colors.primary_100,
   },
   cardsSection: {
     marginBottom: 30,

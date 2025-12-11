@@ -10,8 +10,8 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import { Colors, Fonts, Subjects } from "../../constants/colors";
-import { LinearGradient } from "expo-linear-gradient";
+import { Colors, Fonts } from "../../constants/colors";
+import { CATEGORY_OPTIONS } from "@/constants/settings";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AntDesign, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -214,7 +214,7 @@ export default function decksScreen(): React.JSX.Element {
           <Text style={styles.subtitle}>Categories</Text>
           <ScrollView horizontal={true}>
             <View style={styles.categoriesContainer}>
-              {Subjects.map((category: string) => {
+              {CATEGORY_OPTIONS.map((category: string) => {
                 return (
                   <Pressable
                     key={category}

@@ -74,3 +74,17 @@ export const DEFAULT_DECK_LEARNING_DATA = {
     zenMode: false,
   },
 };
+
+export const CATEGORY_OPTIONS: string[] = [
+  "English",
+  "Spanish",
+  "German",
+  "French",
+  "Math",
+  "Medicine",
+  "Biology",
+  "Phisics",
+  "Art",
+  "History",
+  "Other",
+];

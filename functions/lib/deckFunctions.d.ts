@@ -122,6 +122,12 @@ export declare const updateDeckSettings: import("firebase-functions/v2/https").C
     success: boolean;
 }>, unknown>;
 /**
+ * Update user deck settings
+ */
+export declare const updateUserDeckSettings: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+}>, unknown>;
+/**
  * Copy a public deck into user's personal space to track individual progress
  * Source: decks/{deckId}
  * Target: users/{userId}/decks/{deckId} + cards

@@ -230,12 +230,29 @@ export const cloudFunctions = {
   },
 
   // Update deck settings
-  updateDeckSettings: async (deckId: string, deck: DeckLearningData) => {
+  updateDeckSettings: async (deckId: string, deck: Deck, userId: string) => {
     const updateDeckSettingsFunction = httpsCallable(
       functions,
       "updateDeckSettings"
     );
-    const result = await updateDeckSettingsFunction({ deckId, deck });
+    const result = await updateDeckSettingsFunction({ deckId, deck, userId });
+    return result.data as { success: boolean };
+  },
+
+  updateUserDeckSettings: async (
+    deckId: string,
+    deck: DeckLearningData,
+    userId: string
+  ) => {
+    const updateUserDeckSettingsFunction = httpsCallable(
+      functions,
+      "updateUserDeckSettings"
+    );
+    const result = await updateUserDeckSettingsFunction({
+      deckId,
+      deck,
+      userId,
+    });
     return result.data as { success: boolean };
   },
 

@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Colors, Fonts, Subjects } from "../../constants/colors";
+import { Colors, Fonts } from "../../constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowLeftIcon } from "react-native-heroicons/solid";
@@ -27,7 +27,10 @@ import {
   safeValidateDeckLearningData,
 } from "../../types/index";
 
-import { LEARNING_PACE_OPTIONS } from "../../constants/settings";
+import {
+  CATEGORY_OPTIONS,
+  LEARNING_PACE_OPTIONS,
+} from "../../constants/settings";
 
 type DeckParams = {
   isOwner: string;
@@ -111,7 +114,21 @@ export default function deckSettings(): React.JSX.Element {
     try {
       setIsLoading(true);
       if (!deck) throw new Error("No deck");
-      await cloudFunctions.updateDeckSettings(typedParams.deckId, deck);
+      if (!authorDeck) throw new Error("No author deck");
+      if (!userCtx.id) throw new Error("No userCtx");
+
+      await Promise.all([
+        cloudFunctions.updateDeckSettings(
+          typedParams.deckId,
+          authorDeck,
+          userCtx.id
+        ),
+        cloudFunctions.updateUserDeckSettings(
+          typedParams.deckId,
+          deck,
+          userCtx.id
+        ),
+      ]);
       console.log("Settings saved successfully");
       router.back();
     } catch (error) {
@@ -482,7 +499,7 @@ export default function deckSettings(): React.JSX.Element {
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Wybierz kategorię</Text>
               <ScrollView style={styles.modalScroll}>
-                {Subjects.map((category) => (
+                {CATEGORY_OPTIONS.map((category) => (
                   <Pressable
                     key={category}
                     style={styles.modalItem}

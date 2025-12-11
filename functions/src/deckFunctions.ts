@@ -8,7 +8,6 @@ import {
   CardCore,
   DeckSchema,
   DeckSettings,
-  DeckSettingsSchema,
   Deck,
   DeckCore,
   DeckCoreSchema,
@@ -16,7 +15,6 @@ import {
   CardSchema,
   FirstLearn,
   DeckLearningDataSchema,
-  DeckSettingsUpdateSchema,
   CardDataUpdateSchema,
   CardCoreUpdateSchema,
   type CardDataUpdate,
@@ -549,18 +547,11 @@ export const resetDeck = onCall(async (request) => {
 
   try {
     // Verify user owns the deck
-    const deckRef = db.collection("decks").doc(deckId);
+    const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
     const deckSnap = await deckRef.get();
 
     if (!deckSnap.exists) {
       throw new Error("Deck not found");
-    }
-
-    const deckData = deckSnap.data();
-
-    // Check if user is the creator of the deck
-    if (deckData?.createdBy !== userId) {
-      throw new Error("User does not have permission");
     }
 
     const cardsRef = deckRef.collection("cards");
@@ -627,18 +618,16 @@ export const resetDeck = onCall(async (request) => {
  * Update deck settings
  */
 export const updateDeckSettings = onCall(async (request) => {
-  const { deckId, settings } = request.data || {};
+  const { deckId, deck, userId } = request.data || {};
   const auth = request.auth;
 
-  if (!deckId || !settings) {
-    throw new Error("deckId and settings are required");
+  if (!deckId || !deck || !userId) {
+    throw new Error("deckId and deck and userId are required");
   }
 
   if (!auth) {
     throw new Error("Authentication required");
   }
-
-  const userId = auth.uid;
 
   try {
     // Verify user owns the deck
@@ -657,18 +646,11 @@ export const updateDeckSettings = onCall(async (request) => {
     }
 
     // Waliduj i typuj częściową aktualizację ustawień
-    const partialSettings = DeckSettingsUpdateSchema.parse(settings);
-
-    // Merge with existing settings
-    const currentSettings = deckData.settings || {};
-    const finalSettings = DeckSettingsSchema.parse({
-      ...currentSettings,
-      ...partialSettings,
-    });
+    const validatedDeck = DeckSchema.parse(deck);
 
     // Update deck settings
     await deckRef.update({
-      settings: finalSettings,
+      ...validatedDeck,
       updatedAt: FieldValue.serverTimestamp(),
     });
 
@@ -684,6 +666,54 @@ export const updateDeckSettings = onCall(async (request) => {
       throw error;
     }
     throw new Error("Failed to update deck settings");
+  }
+});
+
+/**
+ * Update user deck settings
+ */
+export const updateUserDeckSettings = onCall(async (request) => {
+  const { deckId, deck, userId } = request.data || {};
+  const auth = request.auth;
+
+  if (!deckId || !deck || !userId) {
+    throw new Error("deckId and deck and userId are required");
+  }
+
+  if (!auth) {
+    throw new Error("Authentication required");
+  }
+
+  try {
+    // Verify user owns the deck
+    const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
+    const deckSnap = await deckRef.get();
+
+    if (!deckSnap.exists) {
+      throw new Error("Deck not found");
+    }
+
+    // Waliduj i typuj częściową aktualizację ustawień
+    const validatedDeck = DeckLearningDataSchema.parse(deck);
+
+    // Update deck settings
+    await deckRef.update({
+      ...validatedDeck,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    logger.info("User deck settings updated successfully", {
+      deckId,
+      userId,
+    });
+
+    return serializeTimestamps({ success: true });
+  } catch (error) {
+    logger.error("Error updating user deck settings", error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("Failed to update user deck settings");
   }
 });
 

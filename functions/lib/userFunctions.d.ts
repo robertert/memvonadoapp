@@ -36,7 +36,6 @@ export declare const getUserDecks: import("firebase-functions/v2/https").Callabl
         id: string;
         tags: string[];
         title: string;
-        category: string;
         icon: string;
         isPublic: boolean;
         views: number;
@@ -45,6 +44,7 @@ export declare const getUserDecks: import("firebase-functions/v2/https").Callabl
         createdBy: string;
         is_deleted: boolean;
         updatedAt?: Date | undefined;
+        category?: string | undefined;
         deletedAt?: Date | undefined;
     }[];
 }>, unknown>;

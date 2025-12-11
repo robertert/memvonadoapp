@@ -8,7 +8,7 @@ import { TimestampSchema } from "./base";
 export const DeckCoreSchema = z
   .object({
     title: z.string(),
-    category: z.string(),
+    category: z.string().optional(),
     icon: z.string().default("cards"),
     tags: z.array(z.string()).default([]),
     isPublic: z.boolean(),

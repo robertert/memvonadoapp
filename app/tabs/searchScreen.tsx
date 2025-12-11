@@ -11,7 +11,8 @@ import {
   Modal,
   FlatList,
 } from "react-native";
-import { Colors, Fonts, Subjects } from "../../constants/colors";
+import { Colors, Fonts } from "../../constants/colors";
+import { CATEGORY_OPTIONS } from "../../constants/settings";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ClockIcon, MagnifyingGlassIcon } from "react-native-heroicons/solid";
@@ -383,7 +384,7 @@ export default function marketplaceScreen(): React.JSX.Element {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select category</Text>
             <FlatList
-              data={Subjects}
+              data={CATEGORY_OPTIONS}
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
                 <Pressable
