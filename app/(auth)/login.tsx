@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Pressable, Image, Alert } from "react-native";
+import { View, Text, StyleSheet, Pressable, Alert } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Fonts } from "../../constants/colors";
 import { auth } from "../../firebase";

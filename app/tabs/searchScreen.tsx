@@ -7,13 +7,12 @@ import {
   View,
   Dimensions,
   ActivityIndicator,
-  Image,
   Modal,
   FlatList,
 } from "react-native";
+import { Image } from "expo-image";
 import { Colors, Fonts } from "../../constants/colors";
 import { CATEGORY_OPTIONS } from "../../constants/settings";
-import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ClockIcon, MagnifyingGlassIcon } from "react-native-heroicons/solid";
 import { cloudFunctions } from "../../services/cloudFunctions";
@@ -164,7 +163,7 @@ export default function marketplaceScreen(): React.JSX.Element {
     try {
       setIsLoading(true);
       const result = await cloudFunctions.getSearchLogs(userCtx.id || "");
-      setRecentSearches(result);
+      setRecentSearches(result.logs || []);
       setIsLoading(false);
     } catch (error) {
       console.error("Error fetching recent searches:", error);

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Pressable, StyleSheet, Text, TextInput } from "react-native";
 import { Colors, Fonts } from "../../constants/colors";
-import { View, Image } from "react-native";
+import { View } from "react-native";
+import { Image } from "expo-image";
 import { AntDesign } from "@expo/vector-icons";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {

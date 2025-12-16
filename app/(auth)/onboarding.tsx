@@ -5,10 +5,10 @@ import {
   StyleSheet,
   Pressable,
   TextInput,
-  Image,
   ScrollView,
   Alert,
 } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -113,11 +113,15 @@ export default function OnboardingScreen(): React.JSX.Element {
         setUsernameError("Username must be at least 3 characters");
         return;
       }
-
-      // Sprawdź czy username jest dostępny (przez Cloud Function)
       try {
         setIsLoading(true);
-        // TODO: Dodać Cloud Function do sprawdzania dostępności username
+        const response = await cloudFunctions.checkUsernameAvailability(
+          username.trim()
+        );
+        if (!response.isAvailable) {
+          setUsernameError("Username is already taken");
+          return;
+        }
         setData({ ...data, username: username.trim() });
         setCurrentStep("photo");
       } catch (error) {

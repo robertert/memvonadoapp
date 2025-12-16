@@ -15,7 +15,7 @@ import { CATEGORY_OPTIONS } from "@/constants/settings";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AntDesign, MaterialCommunityIcons } from "@expo/vector-icons";
-import { Image, ScrollView } from "react-native";
+import { ScrollView } from "react-native";
 import { router } from "expo-router";
 import { UserContext } from "../../store/user-context";
 import { cloudFunctions } from "../../services/cloudFunctions";
