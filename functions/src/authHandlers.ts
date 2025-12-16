@@ -8,6 +8,8 @@ import {
   EnsureUserDocumentResponseSchema,
   CompleteOnboardingRequestSchema,
   CompleteOnboardingResponseSchema,
+  CheckUsernameAvailabilityRequestSchema,
+  CheckUsernameAvailabilityResponseSchema,
 } from "memvocado-types/schemas/api/auth";
 
 const REGION = "us-central1";
@@ -187,6 +189,45 @@ export const ensureUserDocument = onCall(
         "internal",
         "Failed to create user document. Please try again."
       );
+    }
+  }
+);
+
+export const checkUsernameAvailability = onCall(
+  { region: REGION },
+  async (request) => {
+    const parsed = CheckUsernameAvailabilityRequestSchema.safeParse(
+      request.data || {}
+    );
+    if (!parsed.success) {
+      throw new HttpsError("invalid-argument", "Invalid request data", {
+        issues: parsed.error.issues,
+      });
+    }
+    try {
+      const { username } = parsed.data;
+      if (!username) {
+        throw new HttpsError("invalid-argument", "Username is required");
+      }
+      const usernameQuery = await db
+        .collection("users")
+        .where("username", "==", username)
+        .get();
+      const rawResponse = {
+        isAvailable: usernameQuery.empty,
+      };
+      const validated =
+        CheckUsernameAvailabilityResponseSchema.parse(rawResponse);
+      return validated;
+    } catch (error) {
+      logger.error(
+        "checkUsernameAvailability: Failed to check username availability",
+        error
+      );
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      throw new HttpsError("internal", "Failed to check username availability");
     }
   }
 );

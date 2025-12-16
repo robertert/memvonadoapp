@@ -57,3 +57,19 @@ export declare const CompleteOnboardingResponseSchema: z.ZodObject<{
     message?: string | undefined;
 }>;
 export type CompleteOnboardingResponse = z.infer<typeof CompleteOnboardingResponseSchema>;
+export declare const CheckUsernameAvailabilityRequestSchema: z.ZodObject<{
+    username: z.ZodString;
+}, "strict", z.ZodTypeAny, {
+    username: string;
+}, {
+    username: string;
+}>;
+export type CheckUsernameAvailabilityRequest = z.infer<typeof CheckUsernameAvailabilityRequestSchema>;
+export declare const CheckUsernameAvailabilityResponseSchema: z.ZodObject<{
+    isAvailable: z.ZodBoolean;
+}, "strict", z.ZodTypeAny, {
+    isAvailable: boolean;
+}, {
+    isAvailable: boolean;
+}>;
+export type CheckUsernameAvailabilityResponse = z.infer<typeof CheckUsernameAvailabilityResponseSchema>;

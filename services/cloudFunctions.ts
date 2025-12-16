@@ -153,9 +153,31 @@ import {
   SyncDeckCardsResponseSchema,
   UpdateCardContentResponseSchema,
 } from "@/types/schemas/api/deck";
+import {
+  CheckUsernameAvailabilityRequest,
+  CheckUsernameAvailabilityResponse,
+  CheckUsernameAvailabilityResponseSchema,
+} from "@/types/schemas/api/auth";
 
 // Cloud Functions calls
 export const cloudFunctions = {
+  // Check username availability
+  checkUsernameAvailability: async (username: string) => {
+    const fn = httpsCallable<
+      CheckUsernameAvailabilityRequest,
+      CheckUsernameAvailabilityResponse
+    >(functions, "checkUsernameAvailability");
+    const result = await fn({ username });
+    const validatedData = CheckUsernameAvailabilityResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from checkUsernameAvailability");
+    }
+    return validatedData.data;
+  },
+
   // Ensure user document exists - tworzy podstawowy dokument po rejestracji
   ensureUserDocument: async () => {
     const fn = httpsCallable(functions, "ensureUserDocument");

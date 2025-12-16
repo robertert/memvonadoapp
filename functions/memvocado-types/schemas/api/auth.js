@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CompleteOnboardingResponseSchema = exports.EnsureUserDocumentResponseSchema = exports.AuthSuccessResponseSchema = exports.CompleteOnboardingRequestSchema = exports.EnsureUserDocumentRequestSchema = void 0;
+exports.CheckUsernameAvailabilityResponseSchema = exports.CheckUsernameAvailabilityRequestSchema = exports.CompleteOnboardingResponseSchema = exports.EnsureUserDocumentResponseSchema = exports.AuthSuccessResponseSchema = exports.CompleteOnboardingRequestSchema = exports.EnsureUserDocumentRequestSchema = void 0;
 const zod_1 = require("zod");
 // ============================================================================
 // Auth – request schemas
@@ -33,3 +33,13 @@ exports.AuthSuccessResponseSchema = zod_1.z.object({
 });
 exports.EnsureUserDocumentResponseSchema = exports.AuthSuccessResponseSchema;
 exports.CompleteOnboardingResponseSchema = exports.AuthSuccessResponseSchema;
+exports.CheckUsernameAvailabilityRequestSchema = zod_1.z
+    .object({
+    username: zod_1.z.string().min(3).max(32),
+})
+    .strict();
+exports.CheckUsernameAvailabilityResponseSchema = zod_1.z
+    .object({
+    isAvailable: zod_1.z.boolean(),
+})
+    .strict();

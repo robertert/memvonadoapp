@@ -57,3 +57,23 @@ export const CompleteOnboardingResponseSchema = AuthSuccessResponseSchema;
 export type CompleteOnboardingResponse = z.infer<
   typeof CompleteOnboardingResponseSchema
 >;
+
+export const CheckUsernameAvailabilityRequestSchema = z
+  .object({
+    username: z.string().min(3).max(32),
+  })
+  .strict();
+
+export type CheckUsernameAvailabilityRequest = z.infer<
+  typeof CheckUsernameAvailabilityRequestSchema
+>;
+
+export const CheckUsernameAvailabilityResponseSchema = z
+  .object({
+    isAvailable: z.boolean(),
+  })
+  .strict();
+
+export type CheckUsernameAvailabilityResponse = z.infer<
+  typeof CheckUsernameAvailabilityResponseSchema
+>;
