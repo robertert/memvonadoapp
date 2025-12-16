@@ -4,12 +4,8 @@ import {
   useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
-  withSequence,
-  withSpring,
-  withTiming,
-  Easing,
 } from "react-native-reanimated";
-import { AnimationValues } from "./learnScreen.types";
+import { AnimationValues } from "../../app/stack/learnScreen.types";
 
 const dimensions = Dimensions.get("screen");
 

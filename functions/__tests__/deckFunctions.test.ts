@@ -250,7 +250,7 @@ describe("Deck Functions", () => {
       } as any);
       await waitForFirestore();
 
-      const wrapped = testEnv.wrap(deckFunctions.getDueDeckCards);
+      const wrapped = testEnv.wrap(deckFunctions.getUserDueDeckCards);
 
       const result = await wrapped({
         data: { deckId: mockDeckId, limit: 10 },
@@ -283,7 +283,7 @@ describe("Deck Functions", () => {
       }
       await waitForFirestore();
 
-      const wrapped = testEnv.wrap(deckFunctions.getDueDeckCards);
+      const wrapped = testEnv.wrap(deckFunctions.getUserDueDeckCards);
 
       const result = await wrapped({
         data: { deckId: mockDeckId, limit: 2 },
@@ -293,7 +293,7 @@ describe("Deck Functions", () => {
     });
 
     it("should throw error when deck not found", async () => {
-      const wrapped = testEnv.wrap(deckFunctions.getDueDeckCards);
+      const wrapped = testEnv.wrap(deckFunctions.getUserDueDeckCards);
 
       await expect(
         wrapped({ data: { deckId: "non-existent" } } as any)
@@ -328,7 +328,7 @@ describe("Deck Functions", () => {
       } as any);
       await waitForFirestore();
 
-      const wrapped = testEnv.wrap(deckFunctions.getNewDeckCards);
+      const wrapped = testEnv.wrap(deckFunctions.getUserNewDeckCards);
 
       const result = await wrapped({
         data: { deckId: mockDeckId, limit: 10 },
@@ -341,7 +341,7 @@ describe("Deck Functions", () => {
     });
 
     it("should throw error when deck not found", async () => {
-      const wrapped = testEnv.wrap(deckFunctions.getNewDeckCards);
+      const wrapped = testEnv.wrap(deckFunctions.getUserNewDeckCards);
 
       await expect(
         wrapped({ data: { deckId: "non-existent" } } as any)

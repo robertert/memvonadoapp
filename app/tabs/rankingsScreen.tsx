@@ -55,15 +55,7 @@ export default function rankingsScreen(): React.JSX.Element {
 
         // Handle both Firestore Timestamp format and plain object
         let endAtMs: number;
-        if (season.endAt?.toDate) {
-          endAtMs = season.endAt.toDate().getTime();
-        } else if (season.endAt?._seconds) {
-          endAtMs = season.endAt._seconds * 1000;
-        } else if (typeof season.endAt === "string") {
-          endAtMs = new Date(season.endAt).getTime();
-        } else {
-          endAtMs = Date.now() + 7 * 24 * 60 * 60 * 1000; // Default: 7 days from now
-        }
+        endAtMs = season.endAt.getTime();
 
         seasonEndRef.current = endAtMs;
         const tick = () => {
