@@ -117,12 +117,12 @@ export function useCardLogic(id: string) {
   }
 
   async function updateCardsEvery(
-    card: any,
+    card: Card & { seenInSession?: boolean },
     scheduledTime: number
   ): Promise<void> {
     try {
       if (userCtx.id && card.id) {
-        // Full FSRS update
+        delete card.seenInSession;
         await cloudFunctions.updateCardProgress(
           userCtx.id,
           id, // deck id
@@ -358,19 +358,13 @@ export function useCardLogic(id: string) {
       }
       // Ensure user personal copy exists; if not, create it
 
-      const { deck: userDeck } = await cloudFunctions.getUserDeckDetails(
-        userCtx.id!,
-        id
-      );
+      const { deck: userDeck } = await cloudFunctions.getUserDeckDetails(id);
       if (!userDeck) {
-        await cloudFunctions.startLearningDeck(userCtx.id!, id);
+        await cloudFunctions.startLearningDeck(id);
       }
 
       // Get user deck details
-      const { deck: currentDeck } = await cloudFunctions.getUserDeckDetails(
-        userCtx.id!,
-        id
-      );
+      const { deck: currentDeck } = await cloudFunctions.getUserDeckDetails(id);
       const { settings } = await cloudFunctions.getUserSettings(userCtx.id!);
 
       const dailyGoal = -1; // liczba dziennych powtórek (FSRS) - nie używamy tego w tej wersji
@@ -381,8 +375,8 @@ export function useCardLogic(id: string) {
 
         // Server-side: fetch due FSRS + due firstLearn + new candidates from user deck
         const [dueRes, newRes] = await Promise.all([
-          cloudFunctions.getUserDueDeckCards(userCtx.id!, id, dailyGoal),
-          cloudFunctions.getUserNewDeckCards(userCtx.id!, id, dailyNew),
+          cloudFunctions.getUserDueDeckCards(id, dailyGoal),
+          cloudFunctions.getUserNewDeckCards(id, dailyNew),
         ]);
 
         const sessionCards = [...dueRes.cards, ...newRes.cards] as Card[];

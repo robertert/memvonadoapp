@@ -1,8 +1,21 @@
-import { onCall } from "firebase-functions/v2/https";
+import { HttpsError, onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { NotificationSchema, type Notification } from "./types/common";
+import { z } from "zod";
+import {
+  GetNotificationsRequestSchema,
+  MarkNotificationReadRequestSchema,
+  CreateNotificationRequestSchema,
+  NotifyStreakBrokenRequestSchema,
+  NotifySeasonEndRequestSchema,
+  GetNotificationsResponseSchema,
+  MarkNotificationReadResponseSchema,
+  CreateNotificationResponseSchema,
+  NotifyStreakBrokenResponseSchema,
+  NotifySeasonEndResponseSchema,
+} from "memvocado-types/schemas/api/notification";
 import { serializeTimestamps } from "./utils/serialization";
 
 const db = getFirestore();
@@ -18,11 +31,14 @@ export interface NotificationData {
  * Get notifications for a user
  */
 export const getNotifications = onCall(async (request) => {
-  const { userId, limit = 50 } = request.data || {};
-
-  if (!userId) {
-    throw new Error("userId is required");
+  const parsed = GetNotificationsRequestSchema.safeParse(request.data || {});
+  if (!parsed.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsed.error.issues,
+    });
   }
+
+  const { userId, limit = 50 } = parsed.data;
 
   try {
     const notificationsRef = db
@@ -37,10 +53,20 @@ export const getNotifications = onCall(async (request) => {
       ...doc.data(),
     }));
 
-    return serializeTimestamps({ notifications });
+    const rawResponse = { notifications };
+    GetNotificationsResponseSchema.parse(rawResponse);
+
+    return serializeTimestamps(rawResponse);
   } catch (error) {
     logger.error("Error getting notifications", error);
-    throw new Error("Failed to get notifications");
+    if (error instanceof z.ZodError) {
+      logger.error("Response validation failed", error.errors);
+      throw new HttpsError("internal", "Invalid response format");
+    }
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get notifications");
   }
 });
 
@@ -48,11 +74,16 @@ export const getNotifications = onCall(async (request) => {
  * Mark notification as read
  */
 export const markNotificationRead = onCall(async (request) => {
-  const { userId, notificationId } = request.data || {};
-
-  if (!userId || !notificationId) {
-    throw new Error("userId and notificationId are required");
+  const parsed = MarkNotificationReadRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!parsed.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsed.error.issues,
+    });
   }
+
+  const { userId, notificationId } = parsed.data;
 
   try {
     const notificationRef = db.doc(
@@ -61,7 +92,7 @@ export const markNotificationRead = onCall(async (request) => {
 
     const notificationDoc = await notificationRef.get();
     if (!notificationDoc.exists) {
-      throw new Error("Notification not found");
+      throw new HttpsError("not-found", "Notification not found");
     }
 
     await notificationRef.update({
@@ -71,13 +102,20 @@ export const markNotificationRead = onCall(async (request) => {
 
     logger.info("Notification marked as read", { userId, notificationId });
 
-    return serializeTimestamps({ success: true });
+    const rawResponse = { success: true };
+    MarkNotificationReadResponseSchema.parse(rawResponse);
+
+    return serializeTimestamps(rawResponse);
   } catch (error) {
     logger.error("Error marking notification as read", error);
-    if (error instanceof Error && error.message === "Notification not found") {
+    if (error instanceof z.ZodError) {
+      logger.error("Response validation failed", error.errors);
+      throw new HttpsError("internal", "Invalid response format");
+    }
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new Error("Failed to mark notification as read");
+    throw new HttpsError("internal", "Failed to mark notification as read");
   }
 });
 
@@ -85,11 +123,14 @@ export const markNotificationRead = onCall(async (request) => {
  * Create a notification for a user (for system use)
  */
 export const createNotification = onCall(async (request) => {
-  const { userId, notification } = request.data || {};
-
-  if (!userId || !notification) {
-    throw new Error("userId and notification are required");
+  const parsed = CreateNotificationRequestSchema.safeParse(request.data || {});
+  if (!parsed.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsed.error.issues,
+    });
   }
+
+  const { userId, notification } = parsed.data;
 
   try {
     // Waliduj i typuj powiadomienie przed zapisem
@@ -114,13 +155,23 @@ export const createNotification = onCall(async (request) => {
 
     logger.info("Notification created", { userId, notification });
 
-    return serializeTimestamps({
+    const rawResponse = {
       success: true,
       notificationId: notificationDoc.id,
-    });
+    };
+    CreateNotificationResponseSchema.parse(rawResponse);
+
+    return serializeTimestamps(rawResponse);
   } catch (error) {
     logger.error("Error creating notification", error);
-    throw new Error("Failed to create notification");
+    if (error instanceof z.ZodError) {
+      logger.error("Response validation failed", error.errors);
+      throw new HttpsError("internal", "Invalid response format");
+    }
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to create notification");
   }
 });
 
@@ -131,7 +182,7 @@ export const createNotification = onCall(async (request) => {
 
 export const onLeagueAdvance = onDocumentWritten(
   "users/{userId}",
-  async (event: any) => {
+  async (event) => {
     const beforeData = event.data?.before.data();
     const afterData = event.data?.after.data();
 
@@ -185,11 +236,14 @@ export const onLeagueAdvance = onDocumentWritten(
  * This should be triggered by a scheduled function or when streak reaches 0
  */
 export const notifyStreakBroken = onCall(async (request) => {
-  const { userId } = request.data || {};
-
-  if (!userId) {
-    throw new Error("userId is required");
+  const parsed = NotifyStreakBrokenRequestSchema.safeParse(request.data || {});
+  if (!parsed.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsed.error.issues,
+    });
   }
+
+  const { userId } = parsed.data;
 
   try {
     // Waliduj i typuj powiadomienie przed zapisem
@@ -211,10 +265,23 @@ export const notifyStreakBroken = onCall(async (request) => {
 
     logger.info("Streak broken notification created", { userId });
 
-    return serializeTimestamps({ success: true });
+    const rawResponse = { success: true };
+    NotifyStreakBrokenResponseSchema.parse(rawResponse);
+
+    return serializeTimestamps(rawResponse);
   } catch (error) {
     logger.error("Error creating streak broken notification", error);
-    throw new Error("Failed to create streak broken notification");
+    if (error instanceof z.ZodError) {
+      logger.error("Response validation failed", error.errors);
+      throw new HttpsError("internal", "Invalid response format");
+    }
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError(
+      "internal",
+      "Failed to create streak broken notification"
+    );
   }
 });
 
@@ -223,11 +290,14 @@ export const notifyStreakBroken = onCall(async (request) => {
  * Should be called from weeklyRollOver
  */
 export const notifySeasonEnd = onCall(async (request) => {
-  const { userId, seasonId, finalPosition, leagueNumber } = request.data || {};
-
-  if (!userId || !seasonId) {
-    throw new Error("userId and seasonId are required");
+  const parsed = NotifySeasonEndRequestSchema.safeParse(request.data || {});
+  if (!parsed.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsed.error.issues,
+    });
   }
+
+  const { userId, seasonId, finalPosition, leagueNumber } = parsed.data;
 
   try {
     let notificationBody = "Season ended! Check your final ranking.";
@@ -266,9 +336,22 @@ export const notifySeasonEnd = onCall(async (request) => {
       finalPosition,
     });
 
-    return serializeTimestamps({ success: true });
+    const rawResponse = { success: true };
+    NotifySeasonEndResponseSchema.parse(rawResponse);
+
+    return serializeTimestamps(rawResponse);
   } catch (error) {
     logger.error("Error creating season end notification", error);
-    throw new Error("Failed to create season end notification");
+    if (error instanceof z.ZodError) {
+      logger.error("Response validation failed", error.errors);
+      throw new HttpsError("internal", "Invalid response format");
+    }
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError(
+      "internal",
+      "Failed to create season end notification"
+    );
   }
 });

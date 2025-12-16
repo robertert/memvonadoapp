@@ -230,8 +230,7 @@ export default function createSelfScreen(): React.JSX.Element {
       // Use Cloud Function to create deck with cards
       const result = await cloudFunctions.createDeckWithCards(
         deckData,
-        resultCards.data,
-        userCtx.id
+        resultCards.data
       );
 
       router.replace({

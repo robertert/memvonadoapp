@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { Colors, Fonts, Subjects } from "../../constants/colors";
+import { Colors, Fonts } from "../../constants/colors";
 import { auth } from "../../firebase";
 import { UserContext } from "../../store/user-context";
 import { cloudFunctions } from "../../services/cloudFunctions";
@@ -25,6 +25,7 @@ import {
 } from "expo-image-picker";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "../../firebase";
+import { CATEGORY_OPTIONS } from "@/constants/settings";
 
 type OnboardingStep = "username" | "photo" | "interests";
 
@@ -246,7 +247,7 @@ export default function OnboardingScreen(): React.JSX.Element {
               Selected: {selectedInterests.length}/3
             </Text>
             <ScrollView style={styles.interestsContainer}>
-              {Subjects.map((subject, index) => (
+              {CATEGORY_OPTIONS.map((subject, index) => (
                 <Pressable
                   key={index}
                   style={[

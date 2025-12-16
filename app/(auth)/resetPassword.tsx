@@ -3,12 +3,11 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Colors, Fonts } from "../../constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth, db } from "../../firebase";
-import { collection, getDoc, getDocs, where, query } from "firebase/firestore";
+import { collection, getDocs, where, query } from "firebase/firestore";
 
 export default function resetPassword(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
@@ -39,10 +38,7 @@ export default function resetPassword(): React.JSX.Element {
       }
     } catch (e: any) {
       console.log(e.code);
-      if (
-        e.code === "auth/missing-email" ||
-        e.code === "auth/invalid-email"
-      ) {
+      if (e.code === "auth/missing-email" || e.code === "auth/invalid-email") {
         setMessage("Invalid email");
       }
     }

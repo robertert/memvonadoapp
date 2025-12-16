@@ -79,10 +79,7 @@ export default function deckDetails(): React.JSX.Element {
 
     try {
       setIsCheckingChanges(true);
-      const result = await cloudFunctions.checkCardChanges(
-        userCtx.id,
-        typedParams.deckId
-      );
+      const result = await cloudFunctions.checkCardChanges(typedParams.deckId);
       if (result.changes && result.changes.length > 0) {
         setCardChanges(result.changes);
         setSyncModalVisible(true);
@@ -99,7 +96,6 @@ export default function deckDetails(): React.JSX.Element {
 
     try {
       const result = await cloudFunctions.syncDeckCards(
-        userCtx.id,
         typedParams.deckId,
         true
       );
@@ -147,7 +143,6 @@ export default function deckDetails(): React.JSX.Element {
           await cloudFunctions.getDeckDetails(typedParams.deckId);
 
         const { deck: userDeckData } = await cloudFunctions.getUserDeckDetails(
-          userCtx.id!,
           typedParams.deckId
         );
 

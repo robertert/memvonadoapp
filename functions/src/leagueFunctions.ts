@@ -1,4 +1,4 @@
-import { onCall } from "firebase-functions/v2/https";
+import { HttpsError, onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import {
@@ -10,8 +10,17 @@ import {
   SeasonUserPointsSchema,
   User,
   UserSchema,
+  GetLeagueInfoResponseSchema,
+  GetUserGroupResponseSchema,
+  GetAllLeaguesInfoResponseSchema,
 } from "./types/common";
+import {
+  GetLeagueInfoRequestSchema,
+  GetUserGroupRequestSchema,
+  UpdateUserLeagueRequestSchema,
+} from "memvocado-types/schemas/api/league";
 import { serializeTimestamps } from "./utils/serialization";
+import { z } from "zod";
 
 const db = getFirestore();
 
@@ -55,23 +64,40 @@ const LEAGUE_INFO: LeagueInfo[] = [
  * Get league information
  */
 export const getLeagueInfo = onCall(async (request) => {
-  const { leagueNumber } = request.data || {};
-
-  if (!leagueNumber || leagueNumber < 1 || leagueNumber > 15) {
-    throw new Error("Valid leagueNumber (1-15) is required");
+  // Walidacja request.data
+  const validationResult = GetLeagueInfoRequestSchema.safeParse(request.data);
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
   }
+
+  const { leagueNumber } = validationResult.data;
 
   try {
     const league = LEAGUE_INFO.find((l) => l.id === leagueNumber);
 
     if (!league) {
-      throw new Error("League not found");
+      throw new HttpsError("not-found", "League not found");
     }
 
-    return serializeTimestamps({ league });
+    const rawResponse = { league };
+    GetLeagueInfoResponseSchema.parse(rawResponse);
+
+    return serializeTimestamps(rawResponse);
   } catch (error) {
     logger.error("Error getting league info", error);
-    throw new Error("Failed to get league info");
+
+    if (error instanceof z.ZodError) {
+      logger.error("Response validation failed", error.errors);
+      throw new HttpsError("internal", "Invalid response format");
+    }
+
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+
+    throw new HttpsError("internal", "Failed to get league info");
   }
 });
 
@@ -79,24 +105,33 @@ export const getLeagueInfo = onCall(async (request) => {
  * Get user's current group information
  */
 export const getUserGroup = onCall(async (request) => {
-  const { userId, seasonId } = request.data || {};
-
-  if (!userId) {
-    throw new Error("userId is required");
+  // Autoryzacja
+  if (!request.auth?.uid) {
+    throw new HttpsError("unauthenticated", "Authentication required");
   }
+
+  // Walidacja request.data
+  const validationResult = GetUserGroupRequestSchema.safeParse(request.data);
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { userId, seasonId } = validationResult.data;
 
   try {
     let currentSeasonId = seasonId;
     if (!currentSeasonId) {
       const seasonDoc = await db.doc("ranking/currentSeason").get();
       if (!seasonDoc.exists) {
-        throw new Error("No active season");
+        throw new HttpsError("failed-precondition", "No active season");
       }
       const seasonData = seasonDoc.data() as Season;
       const validatedSeason = SeasonSchema.parse(seasonData);
       currentSeasonId = validatedSeason.id;
       if (!currentSeasonId) {
-        throw new Error("No active season");
+        throw new HttpsError("failed-precondition", "No active season");
       }
     }
 
@@ -106,14 +141,32 @@ export const getUserGroup = onCall(async (request) => {
     const userSeasonPoints = await userSeasonPointsRef.get();
 
     if (!userSeasonPoints.exists) {
-      return null;
+      // Zwróć odpowiedź zgodną ze schematem z null dla groupId i leagueNumber
+      const rawResponse = {
+        groupId: null,
+        leagueNumber: null,
+        memberCount: 0,
+        capacity: 20,
+        isFull: false,
+      };
+      GetUserGroupResponseSchema.parse(rawResponse);
+      return serializeTimestamps(rawResponse);
     }
 
     const userData = userSeasonPoints.data() as SeasonUserPoints;
     const validatedUserData = SeasonUserPointsSchema.parse(userData);
 
     if (!validatedUserData.groupId) {
-      return null;
+      // Zwróć odpowiedź zgodną ze schematem z null dla groupId i leagueNumber
+      const rawResponse = {
+        groupId: null,
+        leagueNumber: null,
+        memberCount: 0,
+        capacity: 20,
+        isFull: false,
+      };
+      GetUserGroupResponseSchema.parse(rawResponse);
+      return serializeTimestamps(rawResponse);
     }
 
     // Get group info
@@ -130,22 +183,46 @@ export const getUserGroup = onCall(async (request) => {
         league: validatedUserData.league,
         groupId: validatedUserData.groupId,
       });
-      return null;
+      // Zwróć odpowiedź zgodną ze schematem z null dla groupId i leagueNumber
+      const rawResponse = {
+        groupId: null,
+        leagueNumber: null,
+        memberCount: 0,
+        capacity: 20,
+        isFull: false,
+      };
+      GetUserGroupResponseSchema.parse(rawResponse);
+      return serializeTimestamps(rawResponse);
     }
 
     const groupData = { id: groupRef.id, ...groupDoc.data() } as LeagueGroup;
     const validatedGroup = LeagueGroupSchema.parse(groupData);
 
-    return serializeTimestamps({
+    const rawResponse = {
       groupId: validatedGroup.id,
       leagueNumber: validatedGroup.leagueNumber,
       memberCount: validatedGroup.currentCount,
       capacity: validatedGroup.capacity,
       isFull: validatedGroup.isFull,
-    });
+    };
+
+    // Walidacja odpowiedzi przed zwróceniem
+    GetUserGroupResponseSchema.parse(rawResponse);
+
+    return serializeTimestamps(rawResponse);
   } catch (error) {
     logger.error("Error getting user group", error);
-    throw new Error("Failed to get user group");
+
+    if (error instanceof z.ZodError) {
+      logger.error("Response validation failed", error.errors);
+      throw new HttpsError("internal", "Invalid response format");
+    }
+
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+
+    throw new HttpsError("internal", "Failed to get user group");
   }
 });
 
@@ -153,36 +230,43 @@ export const getUserGroup = onCall(async (request) => {
  * Update user's league and assign to new group
  */
 export const updateUserLeague = onCall(async (request) => {
-  const { userId, newLeague, seasonId } = request.data || {};
-
-  if (!userId || !newLeague) {
-    throw new Error("userId and newLeague are required");
+  // Autoryzacja
+  if (!request.auth?.uid) {
+    throw new HttpsError("unauthenticated", "Authentication required");
   }
 
-  if (newLeague < 1 || newLeague > 15) {
-    throw new Error("newLeague must be between 1 and 15");
+  // Walidacja request.data
+  const validationResult = UpdateUserLeagueRequestSchema.safeParse(
+    request.data
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
   }
+
+  const { userId, newLeague, seasonId } = validationResult.data;
 
   try {
     let currentSeasonId = seasonId;
     if (!currentSeasonId) {
       const seasonDoc = await db.doc("ranking/currentSeason").get();
       if (!seasonDoc.exists) {
-        throw new Error("No active season");
+        throw new HttpsError("failed-precondition", "No active season");
       }
       const seasonData = { id: seasonDoc.id, ...seasonDoc.data() } as Season;
       const validatedSeason = SeasonSchema.parse(seasonData);
       currentSeasonId = validatedSeason.id;
 
       if (!currentSeasonId) {
-        throw new Error("No active season");
+        throw new HttpsError("failed-precondition", "No active season");
       }
     }
 
     // Get current user data
     const userDoc = await db.doc(`users/${userId}`).get();
     if (!userDoc.exists) {
-      throw new Error("User not found");
+      throw new HttpsError("not-found", "User not found");
     }
 
     const userData = { id: userDoc.id, ...userDoc.data() } as User;
@@ -340,13 +424,15 @@ export const updateUserLeague = onCall(async (request) => {
       const capacity = groupData?.capacity ?? 20;
 
       if (currentCount >= capacity) {
-        throw new Error("Group is full");
+        throw new HttpsError("failed-precondition", "Group is full");
       }
 
       // Waliduj dane członka grupy przed zapisem
+      // Uwaga: members collection używa struktury { userId, points, lastActivityAt }
+      // która różni się od LeagueGroupMemberSchema (który używa { id, username, points, lastActivityAt })
       const memberPoints = userPointsData.points ?? 0;
       if (memberPoints < 0) {
-        throw new Error("Points cannot be negative");
+        throw new HttpsError("invalid-argument", "Points cannot be negative");
       }
 
       // Add member
@@ -390,10 +476,12 @@ export const updateUserLeague = onCall(async (request) => {
     });
   } catch (error) {
     logger.error("Error updating user league", error);
-    if (error instanceof Error) {
+
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new Error("Failed to update user league");
+
+    throw new HttpsError("internal", "Failed to update user league");
   }
 });
 
@@ -402,9 +490,21 @@ export const updateUserLeague = onCall(async (request) => {
  */
 export const getAllLeaguesInfo = onCall(async () => {
   try {
-    return serializeTimestamps({ leagues: LEAGUE_INFO });
+    const rawResponse = { leagues: LEAGUE_INFO };
+
+    // Walidacja odpowiedzi przed zwróceniem
+    GetAllLeaguesInfoResponseSchema.parse(rawResponse);
+
+    return serializeTimestamps(rawResponse);
   } catch (error) {
     logger.error("Error getting all leagues info", error);
-    throw new Error("Failed to get all leagues info");
+    if (error instanceof z.ZodError) {
+      logger.error("Response validation failed", error.errors);
+      throw new HttpsError("internal", "Invalid response format");
+    }
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get all leagues info");
   }
 });

@@ -23,18 +23,14 @@ import { BellIcon, FireIcon, LanguageIcon } from "react-native-heroicons/solid";
 import PieChart from "../../components/CustomPieChart";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
 import { placeholderDecks } from "../../constants/placeholderData";
-import { DeckSchema, UserProgress, UserProgressSchema } from "@/types/schemas";
-import { safeValidateArray, safeValidateUserProgress } from "@/types/dist";
-import { log } from "console";
-
-interface Deck {
-  id: string;
-  title: string;
-  views: number;
-  likes: number;
-  saved?: boolean;
-  [key: string]: any;
-}
+import {
+  DeckSchema,
+  UserProgress,
+  UserProgressSchema,
+  Deck,
+  safeValidateUserProgress,
+  safeValidateArray,
+} from "@/types";
 
 export default function decksScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();

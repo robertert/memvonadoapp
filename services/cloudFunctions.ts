@@ -19,7 +19,140 @@ import type {
   CardGrade,
   DeckLearningData,
   Card,
+  User,
 } from "../types";
+import {
+  SuccessResponseSchema,
+  SuccessResponse,
+} from "@/types/schemas/api_refs";
+import {
+  GetUserDecksRequest,
+  UpdateUserStreakIfQualifiedRequest,
+  UpdateUserStreakIfQualifiedResponseSchema,
+  UpdateUserStreakIfQualifiedResponse,
+  UpdateUserStreakOnLoginRequest,
+  UpdateUserStreakOnLoginResponse,
+  UpdateUserStreakOnLoginResponseSchema,
+  UpdateCardProgressRequest,
+  GetUserProgressRequest,
+  GetUserProgressResponse,
+  GetUserProgressResponseSchema,
+  GetUserSettingsRequest,
+  GetUserSettingsResponse,
+  GetUserSettingsResponseSchema,
+  GetUserProfileRequest,
+  GetUserProfileResponse,
+  GetUserProfileResponseSchema,
+  GetUserActivityHeatmapRequest,
+  GetUserActivityHeatmapResponse,
+  GetUserActivityHeatmapResponseSchema,
+  GetUserAwardsRequest,
+  GetUserAwardsResponse,
+  GetUserAwardsResponseSchema,
+  SubmitPointsRequest,
+  SubmitPointsResponse,
+  SubmitPointsResponseSchema,
+  UpdateUserSettingsRequest,
+  ServerNow,
+  ServerNowSchema,
+  GetCurrentSeasonResponse,
+  GetCurrentSeasonResponseSchema,
+  WeeklyRollOverResponse,
+  WeeklyRollOverResponseSchema,
+} from "@/types/schemas/api/user";
+import { GetFriendsStreaksResponseSchema } from "@/types/schemas/api_refs";
+import {
+  GetLeagueInfoRequestSchema,
+  GetUserGroupRequestSchema,
+  GetLeagueInfoRequest,
+  GetLeagueInfoResponse,
+  GetAllLeaguesInfoResponse,
+  GetUserGroupRequest,
+  GetUserGroupResponse,
+  GetLeagueInfoResponseSchema,
+  GetAllLeaguesInfoResponseSchema,
+  GetUserGroupResponseSchema,
+} from "@/types/schemas/api/league";
+import {
+  GetLeaderboardRequest,
+  GetLeaderboardResponse,
+  GetUserRankingRequest,
+  GetUserRankingResponse,
+  GetFollowingRankingsRequest,
+  GetFollowingRankingsResponse,
+  GetLeaderboardResponseSchema,
+  GetUserRankingResponseSchema,
+  GetFollowingRankingsResponseSchema,
+} from "@/types/schemas/api/ranking";
+import {
+  GetNotificationsResponseSchema,
+  MarkNotificationReadResponseSchema,
+} from "@/types/schemas/api/notification";
+
+import {
+  AddPlaceholderDataRequest,
+  AddPlaceholderDataResponse,
+  AddPlaceholderDataResponseSchema,
+} from "@/types/schemas/api/placeholder";
+import {
+  GetSearchLogsRequest,
+  GetSearchLogsResponse,
+  GetSearchLogsResponseSchema,
+  SearchDecksRequest,
+  SearchDecksResponseSchema,
+  SearchDecksResponse,
+} from "@/types/schemas/api/search";
+import type {
+  GetDeckDetailsResponse,
+  GetDeckCardsResponse,
+  GetDueDeckCardsResponse,
+  GetNewDeckCardsResponse,
+  GetUserDecksResponse,
+  CreateDeckWithCardsResponse,
+  GetUserDeckDetailsResponse,
+  GetUserDeckCardsResponse,
+  GetUserDueDeckCardsResponse,
+  GetUserNewDeckCardsResponse,
+  DeleteDeckResponse,
+  CheckCardChangesResponse,
+  SyncDeckCardsResponse,
+  UpdateCardContentResponse,
+  StartLearningDeckResponse,
+} from "@/types/schemas/api_refs";
+import {
+  CreateDeckWithCardsRequest,
+  GetDeckDetailsRequest,
+  GetDeckCardsRequest,
+  GetPopularDecksRequest,
+  GetUserDeckDetailsRequest,
+  GetUserDeckCardsRequest,
+  GetUserDueDeckCardsRequest,
+  GetUserNewDeckCardsRequest,
+  ResetDeckRequest,
+  UpdateDeckSettingsRequest,
+  UpdateUserDeckSettingsRequest,
+  StartLearningDeckRequest,
+  DeleteDeckRequest,
+  CheckCardChangesRequest,
+  SyncDeckCardsRequest,
+  UpdateCardContentRequest,
+  CreateDeckWithCardsResponseSchema,
+  GetDeckDetailsResponseSchema,
+  GetDeckCardsResponseSchema,
+  GetDueDeckCardsResponseSchema,
+  GetNewDeckCardsResponseSchema,
+  GetPopularDecksResponseSchema,
+  GetUserDecksResponseSchema,
+  GetUserDeckDetailsResponseSchema,
+  GetUserDeckCardsResponseSchema,
+  GetUserDueDeckCardsResponseSchema,
+  GetUserNewDeckCardsResponseSchema,
+  StartLearningDeckResponseSchema,
+  DeleteDeckResponseSchema,
+  CheckCardChangesResponseSchema,
+  SyncDeckCardsResponseSchema,
+  UpdateCardContentResponseSchema,
+} from "@/types/schemas/api/deck";
 
 // Cloud Functions calls
 export const cloudFunctions = {
@@ -27,7 +160,12 @@ export const cloudFunctions = {
   ensureUserDocument: async () => {
     const fn = httpsCallable(functions, "ensureUserDocument");
     const result = await fn({});
-    return result.data as { success: boolean; message: string };
+    const validatedData = SuccessResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from ensureUserDocument");
+    }
+    return validatedData.data;
   },
 
   // Complete onboarding - zapisuje wszystkie dane użytkownika (username, photo, interests)
@@ -38,14 +176,27 @@ export const cloudFunctions = {
   }) => {
     const fn = httpsCallable(functions, "completeOnboarding");
     const result = await fn(data);
-    return result.data as { success: boolean; message: string };
+    const validatedData = SuccessResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from completeOnboarding");
+    }
+    return validatedData.data;
   },
 
   // Server authoritative time
   serverNow: async () => {
-    const fn = httpsCallable(functions, "serverNow");
+    const fn = httpsCallable<Record<string, never>, ServerNow>(
+      functions,
+      "serverNow"
+    );
     const result = await fn({});
-    return result.data as { nowMs: number; iso: string };
+    const validatedData = ServerNowSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from serverNow");
+    }
+    return validatedData.data;
   },
 
   // Update user's streak immediately when the daily threshold is reached
@@ -54,45 +205,72 @@ export const cloudFunctions = {
     timeZone?: string,
     threshold: number = 10
   ) => {
-    const fn = httpsCallable(functions, "updateUserStreakIfQualified");
+    const fn = httpsCallable<
+      UpdateUserStreakIfQualifiedRequest,
+      UpdateUserStreakIfQualifiedResponse
+    >(functions, "updateUserStreakIfQualified");
     const result = await fn({ userId, timeZone, threshold });
-    return result.data as {
-      qualified: boolean;
-      currentStreak: number;
-      longestStreak: number;
-      lastStreakDate: string | null;
-      threshold: number;
-      todayCount?: number;
-      updated: boolean;
-    };
+    const validatedData = UpdateUserStreakIfQualifiedResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from updateUserStreakIfQualified");
+    }
+    return validatedData.data;
   },
   // Current season window (weekly)
   getCurrentSeason: async () => {
-    const fn = httpsCallable(functions, "getCurrentSeason");
+    const fn = httpsCallable<Record<string, never>, GetCurrentSeasonResponse>(
+      functions,
+      "getCurrentSeason"
+    );
     const result = await fn({});
-    return result.data as {
-      seasonId: string;
-      startAt: any;
-      endAt: any;
-      status: string;
-    };
+    const validatedData = GetCurrentSeasonResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getCurrentSeason");
+    }
+    return validatedData.data;
   },
   // Search decks with advanced filtering
   searchDecks: async (
     searchText?: string,
     filters?: SearchFilters,
-    userId?: string
+    userId?: string,
+    limit: number = 20
   ) => {
-    const searchDecksFunction = httpsCallable(functions, "searchDecks");
-    const result = await searchDecksFunction({ searchText, filters, userId });
-    return result.data as { results: any[]; total: number };
+    const searchDecksFunction = httpsCallable<
+      SearchDecksRequest,
+      SearchDecksResponse
+    >(functions, "searchDecks");
+    const result = await searchDecksFunction({
+      searchText,
+      filters,
+      userId,
+      limit,
+    });
+    const validatedData = SearchDecksResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from searchDecks");
+    }
+    return validatedData.data;
   },
 
   // Get public deck details only (without cards)
   getDeckDetails: async (deckId: string) => {
-    const getDeckDetailsFunction = httpsCallable(functions, "getDeckDetails");
+    const getDeckDetailsFunction = httpsCallable<
+      GetDeckDetailsRequest,
+      GetDeckDetailsResponse
+    >(functions, "getDeckDetails");
     const result = await getDeckDetailsFunction({ deckId });
-    return result.data as { deck: Deck | null; username: string };
+    const validatedData = GetDeckDetailsResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getDeckDetails");
+    }
+    return validatedData.data;
   },
 
   // Get cards for a deck with pagination
@@ -101,34 +279,62 @@ export const cloudFunctions = {
     limit: number = 20,
     startAfter?: string
   ) => {
-    const getDeckCardsFunction = httpsCallable(functions, "getDeckCards");
+    const getDeckCardsFunction = httpsCallable<
+      GetDeckCardsRequest,
+      GetDeckCardsResponse
+    >(functions, "getDeckCards");
     const result = await getDeckCardsFunction({ deckId, limit, startAfter });
-    return result.data as {
-      cards: any[];
-      hasMore: boolean;
-      lastDocId: string | null;
-    };
+    const validatedData = GetDeckCardsResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getDeckCards");
+    }
+    return validatedData.data;
   },
 
   // Get due cards (server-side filter)
   getDueDeckCards: async (deckId: string, limit: number = 100) => {
-    const fn = httpsCallable(functions, "getDueDeckCards");
+    const fn = httpsCallable<
+      GetUserDueDeckCardsRequest,
+      GetDueDeckCardsResponse
+    >(functions, "getDueDeckCards");
     const result = await fn({ deckId, limit });
-    return result.data as { cards: Card[] };
+    const validatedData = GetDueDeckCardsResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getDueDeckCards");
+    }
+    return validatedData.data;
   },
 
   // Get new intro candidates (server-side filter)
   getNewDeckCards: async (deckId: string, limit: number = 50) => {
-    const fn = httpsCallable(functions, "getNewDeckCards");
+    const fn = httpsCallable<
+      GetUserNewDeckCardsRequest,
+      GetNewDeckCardsResponse
+    >(functions, "getNewDeckCards");
     const result = await fn({ deckId, limit });
-    return result.data as { cards: Card[] };
+    const validatedData = GetNewDeckCardsResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getNewDeckCards");
+    }
+    return validatedData.data;
   },
 
   // Get user decks with cards
   getUserDecks: async (userId: string) => {
-    const getUserDecksFunction = httpsCallable(functions, "getUserDecks");
+    const getUserDecksFunction = httpsCallable<
+      GetUserDecksRequest,
+      GetUserDecksResponse
+    >(functions, "getUserDecks");
     const result = await getUserDecksFunction({ userId });
-    return result.data as { decks: Deck[] };
+    const validatedData = GetUserDecksResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getUserDecks");
+    }
+    return validatedData.data;
   },
 
   // Update card progress after review
@@ -138,228 +344,320 @@ export const cloudFunctions = {
     card: Card,
     scheduledTime: number
   ) => {
-    const updateCardProgressFunction = httpsCallable(
-      functions,
-      "updateCardProgress"
-    );
-    console.log(card);
-
+    const updateCardProgressFunction = httpsCallable<
+      UpdateCardProgressRequest,
+      SuccessResponse
+    >(functions, "updateCardProgress");
     const result = await updateCardProgressFunction({
       userId,
       deckId,
       card,
       scheduledTime,
     });
-    return result.data as { success: boolean };
+    const validatedData = SuccessResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from updateCardProgress");
+    }
+    return validatedData.data;
   },
 
   // Create deck with cards in bulk
-  createDeckWithCards: async (
-    deckData: DeckCore,
-    cards: CardCore[],
-    userId: string
-  ) => {
-    const createDeckFunction = httpsCallable(functions, "createDeckWithCards");
-    const result = await createDeckFunction({ deckData, cards, userId });
-    return result.data as { deckId: string };
+  createDeckWithCards: async (deckData: DeckCore, cards: CardCore[]) => {
+    const createDeckFunction = httpsCallable<
+      CreateDeckWithCardsRequest,
+      CreateDeckWithCardsResponse
+    >(functions, "createDeckWithCards");
+    const result = await createDeckFunction({ deckData, cards });
+    const validatedData = CreateDeckWithCardsResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from createDeckWithCards");
+    }
+    return validatedData.data;
   },
 
   // Get user search logs
   getSearchLogs: async (userId: string) => {
-    const getSearchLogsFunction = httpsCallable(functions, "getSearchLogs");
+    const getSearchLogsFunction = httpsCallable<
+      GetSearchLogsRequest,
+      GetSearchLogsResponse
+    >(functions, "getSearchLogs");
     const result = await getSearchLogsFunction({ userId });
-    return result.data as SearchLog[];
+    const validatedData = GetSearchLogsResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getSearchLogs");
+    }
+    return validatedData.data;
   },
 
   // Get user progress and statistics
   getUserProgress: async (userId: string) => {
-    const getUserProgressFunction = httpsCallable(functions, "getUserProgress");
+    const getUserProgressFunction = httpsCallable<
+      GetUserProgressRequest,
+      GetUserProgressResponse
+    >(functions, "getUserProgress");
     const result = await getUserProgressFunction({ userId });
-    return (result.data as { userProgress: UserProgress }).userProgress;
+    const validatedData = GetUserProgressResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getUserProgress");
+    }
+    return validatedData.data.userProgress;
   },
 
   // Update user's streak on app launch (timezone-aware)
   updateUserStreakOnLogin: async (userId: string, timeZone?: string) => {
-    const fn = httpsCallable(functions, "updateUserStreakOnLogin");
+    const fn = httpsCallable<
+      UpdateUserStreakOnLoginRequest,
+      UpdateUserStreakOnLoginResponse
+    >(functions, "updateUserStreakOnLogin");
     const result = await fn({ userId, timeZone });
-    return result.data as {
-      currentStreak: number;
-      longestStreak: number;
-      lastStreakDate: string;
-      updated: boolean;
-    };
+    const validatedData = UpdateUserStreakOnLoginResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from updateUserStreakOnLogin");
+    }
+    return validatedData.data;
   },
 
   // Get user settings
   getUserSettings: async (userId: string) => {
-    const getUserSettingsFunction = httpsCallable(functions, "getUserSettings");
+    const getUserSettingsFunction = httpsCallable<
+      GetUserSettingsRequest,
+      GetUserSettingsResponse
+    >(functions, "getUserSettings");
     const result = await getUserSettingsFunction({ userId });
-    return result.data as { settings: UserSettings };
+    const validatedData = GetUserSettingsResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getUserSettings");
+    }
+    return validatedData.data;
   },
 
   // Get popular public decks
   getPopularDecks: async (limit: number = 8) => {
     const fn = httpsCallable(functions, "getPopularDecks");
     const result = await fn({ limit });
-    return result.data as { decks: Deck[] };
-  },
-
-  // Process friend requests
-  processFriendRequest: async (
-    fromUserId: string,
-    toUserId: string,
-    action: "accept" | "reject"
-  ) => {
-    const processFriendRequestFunction = httpsCallable(
-      functions,
-      "processFriendRequest"
-    );
-    const result = await processFriendRequestFunction({
-      fromUserId,
-      toUserId,
-      action,
-    });
-    return result.data as { success: boolean };
+    const validatedData = GetPopularDecksResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getPopularDecks");
+    }
+    return validatedData.data;
   },
 
   // Reset deck progress
-  resetDeck: async (deckId: string, userId: string) => {
-    const resetDeckFunction = httpsCallable(functions, "resetDeck");
-    const result = await resetDeckFunction({ deckId, userId });
-    return result.data as { success: boolean };
+  resetDeck: async (deckId: string) => {
+    const resetDeckFunction = httpsCallable<ResetDeckRequest, SuccessResponse>(
+      functions,
+      "resetDeck"
+    );
+    const result = await resetDeckFunction({ deckId });
+    const validatedData = SuccessResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from resetDeck");
+    }
+    return validatedData.data;
   },
 
   // Update deck settings
-  updateDeckSettings: async (deckId: string, deck: Deck, userId: string) => {
-    const updateDeckSettingsFunction = httpsCallable(
-      functions,
-      "updateDeckSettings"
-    );
-    const result = await updateDeckSettingsFunction({ deckId, deck, userId });
-    return result.data as { success: boolean };
+  updateDeckSettings: async (deckId: string, deck: Deck) => {
+    const updateDeckSettingsFunction = httpsCallable<
+      UpdateDeckSettingsRequest,
+      SuccessResponse
+    >(functions, "updateDeckSettings");
+    const result = await updateDeckSettingsFunction({ deckId, deck });
+    const validatedData = SuccessResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from updateDeckSettings");
+    }
+    return validatedData.data;
   },
 
-  updateUserDeckSettings: async (
-    deckId: string,
-    deck: DeckLearningData,
-    userId: string
-  ) => {
-    const updateUserDeckSettingsFunction = httpsCallable(
-      functions,
-      "updateUserDeckSettings"
-    );
+  updateUserDeckSettings: async (deckId: string, deck: DeckLearningData) => {
+    const updateUserDeckSettingsFunction = httpsCallable<
+      UpdateUserDeckSettingsRequest,
+      SuccessResponse
+    >(functions, "updateUserDeckSettings");
     const result = await updateUserDeckSettingsFunction({
       deckId,
       deck,
-      userId,
     });
-    return result.data as { success: boolean };
+    const validatedData = SuccessResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from updateUserDeckSettings");
+    }
+    return validatedData.data;
   },
 
   // Copy public deck into user's space to start learning
-  startLearningDeck: async (userId: string, deckId: string) => {
-    const fn = httpsCallable(functions, "startLearningDeck");
-    const result = await fn({ userId, deckId });
-    return result.data as { success: boolean; deck: DeckLearningData };
+  startLearningDeck: async (deckId: string) => {
+    const fn = httpsCallable<
+      StartLearningDeckRequest,
+      StartLearningDeckResponse
+    >(functions, "startLearningDeck");
+    const result = await fn({ deckId });
+    const validatedData = StartLearningDeckResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from startLearningDeck");
+    }
+    return validatedData.data;
   },
 
   // Delete deck (soft delete)
   deleteDeck: async (deckId: string) => {
-    const fn = httpsCallable(functions, "deleteDeck");
+    const fn = httpsCallable<DeleteDeckRequest, DeleteDeckResponse>(
+      functions,
+      "deleteDeck"
+    );
     const result = await fn({ deckId });
-    return result.data as { success: boolean; notifiedUsers: number };
+    const validatedData = DeleteDeckResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from deleteDeck");
+    }
+    return validatedData.data;
   },
 
   // Check for card changes between source and local copy
-  checkCardChanges: async (userId: string, deckId: string) => {
-    const fn = httpsCallable(functions, "checkCardChanges");
-    const result = await fn({ userId, deckId });
-    return result.data as {
-      changes: Array<{
-        cardId: string;
-        type: "modified" | "deleted" | "new";
-        changes?: Array<{ field: string; oldValue: any; newValue: any }>;
-      }>;
-    };
+  checkCardChanges: async (deckId: string) => {
+    const fn = httpsCallable<CheckCardChangesRequest, CheckCardChangesResponse>(
+      functions,
+      "checkCardChanges"
+    );
+    const result = await fn({ deckId });
+    const validatedData = CheckCardChangesResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from checkCardChanges");
+    }
+    return validatedData.data;
   },
 
   // Synchronize user's local cards with source deck
   syncDeckCards: async (
-    userId: string,
     deckId: string,
     syncAll: boolean = false,
     cardIds: string[] = []
   ) => {
-    const fn = httpsCallable(functions, "syncDeckCards");
-    const result = await fn({ userId, deckId, syncAll, cardIds });
-    return result.data as { success: boolean; syncedCount: number };
+    const fn = httpsCallable<SyncDeckCardsRequest, SyncDeckCardsResponse>(
+      functions,
+      "syncDeckCards"
+    );
+    const result = await fn({ deckId, syncAll, cardIds });
+    const validatedData = SyncDeckCardsResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from syncDeckCards");
+    }
+    return validatedData.data;
   },
 
   // User deck APIs
-  getUserDeckDetails: async (userId: string, deckId: string) => {
-    const fn = httpsCallable(functions, "getUserDeckDetails");
-    const result = await fn({ userId, deckId });
-    return result.data as { deck: DeckLearningData };
+  getUserDeckDetails: async (deckId: string) => {
+    const fn = httpsCallable<
+      GetUserDeckDetailsRequest,
+      GetUserDeckDetailsResponse
+    >(functions, "getUserDeckDetails");
+    const result = await fn({ deckId });
+    const validatedData = GetUserDeckDetailsResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getUserDeckDetails");
+    }
+    return validatedData.data;
   },
   getUserDeckCards: async (
-    userId: string,
     deckId: string,
     limit: number = 20,
     startAfter?: string
   ) => {
-    const fn = httpsCallable(functions, "getUserDeckCards");
-    const result = await fn({ userId, deckId, limit, startAfter });
-    return result.data as {
-      cards: any[];
-      hasMore: boolean;
-      lastDocId: string | null;
-    };
+    const fn = httpsCallable<GetUserDeckCardsRequest, GetUserDeckCardsResponse>(
+      functions,
+      "getUserDeckCards"
+    );
+    const result = await fn({ deckId, limit, startAfter });
+    const validatedData = GetUserDeckCardsResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getUserDeckCards");
+    }
+    return validatedData.data;
   },
-  getUserDueDeckCards: async (
-    userId: string,
-    deckId: string,
-    limit: number = 100
-  ) => {
-    const fn = httpsCallable(functions, "getUserDueDeckCards");
-    const result = await fn({ userId, deckId, limit });
-    return result.data as { cards: any[] };
+  getUserDueDeckCards: async (deckId: string, limit: number = 100) => {
+    const fn = httpsCallable<
+      GetUserDueDeckCardsRequest,
+      GetUserDueDeckCardsResponse
+    >(functions, "getUserDueDeckCards");
+    const result = await fn({ deckId, limit });
+    const validatedData = GetUserDueDeckCardsResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getUserDueDeckCards");
+    }
+    return validatedData.data;
   },
-  getUserNewDeckCards: async (
-    userId: string,
-    deckId: string,
-    limit: number = 50
-  ) => {
-    const fn = httpsCallable(functions, "getUserNewDeckCards");
-    const result = await fn({ userId, deckId, limit });
-    return result.data as { cards: any[] };
+  getUserNewDeckCards: async (deckId: string, limit: number = 50) => {
+    const fn = httpsCallable<
+      GetUserNewDeckCardsRequest,
+      GetUserNewDeckCardsResponse
+    >(functions, "getUserNewDeckCards");
+    const result = await fn({ deckId, limit });
+    const validatedData = GetUserNewDeckCardsResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getUserNewDeckCards");
+    }
+    return validatedData.data;
   },
 
   // Update user settings
   updateUserSettings: async (userId: string, settings: UserSettings) => {
-    const updateUserSettingsFunction = httpsCallable(
-      functions,
-      "updateUserSettings"
-    );
+    const updateUserSettingsFunction = httpsCallable<
+      UpdateUserSettingsRequest,
+      SuccessResponse
+    >(functions, "updateUserSettings");
     const result = await updateUserSettingsFunction({ userId, settings });
-    return result.data as { success: boolean };
+    const validatedData = SuccessResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from updateUserSettings");
+    }
+    return validatedData.data;
   },
 
   // Get user profile
   getUserProfile: async (userId: string) => {
-    const getUserProfileFunction = httpsCallable(functions, "getUserProfile");
+    const getUserProfileFunction = httpsCallable<
+      GetUserProfileRequest,
+      GetUserProfileResponse
+    >(functions, "getUserProfile");
     const result = await getUserProfileFunction({ userId });
-    return result.data as {
-      userId: string;
-      username: string;
-      email: string | null;
-      stats: any;
-      streak: number;
-      league: number;
-      points: number;
-      friendsCount: number;
-      followers: number;
-      following: number;
-    };
+    const validatedData = GetUserProfileResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getUserProfile");
+    }
+    return validatedData.data;
   },
 
   // Get user activity heatmap
@@ -369,16 +667,59 @@ export const cloudFunctions = {
       "getUserActivityHeatmap"
     );
     const result = await getUserActivityHeatmapFunction({ userId, weeks });
-    return result.data as {
-      heatmapData: Array<{ date: string; count: number }>;
-    };
+    const validatedData = GetUserActivityHeatmapResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getUserActivityHeatmap");
+    }
+    return validatedData.data;
   },
 
   // Get user awards
   getUserAwards: async (userId: string) => {
-    const getUserAwardsFunction = httpsCallable(functions, "getUserAwards");
+    const getUserAwardsFunction = httpsCallable<
+      GetUserAwardsRequest,
+      GetUserAwardsResponse
+    >(functions, "getUserAwards");
     const result = await getUserAwardsFunction({ userId });
-    return result.data as { awards: any[] };
+    const validatedData = GetUserAwardsResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getUserAwards");
+    }
+    return validatedData.data;
+  },
+
+  // Submit points for current season
+  submitPoints: async (userId: string, delta: number) => {
+    const fn = httpsCallable<SubmitPointsRequest, SubmitPointsResponse>(
+      functions,
+      "submitPoints"
+    );
+    const result = await fn({ userId, delta });
+    const validatedData = SubmitPointsResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from submitPoints");
+    }
+    return validatedData.data;
+  },
+
+  // Weekly season roll-over
+  weeklyRollOver: async () => {
+    const fn = httpsCallable<Record<string, never>, WeeklyRollOverResponse>(
+      functions,
+      "weeklyRollOver"
+    );
+    const result = await fn({});
+    const validatedData = WeeklyRollOverResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from weeklyRollOver");
+    }
+    return validatedData.data;
   },
 
   // Get friends streaks
@@ -388,61 +729,61 @@ export const cloudFunctions = {
       "getFriendsStreaks"
     );
     const result = await getFriendsStreaksFunction({ userId });
-    return result.data as {
-      friendsStreaks: Array<{ userId: string; name: string; streak: number }>;
-    };
+    const validatedData = GetFriendsStreaksResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getFriendsStreaks");
+    }
+    return validatedData.data;
   },
 
   // Get leaderboard (user's group ranking)
   getLeaderboard: async (userId: string, seasonId?: string) => {
-    const getLeaderboardFunction = httpsCallable(functions, "getLeaderboard");
+    const getLeaderboardFunction = httpsCallable<
+      GetLeaderboardRequest,
+      GetLeaderboardResponse
+    >(functions, "getLeaderboard");
     const result = await getLeaderboardFunction({ userId, seasonId });
-    return result.data as {
-      entries: Array<{
-        userId: string;
-        username: string;
-        points: number;
-        position: number;
-        lastActivityAt: any;
-      }>;
-      groupId: string | null;
-      leagueNumber: number | null;
-      seasonId: string;
-      totalMembers: number;
-    };
+    const validatedData = GetLeaderboardResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getLeaderboard");
+    }
+    return validatedData.data;
   },
 
   // Get user ranking in their group
   getUserRanking: async (userId: string, seasonId?: string) => {
-    const getUserRankingFunction = httpsCallable(functions, "getUserRanking");
+    const getUserRankingFunction = httpsCallable<
+      GetUserRankingRequest,
+      GetUserRankingResponse
+    >(functions, "getUserRanking");
     const result = await getUserRankingFunction({ userId, seasonId });
-    return result.data as {
-      position: number | null;
-      groupId: string | null;
-      leagueNumber: number | null;
-      points: number;
-      totalMembers?: number;
-    };
+    const validatedData = GetUserRankingResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getUserRanking");
+    }
+    return validatedData.data;
   },
 
   // Get following rankings (friends in their groups)
   getFollowingRankings: async (userId: string, seasonId?: string) => {
-    const getFollowingRankingsFunction = httpsCallable(
-      functions,
-      "getFollowingRankings"
-    );
+    const getFollowingRankingsFunction = httpsCallable<
+      GetFollowingRankingsRequest,
+      GetFollowingRankingsResponse
+    >(functions, "getFollowingRankings");
     const result = await getFollowingRankingsFunction({ userId, seasonId });
-    return result.data as {
-      rankings: Array<{
-        userId: string;
-        username?: string;
-        position: number | null;
-        points: number;
-        leagueNumber: number;
-        groupId?: string;
-        totalMembers?: number;
-      }>;
-    };
+    const validatedData = GetFollowingRankingsResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getFollowingRankings");
+    }
+    return validatedData.data;
   },
 
   // Get notifications
@@ -452,17 +793,12 @@ export const cloudFunctions = {
       "getNotifications"
     );
     const result = await getNotificationsFunction({ userId, limit });
-    return result.data as {
-      notifications: Array<{
-        id: string;
-        title: string;
-        body: string;
-        type: "info" | "success" | "warning" | "error";
-        read: boolean;
-        createdAt: any;
-        linkTo?: string;
-      }>;
-    };
+    const validatedData = GetNotificationsResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getNotifications");
+    }
+    return validatedData.data;
   },
 
   // Mark notification as read
@@ -475,73 +811,96 @@ export const cloudFunctions = {
       userId,
       notificationId,
     });
-    return result.data as { success: boolean };
+    const validatedData = MarkNotificationReadResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from markNotificationRead");
+    }
+    return validatedData.data;
   },
 
   // Get league info
   getLeagueInfo: async (leagueNumber: number) => {
-    const getLeagueInfoFunction = httpsCallable(functions, "getLeagueInfo");
+    const getLeagueInfoFunction = httpsCallable<
+      GetLeagueInfoRequest,
+      GetLeagueInfoResponse
+    >(functions, "getLeagueInfo");
     const result = await getLeagueInfoFunction({ leagueNumber });
-    return result.data as {
-      league: { id: number; name: string; color: string; description: string };
-    };
+    const validatedData = GetLeagueInfoResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getLeagueInfo");
+    }
+    return validatedData.data;
   },
 
   // Get all leagues info
   getAllLeaguesInfo: async () => {
-    const getAllLeaguesInfoFunction = httpsCallable(
-      functions,
-      "getAllLeaguesInfo"
-    );
+    const getAllLeaguesInfoFunction = httpsCallable<
+      Record<string, never>,
+      GetAllLeaguesInfoResponse
+    >(functions, "getAllLeaguesInfo");
     const result = await getAllLeaguesInfoFunction({});
-    return result.data as {
-      leagues: Array<{
-        id: number;
-        name: string;
-        color: string;
-        description: string;
-      }>;
-    };
+    const validatedData = GetAllLeaguesInfoResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getAllLeaguesInfo");
+    }
+    return validatedData.data;
   },
 
   // Get user group info
   getUserGroup: async (userId: string, seasonId?: string) => {
-    const getUserGroupFunction = httpsCallable(functions, "getUserGroup");
+    const getUserGroupFunction = httpsCallable<
+      GetUserGroupRequest,
+      GetUserGroupResponse
+    >(functions, "getUserGroup");
     const result = await getUserGroupFunction({ userId, seasonId });
-    return result.data as {
-      groupId: string | null;
-      leagueNumber: number | null;
-      memberCount: number;
-      capacity: number;
-      isFull: boolean;
-    };
+    const validatedData = GetUserGroupResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getUserGroup");
+    }
+    return validatedData.data;
   },
 
   // Add placeholder data for testing
   addPlaceholderData: async (userId?: string, createUser?: boolean) => {
-    const addPlaceholderDataFunction = httpsCallable(
-      functions,
-      "addPlaceholderData"
-    );
+    const addPlaceholderDataFunction = httpsCallable<
+      AddPlaceholderDataRequest,
+      AddPlaceholderDataResponse
+    >(functions, "addPlaceholderData");
     const result = await addPlaceholderDataFunction({ userId, createUser });
-    return result.data as {
-      success: boolean;
-      userId: string;
-      decksCreated: number;
-      totalCards: number;
-      deckIds: string[];
-    };
+    const validatedData = AddPlaceholderDataResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from addPlaceholderData");
+    }
+    return validatedData.data;
   },
 
   // Update card content (cardData and tags) - only for source deck authors
   updateCardContent: async (
-    userId: string,
     deckId: string,
     cardId: string,
     cardData: CardCore
   ) => {
-    const fn = httpsCallable(functions, "updateCardContent");
-    const result = await fn({ userId, deckId, cardId, cardData });
-    return result.data as { success: boolean };
+    const fn = httpsCallable<
+      UpdateCardContentRequest,
+      UpdateCardContentResponse
+    >(functions, "updateCardContent");
+    const result = await fn({ deckId, cardId, cardData });
+    const validatedData = SuccessResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from updateCardContent");
+    }
+    return validatedData.data;
   },
 };

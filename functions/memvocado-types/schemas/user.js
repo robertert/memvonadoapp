@@ -28,6 +28,7 @@ exports.UserSettingsSchema = zod_1.z
     dailyGoal: zod_1.z.number().min(0),
     dailyNew: zod_1.z.number().min(0),
     language: zod_1.z.string().default("en"),
+    timeZone: zod_1.z.string().default("UTC"),
 })
     .strict();
 /**

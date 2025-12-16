@@ -3,7 +3,7 @@
  */
 
 import * as admin from "firebase-admin";
-import { CardGrade } from "../../types";
+import { CardGrade } from "../../src/types/common";
 
 const db = admin.firestore();
 

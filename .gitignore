@@ -24,7 +24,7 @@ web-build/
 
 # Metro
 .metro-health-check*
-
+.cursor
 # debug
 npm-debug.*
 yarn-debug.*

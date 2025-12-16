@@ -86,13 +86,11 @@ export default function deckSettings(): React.JSX.Element {
       }
 
       const { deck: deckData } = await cloudFunctions.getUserDeckDetails(
-        userCtx.id || "",
         typedParams.deckId
       );
 
       if (!deckData) {
         const result = await cloudFunctions.startLearningDeck(
-          userCtx.id || "",
           typedParams.deckId
         );
         if (!result.success) throw new Error("Failed to start learning deck");
@@ -118,16 +116,8 @@ export default function deckSettings(): React.JSX.Element {
       if (!userCtx.id) throw new Error("No userCtx");
 
       await Promise.all([
-        cloudFunctions.updateDeckSettings(
-          typedParams.deckId,
-          authorDeck,
-          userCtx.id
-        ),
-        cloudFunctions.updateUserDeckSettings(
-          typedParams.deckId,
-          deck,
-          userCtx.id
-        ),
+        cloudFunctions.updateDeckSettings(typedParams.deckId, authorDeck),
+        cloudFunctions.updateUserDeckSettings(typedParams.deckId, deck),
       ]);
       console.log("Settings saved successfully");
       router.back();
@@ -143,7 +133,7 @@ export default function deckSettings(): React.JSX.Element {
     try {
       setIsResetting(true);
       if (!userCtx.id) throw new Error("No userCtx");
-      await cloudFunctions.resetDeck(typedParams.deckId, userCtx.id);
+      await cloudFunctions.resetDeck(typedParams.deckId);
       Alert.alert("Sukces", "Postęp decku został zresetowany pomyślnie.", [
         {
           text: "OK",

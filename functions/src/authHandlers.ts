@@ -2,6 +2,13 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore } from "firebase-admin/firestore";
 import { UserSchema, type User } from "./types/common";
+import { z } from "zod";
+import {
+  EnsureUserDocumentRequestSchema,
+  EnsureUserDocumentResponseSchema,
+  CompleteOnboardingRequestSchema,
+  CompleteOnboardingResponseSchema,
+} from "memvocado-types/schemas/api/auth";
 
 const REGION = "us-central1";
 const db = getFirestore();
@@ -15,6 +22,7 @@ const DEFAULT_SETTINGS = {
   dailyGoal: 50,
   dailyNew: 20,
   language: "en",
+  timeZone: "UTC",
 };
 
 /**
@@ -90,7 +98,7 @@ function buildUserDocument(params: UserDocumentParams): User {
     followersCount: 0,
     profileCompleted: false,
     interests: [],
-  } as User;
+  };
 
   return UserSchema.parse(user);
 }
@@ -102,22 +110,36 @@ function buildUserDocument(params: UserDocumentParams): User {
  */
 export const ensureUserDocument = onCall(
   { region: REGION },
-  async (request: any) => {
+  async (request) => {
     const uid = request.auth?.uid;
     if (!uid) {
       throw new HttpsError("unauthenticated", "User must be authenticated");
     }
 
-    const email = request.auth.token.email || "";
-    const displayName = request.auth.token.name || undefined;
+    // Walidacja request.data (pusty obiekt) dla spójności kontraktu
+    const parsed = EnsureUserDocumentRequestSchema.safeParse(
+      request.data || {}
+    );
+    if (!parsed.success) {
+      throw new HttpsError("invalid-argument", "Invalid request data", {
+        issues: parsed.error.issues,
+      });
+    }
+
+    const email = request.auth?.token?.email || "";
+    const displayName = request.auth?.token?.name || undefined;
 
     try {
       const userRef = db.doc(`users/${uid}`);
       const snap = await userRef.get();
 
       if (snap.exists) {
-        // Dokument już istnieje
-        return { success: true, message: "User document already exists" };
+        const rawResponse = {
+          success: true,
+          message: "User document already exists",
+        };
+        const validated = EnsureUserDocumentResponseSchema.parse(rawResponse);
+        return validated;
       }
 
       // Utwórz podstawowy dokument użytkownika
@@ -132,12 +154,24 @@ export const ensureUserDocument = onCall(
         `ensureUserDocument: Created basic user document for ${uid} (${email})`
       );
 
-      return { success: true, message: "User document created successfully" };
+      const rawResponse = {
+        success: true,
+        message: "User document created successfully",
+      };
+      const validated = EnsureUserDocumentResponseSchema.parse(rawResponse);
+      return validated;
     } catch (error) {
       logger.error(
         `ensureUserDocument: Failed to create user document for ${uid}`,
         error
       );
+      if (error instanceof z.ZodError) {
+        logger.error("Response validation failed", error.errors);
+        throw new HttpsError("internal", "Invalid response format");
+      }
+      if (error instanceof HttpsError) {
+        throw error;
+      }
       throw new HttpsError(
         "internal",
         "Failed to create user document. Please try again."
@@ -152,33 +186,28 @@ export const ensureUserDocument = onCall(
  */
 export const completeOnboarding = onCall(
   { region: REGION },
-  async (request: any) => {
+  async (request) => {
     const uid = request.auth?.uid;
     if (!uid) {
       throw new HttpsError("unauthenticated", "User must be authenticated");
     }
 
-    const { username, interests } = request.data || {};
-
-    if (!username || username.trim().length < 3) {
-      throw new HttpsError(
-        "invalid-argument",
-        "Username must be at least 3 characters"
-      );
+    const parsed = CompleteOnboardingRequestSchema.safeParse(
+      request.data || {}
+    );
+    if (!parsed.success) {
+      throw new HttpsError("invalid-argument", "Invalid request data", {
+        issues: parsed.error.issues,
+      });
     }
 
-    if (!interests || !Array.isArray(interests) || interests.length < 3) {
-      throw new HttpsError(
-        "invalid-argument",
-        "At least 3 interests are required"
-      );
-    }
+    const { username, interests } = parsed.data;
 
     try {
       const userRef = db.doc(`users/${uid}`);
       const snap = await userRef.get();
 
-      const email = request.auth.token.email || "";
+      const email = request.auth?.token?.email || "";
       const sanitizedUsername = sanitizeUsername(username.trim());
 
       // Sprawdź czy username jest już zajęty
@@ -219,18 +248,24 @@ export const completeOnboarding = onCall(
         logger.info(`completeOnboarding: Created user document for ${uid}`);
       }
 
-      return {
+      const rawResponse = {
         success: true,
         message: "Onboarding completed successfully",
       };
-    } catch (error: any) {
-      if (error instanceof HttpsError) {
-        throw error;
-      }
+      const validated = CompleteOnboardingResponseSchema.parse(rawResponse);
+      return validated;
+    } catch (error) {
       logger.error(
         `completeOnboarding: Failed to complete onboarding for ${uid}`,
         error
       );
+      if (error instanceof z.ZodError) {
+        logger.error("Response validation failed", error.errors);
+        throw new HttpsError("internal", "Invalid response format");
+      }
+      if (error instanceof HttpsError) {
+        throw error;
+      }
       throw new HttpsError(
         "internal",
         "Failed to complete onboarding. Please try again."

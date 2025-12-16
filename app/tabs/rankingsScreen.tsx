@@ -1,16 +1,7 @@
 import React, { useEffect, useRef, useState, useContext } from "react";
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  Pressable,
-  Image,
-  ActivityIndicator,
-} from "react-native";
+import { StyleSheet, Text, View, ScrollView, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Fonts } from "../../constants/colors";
-import { LinearGradient } from "expo-linear-gradient";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";

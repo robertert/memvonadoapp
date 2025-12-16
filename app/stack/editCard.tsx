@@ -111,7 +111,6 @@ export default function editCard(): React.JSX.Element {
 
       // Update source deck (only authors can edit)
       await cloudFunctions.updateCardContent(
-        userCtx.id,
         typedParams.deckId,
         typedParams.cardId,
         updatedCardData

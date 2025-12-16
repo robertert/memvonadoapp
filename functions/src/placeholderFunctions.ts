@@ -1,8 +1,13 @@
-import { onCall } from "firebase-functions/v2/https";
+import { HttpsError, onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { CardGrade } from "./types/common";
 import { serializeTimestamps } from "./utils/serialization";
+import { z } from "zod";
+import {
+  AddPlaceholderDataRequestSchema,
+  AddPlaceholderDataResponseSchema,
+} from "memvocado-types/schemas/api/placeholder";
 
 const db = getFirestore();
 
@@ -11,14 +16,24 @@ const db = getFirestore();
  * Tworzy przykładowego użytkownika z taliami i kartami
  */
 export const addPlaceholderData = onCall(async (request) => {
-  const { userId, createUser = false } = request.data || {};
+  const parsed = AddPlaceholderDataRequestSchema.safeParse(request.data || {});
+  if (!parsed.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsed.error.issues,
+    });
+  }
+
+  const { userId, createUser = false } = parsed.data;
   const auth = request.auth;
 
   // Jeśli nie podano userId, użyj zalogowanego użytkownika
   const targetUserId = userId || auth?.uid;
 
   if (!targetUserId) {
-    throw new Error("userId is required or user must be authenticated");
+    throw new HttpsError(
+      "invalid-argument",
+      "userId is required or user must be authenticated"
+    );
   }
 
   try {
@@ -356,15 +371,26 @@ export const addPlaceholderData = onCall(async (request) => {
       totalCards,
     });
 
-    return serializeTimestamps({
+    const rawResponse = {
       success: true,
       userId: targetUserId,
       decksCreated: placeholderDecks.length,
       totalCards,
       deckIds: createdDeckIds,
-    });
+    };
+
+    AddPlaceholderDataResponseSchema.parse(rawResponse);
+
+    return serializeTimestamps(rawResponse);
   } catch (error) {
     logger.error("Error adding placeholder data", error);
-    throw new Error("Failed to add placeholder data");
+    if (error instanceof z.ZodError) {
+      logger.error("Response validation failed", error.errors);
+      throw new HttpsError("internal", "Invalid response format");
+    }
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to add placeholder data");
   }
 });

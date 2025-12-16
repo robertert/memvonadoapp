@@ -1,17 +1,15 @@
-import { onCall } from "firebase-functions/v2/https";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue, WriteBatch } from "firebase-admin/firestore";
+import { z } from "zod";
 import {
   Card,
   DeckLearningData,
-  CardCore,
   DeckSchema,
   DeckSettings,
   Deck,
   DeckCore,
-  DeckCoreSchema,
-  CardCoreSchema,
   CardSchema,
   FirstLearn,
   DeckLearningDataSchema,
@@ -25,20 +23,75 @@ import {
   User,
 } from "./types/common";
 import { serializeTimestamps } from "./utils/serialization";
+import {
+  CreateDeckWithCardsRequestSchema,
+  GetDeckDetailsRequestSchema,
+  GetDeckCardsRequestSchema,
+  GetPopularDecksRequestSchema,
+  GetUserDeckDetailsRequestSchema,
+  GetUserDeckCardsRequestSchema,
+  GetUserDueDeckCardsRequestSchema,
+  GetUserNewDeckCardsRequestSchema,
+  ResetDeckRequestSchema,
+  UpdateDeckSettingsRequestSchema,
+  UpdateUserDeckSettingsRequestSchema,
+  StartLearningDeckRequestSchema,
+  DeleteDeckRequestSchema,
+  CheckCardChangesRequestSchema,
+  SyncDeckCardsRequestSchema,
+  UpdateCardContentRequestSchema,
+  CheckCardChangesResponseSchema,
+} from "memvocado-types/schemas/api/deck";
+import {
+  CreateDeckWithCardsResponseSchema,
+  GetDeckDetailsResponseSchema,
+  GetDeckCardsResponseSchema,
+  GetPopularDecksResponseSchema,
+  GetUserDeckDetailsResponseSchema,
+  GetUserDeckCardsResponseSchema,
+  GetUserDueDeckCardsResponseSchema,
+  GetUserNewDeckCardsResponseSchema,
+  SuccessResponseSchema,
+  StartLearningDeckResponseSchema,
+  DeleteDeckResponseSchema,
+  SyncDeckCardsResponseSchema,
+  UpdateCardContentResponseSchema,
+} from "./types/common";
 
 const db = getFirestore();
+
+const handleZodError = (error: unknown, context: string) => {
+  if (error instanceof z.ZodError) {
+    logger.error(`${context}: validation failed`, error.errors);
+    throw new HttpsError("internal", "Invalid response format");
+  }
+};
 
 /**
  * Bulk create deck with cards
  */
 export const createDeckWithCards = onCall(async (request) => {
-  const { deckData, cards, userId } = request.data;
+  const auth = request.auth;
 
-  if (!deckData || !cards || !userId) {
-    throw new Error("deckData, cards, and userId are required");
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
   }
-  const deckCore = deckData as DeckCore;
-  const validatedDeckCore = DeckCoreSchema.parse(deckCore);
+
+  const userId = auth.uid;
+
+  // Walidacja request.data
+  const validationResult = CreateDeckWithCardsRequestSchema.safeParse(
+    request.data
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckData, cards } = validationResult.data;
+  const validatedDeckCore = deckData;
+  const validatedCards = cards;
 
   try {
     const batch = db.batch();
@@ -50,7 +103,7 @@ export const createDeckWithCards = onCall(async (request) => {
       title: validatedDeckCore.title,
       category: validatedDeckCore.category,
       icon: validatedDeckCore.icon,
-      cardsNum: cards.length,
+      cardsNum: validatedCards.length,
       createdBy: userId,
       createdAt: new Date(),
       isPublic: validatedDeckCore.isPublic,
@@ -62,8 +115,7 @@ export const createDeckWithCards = onCall(async (request) => {
 
     batch.set(deckRef, validatedDeck);
 
-    cards.forEach((card: CardCore) => {
-      const validatedCardCore = CardCoreSchema.parse(card);
+    validatedCards.forEach((validatedCardCore) => {
       const cardData = {
         ...validatedCardCore,
         createdAt: new Date(),
@@ -85,13 +137,19 @@ export const createDeckWithCards = onCall(async (request) => {
 
     logger.info("Deck created successfully", {
       deckId: deckRef.id,
-      cardCount: cards.length,
+      cardCount: validatedCards.length,
     });
 
-    return serializeTimestamps({ deckId: deckRef.id });
+    const response = { deckId: deckRef.id };
+    const validatedResponse = CreateDeckWithCardsResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error creating deck", error);
-    throw new Error("Failed to create deck");
+    handleZodError(error, "createDeckWithCards");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to create deck");
   }
 });
 
@@ -99,18 +157,23 @@ export const createDeckWithCards = onCall(async (request) => {
  * Get deck details only (without cards)
  */
 export const getDeckDetails = onCall(async (request) => {
-  const { deckId } = request.data || {};
-
-  if (!deckId) {
-    throw new Error("deckId is required");
+  const validationResult = GetDeckDetailsRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
   }
+
+  const { deckId } = validationResult.data;
 
   try {
     const deckRef = db.collection("decks").doc(deckId);
     const deckSnap = await deckRef.get();
 
     if (!deckSnap.exists) {
-      throw new Error("Deck not found");
+      throw new HttpsError("not-found", "Deck not found");
     }
 
     const deckDataRaw = deckSnap.data() || {};
@@ -120,24 +183,31 @@ export const getDeckDetails = onCall(async (request) => {
     const userSnap = await userRef.get();
     const userData = userSnap.data() as User;
 
+    if (!userData) {
+      throw new HttpsError("not-found", "User not found");
+    }
+
     // Check if deck is deleted
     if (deckData.is_deleted === true) {
-      throw new Error("Deck not found");
+      throw new HttpsError("not-found", "Deck not found");
     }
 
     // Use document ID (override any id field in data)
     deckData.id = deckSnap.id;
     const validatedDeck = DeckSchema.parse(deckData);
-    return serializeTimestamps({
+    const response = {
       deck: validatedDeck as Deck,
       username: userData.username,
-    });
+    };
+    const validatedResponse = GetDeckDetailsResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error getting deck details", error);
-    if (error instanceof Error && error.message === "Deck not found") {
+    handleZodError(error, "getDeckDetails");
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new Error("Failed to get deck details");
+    throw new HttpsError("internal", "Failed to get deck details");
   }
 });
 
@@ -145,23 +215,28 @@ export const getDeckDetails = onCall(async (request) => {
  * Get cards for a deck with pagination
  */
 export const getDeckCards = onCall(async (request) => {
-  const { deckId, limit = 20, startAfter } = request.data || {};
-
-  if (!deckId) {
-    throw new Error("deckId is required");
+  const validationResult = GetDeckCardsRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
   }
+
+  const { deckId, limit = 20, startAfter } = validationResult.data;
 
   try {
     const deckRef = db.collection("decks").doc(deckId);
     const deckSnap = await deckRef.get();
 
     if (!deckSnap.exists) {
-      throw new Error("Deck not found");
+      throw new HttpsError("not-found", "Deck not found");
     }
 
     let query = deckRef.collection("cards").limit(limit);
 
-    if (startAfter) {
+    if (startAfter && typeof startAfter === "string") {
       const startAfterDoc = await deckRef
         .collection("cards")
         .doc(startAfter)
@@ -188,20 +263,23 @@ export const getDeckCards = onCall(async (request) => {
 
     const validatedCards = cards.map((card) => CardSchema.parse(card));
 
-    return serializeTimestamps({
+    const response = {
       cards: validatedCards as Card[],
       hasMore,
       lastDocId:
         cardsSnap.docs.length > 0
           ? cardsSnap.docs[cardsSnap.docs.length - 1].id
           : null,
-    });
+    };
+    const validatedResponse = GetDeckCardsResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error getting deck cards", error);
-    if (error instanceof Error && error.message === "Deck not found") {
+    handleZodError(error, "getDeckCards");
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new Error("Failed to get deck cards");
+    throw new HttpsError("internal", "Failed to get deck cards");
   }
 });
 
@@ -209,7 +287,16 @@ export const getDeckCards = onCall(async (request) => {
  * Get popular public decks
  */
 export const getPopularDecks = onCall(async (request) => {
-  const { limit = 8 } = request.data || {};
+  const validationResult = GetPopularDecksRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { limit = 8 } = validationResult.data;
 
   try {
     const snapshot = await db
@@ -223,10 +310,16 @@ export const getPopularDecks = onCall(async (request) => {
     const decks = snapshot.docs.map((doc) => doc.data() as Deck);
     const validatedDecks = decks.map((deck) => DeckSchema.parse(deck));
 
-    return serializeTimestamps({ decks: validatedDecks as Deck[] });
+    const response = { decks: validatedDecks as Deck[] };
+    const validatedResponse = GetPopularDecksResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error getting popular decks", error);
-    throw new Error("Failed to get popular decks");
+    handleZodError(error, "getPopularDecks");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get popular decks");
   }
 });
 
@@ -234,39 +327,88 @@ export const getPopularDecks = onCall(async (request) => {
  * User-deck equivalents (operate on users/{userId}/decks/{deckId})
  */
 export const getUserDeckDetails = onCall(async (request) => {
-  const { userId, deckId } = request.data || {};
-  if (!userId || !deckId) {
-    throw new Error("userId and deckId are required");
+  const validationResult = GetUserDeckDetailsRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckId } = validationResult.data;
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  if (!deckId || typeof deckId !== "string") {
+    throw new HttpsError("invalid-argument", "deckId is required");
   }
   try {
     const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
     const deckSnap = await deckRef.get();
-    if (!deckSnap.exists) return serializeTimestamps({ deck: null });
-    const deckData = deckSnap.data() as Deck;
+    if (!deckSnap.exists) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
+    const deckData = deckSnap.data() as DeckLearningData;
     const validatedDeck = DeckLearningDataSchema.parse(deckData);
-    return serializeTimestamps({ deck: validatedDeck as DeckLearningData });
+    const response = { deck: validatedDeck as DeckLearningData };
+    const validatedResponse = GetUserDeckDetailsResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error getting user deck details", error);
-    if (error instanceof Error) throw error;
-    throw new Error("Failed to get user deck details");
+    handleZodError(error, "getUserDeckDetails");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get user deck details");
   }
 });
 
 export const getUserDeckCards = onCall(async (request) => {
-  const { userId, deckId, limit = 20, startAfter } = request.data || {};
-  if (!userId || !deckId) {
-    throw new Error("userId and deckId are required");
+  const validationResult = GetUserDeckCardsRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckId, limit = 20, startAfter } = validationResult.data;
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  if (!deckId || typeof deckId !== "string") {
+    throw new HttpsError("invalid-argument", "deckId is required");
+  }
+  if (limit && (typeof limit !== "number" || limit < 1 || limit > 1000)) {
+    throw new HttpsError(
+      "invalid-argument",
+      "limit must be a number between 1 and 1000"
+    );
   }
   try {
     // Verify user deck exists
     const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
     const userDeckSnap = await userDeckRef.get();
-    if (!userDeckSnap.exists) throw new Error("Deck not found");
+    if (!userDeckSnap.exists) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
 
     // Get source deck cards with pagination
     const sourceDeckRef = db.collection("decks").doc(deckId);
     let query = sourceDeckRef.collection("cards").limit(limit);
-    if (startAfter) {
+    if (startAfter && typeof startAfter === "string") {
       const startAfterDoc = await sourceDeckRef
         .collection("cards")
         .doc(startAfter)
@@ -291,18 +433,23 @@ export const getUserDeckCards = onCall(async (request) => {
       const nextSnap = await nextQuery.get();
       hasMore = nextSnap.docs.length > 0;
     }
-    return serializeTimestamps({
+    const response = {
       cards,
       hasMore,
       lastDocId:
         cardsSnap.docs.length > 0
           ? cardsSnap.docs[cardsSnap.docs.length - 1].id
           : null,
-    });
+    };
+    const validatedResponse = GetUserDeckCardsResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error getting user deck cards", error);
-    if (error instanceof Error) throw error;
-    throw new Error("Failed to get user deck cards");
+    handleZodError(error, "getUserDeckCards");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get user deck cards");
   }
 });
 
@@ -396,12 +543,42 @@ async function joinCardsWithProgress(
 }
 
 export const getUserDueDeckCards = onCall(async (request) => {
-  const { userId, deckId, limit = 100 } = request.data || {};
-  if (!userId || !deckId) throw new Error("userId and deckId are required");
+  const validationResult = GetUserDueDeckCardsRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckId, limit = 100 } = validationResult.data;
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  if (!deckId || typeof deckId !== "string") {
+    throw new HttpsError("invalid-argument", "deckId is required");
+  }
+  if (
+    limit !== -1 &&
+    (typeof limit !== "number" || limit < 1 || limit > 1000)
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "limit must be a number between 1 and 1000, or -1 for unlimited"
+    );
+  }
   try {
     const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
     const deckSnap = await deckRef.get();
-    if (!deckSnap.exists) throw new Error("Deck not found");
+    if (!deckSnap.exists) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
 
     const cardsSnap = await deckRef.collection("cards").get();
     const now = Date.now();
@@ -420,29 +597,56 @@ export const getUserDueDeckCards = onCall(async (request) => {
       CardSchema.parse(c)
     );
 
-    if (limit == -1) {
-      // jesli limit jest na -1 to zwracamy wszystkie karty (bez limitu)
-      return serializeTimestamps({ cards: validatedCards as Card[] });
-    } else {
-      return serializeTimestamps({
-        cards: validatedCards.slice(0, limit) as Card[],
-      });
-    }
+    const cards =
+      limit === -1 ? validatedCards : validatedCards.slice(0, limit);
+    const response = { cards: cards as Card[] };
+    const validatedResponse = GetUserDueDeckCardsResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error getting user due deck cards", error);
-    if (error instanceof Error) throw error;
-    throw new Error("Failed to get user due deck cards");
+    handleZodError(error, "getUserDueDeckCards");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get user due deck cards");
   }
 });
 
 export const getUserNewDeckCards = onCall(async (request) => {
-  const { userId, deckId, limit = 50 } = request.data || {};
-  if (!userId || !deckId) throw new Error("userId and deckId are required");
+  const validationResult = GetUserNewDeckCardsRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckId, limit = 50 } = validationResult.data;
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  if (!deckId || typeof deckId !== "string") {
+    throw new HttpsError("invalid-argument", "deckId is required");
+  }
+  if (limit && (typeof limit !== "number" || limit < 1 || limit > 1000)) {
+    throw new HttpsError(
+      "invalid-argument",
+      "limit must be a number between 1 and 1000"
+    );
+  }
   try {
     // Verify user deck exists
     const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
     const userDeckSnap = await userDeckRef.get();
-    if (!userDeckSnap.exists) throw new Error("Deck not found");
+    if (!userDeckSnap.exists) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
 
     // Get new cards directly from user's collection (all cards are already copied)
     const userCardsRef = userDeckRef.collection("cards");
@@ -460,11 +664,16 @@ export const getUserNewDeckCards = onCall(async (request) => {
 
     const validatedCards: Card[] = cards.map((c) => CardSchema.parse(c));
 
-    return serializeTimestamps({ cards: validatedCards });
+    const response = { cards: validatedCards };
+    const validatedResponse = GetUserNewDeckCardsResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error getting user new deck cards", error);
-    if (error instanceof Error) throw error;
-    throw new Error("Failed to get user new deck cards");
+    handleZodError(error, "getUserNewDeckCards");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get user new deck cards");
   }
 });
 /**
@@ -534,15 +743,24 @@ export const updateUserStats = onDocumentWritten(
  */
 
 export const resetDeck = onCall(async (request) => {
-  const { deckId, userId } = request.data;
-  const auth = request.auth;
-
-  if (!deckId) {
-    throw new Error("deckId is required");
+  const validationResult = ResetDeckRequestSchema.safeParse(request.data || {});
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
   }
 
+  const { deckId } = validationResult.data;
+  const auth = request.auth;
+
   if (!auth) {
-    throw new Error("Authentication required");
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  if (!deckId || typeof deckId !== "string") {
+    throw new HttpsError("invalid-argument", "deckId is required");
   }
 
   try {
@@ -551,7 +769,7 @@ export const resetDeck = onCall(async (request) => {
     const deckSnap = await deckRef.get();
 
     if (!deckSnap.exists) {
-      throw new Error("Deck not found");
+      throw new HttpsError("not-found", "Deck not found");
     }
 
     const cardsRef = deckRef.collection("cards");
@@ -561,7 +779,9 @@ export const resetDeck = onCall(async (request) => {
 
     if (cardsSnapshot.empty) {
       logger.info("No cards found in deck", { deckId });
-      return serializeTimestamps({ success: true, cardsReset: 0 });
+      const response = { success: true };
+      const validatedResponse = SuccessResponseSchema.parse(response);
+      return serializeTimestamps(validatedResponse);
     }
 
     // Use batch to update all cards (Firestore batch limit is 500)
@@ -604,13 +824,16 @@ export const resetDeck = onCall(async (request) => {
       cardsReset,
     });
 
-    return serializeTimestamps({ success: true, cardsReset });
+    const response = { success: true };
+    const validatedResponse = SuccessResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error resetting deck progress", error);
-    if (error instanceof Error) {
+    handleZodError(error, "resetDeck");
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new Error("Failed to reset deck progress");
+    throw new HttpsError("internal", "Failed to reset deck progress");
   }
 });
 
@@ -618,15 +841,29 @@ export const resetDeck = onCall(async (request) => {
  * Update deck settings
  */
 export const updateDeckSettings = onCall(async (request) => {
-  const { deckId, deck, userId } = request.data || {};
-  const auth = request.auth;
-
-  if (!deckId || !deck || !userId) {
-    throw new Error("deckId and deck and userId are required");
+  const validationResult = UpdateDeckSettingsRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
   }
 
+  const { deckId, deck } = validationResult.data;
+  const auth = request.auth;
+
   if (!auth) {
-    throw new Error("Authentication required");
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  if (!deckId || typeof deckId !== "string") {
+    throw new HttpsError("invalid-argument", "deckId is required");
+  }
+  if (!deck || typeof deck !== "object") {
+    throw new HttpsError("invalid-argument", "deck is required");
   }
 
   try {
@@ -635,14 +872,17 @@ export const updateDeckSettings = onCall(async (request) => {
     const deckSnap = await deckRef.get();
 
     if (!deckSnap.exists) {
-      throw new Error("Deck not found");
+      throw new HttpsError("not-found", "Deck not found");
     }
 
     const deckData = deckSnap.data();
 
     // Check if user is the creator of the deck
     if (deckData?.createdBy !== userId) {
-      throw new Error("User does not have permission");
+      throw new HttpsError(
+        "permission-denied",
+        "User does not have permission"
+      );
     }
 
     // Waliduj i typuj częściową aktualizację ustawień
@@ -659,13 +899,16 @@ export const updateDeckSettings = onCall(async (request) => {
       userId,
     });
 
-    return serializeTimestamps({ success: true });
+    const response = { success: true };
+    const validatedResponse = SuccessResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error updating deck settings", error);
-    if (error instanceof Error) {
+    handleZodError(error, "updateDeckSettings");
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new Error("Failed to update deck settings");
+    throw new HttpsError("internal", "Failed to update deck settings");
   }
 });
 
@@ -673,15 +916,29 @@ export const updateDeckSettings = onCall(async (request) => {
  * Update user deck settings
  */
 export const updateUserDeckSettings = onCall(async (request) => {
-  const { deckId, deck, userId } = request.data || {};
-  const auth = request.auth;
-
-  if (!deckId || !deck || !userId) {
-    throw new Error("deckId and deck and userId are required");
+  const validationResult = UpdateUserDeckSettingsRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
   }
 
+  const { deckId, deck } = validationResult.data;
+  const auth = request.auth;
+
   if (!auth) {
-    throw new Error("Authentication required");
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  if (!deckId || typeof deckId !== "string") {
+    throw new HttpsError("invalid-argument", "deckId is required");
+  }
+  if (!deck || typeof deck !== "object") {
+    throw new HttpsError("invalid-argument", "deck is required");
   }
 
   try {
@@ -690,7 +947,7 @@ export const updateUserDeckSettings = onCall(async (request) => {
     const deckSnap = await deckRef.get();
 
     if (!deckSnap.exists) {
-      throw new Error("Deck not found");
+      throw new HttpsError("not-found", "Deck not found");
     }
 
     // Waliduj i typuj częściową aktualizację ustawień
@@ -707,13 +964,16 @@ export const updateUserDeckSettings = onCall(async (request) => {
       userId,
     });
 
-    return serializeTimestamps({ success: true });
+    const response = { success: true };
+    const validatedResponse = SuccessResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error updating user deck settings", error);
-    if (error instanceof Error) {
+    handleZodError(error, "updateUserDeckSettings");
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new Error("Failed to update user deck settings");
+    throw new HttpsError("internal", "Failed to update user deck settings");
   }
 });
 
@@ -723,10 +983,26 @@ export const updateUserDeckSettings = onCall(async (request) => {
  * Target: users/{userId}/decks/{deckId} + cards
  */
 export const startLearningDeck = onCall(async (request) => {
-  const { userId, deckId } = request.data;
+  const validationResult = StartLearningDeckRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
 
-  if (!userId || !deckId) {
-    throw new Error("userId and deckId are required");
+  const { deckId } = validationResult.data;
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  if (!deckId || typeof deckId !== "string") {
+    throw new HttpsError("invalid-argument", "deckId is required");
   }
 
   try {
@@ -734,12 +1010,12 @@ export const startLearningDeck = onCall(async (request) => {
     const srcDeckRef = db.collection("decks").doc(deckId);
     const srcDeckSnap = await srcDeckRef.get();
     if (!srcDeckSnap.exists) {
-      throw new Error("Deck not found");
+      throw new HttpsError("not-found", "Deck not found");
     }
 
     const srcDeckRaw = srcDeckSnap.data();
     if (!srcDeckRaw) {
-      throw new Error("Deck data is empty");
+      throw new HttpsError("not-found", "Deck data is empty");
     }
 
     // Validate deck data structure
@@ -750,7 +1026,7 @@ export const startLearningDeck = onCall(async (request) => {
 
     // Check if deck is deleted
     if (srcDeck.is_deleted === true) {
-      throw new Error("Deck has been deleted");
+      throw new HttpsError("not-found", "Deck has been deleted");
     }
 
     // Create target user deck document (use same deckId for easier mapping)
@@ -828,16 +1104,26 @@ export const startLearningDeck = onCall(async (request) => {
           cardsCount: sourceCardsSnap.size,
         });
       }
+    } else {
+      // Deck already exists, get it
+      const existingDeck = userDeckSnap.data() as DeckLearningData;
+      userDeck = DeckLearningDataSchema.parse(existingDeck);
     }
 
     logger.info("Deck copied to user space", { userId, deckId });
-    return serializeTimestamps({ success: true, deck: userDeck });
+    if (!userDeck) {
+      throw new HttpsError("internal", "Failed to create user deck");
+    }
+    const response = { success: true, deck: userDeck };
+    const validatedResponse = StartLearningDeckResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error starting learning deck", error);
-    if (error instanceof Error) {
+    handleZodError(error, "startLearningDeck");
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new Error("Failed to start learning deck");
+    throw new HttpsError("internal", "Failed to start learning deck");
   }
 });
 
@@ -845,15 +1131,24 @@ export const startLearningDeck = onCall(async (request) => {
  * Soft delete a deck - marks as deleted and notifies all users learning it
  */
 export const deleteDeck = onCall(async (request) => {
-  const { deckId } = request.data || {};
+  const validationResult = DeleteDeckRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckId } = validationResult.data;
   const auth = request.auth;
 
-  if (!deckId) {
-    throw new Error("deckId is required");
+  if (!deckId || typeof deckId !== "string") {
+    throw new HttpsError("invalid-argument", "deckId is required");
   }
 
   if (!auth) {
-    throw new Error("Authentication required");
+    throw new HttpsError("unauthenticated", "Authentication required");
   }
 
   const userId = auth.uid;
@@ -864,22 +1159,27 @@ export const deleteDeck = onCall(async (request) => {
     const deckSnap = await deckRef.get();
 
     if (!deckSnap.exists) {
-      throw new Error("Deck not found");
+      throw new HttpsError("not-found", "Deck not found");
     }
 
     const deckData = deckSnap.data() as Deck;
 
     // Check if user is the creator of the deck
     if (deckData.createdBy !== userId) {
-      throw new Error("User does not have permission to delete this deck");
+      throw new HttpsError(
+        "permission-denied",
+        "User does not have permission to delete this deck"
+      );
     }
 
     // Check if already deleted
     if (deckData.is_deleted) {
-      return serializeTimestamps({
+      const response = {
         success: true,
-        message: "Deck already deleted",
-      });
+        notifiedUsers: 0,
+      };
+      const validatedResponse = DeleteDeckResponseSchema.parse(response);
+      return serializeTimestamps(validatedResponse);
     }
 
     // Soft delete: set is_deleted flag
@@ -923,16 +1223,19 @@ export const deleteDeck = onCall(async (request) => {
       notifiedUsers: userIds.size,
     });
 
-    return serializeTimestamps({
+    const response = {
       success: true,
       notifiedUsers: userIds.size,
-    });
+    };
+    const validatedResponse = DeleteDeckResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error deleting deck", error);
-    if (error instanceof Error) {
+    handleZodError(error, "deleteDeck");
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new Error("Failed to delete deck");
+    throw new HttpsError("internal", "Failed to delete deck");
   }
 });
 
@@ -941,10 +1244,26 @@ export const deleteDeck = onCall(async (request) => {
  * Returns list of cards with differences
  */
 export const checkCardChanges = onCall(async (request) => {
-  const { userId, deckId } = request.data || {};
+  const validationResult = CheckCardChangesRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
 
-  if (!userId || !deckId) {
-    throw new Error("userId and deckId are required");
+  const { deckId } = validationResult.data;
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  if (!deckId || typeof deckId !== "string") {
+    throw new HttpsError("invalid-argument", "deckId is required");
   }
 
   try {
@@ -956,16 +1275,18 @@ export const checkCardChanges = onCall(async (request) => {
     const userDeckSnap = await userDeckRef.get();
 
     if (!sourceDeckSnap.exists) {
-      throw new Error("Source deck not found");
+      throw new HttpsError("not-found", "Source deck not found");
     }
     if (!userDeckSnap.exists) {
-      throw new Error("User deck not found");
+      throw new HttpsError("not-found", "User deck not found");
     }
 
     const sourceDeckData = sourceDeckSnap.data() as Deck;
     const userDeckData = userDeckSnap.data() as DeckLearningData;
     if (userDeckData.updatedAt == sourceDeckData.updatedAt) {
-      return { changes: [] };
+      const response = { changes: [] };
+      const validatedResponse = CheckCardChangesResponseSchema.parse(response);
+      return validatedResponse;
     }
 
     const sourceCardsSnap = await sourceDeckRef.collection("cards").get();
@@ -1056,13 +1377,16 @@ export const checkCardChanges = onCall(async (request) => {
       }
     }
 
-    return { changes };
+    const response = { changes };
+    const validatedResponse = CheckCardChangesResponseSchema.parse(response);
+    return validatedResponse;
   } catch (error) {
     logger.error("Error checking card changes", error);
-    if (error instanceof Error) {
+    handleZodError(error, "checkCardChanges");
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new Error("Failed to check card changes");
+    throw new HttpsError("internal", "Failed to check card changes");
   }
 });
 
@@ -1071,14 +1395,33 @@ export const checkCardChanges = onCall(async (request) => {
  * Options: syncAll (all changes) or syncSelected (specific cardIds)
  */
 export const syncDeckCards = onCall(async (request) => {
-  const { userId, deckId, syncAll = false, cardIds = [] } = request.data || {};
-
-  if (!userId || !deckId) {
-    throw new Error("userId and deckId are required");
+  const validationResult = SyncDeckCardsRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
   }
 
-  if (!syncAll && (!cardIds || cardIds.length === 0)) {
-    throw new Error("Either syncAll must be true or cardIds must be provided");
+  const { deckId, syncAll = false, cardIds = [] } = validationResult.data;
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  if (!deckId || typeof deckId !== "string") {
+    throw new HttpsError("invalid-argument", "deckId is required");
+  }
+
+  if (!syncAll && (!Array.isArray(cardIds) || cardIds.length === 0)) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Either syncAll must be true or cardIds must be provided"
+    );
   }
 
   try {
@@ -1251,16 +1594,19 @@ export const syncDeckCards = onCall(async (request) => {
       syncAll,
     });
 
-    return {
+    const response = {
       success: true,
       syncedCount,
     };
+    const validatedResponse = SyncDeckCardsResponseSchema.parse(response);
+    return validatedResponse;
   } catch (error) {
     logger.error("Error syncing deck cards", error);
-    if (error instanceof Error) {
+    handleZodError(error, "syncDeckCards");
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new Error("Failed to sync deck cards");
+    throw new HttpsError("internal", "Failed to sync deck cards");
   }
 });
 
@@ -1268,10 +1614,32 @@ export const syncDeckCards = onCall(async (request) => {
  * Update card content (cardData and tags) - only for source deck authors
  */
 export const updateCardContent = onCall(async (request) => {
-  const { userId, deckId, cardId, cardData } = request.data || {};
+  const validationResult = UpdateCardContentRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
 
-  if (!userId || !deckId || !cardId || !cardData) {
-    throw new Error("userId, deckId, cardId, and cardData are required");
+  const { deckId, cardId, cardData } = validationResult.data;
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  if (!deckId || typeof deckId !== "string") {
+    throw new HttpsError("invalid-argument", "deckId is required");
+  }
+  if (!cardId || typeof cardId !== "string") {
+    throw new HttpsError("invalid-argument", "cardId is required");
+  }
+  if (!cardData || typeof cardData !== "object") {
+    throw new HttpsError("invalid-argument", "cardData is required");
   }
 
   try {
@@ -1283,19 +1651,22 @@ export const updateCardContent = onCall(async (request) => {
     const deckSnap = await deckRef.get();
 
     if (!deckSnap.exists) {
-      throw new Error("Deck not found");
+      throw new HttpsError("not-found", "Deck not found");
     }
 
     const deckData = deckSnap.data() as Deck;
     if (deckData.createdBy !== userId) {
-      throw new Error("You don't have permission to edit this card");
+      throw new HttpsError(
+        "permission-denied",
+        "You don't have permission to edit this card"
+      );
     }
 
     const cardRef = deckRef.collection("cards").doc(cardId);
     const cardSnap = await cardRef.get();
 
     if (!cardSnap.exists) {
-      throw new Error("Card not found");
+      throw new HttpsError("not-found", "Card not found");
     }
 
     // Update card
@@ -1310,14 +1681,17 @@ export const updateCardContent = onCall(async (request) => {
       cardId,
     });
 
-    return {
+    const response = {
       success: true,
     };
+    const validatedResponse = UpdateCardContentResponseSchema.parse(response);
+    return validatedResponse;
   } catch (error) {
     logger.error("Error updating card content", error);
-    if (error instanceof Error) {
+    handleZodError(error, "updateCardContent");
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new Error("Failed to update card content");
+    throw new HttpsError("internal", "Failed to update card content");
   }
 });

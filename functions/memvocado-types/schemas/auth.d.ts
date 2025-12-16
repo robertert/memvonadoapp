@@ -42,18 +42,21 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
         dailyGoal: z.ZodNumber;
         dailyNew: z.ZodNumber;
         language: z.ZodDefault<z.ZodString>;
+        timeZone: z.ZodDefault<z.ZodString>;
     }, "strict", z.ZodTypeAny, {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
         dailyGoal: number;
         dailyNew: number;
         language: string;
+        timeZone: string;
     }, {
         dailyGoal: number;
         dailyNew: number;
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
         language?: string | undefined;
+        timeZone?: string | undefined;
     }>;
     createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -101,18 +104,21 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
         dailyGoal: z.ZodNumber;
         dailyNew: z.ZodNumber;
         language: z.ZodDefault<z.ZodString>;
+        timeZone: z.ZodDefault<z.ZodString>;
     }, "strict", z.ZodTypeAny, {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
         dailyGoal: number;
         dailyNew: number;
         language: string;
+        timeZone: string;
     }, {
         dailyGoal: number;
         dailyNew: number;
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
         language?: string | undefined;
+        timeZone?: string | undefined;
     }>;
     createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -160,18 +166,21 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
         dailyGoal: z.ZodNumber;
         dailyNew: z.ZodNumber;
         language: z.ZodDefault<z.ZodString>;
+        timeZone: z.ZodDefault<z.ZodString>;
     }, "strict", z.ZodTypeAny, {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
         dailyGoal: number;
         dailyNew: number;
         language: string;
+        timeZone: string;
     }, {
         dailyGoal: number;
         dailyNew: number;
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
         language?: string | undefined;
+        timeZone?: string | undefined;
     }>;
     createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -224,18 +233,21 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             dailyGoal: z.ZodNumber;
             dailyNew: z.ZodNumber;
             language: z.ZodDefault<z.ZodString>;
+            timeZone: z.ZodDefault<z.ZodString>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
             dailyGoal: number;
             dailyNew: number;
             language: string;
+            timeZone: string;
         }, {
             dailyGoal: number;
             dailyNew: number;
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
             language?: string | undefined;
+            timeZone?: string | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -283,18 +295,21 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             dailyGoal: z.ZodNumber;
             dailyNew: z.ZodNumber;
             language: z.ZodDefault<z.ZodString>;
+            timeZone: z.ZodDefault<z.ZodString>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
             dailyGoal: number;
             dailyNew: number;
             language: string;
+            timeZone: string;
         }, {
             dailyGoal: number;
             dailyNew: number;
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
             language?: string | undefined;
+            timeZone?: string | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -342,18 +357,21 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             dailyGoal: z.ZodNumber;
             dailyNew: z.ZodNumber;
             language: z.ZodDefault<z.ZodString>;
+            timeZone: z.ZodDefault<z.ZodString>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
             dailyGoal: number;
             dailyNew: number;
             language: string;
+            timeZone: string;
         }, {
             dailyGoal: number;
             dailyNew: number;
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
             language?: string | undefined;
+            timeZone?: string | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -404,6 +422,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             dailyGoal: number;
             dailyNew: number;
             language: string;
+            timeZone: string;
         };
         createdAt: Date;
         updatedAt: Date;
@@ -439,6 +458,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
             language?: string | undefined;
+            timeZone?: string | undefined;
         };
         id: string;
         currentGroupId: string;
@@ -480,18 +500,21 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             dailyGoal: z.ZodNumber;
             dailyNew: z.ZodNumber;
             language: z.ZodDefault<z.ZodString>;
+            timeZone: z.ZodDefault<z.ZodString>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
             dailyGoal: number;
             dailyNew: number;
             language: string;
+            timeZone: string;
         }, {
             dailyGoal: number;
             dailyNew: number;
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
             language?: string | undefined;
+            timeZone?: string | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -539,18 +562,21 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             dailyGoal: z.ZodNumber;
             dailyNew: z.ZodNumber;
             language: z.ZodDefault<z.ZodString>;
+            timeZone: z.ZodDefault<z.ZodString>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
             dailyGoal: number;
             dailyNew: number;
             language: string;
+            timeZone: string;
         }, {
             dailyGoal: number;
             dailyNew: number;
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
             language?: string | undefined;
+            timeZone?: string | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -598,18 +624,21 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             dailyGoal: z.ZodNumber;
             dailyNew: z.ZodNumber;
             language: z.ZodDefault<z.ZodString>;
+            timeZone: z.ZodDefault<z.ZodString>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
             dailyGoal: number;
             dailyNew: number;
             language: string;
+            timeZone: string;
         }, {
             dailyGoal: number;
             dailyNew: number;
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
             language?: string | undefined;
+            timeZone?: string | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -661,18 +690,21 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             dailyGoal: z.ZodNumber;
             dailyNew: z.ZodNumber;
             language: z.ZodDefault<z.ZodString>;
+            timeZone: z.ZodDefault<z.ZodString>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
             dailyGoal: number;
             dailyNew: number;
             language: string;
+            timeZone: string;
         }, {
             dailyGoal: number;
             dailyNew: number;
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
             language?: string | undefined;
+            timeZone?: string | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -727,18 +759,21 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             dailyGoal: z.ZodNumber;
             dailyNew: z.ZodNumber;
             language: z.ZodDefault<z.ZodString>;
+            timeZone: z.ZodDefault<z.ZodString>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
             dailyGoal: number;
             dailyNew: number;
             language: string;
+            timeZone: string;
         }, {
             dailyGoal: number;
             dailyNew: number;
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
             language?: string | undefined;
+            timeZone?: string | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;

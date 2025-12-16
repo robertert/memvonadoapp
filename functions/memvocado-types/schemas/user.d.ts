@@ -40,18 +40,21 @@ export declare const UserSettingsSchema: z.ZodObject<{
     dailyGoal: z.ZodNumber;
     dailyNew: z.ZodNumber;
     language: z.ZodDefault<z.ZodString>;
+    timeZone: z.ZodDefault<z.ZodString>;
 }, "strict", z.ZodTypeAny, {
     theme: "light" | "dark";
     notificationsEnabled: boolean;
     dailyGoal: number;
     dailyNew: number;
     language: string;
+    timeZone: string;
 }, {
     dailyGoal: number;
     dailyNew: number;
     theme?: "light" | "dark" | undefined;
     notificationsEnabled?: boolean | undefined;
     language?: string | undefined;
+    timeZone?: string | undefined;
 }>;
 export type UserSettings = z.infer<typeof UserSettingsSchema>;
 /**
@@ -66,18 +69,21 @@ export declare const UserCoreSchema: z.ZodObject<{
         dailyGoal: z.ZodNumber;
         dailyNew: z.ZodNumber;
         language: z.ZodDefault<z.ZodString>;
+        timeZone: z.ZodDefault<z.ZodString>;
     }, "strict", z.ZodTypeAny, {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
         dailyGoal: number;
         dailyNew: number;
         language: string;
+        timeZone: string;
     }, {
         dailyGoal: number;
         dailyNew: number;
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
         language?: string | undefined;
+        timeZone?: string | undefined;
     }>;
 }, "strict", z.ZodTypeAny, {
     username: string;
@@ -88,6 +94,7 @@ export declare const UserCoreSchema: z.ZodObject<{
         dailyGoal: number;
         dailyNew: number;
         language: string;
+        timeZone: string;
     };
 }, {
     username: string;
@@ -98,6 +105,7 @@ export declare const UserCoreSchema: z.ZodObject<{
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
         language?: string | undefined;
+        timeZone?: string | undefined;
     };
 }>;
 export type UserCore = z.infer<typeof UserCoreSchema>;
@@ -201,18 +209,21 @@ export declare const UserSchema: z.ZodObject<{
         dailyGoal: z.ZodNumber;
         dailyNew: z.ZodNumber;
         language: z.ZodDefault<z.ZodString>;
+        timeZone: z.ZodDefault<z.ZodString>;
     }, "strict", z.ZodTypeAny, {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
         dailyGoal: number;
         dailyNew: number;
         language: string;
+        timeZone: string;
     }, {
         dailyGoal: number;
         dailyNew: number;
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
         language?: string | undefined;
+        timeZone?: string | undefined;
     }>;
 } & {
     id: z.ZodString;
@@ -264,6 +275,7 @@ export declare const UserSchema: z.ZodObject<{
         dailyGoal: number;
         dailyNew: number;
         language: string;
+        timeZone: string;
     };
     createdAt: Date;
     updatedAt: Date;
@@ -295,6 +307,7 @@ export declare const UserSchema: z.ZodObject<{
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
         language?: string | undefined;
+        timeZone?: string | undefined;
     };
     id: string;
     currentGroupId: string;

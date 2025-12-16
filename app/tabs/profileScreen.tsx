@@ -4,14 +4,12 @@ import {
   Text,
   View,
   ScrollView,
-  Image,
   Pressable,
   Share,
   ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Fonts } from "../../constants/colors";
-import { LinearGradient } from "expo-linear-gradient";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Cog6ToothIcon, ShareIcon } from "react-native-heroicons/solid";
 import { router } from "expo-router";
@@ -21,10 +19,10 @@ import ContributionHeatmap from "../../components/profileScreen/ContributionHeat
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
+import { User } from "../../types/schemas";
 import {
   placeholderUser,
   placeholderDecks,
-  placeholderNotifications,
 } from "../../constants/placeholderData";
 
 export default function profileScreen(): React.JSX.Element {
@@ -50,19 +48,7 @@ export default function profileScreen(): React.JSX.Element {
       lastStudied?: string;
     }>
   >([]);
-  const [profileData, setProfileData] = useState<{
-    username?: string;
-    stats?: {
-      totalCards?: number;
-      totalDecks?: number;
-      totalReviews?: number;
-      averageDifficulty?: number;
-    };
-    streak?: number;
-    friendsCount?: number;
-    followers?: number;
-    following?: number;
-  }>({});
+  const [profileData, setProfileData] = useState<User>();
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -79,12 +65,8 @@ export default function profileScreen(): React.JSX.Element {
 
       if (PLACEHOLDER_MODE) {
         setProfileData({
-          stats: placeholderUser.stats,
-          streak: placeholderUser.stats.currentStreak,
-          followers: placeholderUser.followersCount,
-          following: placeholderUser.followingCount,
+          ...placeholderUser,
         });
-        // Symuluj heatmap z kilkoma aktywnymi dniami
         const today = new Date();
         const heatmapData = Array.from({ length: 100 }, (_, i) => {
           const date = new Date(today);
@@ -123,14 +105,7 @@ export default function profileScreen(): React.JSX.Element {
         cloudFunctions.getUserDecks(userCtx.id!!),
       ]);
 
-      setProfileData({
-        username: profile.username,
-        stats: profile.stats,
-        streak: profile.streak,
-        friendsCount: profile.friendsCount,
-        followers: profile.followers,
-        following: profile.following,
-      });
+      setProfileData(profile);
 
       setHeatmapData(heatmap.heatmapData);
       setAwards(
@@ -168,10 +143,7 @@ export default function profileScreen(): React.JSX.Element {
       console.error("Error fetching profile data:", error);
       if (PLACEHOLDER_MODE) {
         setProfileData({
-          stats: placeholderUser.stats,
-          streak: placeholderUser.stats.currentStreak,
-          followers: placeholderUser.followersCount,
-          following: placeholderUser.followingCount,
+          ...placeholderUser,
         });
         const today = new Date();
         const heatmapData = Array.from({ length: 40 }, (_, i) => {
@@ -215,7 +187,7 @@ export default function profileScreen(): React.JSX.Element {
     <GestureHandlerRootView style={styles.container}>
       <View style={[styles.headerContainer, { paddingTop: safeArea.top + 8 }]}>
         <Text style={styles.headerTitle}>
-          {profileData.username ?? "Unknown"}
+          {profileData?.username ?? "Unknown"}
         </Text>
         <View style={styles.headerIconsContainer}>
           <Pressable
@@ -248,16 +220,14 @@ export default function profileScreen(): React.JSX.Element {
             <View style={styles.userInfo}>
               <View style={styles.infoItem}>
                 <Text style={styles.infoNum}>
-                  {profileData.friendsCount ?? 0}
+                  {profileData?.followersCount ?? 0}
                 </Text>
-                <Text style={styles.infoText}>Friends</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoNum}>{profileData.followers ?? 0}</Text>
                 <Text style={styles.infoText}>Followers</Text>
               </View>
               <View style={styles.infoItem}>
-                <Text style={styles.infoNum}>{profileData.following ?? 0}</Text>
+                <Text style={styles.infoNum}>
+                  {profileData?.followingCount ?? 0}
+                </Text>
                 <Text style={styles.infoText}>Following</Text>
               </View>
             </View>
@@ -278,7 +248,7 @@ export default function profileScreen(): React.JSX.Element {
                     style={styles.statsItemIcon}
                   />
                   <Text style={styles.statsItemValue}>
-                    {profileData.stats?.totalDecks ?? 0}
+                    {profileData?.stats?.totalDecks ?? 0}
                   </Text>
                 </View>
                 <View style={styles.statsItem}>
@@ -288,7 +258,7 @@ export default function profileScreen(): React.JSX.Element {
                     style={styles.statsItemIcon}
                   />
                   <Text style={styles.statsItemValue}>
-                    {profileData.streak ?? 0} dni
+                    {profileData?.stats?.currentStreak ?? 0} dni
                   </Text>
                 </View>
               </View>
@@ -301,7 +271,7 @@ export default function profileScreen(): React.JSX.Element {
                     style={styles.statsItemIcon}
                   />
                   <Text style={styles.statsItemValue}>
-                    {profileData.stats?.totalCards ?? 0}
+                    {profileData?.stats?.totalCards ?? 0}
                   </Text>
                 </View>
                 <View style={styles.statsItem}>
@@ -312,7 +282,7 @@ export default function profileScreen(): React.JSX.Element {
                     style={styles.statsItemIcon}
                   />
                   <Text style={styles.statsItemValue}>
-                    {profileData.stats?.totalReviews ?? 0}
+                    {profileData?.stats?.totalReviews ?? 0}
                   </Text>
                 </View>
               </View>

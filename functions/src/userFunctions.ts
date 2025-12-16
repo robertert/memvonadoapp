@@ -1,6 +1,6 @@
-import { onCall } from "firebase-functions/v2/https";
+import { HttpsError, onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getFirestore, FieldValue, Timestamp } from "firebase-admin/firestore";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import {
   Deck,
@@ -17,11 +17,39 @@ import {
   type SeasonUserPoints,
   type LeagueGroup,
   UserProgressSchema,
+  UserSchema,
   User,
   CardSchema,
   CardGrade,
   Card,
+  SuccessResponseSchema,
+  GetUserDecksResponseSchema,
 } from "./types/common";
+import { z } from "zod";
+import {
+  UpdateUserStreakIfQualifiedRequestSchema,
+  UpdateUserStreakIfQualifiedResponseSchema,
+  UpdateUserStreakOnLoginRequestSchema,
+  UpdateUserStreakOnLoginResponseSchema,
+  GetUserDecksRequestSchema,
+  UpdateCardProgressRequestSchema,
+  GetUserProgressRequestSchema,
+  GetUserProgressResponseSchema,
+  GetUserSettingsRequestSchema,
+  GetUserSettingsResponseSchema,
+  GetUserProfileRequestSchema,
+  GetUserProfileResponseSchema,
+  GetUserActivityHeatmapRequestSchema,
+  GetUserActivityHeatmapResponseSchema,
+  GetUserAwardsRequestSchema,
+  GetUserAwardsResponseSchema,
+  SubmitPointsRequestSchema,
+  SubmitPointsResponseSchema as ApiSubmitPointsResponseSchema,
+  UpdateUserSettingsRequestSchema,
+  ServerNowSchema,
+  GetCurrentSeasonResponseSchema,
+  WeeklyRollOverResponseSchema as ApiWeeklyRollOverResponseSchema,
+} from "memvocado-types";
 import { serializeTimestamps } from "./utils/serialization";
 
 const DEFAULT_CARD_ALGO: CardAlgo = {
@@ -36,6 +64,13 @@ const DEFAULT_CARD_ALGO: CardAlgo = {
 };
 
 const db = getFirestore();
+
+const handleZodError = (error: unknown, context: string) => {
+  if (error instanceof z.ZodError) {
+    logger.error(`${context}: response validation failed`, error.errors);
+    throw new HttpsError("internal", "Invalid response format");
+  }
+};
 
 /**
  * Pomocniczo: formatuje datę na łańcuch w formacie YYYY-MM-DD w zadanej strefie czasowej.
@@ -172,19 +207,27 @@ async function updateStreakForTodayIfQualified(params: {
  * Idempotentne dzięki polu stats.lastStreakDate (YYYY-MM-DD).
  */
 export const updateUserStreakOnLogin = onCall(async (request) => {
-  const { userId, timeZone } = request.data || {};
-
-  if (!userId) {
-    throw new Error("userId is required");
+  const parsedRequest = UpdateUserStreakOnLoginRequestSchema.safeParse(
+    request.data
+  );
+  if (!parsedRequest.success) {
+    logger.error("updateUserStreakOnLogin: invalid request", {
+      issues: parsedRequest.error.issues,
+    });
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
   }
 
   try {
+    const { userId, timeZone } = parsedRequest.data;
+
     const userRef = db.doc(`users/${userId}`);
     const userSnap = await userRef.get();
     if (!userSnap.exists) {
-      throw new Error("User not found");
+      throw new HttpsError("not-found", "User not found");
     }
-    const userData = userSnap.data() as any;
+    const userData = userSnap.data() as User;
 
     const tz: string = timeZone || userData?.settings?.timeZone || "UTC";
 
@@ -195,7 +238,7 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
     const yesterdayYmd = formatYmdInTimeZone(yesterday, tz);
 
     // Jeżeli już zaktualizowane dla wczoraj, nic nie rób (idempotencja)
-    if (userData?.stats?.lastStreakDate === yesterdayYmd) {
+    if (userData?.stats?.lastStreakDate?.toDateString() === yesterdayYmd) {
       return serializeTimestamps({
         currentStreak: Number(userData?.stats?.currentStreak || 0),
         longestStreak: Number(userData?.stats?.longestStreak || 0),
@@ -242,15 +285,26 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
       "stats.lastStreakDate": yesterdayYmd,
     });
 
-    return serializeTimestamps({
+    const rawResponse = {
       currentStreak: nextCurrent,
       longestStreak: nextLongest,
       lastStreakDate: yesterdayYmd,
       updated: true,
-    });
+    };
+
+    const validatedResponse =
+      UpdateUserStreakOnLoginResponseSchema.parse(rawResponse);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("updateUserStreakOnLogin failed", error);
-    throw new Error("Failed to update streak");
+    if (error instanceof z.ZodError) {
+      logger.error("Response validation failed", error.errors);
+      throw new HttpsError("internal", "Invalid response format");
+    }
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to update streak");
   }
 });
 
@@ -264,20 +318,38 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
  * request.data: { userId: string, timeZone?: string, threshold?: number }
  */
 export const updateUserStreakIfQualified = onCall(async (request) => {
-  const { userId, timeZone, threshold } = request.data || {};
-  if (!userId) {
-    throw new Error("userId is required");
+  const parsedRequest = UpdateUserStreakIfQualifiedRequestSchema.safeParse(
+    request.data
+  );
+  if (!parsedRequest.success) {
+    logger.error("updateUserStreakIfQualified: invalid request", {
+      issues: parsedRequest.error.issues,
+    });
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
   }
   try {
-    const result = await updateStreakForTodayIfQualified({
+    const { userId, timeZone, threshold } = parsedRequest.data;
+
+    const streakResult = await updateStreakForTodayIfQualified({
       userId,
       timeZone,
       threshold,
     });
-    return result;
+    const validatedResponse =
+      UpdateUserStreakIfQualifiedResponseSchema.parse(streakResult);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("updateUserStreakIfQualified failed", error);
-    throw new Error("Failed to update streak by threshold");
+    if (error instanceof z.ZodError) {
+      logger.error("Response validation failed", error.errors);
+      throw new HttpsError("internal", "Invalid response format");
+    }
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to update streak by threshold");
   }
 });
 
@@ -285,11 +357,17 @@ export const updateUserStreakIfQualified = onCall(async (request) => {
  * Get user decks with cards
  */
 export const getUserDecks = onCall(async (request) => {
-  const { userId } = request.data;
-
-  if (!userId) {
-    throw new Error("UserId is required");
+  const parsedRequest = GetUserDecksRequestSchema.safeParse(request.data || {});
+  if (!parsedRequest.success) {
+    logger.error("getUserDecks: invalid request", {
+      issues: parsedRequest.error.issues,
+    });
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
   }
+
+  const { userId } = parsedRequest.data;
 
   try {
     // Get decks created by user (from main decks collection)
@@ -298,19 +376,23 @@ export const getUserDecks = onCall(async (request) => {
       .where("createdBy", "==", userId)
       .get();
 
-    const decks: Deck[] = decksSnapshot.docs.map((deckDoc) => {
-      return {
-        id: deckDoc.id,
-        ...deckDoc.data(),
-      } as Deck;
-    });
+    const decks: Deck[] = decksSnapshot.docs.map((deckDoc) => ({
+      id: deckDoc.id,
+      ...deckDoc.data(),
+    })) as Deck[];
 
     const validatedDecks: Deck[] = decks.map((deck) => DeckSchema.parse(deck));
 
-    return serializeTimestamps({ decks: validatedDecks });
+    const rawResponse = { decks: validatedDecks };
+    const validatedResponse = GetUserDecksResponseSchema.parse(rawResponse);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error getting user decks", error);
-    throw new Error("Failed to get user decks");
+    handleZodError(error, "getUserDecks");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get user decks");
   }
 });
 
@@ -318,13 +400,20 @@ export const getUserDecks = onCall(async (request) => {
  * Update card progress after review
  */
 export const updateCardProgress = onCall(async (request) => {
-  const { userId, deckId, card, scheduledTime } = request.data;
-
-  if (!userId || !deckId || !card.id || !scheduledTime) {
-    throw new Error("userId, deckId, cardId and scheduledTime are required");
+  const parsedRequest = UpdateCardProgressRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!parsedRequest.success) {
+    logger.error("updateCardProgress: invalid request", {
+      issues: parsedRequest.error.issues,
+    });
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
   }
 
-  delete card.seenInSession;
+  const { userId, deckId, card, scheduledTime } = parsedRequest.data;
+
   const validatedCard = CardSchema.parse(card);
 
   try {
@@ -374,7 +463,7 @@ export const updateCardProgress = onCall(async (request) => {
     } catch (streakErr) {
       logger.warn(
         "updateCardProgress: streak threshold check failed",
-        streakErr as any
+        streakErr
       );
       // Nie przerywaj głównej operacji – to tylko best-effort
     }
@@ -387,10 +476,15 @@ export const updateCardProgress = onCall(async (request) => {
       firstLearn: validatedCard.firstLearn,
     });
 
-    return serializeTimestamps({ success: true });
+    const successResponse = SuccessResponseSchema.parse({ success: true });
+    return serializeTimestamps(successResponse);
   } catch (error) {
     logger.error("Error updating card progress", error);
-    throw new Error("Failed to update card progress");
+    handleZodError(error, "updateCardProgress");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to update card progress");
   }
 });
 
@@ -398,19 +492,26 @@ export const updateCardProgress = onCall(async (request) => {
  * Get user progress and statistics
  */
 export const getUserProgress = onCall(async (request) => {
-  const { userId } = request.data;
-
-  if (!userId) {
-    throw new Error("UserId is required");
+  const parsedRequest = GetUserProgressRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!parsedRequest.success) {
+    logger.error("getUserProgress: invalid request", {
+      issues: parsedRequest.error.issues,
+    });
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
   }
+
+  const { userId } = parsedRequest.data;
 
   try {
     const userDoc = await db.doc(`users/${userId}`).get();
-    const userData = userDoc.data() as User;
-
-    if (!userData) {
-      throw new Error("User not found");
+    if (!userDoc.exists) {
+      throw new HttpsError("not-found", "User not found");
     }
+    const userData = userDoc.data() as User;
 
     const now = new Date();
 
@@ -439,22 +540,35 @@ export const getUserProgress = onCall(async (request) => {
       dailyGoal: userData.settings.dailyGoal || 120,
       todaySessionsCount: todaySessionsCount.data().count,
     });
-
-    return serializeTimestamps({ userProgress });
+    const rawResponse = { userProgress };
+    const validatedResponse = GetUserProgressResponseSchema.parse(rawResponse);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error getting user progress", error);
-    throw new Error("Failed to get user progress");
+    handleZodError(error, "getUserProgress");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get user progress");
   }
 });
 /**
  * Get user settings
  */
 export const getUserSettings = onCall(async (request) => {
-  const { userId } = request.data;
-
-  if (!userId) {
-    throw new Error("UserId is required");
+  const parsedRequest = GetUserSettingsRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!parsedRequest.success) {
+    logger.error("getUserSettings: invalid request", {
+      issues: parsedRequest.error.issues,
+    });
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
   }
+
+  const { userId } = parsedRequest.data;
 
   try {
     // Try a dedicated settings doc first: users/{userId}/settings/app
@@ -462,7 +576,12 @@ export const getUserSettings = onCall(async (request) => {
     const settingsDoc = await settingsDocPath.get();
 
     if (settingsDoc.exists) {
-      return serializeTimestamps({ settings: settingsDoc.data() || {} });
+      const settingsFromDoc = (settingsDoc.data() || {}) as unknown;
+      const validatedSettings = UserSettingsSchema.parse(settingsFromDoc);
+      const rawResponse = { settings: validatedSettings };
+      const validatedResponse =
+        GetUserSettingsResponseSchema.parse(rawResponse);
+      return serializeTimestamps(validatedResponse);
     }
 
     // Fallback: settings embedded in user root document under `settings`
@@ -475,20 +594,31 @@ export const getUserSettings = onCall(async (request) => {
     // Get settings from user document
     // validateUserData sets theme: "light" at root level, not in settings object
     // So if we have userData.settings, it was explicitly set by user
-    const userSettings = userData.settings as any;
+    const userSettings = userData.settings;
     if (
       userSettings &&
       typeof userSettings === "object" &&
       Object.keys(userSettings).length > 0
     ) {
-      return serializeTimestamps({ settings: userSettings });
+      const validatedSettings = UserSettingsSchema.parse(userSettings);
+      const rawResponse = { settings: validatedSettings };
+      const validatedResponse =
+        GetUserSettingsResponseSchema.parse(rawResponse);
+      return serializeTimestamps(validatedResponse);
     }
 
-    // No settings found
-    return serializeTimestamps({ settings: {} });
+    // No settings found – return defaults
+    const validatedSettings = UserSettingsSchema.parse({});
+    const rawResponse = { settings: validatedSettings };
+    const validatedResponse = GetUserSettingsResponseSchema.parse(rawResponse);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error getting user settings", error);
-    throw new Error("Failed to get user settings");
+    handleZodError(error, "getUserSettings");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get user settings");
   }
 });
 
@@ -499,7 +629,7 @@ export const getUserSettings = onCall(async (request) => {
  */
 export const validateUserData = onDocumentWritten(
   "users/{userId}",
-  async (event: any) => {
+  async (event) => {
     const beforeData = event.data?.before.data();
     const afterData = event.data?.after.data();
 
@@ -534,7 +664,7 @@ export const validateUserData = onDocumentWritten(
         afterData.followingCount === undefined;
 
       if (needsInit) {
-        const updates: any = {};
+        const updates: Record<string, unknown> = {};
 
         // Only set stats if they don't exist
         if (!afterData.stats) {
@@ -582,10 +712,21 @@ export const validateUserData = onDocumentWritten(
  */
 export const serverNow = onCall(async () => {
   const now = new Date();
-  return {
+  const rawResponse = {
     nowMs: now.getTime(),
     iso: now.toISOString(),
   };
+
+  try {
+    const validatedResponse = ServerNowSchema.parse(rawResponse);
+    return serializeTimestamps(validatedResponse);
+  } catch (error) {
+    handleZodError(error, "serverNow");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get server time");
+  }
 });
 
 /**
@@ -621,19 +762,33 @@ export const getCurrentSeason = onCall(async () => {
     return { seasonId, startAt: start, endAt: end, status: "active" } as const;
   };
 
-  if (!snap.exists) {
-    const window = computeWindow();
-    await seasonRef.set({ ...window, createdAt: FieldValue.serverTimestamp() });
-    return window;
-  }
+  try {
+    if (!snap.exists) {
+      const window = computeWindow();
+      await seasonRef.set({
+        ...window,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      const validatedResponse = GetCurrentSeasonResponseSchema.parse(window);
+      return serializeTimestamps(validatedResponse);
+    }
 
-  const data = snap.data() as {
-    seasonId: string;
-    startAt: any;
-    endAt: any;
-    status: string;
-  };
-  return data;
+    const data = snap.data() as {
+      seasonId: string;
+      startAt: unknown;
+      endAt: unknown;
+      status: string;
+    };
+    const validatedResponse = GetCurrentSeasonResponseSchema.parse(data);
+    return serializeTimestamps(validatedResponse);
+  } catch (error) {
+    logger.error("Error getting current season", error);
+    handleZodError(error, "getCurrentSeason");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get current season");
+  }
 });
 
 /**
@@ -641,10 +796,17 @@ export const getCurrentSeason = onCall(async () => {
  * Request: { userId: string; delta: number }
  */
 export const submitPoints = onCall(async (request) => {
-  const { userId, delta } = request.data || {};
-  if (!userId || typeof delta !== "number") {
-    throw new Error("userId and numeric delta are required");
+  const parsedRequest = SubmitPointsRequestSchema.safeParse(request.data || {});
+  if (!parsedRequest.success) {
+    logger.error("submitPoints: invalid request", {
+      issues: parsedRequest.error.issues,
+    });
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
   }
+
+  const { userId, delta } = parsedRequest.data;
 
   // Call local function directly to avoid nested onCall.run typing
   const seasonSnap = await db.doc("ranking/currentSeason").get();
@@ -683,7 +845,7 @@ export const submitPoints = onCall(async (request) => {
     });
   }
   if (!seasonId) {
-    throw new Error("No active season");
+    throw new HttpsError("failed-precondition", "No active season");
   }
 
   const docRef = db.doc(`seasonUserPoints/${seasonId}/users/${userId}`);
@@ -822,7 +984,7 @@ export const submitPoints = onCall(async (request) => {
     };
     // Sprawdź tylko wymagane pola
     if (memberData.points < 0) {
-      throw new Error("Points cannot be negative");
+      throw new HttpsError("invalid-argument", "Points cannot be negative");
     }
 
     trx.set(
@@ -856,8 +1018,18 @@ export const submitPoints = onCall(async (request) => {
     }
   });
 
-  logger.info("Points submitted", { userId, delta, seasonId, groupId });
-  return { success: true };
+  try {
+    logger.info("Points submitted", { userId, delta, seasonId, groupId });
+    const rawResponse = { success: true };
+    const validatedResponse = ApiSubmitPointsResponseSchema.parse(rawResponse);
+    return serializeTimestamps(validatedResponse);
+  } catch (error) {
+    handleZodError(error, "submitPoints");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to submit points");
+  }
 });
 
 /**
@@ -867,9 +1039,12 @@ export const submitPoints = onCall(async (request) => {
 export const weeklyRollOver = onCall(async () => {
   const seasonDoc = await db.doc("ranking/currentSeason").get();
   if (!seasonDoc.exists) {
-    throw new Error("No current season");
+    throw new HttpsError("failed-precondition", "No current season");
   }
-  const { seasonId, endAt } = seasonDoc.data() as any;
+  const { seasonId, endAt } = seasonDoc.data() as unknown as {
+    seasonId: string;
+    endAt: Timestamp;
+  };
   const now = new Date();
   if (endAt?.toDate && now < endAt.toDate()) {
     // Not yet ended, but allow manual publish
@@ -921,22 +1096,40 @@ export const weeklyRollOver = onCall(async () => {
     { merge: true }
   );
 
-  logger.info("Season rolled over", { prev: seasonId, next: nextId });
-  return { success: true, nextSeasonId: nextId };
+  try {
+    logger.info("Season rolled over", { prev: seasonId, next: nextId });
+    const rawResponse = { success: true, nextSeasonId: nextId };
+    const validatedResponse =
+      ApiWeeklyRollOverResponseSchema.parse(rawResponse);
+    return serializeTimestamps(validatedResponse);
+  } catch (error) {
+    handleZodError(error, "weeklyRollOver");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to roll over season");
+  }
 });
 
 /**
  * Update user settings
  */
 export const updateUserSettings = onCall(async (request) => {
-  const { userId, settings } = request.data || {};
-
-  if (!userId || !settings) {
-    throw new Error("userId and settings are required");
+  const parsedRequest = UpdateUserSettingsRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!parsedRequest.success) {
+    logger.error("updateUserSettings: invalid request", {
+      issues: parsedRequest.error.issues,
+    });
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
   }
 
+  const { userId, settings } = parsedRequest.data;
+
   try {
-    // Waliduj i typuj ustawienia przed zapisem
     const validatedSettings: UserSettings = UserSettingsSchema.parse(settings);
 
     // Update dedicated settings doc: users/{userId}/settings/app
@@ -945,10 +1138,15 @@ export const updateUserSettings = onCall(async (request) => {
 
     logger.info("User settings updated", { userId });
 
-    return { success: true };
+    const successResponse = SuccessResponseSchema.parse({ success: true });
+    return serializeTimestamps(successResponse);
   } catch (error) {
     logger.error("Error updating user settings", error);
-    throw new Error("Failed to update user settings");
+    handleZodError(error, "updateUserSettings");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to update user settings");
   }
 });
 
@@ -956,39 +1154,43 @@ export const updateUserSettings = onCall(async (request) => {
  * Get user profile with full information
  */
 export const getUserProfile = onCall(async (request) => {
-  const { userId } = request.data || {};
-
-  if (!userId) {
-    throw new Error("userId is required");
+  const parsedRequest = GetUserProfileRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!parsedRequest.success) {
+    logger.error("getUserProfile: invalid request", {
+      issues: parsedRequest.error.issues,
+    });
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
   }
+
+  const { userId } = parsedRequest.data;
 
   try {
     const userDoc = await db.doc(`users/${userId}`).get();
 
     if (!userDoc.exists) {
       logger.error("User not found", { userId });
-      throw new Error("User not found");
+      throw new HttpsError("not-found", "User not found");
     }
 
-    const userData = userDoc.data() as User;
+    const rawUser = {
+      id: userDoc.id,
+      ...(userDoc.data() || {}),
+    } as unknown;
 
-    return {
-      userId,
-      username: userData?.username || "Unknown",
-      email: userData?.email || null,
-      stats: userData?.stats || {},
-      streak: userData?.stats?.currentStreak || 0,
-      league: userData?.league || 1,
-      points: userData?.currencyCount || 0,
-      followers: userData?.followersCount || 0,
-      following: userData?.followingCount || 0,
-    };
+    const validatedUser = UserSchema.parse(rawUser);
+    const response = GetUserProfileResponseSchema.parse(validatedUser);
+    return serializeTimestamps(response);
   } catch (error) {
     logger.error("Error getting user profile", error);
-    if (error instanceof Error && error.message === "User not found") {
+    handleZodError(error, "getUserProfile");
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new Error("Failed to get user profile");
+    throw new HttpsError("internal", "Failed to get user profile");
   }
 });
 
@@ -996,11 +1198,19 @@ export const getUserProfile = onCall(async (request) => {
  * Get user activity heatmap data
  */
 export const getUserActivityHeatmap = onCall(async (request) => {
-  const { userId, weeks = 16 } = request.data || {};
-
-  if (!userId) {
-    throw new Error("userId is required");
+  const parsedRequest = GetUserActivityHeatmapRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!parsedRequest.success) {
+    logger.error("getUserActivityHeatmap: invalid request", {
+      issues: parsedRequest.error.issues,
+    });
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
   }
+
+  const { userId, weeks = 16 } = parsedRequest.data;
 
   try {
     const today = new Date();
@@ -1047,10 +1257,17 @@ export const getUserActivityHeatmap = onCall(async (request) => {
       });
     }
 
-    return { heatmapData };
+    const rawResponse = { heatmapData };
+    const validatedResponse =
+      GetUserActivityHeatmapResponseSchema.parse(rawResponse);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error getting user activity heatmap", error);
-    throw new Error("Failed to get user activity heatmap");
+    handleZodError(error, "getUserActivityHeatmap");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get user activity heatmap");
   }
 });
 
@@ -1058,11 +1275,19 @@ export const getUserActivityHeatmap = onCall(async (request) => {
  * Get user awards
  */
 export const getUserAwards = onCall(async (request) => {
-  const { userId } = request.data || {};
-
-  if (!userId) {
-    throw new Error("userId is required");
+  const parsedRequest = GetUserAwardsRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!parsedRequest.success) {
+    logger.error("getUserAwards: invalid request", {
+      issues: parsedRequest.error.issues,
+    });
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
   }
+
+  const { userId } = parsedRequest.data;
 
   try {
     const awardsRef = db
@@ -1076,9 +1301,15 @@ export const getUserAwards = onCall(async (request) => {
       ...doc.data(),
     }));
 
-    return { awards };
+    const rawResponse = { awards };
+    const validatedResponse = GetUserAwardsResponseSchema.parse(rawResponse);
+    return serializeTimestamps(validatedResponse);
   } catch (error) {
     logger.error("Error getting user awards", error);
-    throw new Error("Failed to get user awards");
+    handleZodError(error, "getUserAwards");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get user awards");
   }
 });

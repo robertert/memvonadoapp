@@ -30,6 +30,7 @@ export const UserSettingsSchema = z
     dailyGoal: z.number().min(0),
     dailyNew: z.number().min(0),
     language: z.string().default("en"),
+    timeZone: z.string().default("UTC"),
   })
   .strict();
 

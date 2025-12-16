@@ -1,21 +1,42 @@
-import { onCall } from "firebase-functions/v2/https";
+import { HttpsError, onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { LeagueGroupSchema, type LeagueGroup } from "./types/common";
 import { serializeTimestamps } from "./utils/serialization";
+import { z } from "zod";
+import {
+  GetLeaderboardRequestSchema,
+  GetUserRankingRequestSchema,
+  GetFollowingRankingsRequestSchema,
+  AssignUserToGroupRequestSchema,
+  GetLeaderboardResponseSchema,
+  GetUserRankingResponseSchema,
+  GetFollowingRankingsResponseSchema,
+  AssignUserToGroupResponseSchema,
+} from "memvocado-types";
 
 const db = getFirestore();
+
+const handleZodError = (error: unknown, context: string) => {
+  if (error instanceof z.ZodError) {
+    logger.error(`${context}: response validation failed`, error.errors);
+    throw new HttpsError("internal", "Invalid response format");
+  }
+};
 
 /**
  * Get leaderboard for user's group (20-person league group)
  * Returns the ranking of all members in the user's current league group
  */
 export const getLeaderboard = onCall(async (request) => {
-  const { userId, seasonId } = request.data || {};
-
-  if (!userId) {
-    throw new Error("userId is required");
+  const parsed = GetLeaderboardRequestSchema.safeParse(request.data || {});
+  if (!parsed.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsed.error.issues,
+    });
   }
+
+  const { userId, seasonId } = parsed.data;
 
   try {
     // Get current season if not provided
@@ -23,12 +44,12 @@ export const getLeaderboard = onCall(async (request) => {
     if (!currentSeasonId) {
       const seasonDoc = await db.doc("ranking/currentSeason").get();
       if (!seasonDoc.exists) {
-        throw new Error("No active season");
+        throw new HttpsError("failed-precondition", "No active season");
       }
       const seasonData = seasonDoc.data() as { seasonId?: string };
       currentSeasonId = seasonData?.seasonId;
       if (!currentSeasonId) {
-        throw new Error("No active season");
+        throw new HttpsError("failed-precondition", "No active season");
       }
     }
 
@@ -40,12 +61,15 @@ export const getLeaderboard = onCall(async (request) => {
 
     if (!userSeasonPoints.exists) {
       // User not yet in season, return empty leaderboard
-      return serializeTimestamps({
+      const rawResponse = {
         entries: [],
         groupId: null,
         leagueNumber: null,
         seasonId: currentSeasonId,
-      });
+        totalMembers: 0,
+      };
+      GetLeaderboardResponseSchema.parse(rawResponse);
+      return serializeTimestamps(rawResponse);
     }
 
     const userData = userSeasonPoints.data() as {
@@ -59,12 +83,15 @@ export const getLeaderboard = onCall(async (request) => {
 
     if (!userGroupId) {
       // User doesn't have a group yet, return empty leaderboard
-      return serializeTimestamps({
+      const rawResponse = {
         entries: [],
         groupId: null,
         leagueNumber: userLeague,
         seasonId: currentSeasonId,
-      });
+        totalMembers: 0,
+      };
+      GetLeaderboardResponseSchema.parse(rawResponse);
+      return serializeTimestamps(rawResponse);
     }
 
     // Get all members in the group
@@ -88,7 +115,7 @@ export const getLeaderboard = onCall(async (request) => {
         const memberData = doc.data() as {
           userId: string;
           points?: number;
-          lastActivityAt?: any;
+          lastActivityAt?: FirebaseFirestore.Timestamp | null;
         };
 
         // Get username from user document
@@ -113,16 +140,22 @@ export const getLeaderboard = onCall(async (request) => {
       })
     );
 
-    return serializeTimestamps({
+    const rawResponse = {
       entries,
       groupId: userGroupId,
       leagueNumber: userLeague,
       seasonId: currentSeasonId,
       totalMembers: entries.length,
-    });
+    };
+    GetLeaderboardResponseSchema.parse(rawResponse);
+    return serializeTimestamps(rawResponse);
   } catch (error) {
     logger.error("Error getting leaderboard", error);
-    throw new Error("Failed to get leaderboard");
+    handleZodError(error, "getLeaderboard");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get leaderboard");
   }
 });
 
@@ -130,23 +163,26 @@ export const getLeaderboard = onCall(async (request) => {
  * Get user's ranking position in their group
  */
 export const getUserRanking = onCall(async (request) => {
-  const { userId, seasonId } = request.data || {};
-
-  if (!userId) {
-    throw new Error("userId is required");
+  const parsed = GetUserRankingRequestSchema.safeParse(request.data || {});
+  if (!parsed.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsed.error.issues,
+    });
   }
+
+  const { userId, seasonId } = parsed.data;
 
   try {
     let currentSeasonId = seasonId;
     if (!currentSeasonId) {
       const seasonDoc = await db.doc("ranking/currentSeason").get();
       if (!seasonDoc.exists) {
-        throw new Error("No active season");
+        throw new HttpsError("failed-precondition", "No active season");
       }
       const seasonData = seasonDoc.data() as { seasonId?: string };
       currentSeasonId = seasonData?.seasonId;
       if (!currentSeasonId) {
-        throw new Error("No active season");
+        throw new HttpsError("failed-precondition", "No active season");
       }
     }
 
@@ -156,7 +192,15 @@ export const getUserRanking = onCall(async (request) => {
     const userSeasonPoints = await userSeasonPointsRef.get();
 
     if (!userSeasonPoints.exists) {
-      return null;
+      const rawResponse = {
+        position: null,
+        groupId: null,
+        leagueNumber: null,
+        points: 0,
+        totalMembers: null,
+      };
+      GetUserRankingResponseSchema.parse(rawResponse);
+      return serializeTimestamps(rawResponse);
     }
 
     const userData = userSeasonPoints.data() as {
@@ -170,7 +214,15 @@ export const getUserRanking = onCall(async (request) => {
     const userPoints = userData?.points ?? 0;
 
     if (!userGroupId) {
-      return null;
+      const rawResponse = {
+        position: null,
+        groupId: null,
+        leagueNumber: userLeague,
+        points: userPoints,
+        totalMembers: null,
+      };
+      GetUserRankingResponseSchema.parse(rawResponse);
+      return serializeTimestamps(rawResponse);
     }
 
     // Count how many users in the group have more points
@@ -189,16 +241,22 @@ export const getUserRanking = onCall(async (request) => {
 
     const position = membersWithMorePoints.length + 1;
 
-    return serializeTimestamps({
+    const rawResponse = {
       position,
       groupId: userGroupId,
       leagueNumber: userLeague,
       points: userPoints,
       totalMembers: (await groupRef.get()).size,
-    });
+    };
+    GetUserRankingResponseSchema.parse(rawResponse);
+    return serializeTimestamps(rawResponse);
   } catch (error) {
     logger.error("Error getting user ranking", error);
-    throw new Error("Failed to get user ranking");
+    handleZodError(error, "getUserRanking");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get user ranking");
   }
 });
 
@@ -206,37 +264,46 @@ export const getUserRanking = onCall(async (request) => {
  * Get rankings for followed users (friends in their groups)
  */
 export const getFollowingRankings = onCall(async (request) => {
-  const { userId, seasonId } = request.data || {};
-
-  if (!userId) {
-    throw new Error("userId is required");
+  const parsed = GetFollowingRankingsRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!parsed.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsed.error.issues,
+    });
   }
+
+  const { userId, seasonId } = parsed.data;
 
   try {
     let currentSeasonId = seasonId;
     if (!currentSeasonId) {
       const seasonDoc = await db.doc("ranking/currentSeason").get();
       if (!seasonDoc.exists) {
-        throw new Error("No active season");
+        throw new HttpsError("failed-precondition", "No active season");
       }
       const seasonData = seasonDoc.data() as { seasonId?: string };
       currentSeasonId = seasonData?.seasonId;
       if (!currentSeasonId) {
-        throw new Error("No active season");
+        throw new HttpsError("failed-precondition", "No active season");
       }
     }
 
     // Get user's friends
     const userDoc = await db.doc(`users/${userId}`).get();
     if (!userDoc.exists) {
-      return serializeTimestamps({ rankings: [] });
+      const rawResponse = { rankings: [] as Array<null> };
+      GetFollowingRankingsResponseSchema.parse(rawResponse);
+      return serializeTimestamps(rawResponse);
     }
 
     const userData = userDoc.data() as { friends?: string[] };
     const friends = userData?.friends || [];
 
     if (friends.length === 0) {
-      return { rankings: [] };
+      const rawResponse = { rankings: [] as Array<null> };
+      GetFollowingRankingsResponseSchema.parse(rawResponse);
+      return serializeTimestamps(rawResponse);
     }
 
     // Get ranking info for each friend
@@ -318,10 +385,16 @@ export const getFollowingRankings = onCall(async (request) => {
       .filter((r) => r !== null)
       .sort((a, b) => (b?.points ?? 0) - (a?.points ?? 0));
 
-    return { rankings: validRankings };
+    const rawResponse = { rankings: validRankings };
+    GetFollowingRankingsResponseSchema.parse(rawResponse);
+    return serializeTimestamps(rawResponse);
   } catch (error) {
     logger.error("Error getting following rankings", error);
-    throw new Error("Failed to get following rankings");
+    handleZodError(error, "getFollowingRankings");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get following rankings");
   }
 });
 
@@ -330,17 +403,20 @@ export const getFollowingRankings = onCall(async (request) => {
  * Finds an available group with less than 20 members, or creates a new one
  */
 export const assignUserToGroup = onCall(async (request) => {
-  const { userId, leagueNumber, seasonId } = request.data || {};
-
-  if (!userId || !leagueNumber || !seasonId) {
-    throw new Error("userId, leagueNumber, and seasonId are required");
+  const parsed = AssignUserToGroupRequestSchema.safeParse(request.data || {});
+  if (!parsed.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsed.error.issues,
+    });
   }
+
+  const { userId, leagueNumber, seasonId } = parsed.data;
 
   try {
     // Get user's current league if not provided separately
     const userDoc = await db.doc(`users/${userId}`).get();
     if (!userDoc.exists) {
-      throw new Error("User not found");
+      throw new HttpsError("not-found", "User not found");
     }
 
     const userData = userDoc.data() as { league?: number };
@@ -434,13 +510,13 @@ export const assignUserToGroup = onCall(async (request) => {
       const capacity = groupData?.capacity ?? 20;
 
       if (currentCount >= capacity) {
-        throw new Error("Group is full");
+        throw new HttpsError("failed-precondition", "Group is full");
       }
 
       // Waliduj dane członka grupy przed zapisem
       const memberPoints = userPointsData.points ?? 0;
       if (memberPoints < 0) {
-        throw new Error("Points cannot be negative");
+        throw new HttpsError("invalid-argument", "Points cannot be negative");
       }
 
       // Add member
@@ -476,12 +552,15 @@ export const assignUserToGroup = onCall(async (request) => {
       seasonId,
     });
 
-    return { success: true, groupId: targetGroupId };
+    const rawResponse = { success: true, groupId: targetGroupId };
+    AssignUserToGroupResponseSchema.parse(rawResponse);
+    return serializeTimestamps(rawResponse);
   } catch (error) {
     logger.error("Error assigning user to group", error);
-    if (error instanceof Error) {
+    handleZodError(error, "assignUserToGroup");
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new Error("Failed to assign user to group");
+    throw new HttpsError("internal", "Failed to assign user to group");
   }
 });
