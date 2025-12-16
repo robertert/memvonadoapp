@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserSchema = exports.UserMetaSchema = exports.UserTimestampSchema = exports.UserCoreSchema = exports.UserSettingsSchema = exports.UserStatsSchema = void 0;
+exports.FollowersArraySchema = exports.FollowersSchema = exports.FollowingArraySchema = exports.FollowingSchema = exports.UserSchema = exports.UserMetaSchema = exports.UserTimestampSchema = exports.UserCoreSchema = exports.UserSettingsSchema = exports.UserStatsSchema = void 0;
 const zod_1 = require("zod");
 const base_1 = require("./base");
 /**
@@ -62,3 +62,11 @@ exports.UserMetaSchema = zod_1.z
 exports.UserSchema = exports.UserCoreSchema.merge(exports.UserMetaSchema)
     .merge(exports.UserTimestampSchema)
     .strict();
+exports.FollowingSchema = zod_1.z.object({
+    userId: zod_1.z.string(),
+});
+exports.FollowingArraySchema = zod_1.z.array(exports.FollowingSchema);
+exports.FollowersSchema = zod_1.z.object({
+    userId: zod_1.z.string(),
+});
+exports.FollowersArraySchema = zod_1.z.array(exports.FollowersSchema);

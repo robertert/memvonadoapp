@@ -9,8 +9,9 @@ import {
   DeckSchema,
   DeckSettings,
   Deck,
-  DeckCore,
   CardSchema,
+  DeckUpdateSchema,
+  DeckLearningDataUpdateSchema,
   FirstLearn,
   DeckLearningDataSchema,
   CardDataUpdateSchema,
@@ -176,10 +177,15 @@ export const getDeckDetails = onCall(async (request) => {
       throw new HttpsError("not-found", "Deck not found");
     }
 
-    const deckDataRaw = deckSnap.data() || {};
-    const deckData = { ...deckDataRaw } as Deck;
+    const deckDataRaw = deckSnap.data();
+    if (!deckDataRaw) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
+    const validatedDeckData = DeckSchema.pick({ is_deleted: true }).parse(
+      deckDataRaw
+    );
 
-    const userRef = db.doc(`users/${deckData.createdBy}`);
+    const userRef = db.doc(`users/${deckDataRaw.createdBy}`);
     const userSnap = await userRef.get();
     const userData = userSnap.data() as User;
 
@@ -188,9 +194,11 @@ export const getDeckDetails = onCall(async (request) => {
     }
 
     // Check if deck is deleted
-    if (deckData.is_deleted === true) {
+    if (validatedDeckData.is_deleted === true) {
       throw new HttpsError("not-found", "Deck not found");
     }
+
+    const deckData = { ...deckDataRaw } as Deck;
 
     // Use document ID (override any id field in data)
     deckData.id = deckSnap.id;
@@ -472,7 +480,11 @@ async function joinCardsWithProgress(
   // Get all user's local cards (for deep copy and deleted cards)
   const userCardsSnap = await userCardsRef.get();
   const userCardsMap = new Map(
-    userCardsSnap.docs.map((doc) => [doc.id, doc.data()])
+    userCardsSnap.docs.map((doc) => {
+      const rawData = doc.data();
+      const validatedData = CardSchema.parse(rawData);
+      return [doc.id, validatedData];
+    })
   );
 
   // Create map of source card IDs for quick lookup
@@ -482,7 +494,8 @@ async function joinCardsWithProgress(
 
   // Process source cards (use source content, user's progress)
   for (const cardDoc of sourceCards) {
-    const cardData = cardDoc.data();
+    const rawCardData = cardDoc.data();
+    const validatedCardData = CardSchema.parse(rawCardData);
     const userCardData = userCardsMap.get(cardDoc.id);
     const progress = userCardData || null;
 
@@ -494,19 +507,19 @@ async function joinCardsWithProgress(
     const card: Card = {
       id: cardDoc.id,
       cardData: {
-        front: cardData.front || "",
-        back: cardData.back || "",
+        front: validatedCardData.cardData.front || "",
+        back: validatedCardData.cardData.back || "",
       },
-      createdAt: cardData.createdAt || new Date(),
-      tags: cardData.tags || [],
+      createdAt: validatedCardData.createdAt || new Date(),
+      tags: validatedCardData.tags || [],
       cardAlgo: progress?.cardAlgo || undefined,
       firstLearn: progress?.firstLearn || defaultFirstLearn,
       // Flag to indicate if content differs from local copy
       hasChanges: progress
-        ? progress.front !== cardData.front ||
-          progress.back !== cardData.back ||
+        ? progress.cardData.front !== validatedCardData.cardData.front ||
+          progress.cardData.back !== validatedCardData.cardData.back ||
           JSON.stringify(progress.tags || []) !==
-            JSON.stringify(cardData.tags || [])
+            JSON.stringify(validatedCardData.tags || [])
         : false,
     };
 
@@ -522,8 +535,8 @@ async function joinCardsWithProgress(
       const card: Card = {
         id: cardId,
         cardData: {
-          front: userCardData.front || "",
-          back: userCardData.back || "",
+          front: userCardData.cardData.front || "",
+          back: userCardData.cardData.back || "",
         },
         tags: Array.isArray(userCardData.tags) ? userCardData.tags : [],
         cardAlgo: userCardData.cardAlgo || undefined,
@@ -582,9 +595,10 @@ export const getUserDueDeckCards = onCall(async (request) => {
 
     const cardsSnap = await deckRef.collection("cards").get();
     const now = Date.now();
-    const raw = cardsSnap.docs.map((doc) => doc.data() as Card);
-
-    const validatedRaw: Card[] = raw.map((c) => CardSchema.parse(c));
+    const validatedRaw: Card[] = cardsSnap.docs.map((doc) => {
+      const rawData = doc.data();
+      return CardSchema.parse(rawData);
+    });
 
     const dueFirst: Card[] = validatedRaw.filter(
       (c) => c.firstLearn?.isFirst && !c.firstLearn?.isNew
@@ -698,10 +712,14 @@ export const updateUserStats = onDocumentWritten(
         totalCards += cardsSnapshot.size;
 
         cardsSnapshot.forEach((cardDoc) => {
-          const cardData = cardDoc.data();
-          if (cardData.grade !== undefined) {
+          const rawCardData = cardDoc.data();
+          const validatedCardData = CardSchema.pick({
+            grade: true,
+            cardAlgo: true,
+          }).parse(rawCardData);
+          if (validatedCardData.grade !== undefined) {
             totalReviews++;
-            totalDifficulty += cardData.difficulty || 2.5;
+            totalDifficulty += validatedCardData.cardAlgo?.difficulty || 2.5;
             reviewCount++;
           }
         });
@@ -875,18 +893,24 @@ export const updateDeckSettings = onCall(async (request) => {
       throw new HttpsError("not-found", "Deck not found");
     }
 
-    const deckData = deckSnap.data();
+    const rawDeckData = deckSnap.data();
+    if (!rawDeckData) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
+    const validatedDeckData = DeckSchema.pick({ createdBy: true }).parse(
+      rawDeckData
+    );
 
     // Check if user is the creator of the deck
-    if (deckData?.createdBy !== userId) {
+    if (validatedDeckData.createdBy !== userId) {
       throw new HttpsError(
         "permission-denied",
         "User does not have permission"
       );
     }
 
-    // Waliduj i typuj częściową aktualizację ustawień
-    const validatedDeck = DeckSchema.parse(deck);
+    // Waliduj i typuj częściową aktualizację ustawień (whitelist pól)
+    const validatedDeck = DeckUpdateSchema.parse(deck);
 
     // Update deck settings
     await deckRef.update({
@@ -950,8 +974,8 @@ export const updateUserDeckSettings = onCall(async (request) => {
       throw new HttpsError("not-found", "Deck not found");
     }
 
-    // Waliduj i typuj częściową aktualizację ustawień
-    const validatedDeck = DeckLearningDataSchema.parse(deck);
+    // Waliduj i typuj częściową aktualizację ustawień (whitelist pól)
+    const validatedDeck = DeckLearningDataUpdateSchema.parse(deck);
 
     // Update deck settings
     await deckRef.update({
@@ -1162,10 +1186,18 @@ export const deleteDeck = onCall(async (request) => {
       throw new HttpsError("not-found", "Deck not found");
     }
 
-    const deckData = deckSnap.data() as Deck;
+    const rawDeckData = deckSnap.data();
+    if (!rawDeckData) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
+    const validatedDeckData = DeckSchema.pick({
+      createdBy: true,
+      is_deleted: true,
+      title: true,
+    }).parse(rawDeckData);
 
     // Check if user is the creator of the deck
-    if (deckData.createdBy !== userId) {
+    if (validatedDeckData.createdBy !== userId) {
       throw new HttpsError(
         "permission-denied",
         "User does not have permission to delete this deck"
@@ -1173,7 +1205,7 @@ export const deleteDeck = onCall(async (request) => {
     }
 
     // Check if already deleted
-    if (deckData.is_deleted) {
+    if (validatedDeckData.is_deleted) {
       const response = {
         success: true,
         notifiedUsers: 0,
@@ -1207,7 +1239,7 @@ export const deleteDeck = onCall(async (request) => {
     const notificationPromises = Array.from(userIds).map((targetUserId) =>
       db.collection(`users/${targetUserId}/notifications`).add({
         title: "Deck usunięty",
-        body: `Deck "${deckData.title}" został usunięty przez autora. Możesz kontynuować naukę w swojej bibliotece.`,
+        body: `Deck "${validatedDeckData.title}" został usunięty przez autora. Możesz kontynuować naukę w swojej bibliotece.`,
         type: "warning",
         linkTo: `/deck/${deckId}`,
         read: false,
@@ -1281,9 +1313,18 @@ export const checkCardChanges = onCall(async (request) => {
       throw new HttpsError("not-found", "User deck not found");
     }
 
-    const sourceDeckData = sourceDeckSnap.data() as Deck;
-    const userDeckData = userDeckSnap.data() as DeckLearningData;
-    if (userDeckData.updatedAt == sourceDeckData.updatedAt) {
+    const rawSourceDeckData = sourceDeckSnap.data();
+    const rawUserDeckData = userDeckSnap.data();
+    if (!rawSourceDeckData || !rawUserDeckData) {
+      throw new HttpsError("not-found", "Deck data not found");
+    }
+    const validatedSourceDeckData = DeckSchema.pick({
+      updatedAt: true,
+    }).parse(rawSourceDeckData);
+    const validatedUserDeckData = DeckLearningDataSchema.pick({
+      updatedAt: true,
+    }).parse(rawUserDeckData);
+    if (validatedUserDeckData.updatedAt == validatedSourceDeckData.updatedAt) {
       const response = { changes: [] };
       const validatedResponse = CheckCardChangesResponseSchema.parse(response);
       return validatedResponse;
@@ -1291,13 +1332,21 @@ export const checkCardChanges = onCall(async (request) => {
 
     const sourceCardsSnap = await sourceDeckRef.collection("cards").get();
     const sourceCardsMap = new Map(
-      sourceCardsSnap.docs.map((doc) => [doc.id, doc.data()])
+      sourceCardsSnap.docs.map((doc) => {
+        const rawData = doc.data();
+        const validatedData = CardSchema.parse(rawData);
+        return [doc.id, validatedData];
+      })
     );
 
     // Get user's local cards
     const userCardsSnap = await userDeckRef.collection("cards").get();
     const userCardsMap = new Map(
-      userCardsSnap.docs.map((doc) => [doc.id, doc.data()])
+      userCardsSnap.docs.map((doc) => {
+        const rawData = doc.data();
+        const validatedData = CardSchema.parse(rawData);
+        return [doc.id, validatedData];
+      })
     );
 
     const changes: Array<{
@@ -1325,20 +1374,20 @@ export const checkCardChanges = onCall(async (request) => {
         }> = [];
 
         // Check front
-        if (userCardData.front !== sourceCardData.front) {
+        if (userCardData.cardData.front !== sourceCardData.cardData.front) {
           cardChanges.push({
             field: "front",
-            oldValue: userCardData.front,
-            newValue: sourceCardData.front,
+            oldValue: userCardData.cardData.front,
+            newValue: sourceCardData.cardData.front,
           });
         }
 
         // Check back
-        if (userCardData.back !== sourceCardData.back) {
+        if (userCardData.cardData.back !== sourceCardData.cardData.back) {
           cardChanges.push({
             field: "back",
-            oldValue: userCardData.back,
-            newValue: sourceCardData.back,
+            oldValue: userCardData.cardData.back,
+            newValue: sourceCardData.cardData.back,
           });
         }
 
@@ -1429,7 +1478,11 @@ export const syncDeckCards = onCall(async (request) => {
     const sourceDeckRef = db.collection("decks").doc(deckId);
     const sourceCardsSnap = await sourceDeckRef.collection("cards").get();
     const sourceCardsMap = new Map(
-      sourceCardsSnap.docs.map((doc) => [doc.id, doc.data()])
+      sourceCardsSnap.docs.map((doc) => {
+        const rawData = doc.data();
+        const validatedData = CardSchema.parse(rawData);
+        return [doc.id, validatedData];
+      })
     );
 
     // Get user's local cards
@@ -1437,7 +1490,11 @@ export const syncDeckCards = onCall(async (request) => {
     const userCardsRef = userDeckRef.collection("cards");
     const userCardsSnap = await userCardsRef.get();
     const userCardsMap = new Map(
-      userCardsSnap.docs.map((doc) => [doc.id, doc.data()])
+      userCardsSnap.docs.map((doc) => {
+        const rawData = doc.data();
+        const validatedData = CardSchema.parse(rawData);
+        return [doc.id, validatedData];
+      })
     );
 
     const now = new Date();
@@ -1445,8 +1502,14 @@ export const syncDeckCards = onCall(async (request) => {
     const batch = db.batch();
 
     const sourceDeckSnap = await sourceDeckRef.get();
-    const sourceDeckData = sourceDeckSnap.data() as DeckCore;
-    const updatedAt = sourceDeckData.updatedAt;
+    const rawSourceDeckData = sourceDeckSnap.data();
+    if (!rawSourceDeckData) {
+      throw new HttpsError("not-found", "Source deck not found");
+    }
+    const validatedSourceDeckData = DeckSchema.pick({
+      updatedAt: true,
+    }).parse(rawSourceDeckData);
+    const updatedAt = validatedSourceDeckData.updatedAt;
     if (updatedAt) {
       batch.update(userDeckRef, {
         updatedAt: updatedAt,
@@ -1466,8 +1529,8 @@ export const syncDeckCards = onCall(async (request) => {
       if (sourceCardData) {
         // Waliduj i typuj dane karty
         const cardDataUpdate: CardDataUpdate = CardDataUpdateSchema.parse({
-          front: sourceCardData.front || "",
-          back: sourceCardData.back || "",
+          front: sourceCardData.cardData.front || "",
+          back: sourceCardData.cardData.back || "",
         });
 
         const cardCoreUpdate: CardCoreUpdate = CardCoreUpdateSchema.parse({
@@ -1493,8 +1556,8 @@ export const syncDeckCards = onCall(async (request) => {
         if (!userCardsMap.has(cardId)) {
           // Waliduj i typuj dane karty
           const cardDataUpdate: CardDataUpdate = CardDataUpdateSchema.parse({
-            front: sourceCardData.front || "",
-            back: sourceCardData.back || "",
+            front: sourceCardData.cardData.front || "",
+            back: sourceCardData.cardData.back || "",
           });
 
           const cardCoreUpdate: CardCoreUpdate = CardCoreUpdateSchema.parse({
@@ -1503,26 +1566,22 @@ export const syncDeckCards = onCall(async (request) => {
           });
 
           const newCardRef = userCardsRef.doc(cardId);
-          batch.set(
-            newCardRef,
-            {
-              cardData: cardCoreUpdate.cardData,
-              tags: cardCoreUpdate.tags,
-              contentVersion: now.getTime(),
-              sourceDeckId: deckId,
-              // Initialize progress
-              firstLearn: {
-                isNew: true,
-                due: new Date(),
-                state: 0,
-                consecutiveGood: 0,
-              },
-              grade: CardGrade.NotGraded,
-              difficulty: 2.5,
-              nextReviewInterval: 1,
+
+          const newCard = CardSchema.parse({
+            id: cardId,
+            cardData: cardCoreUpdate.cardData,
+            tags: cardCoreUpdate.tags,
+            createdAt: sourceCardData.createdAt || new Date(),
+            firstLearn: {
+              isNew: true,
+              due: new Date(),
+              consecutiveGood: 0,
             },
-            { merge: true }
-          );
+            grade: CardGrade.NotGraded,
+            contentVersion: now,
+          });
+
+          batch.set(newCardRef, newCard, { merge: true });
           syncedCount++;
           if (syncedCount >= 500) {
             // Batch limit reached, commit and create new batch
@@ -1553,8 +1612,8 @@ export const syncDeckCards = onCall(async (request) => {
           if (sourceCardData) {
             // Waliduj i typuj dane karty
             const cardDataUpdate: CardDataUpdate = CardDataUpdateSchema.parse({
-              front: sourceCardData.front || "",
-              back: sourceCardData.back || "",
+              front: sourceCardData.cardData.front || "",
+              back: sourceCardData.cardData.back || "",
             });
 
             const cardCoreUpdate: CardCoreUpdate = CardCoreUpdateSchema.parse({
@@ -1654,8 +1713,14 @@ export const updateCardContent = onCall(async (request) => {
       throw new HttpsError("not-found", "Deck not found");
     }
 
-    const deckData = deckSnap.data() as Deck;
-    if (deckData.createdBy !== userId) {
+    const rawDeckData = deckSnap.data();
+    if (!rawDeckData) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
+    const validatedDeckData = DeckSchema.pick({ createdBy: true }).parse(
+      rawDeckData
+    );
+    if (validatedDeckData.createdBy !== userId) {
       throw new HttpsError(
         "permission-denied",
         "You don't have permission to edit this card"

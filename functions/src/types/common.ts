@@ -144,4 +144,8 @@ export {
   GetAllLeaguesInfoResponseSchema,
   GetUserGroupResponseSchema,
   AddPlaceholderDataResponseSchema,
+  FollowingArraySchema,
+  FollowersArraySchema,
+  FollowingSchema,
+  FollowersSchema,
 } from "memvocado-types";

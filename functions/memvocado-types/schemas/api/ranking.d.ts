@@ -37,13 +37,13 @@ export declare const AssignUserToGroupRequestSchema: z.ZodObject<{
     leagueNumber: z.ZodNumber;
     seasonId: z.ZodString;
 }, "strict", z.ZodTypeAny, {
+    userId: string;
     seasonId: string;
     leagueNumber: number;
-    userId: string;
 }, {
+    userId: string;
     seasonId: string;
     leagueNumber: number;
-    userId: string;
 }>;
 export type AssignUserToGroupRequest = z.infer<typeof AssignUserToGroupRequestSchema>;
 export declare const GetLeaderboardResponseSchema: z.ZodObject<{
@@ -55,14 +55,14 @@ export declare const GetLeaderboardResponseSchema: z.ZodObject<{
         lastActivityAt: z.ZodNullable<z.ZodEffects<z.ZodDate, Date, unknown>>;
     }, "strip", z.ZodTypeAny, {
         username: string;
+        userId: string;
         points: number;
         lastActivityAt: Date | null;
-        userId: string;
         position: number;
     }, {
         username: string;
-        points: number;
         userId: string;
+        points: number;
         position: number;
         lastActivityAt?: unknown;
     }>, "many">;
@@ -73,9 +73,9 @@ export declare const GetLeaderboardResponseSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     entries: {
         username: string;
+        userId: string;
         points: number;
         lastActivityAt: Date | null;
-        userId: string;
         position: number;
     }[];
     seasonId: string;
@@ -85,8 +85,8 @@ export declare const GetLeaderboardResponseSchema: z.ZodObject<{
 }, {
     entries: {
         username: string;
-        points: number;
         userId: string;
+        points: number;
         position: number;
         lastActivityAt?: unknown;
     }[];
@@ -126,17 +126,17 @@ export declare const GetFollowingRankingsResponseSchema: z.ZodObject<{
         groupId: z.ZodOptional<z.ZodString>;
         totalMembers: z.ZodOptional<z.ZodNumber>;
     }, "strip", z.ZodTypeAny, {
+        userId: string;
         points: number;
         leagueNumber: number;
-        userId: string;
         position: number | null;
         username?: string | undefined;
         groupId?: string | undefined;
         totalMembers?: number | undefined;
     }, {
+        userId: string;
         points: number;
         leagueNumber: number;
-        userId: string;
         position: number | null;
         username?: string | undefined;
         groupId?: string | undefined;
@@ -144,9 +144,9 @@ export declare const GetFollowingRankingsResponseSchema: z.ZodObject<{
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
     rankings: {
+        userId: string;
         points: number;
         leagueNumber: number;
-        userId: string;
         position: number | null;
         username?: string | undefined;
         groupId?: string | undefined;
@@ -154,9 +154,9 @@ export declare const GetFollowingRankingsResponseSchema: z.ZodObject<{
     }[];
 }, {
     rankings: {
+        userId: string;
         points: number;
         leagueNumber: number;
-        userId: string;
         position: number | null;
         username?: string | undefined;
         groupId?: string | undefined;

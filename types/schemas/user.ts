@@ -78,3 +78,19 @@ export const UserSchema = UserCoreSchema.merge(UserMetaSchema)
   .strict();
 
 export type User = z.infer<typeof UserSchema>;
+
+export const FollowingSchema = z.object({
+  userId: z.string(),
+});
+
+export const FollowingArraySchema = z.array(FollowingSchema);
+
+export type Following = z.infer<typeof FollowingSchema>;
+
+export const FollowersSchema = z.object({
+  userId: z.string(),
+});
+
+export const FollowersArraySchema = z.array(FollowersSchema);
+
+export type Followers = z.infer<typeof FollowersSchema>;

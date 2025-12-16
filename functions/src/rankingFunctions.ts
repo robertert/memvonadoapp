@@ -1,7 +1,13 @@
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { LeagueGroupSchema, type LeagueGroup } from "./types/common";
+import {
+  LeagueGroupSchema,
+  SeasonUserPointsSchema,
+  UserSchema,
+  type LeagueGroup,
+  FollowingArraySchema,
+} from "./types/common";
 import { serializeTimestamps } from "./utils/serialization";
 import { z } from "zod";
 import {
@@ -13,6 +19,8 @@ import {
   GetUserRankingResponseSchema,
   GetFollowingRankingsResponseSchema,
   AssignUserToGroupResponseSchema,
+  GetCurrentSeasonResponseSchema,
+  Following,
 } from "memvocado-types";
 
 const db = getFirestore();
@@ -23,6 +31,58 @@ const handleZodError = (error: unknown, context: string) => {
     throw new HttpsError("internal", "Invalid response format");
   }
 };
+
+/**
+ * Whitelist schematy dla aktualizacji (set/update) w ranking functions.
+ */
+const UserLeagueAssignUpdateSchema = z
+  .object({
+    currentGroupId: z.string().nullable().optional(),
+    league: z.number().optional(),
+  })
+  .partial();
+
+const SeasonUserPointsAssignUpdateSchema = z
+  .object({
+    league: z.number().optional(),
+    groupId: z.string().nullable().optional(),
+    points: z.number().optional(),
+  })
+  .partial();
+
+const LeagueGroupUpdateSchema = LeagueGroupSchema.pick({
+  currentCount: true,
+  isFull: true,
+}).partial();
+
+/**
+ * Helper function to get current season ID with validation.
+ * If seasonId is provided, returns it. Otherwise, fetches and validates from ranking/currentSeason.
+ * Logic-Critical Data (PARSE IT): seasonId is used in conditions and queries.
+ * @param {string} [seasonId] - Optional season ID. If not provided, fetches from database.
+ * @return {Promise<string>} Validated season ID
+ */
+async function getCurrentSeasonId(seasonId?: string): Promise<string> {
+  if (seasonId) {
+    return seasonId;
+  }
+
+  const seasonDoc = await db.doc("ranking/currentSeason").get();
+  if (!seasonDoc.exists) {
+    throw new HttpsError("failed-precondition", "No active season");
+  }
+
+  const seasonData = seasonDoc.data();
+  const validatedSeason = GetCurrentSeasonResponseSchema.pick({
+    seasonId: true,
+  }).parse(seasonData);
+
+  if (!validatedSeason.seasonId) {
+    throw new HttpsError("failed-precondition", "No active season");
+  }
+
+  return validatedSeason.seasonId;
+}
 
 /**
  * Get leaderboard for user's group (20-person league group)
@@ -39,19 +99,8 @@ export const getLeaderboard = onCall(async (request) => {
   const { userId, seasonId } = parsed.data;
 
   try {
-    // Get current season if not provided
-    let currentSeasonId = seasonId;
-    if (!currentSeasonId) {
-      const seasonDoc = await db.doc("ranking/currentSeason").get();
-      if (!seasonDoc.exists) {
-        throw new HttpsError("failed-precondition", "No active season");
-      }
-      const seasonData = seasonDoc.data() as { seasonId?: string };
-      currentSeasonId = seasonData?.seasonId;
-      if (!currentSeasonId) {
-        throw new HttpsError("failed-precondition", "No active season");
-      }
-    }
+    // Logic-Critical Data (PARSE IT): seasonId is used in conditions and queries
+    const currentSeasonId = await getCurrentSeasonId(seasonId);
 
     // Get user's league and group info
     const userSeasonPointsRef = db.doc(
@@ -203,15 +252,12 @@ export const getUserRanking = onCall(async (request) => {
       return serializeTimestamps(rawResponse);
     }
 
-    const userData = userSeasonPoints.data() as {
-      league?: number;
-      groupId?: string;
-      points?: number;
-    };
+    const rawUserData = userSeasonPoints.data();
+    const validatedUserData = SeasonUserPointsSchema.parse(rawUserData);
 
-    const userLeague = userData?.league ?? 1;
-    const userGroupId = userData?.groupId;
-    const userPoints = userData?.points ?? 0;
+    const userLeague = validatedUserData.league ?? 1;
+    const userGroupId = validatedUserData.groupId;
+    const userPoints = validatedUserData.points ?? 0;
 
     if (!userGroupId) {
       const rawResponse = {
@@ -290,17 +336,20 @@ export const getFollowingRankings = onCall(async (request) => {
     }
 
     // Get user's friends
-    const userDoc = await db.doc(`users/${userId}`).get();
-    if (!userDoc.exists) {
+    const followingDocs = await db
+      .collection(`users/${userId}/following`)
+      .get();
+    if (followingDocs.empty) {
       const rawResponse = { rankings: [] as Array<null> };
       GetFollowingRankingsResponseSchema.parse(rawResponse);
       return serializeTimestamps(rawResponse);
     }
 
-    const userData = userDoc.data() as { friends?: string[] };
-    const friends = userData?.friends || [];
+    const rawFollowingData = followingDocs.docs.map((doc) => doc.data());
+    const followingData = rawFollowingData as Array<{ userId: string }>;
+    const following = FollowingArraySchema.parse(followingData);
 
-    if (friends.length === 0) {
+    if (following.length === 0) {
       const rawResponse = { rankings: [] as Array<null> };
       GetFollowingRankingsResponseSchema.parse(rawResponse);
       return serializeTimestamps(rawResponse);
@@ -308,8 +357,9 @@ export const getFollowingRankings = onCall(async (request) => {
 
     // Get ranking info for each friend
     const rankings = await Promise.all(
-      friends.map(async (friendId) => {
+      following.map(async (following: Following) => {
         try {
+          const friendId = following.userId;
           const friendSeasonPointsRef = db.doc(
             `seasonUserPoints/${currentSeasonId}/users/${friendId}`
           );
@@ -319,15 +369,14 @@ export const getFollowingRankings = onCall(async (request) => {
             return null;
           }
 
-          const friendData = friendSeasonPoints.data() as {
-            league?: number;
-            groupId?: string;
-            points?: number;
-          };
+          // Logic-Critical Data (PARSE IT): friendData is used in conditions (if (!friendGroupId)) and for position calculations
+          const rawFriendData = friendSeasonPoints.data();
+          const validatedFriendData =
+            SeasonUserPointsSchema.parse(rawFriendData);
 
-          const friendLeague = friendData?.league ?? 1;
-          const friendGroupId = friendData?.groupId;
-          const friendPoints = friendData?.points ?? 0;
+          const friendLeague = validatedFriendData.league ?? 1;
+          const friendGroupId = validatedFriendData.groupId;
+          const friendPoints = validatedFriendData.points ?? 0;
 
           if (!friendGroupId) {
             return {
@@ -374,7 +423,10 @@ export const getFollowingRankings = onCall(async (request) => {
             totalMembers,
           };
         } catch (error) {
-          logger.warn("Error getting friend ranking", { friendId, error });
+          logger.warn("Error getting friend ranking", {
+            userId: following.userId,
+            error,
+          });
           return null;
         }
       })
@@ -382,8 +434,11 @@ export const getFollowingRankings = onCall(async (request) => {
 
     // Filter out nulls and sort by points descending
     const validRankings = rankings
-      .filter((r) => r !== null)
-      .sort((a, b) => (b?.points ?? 0) - (a?.points ?? 0));
+      .filter((r: unknown) => r !== null)
+      .sort(
+        (a: { points?: number } | null, b: { points?: number } | null) =>
+          (b?.points ?? 0) - (a?.points ?? 0)
+      );
 
     const rawResponse = { rankings: validRankings };
     GetFollowingRankingsResponseSchema.parse(rawResponse);
@@ -419,8 +474,11 @@ export const assignUserToGroup = onCall(async (request) => {
       throw new HttpsError("not-found", "User not found");
     }
 
-    const userData = userDoc.data() as { league?: number };
-    const userLeague = leagueNumber ?? userData?.league ?? 1;
+    const rawUserData = userDoc.data();
+    const validatedUserData = UserSchema.pick({ league: true }).parse(
+      rawUserData
+    );
+    const userLeague = leagueNumber ?? validatedUserData.league ?? 1;
 
     // Find a group with less than 20 members
     const groupsRef = db
@@ -434,15 +492,16 @@ export const assignUserToGroup = onCall(async (request) => {
 
     // Find first group with capacity
     for (const groupDoc of allGroupsSnapshot.docs) {
-      const groupData = groupDoc.data() as {
-        currentCount?: number;
-        isFull?: boolean;
-        capacity?: number;
-      };
+      const rawGroupData = groupDoc.data();
+      const validatedGroupData = LeagueGroupSchema.pick({
+        currentCount: true,
+        isFull: true,
+        capacity: true,
+      }).parse(rawGroupData);
 
-      const currentCount = groupData?.currentCount ?? 0;
-      const capacity = groupData?.capacity ?? 20;
-      const isFull = groupData?.isFull ?? false;
+      const currentCount = validatedGroupData.currentCount ?? 0;
+      const capacity = validatedGroupData.capacity ?? 20;
+      const isFull = validatedGroupData.isFull ?? false;
 
       if (!isFull && currentCount < capacity) {
         targetGroupId = groupDoc.id;
@@ -478,7 +537,9 @@ export const assignUserToGroup = onCall(async (request) => {
     );
     const userSeasonPoints = await userSeasonPointsRef.get();
     const userPointsData = userSeasonPoints.exists
-      ? (userSeasonPoints.data() as { points?: number })
+      ? SeasonUserPointsSchema.pick({ points: true }).parse(
+          userSeasonPoints.data()
+        )
       : { points: 0 };
 
     // Add user to group members
@@ -500,14 +561,14 @@ export const assignUserToGroup = onCall(async (request) => {
           .doc(targetGroupId)
       );
 
-      const groupData = groupDoc.data() as {
-        currentCount?: number;
-        isFull?: boolean;
-        capacity?: number;
-      };
+      const rawGroupData = groupDoc.data();
+      const validatedGroupData = LeagueGroupSchema.pick({
+        currentCount: true,
+        capacity: true,
+      }).parse(rawGroupData);
 
-      const currentCount = groupData?.currentCount ?? 0;
-      const capacity = groupData?.capacity ?? 20;
+      const currentCount = validatedGroupData.currentCount ?? 0;
+      const capacity = validatedGroupData.capacity ?? 20;
 
       if (currentCount >= capacity) {
         throw new HttpsError("failed-precondition", "Group is full");
@@ -526,23 +587,26 @@ export const assignUserToGroup = onCall(async (request) => {
         lastActivityAt: FieldValue.serverTimestamp(),
       });
 
-      // Update group count
-      trx.update(groupDoc.ref, {
+      // Update group count (whitelist)
+      const safeGroupUpdate = LeagueGroupUpdateSchema.parse({
         currentCount: currentCount + 1,
         isFull: currentCount + 1 >= capacity,
       });
+      trx.update(groupDoc.ref, safeGroupUpdate);
 
-      // Update user's group assignment
-      trx.update(userSeasonPointsRef, {
+      // Update user's group assignment (season points) z whitelist
+      const safeSeasonUpdate = SeasonUserPointsAssignUpdateSchema.parse({
         groupId: targetGroupId,
         league: userLeague,
       });
+      trx.update(userSeasonPointsRef, safeSeasonUpdate);
 
-      // Update user document
-      trx.update(db.doc(`users/${userId}`), {
+      // Update user document (league + group) z whitelist
+      const safeUserUpdate = UserLeagueAssignUpdateSchema.parse({
         currentGroupId: targetGroupId,
         league: userLeague,
       });
+      trx.update(db.doc(`users/${userId}`), safeUserUpdate);
     });
 
     logger.info("User assigned to group", {

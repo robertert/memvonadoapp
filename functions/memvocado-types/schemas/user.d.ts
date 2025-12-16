@@ -332,3 +332,33 @@ export declare const UserSchema: z.ZodObject<{
     interests?: string[] | undefined;
 }>;
 export type User = z.infer<typeof UserSchema>;
+export declare const FollowingSchema: z.ZodObject<{
+    userId: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    userId: string;
+}, {
+    userId: string;
+}>;
+export declare const FollowingArraySchema: z.ZodArray<z.ZodObject<{
+    userId: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    userId: string;
+}, {
+    userId: string;
+}>, "many">;
+export type Following = z.infer<typeof FollowingSchema>;
+export declare const FollowersSchema: z.ZodObject<{
+    userId: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    userId: string;
+}, {
+    userId: string;
+}>;
+export declare const FollowersArraySchema: z.ZodArray<z.ZodObject<{
+    userId: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    userId: string;
+}, {
+    userId: string;
+}>, "many">;
+export type Followers = z.infer<typeof FollowersSchema>;

@@ -37,6 +37,17 @@ const DEFAULT_STATS = {
   longestStreak: 0,
 };
 
+/**
+ * Schemat dopuszczalnych aktualizacji podczas onboardingu.
+ * Whitelistuje tylko pola edytowalne w tej ścieżce.
+ */
+const CompleteOnboardingUpdateSchema = UserSchema.pick({
+  username: true,
+  interests: true,
+  profileCompleted: true,
+  updatedAt: true,
+}).partial();
+
 type UserDocumentParams = {
   uid: string;
   email: string;
@@ -217,20 +228,30 @@ export const completeOnboarding = onCall(
         .get();
 
       if (!usernameQuery.empty) {
-        const existingUser = usernameQuery.docs[0];
-        if (existingUser.id !== uid) {
+        const existingUserDoc = usernameQuery.docs[0];
+        const rawExistingUserData = existingUserDoc.data();
+        if (!rawExistingUserData) {
+          throw new HttpsError("internal", "Invalid user data format");
+        }
+        const validatedExistingUser = UserSchema.pick({ id: true }).parse({
+          id: existingUserDoc.id,
+          ...rawExistingUserData,
+        });
+        if (validatedExistingUser.id !== uid) {
           throw new HttpsError("already-exists", "Username is already taken");
         }
       }
 
       if (snap.exists) {
         // Aktualizuj istniejący dokument
-        await userRef.update({
+        const safeUpdate = CompleteOnboardingUpdateSchema.parse({
           username: sanitizedUsername,
-          interests: interests,
+          interests,
           profileCompleted: true,
           updatedAt: new Date(),
         });
+
+        await userRef.update(safeUpdate);
         logger.info(`completeOnboarding: Updated user document for ${uid}`);
       } else {
         // Utwórz nowy dokument
@@ -240,11 +261,14 @@ export const completeOnboarding = onCall(
           username: sanitizedUsername,
         });
 
-        await userRef.set({
+        const fullUserDoc = UserSchema.parse({
           ...userDoc,
-          interests: interests,
+          interests,
           profileCompleted: true,
+          updatedAt: new Date(),
         });
+
+        await userRef.set(fullUserDoc);
         logger.info(`completeOnboarding: Created user document for ${uid}`);
       }
 

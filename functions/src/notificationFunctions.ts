@@ -2,7 +2,11 @@ import { HttpsError, onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
-import { NotificationSchema, type Notification } from "./types/common";
+import {
+  NotificationSchema,
+  UserSchema,
+  type Notification,
+} from "./types/common";
 import { z } from "zod";
 import {
   GetNotificationsRequestSchema,
@@ -19,6 +23,14 @@ import {
 import { serializeTimestamps } from "./utils/serialization";
 
 const db = getFirestore();
+
+/**
+ * Whitelistowane pola dla aktualizacji powiadomienia.
+ * Używane w markNotificationRead, aby nie dopuścić do update innych pól.
+ */
+const NotificationUpdateSchema = NotificationSchema.pick({
+  read: true,
+}).partial();
 
 export interface NotificationData {
   title: string;
@@ -95,8 +107,12 @@ export const markNotificationRead = onCall(async (request) => {
       throw new HttpsError("not-found", "Notification not found");
     }
 
-    await notificationRef.update({
+    const safeUpdate = NotificationUpdateSchema.parse({
       read: true,
+    });
+
+    await notificationRef.update({
+      ...safeUpdate,
       readAt: FieldValue.serverTimestamp(),
     });
 
@@ -183,21 +199,24 @@ export const createNotification = onCall(async (request) => {
 export const onLeagueAdvance = onDocumentWritten(
   "users/{userId}",
   async (event) => {
-    const beforeData = event.data?.before.data();
-    const afterData = event.data?.after.data();
+    const beforeDataRaw = event.data?.before.data();
+    const afterDataRaw = event.data?.after.data();
 
-    if (!beforeData || !afterData) {
+    if (!beforeDataRaw || !afterDataRaw) {
       return;
     }
 
-    const beforeLeague = beforeData.league ?? 1;
-    const afterLeague = afterData.league ?? 1;
+    try {
+      const beforeData = UserSchema.pick({ league: true }).parse(beforeDataRaw);
+      const afterData = UserSchema.pick({ league: true }).parse(afterDataRaw);
 
-    // Check if league increased
-    if (afterLeague > beforeLeague && afterLeague <= 15) {
-      const userId = event.params.userId;
+      const beforeLeague = beforeData.league ?? 1;
+      const afterLeague = afterData.league ?? 1;
 
-      try {
+      // Check if league increased
+      if (afterLeague > beforeLeague && afterLeague <= 15) {
+        const userId = event.params.userId;
+
         // Waliduj i typuj powiadomienie przed zapisem
         const notificationData: Omit<
           Notification,
@@ -224,9 +243,20 @@ export const onLeagueAdvance = onDocumentWritten(
           fromLeague: beforeLeague,
           toLeague: afterLeague,
         });
-      } catch (error) {
-        logger.error("Error creating league advance notification", error);
       }
+    } catch (error) {
+      logger.error("Error validating user data in onLeagueAdvance", error);
+      if (error instanceof z.ZodError) {
+        logger.error("User data validation failed", error.errors);
+        throw new HttpsError("internal", "Invalid response format");
+      }
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      throw new HttpsError(
+        "internal",
+        "Failed to create league advance notification"
+      );
     }
   }
 );

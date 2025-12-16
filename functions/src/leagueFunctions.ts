@@ -24,6 +24,25 @@ import { z } from "zod";
 
 const db = getFirestore();
 
+/**
+ * Schematy update (whitelist) dla operacji na user/season/group.
+ * Używane wyłącznie przy update/set, żeby nie dopuścić przypadkowych pól.
+ */
+const UserLeagueUpdateSchema = UserSchema.pick({
+  league: true,
+  currentGroupId: true,
+}).partial();
+
+const SeasonUserPointsUpdateSchema = SeasonUserPointsSchema.pick({
+  league: true,
+  groupId: true,
+}).partial();
+
+const LeagueGroupUpdateSchema = LeagueGroupSchema.pick({
+  currentCount: true,
+  isFull: true,
+}).partial();
+
 interface LeagueInfo {
   id: number;
   name: string;
@@ -285,10 +304,9 @@ export const updateUserLeague = onCall(async (request) => {
     const oldUserSeasonPoints = await userSeasonPointsRef.get();
 
     const oldData = oldUserSeasonPoints.exists
-      ? (oldUserSeasonPoints.data() as {
-          league?: number;
-          groupId?: string;
-        })
+      ? SeasonUserPointsSchema.pick({ league: true, groupId: true }).parse(
+          oldUserSeasonPoints.data()
+        )
       : null;
     const oldLeague = oldData?.league ?? currentLeague;
     const oldGroupId = oldData?.groupId;
@@ -302,15 +320,20 @@ export const updateUserLeague = onCall(async (request) => {
       const oldGroupDoc = await oldGroupRef.get();
 
       if (oldGroupDoc.exists) {
-        const oldGroupData = oldGroupDoc.data() as {
-          currentCount?: number;
-        };
-        const newCount = Math.max(0, (oldGroupData?.currentCount ?? 1) - 1);
-
-        await oldGroupRef.update({
+        const rawOldGroupData = oldGroupDoc.data();
+        const validatedOldGroupData = LeagueGroupSchema.pick({
+          currentCount: true,
+        }).parse(rawOldGroupData);
+        const newCount = Math.max(
+          0,
+          (validatedOldGroupData.currentCount ?? 1) - 1
+        );
+        const safeGroupUpdate = LeagueGroupUpdateSchema.parse({
           currentCount: newCount,
           isFull: false,
         });
+
+        await oldGroupRef.update(safeGroupUpdate);
 
         // Remove user from old group members
         const oldMemberRef = db
@@ -325,15 +348,21 @@ export const updateUserLeague = onCall(async (request) => {
     }
 
     // NOW update user's league (after removing from old group)
-    await userDoc.ref.update({
+    const safeUserLeagueUpdate = UserLeagueUpdateSchema.parse({
       league: newLeague,
+    });
+    await userDoc.ref.update({
+      ...safeUserLeagueUpdate,
       currentGroupId: FieldValue.delete(), // Will be reassigned
     });
 
     // Update season user points (after removing from old group)
+    const safeSeasonUpdate = SeasonUserPointsUpdateSchema.parse({
+      league: newLeague,
+    });
     await userSeasonPointsRef.set(
       {
-        league: newLeague,
+        ...safeSeasonUpdate,
         groupId: FieldValue.delete(), // Will be reassigned
       },
       { merge: true }
@@ -352,15 +381,16 @@ export const updateUserLeague = onCall(async (request) => {
 
     // Find first group with capacity
     for (const groupDoc of allGroupsSnapshot.docs) {
-      const groupData = groupDoc.data() as {
-        currentCount?: number;
-        isFull?: boolean;
-        capacity?: number;
-      };
+      const rawGroupData = groupDoc.data();
+      const validatedGroupData = LeagueGroupSchema.pick({
+        currentCount: true,
+        isFull: true,
+        capacity: true,
+      }).parse(rawGroupData);
 
-      const currentCount = groupData?.currentCount ?? 0;
-      const capacity = groupData?.capacity ?? 20;
-      const isFull = groupData?.isFull ?? false;
+      const currentCount = validatedGroupData.currentCount ?? 0;
+      const capacity = validatedGroupData.capacity ?? 20;
+      const isFull = validatedGroupData.isFull ?? false;
 
       if (!isFull && currentCount < capacity) {
         targetGroupId = groupDoc.id;
@@ -390,9 +420,10 @@ export const updateUserLeague = onCall(async (request) => {
       });
     }
 
-    // Get user's points
     const userPointsData = oldUserSeasonPoints.exists
-      ? (oldUserSeasonPoints.data() as { points?: number })
+      ? SeasonUserPointsSchema.pick({ points: true }).parse(
+          oldUserSeasonPoints.data()
+        )
       : { points: 0 };
 
     // Add user to new group
@@ -414,14 +445,14 @@ export const updateUserLeague = onCall(async (request) => {
           .doc(targetGroupId)
       );
 
-      const groupData = groupDoc.data() as {
-        currentCount?: number;
-        isFull?: boolean;
-        capacity?: number;
-      };
+      const rawGroupData = groupDoc.data();
+      const validatedGroupData = LeagueGroupSchema.pick({
+        currentCount: true,
+        capacity: true,
+      }).parse(rawGroupData);
 
-      const currentCount = groupData?.currentCount ?? 0;
-      const capacity = groupData?.capacity ?? 20;
+      const currentCount = validatedGroupData.currentCount ?? 0;
+      const capacity = validatedGroupData.capacity ?? 20;
 
       if (currentCount >= capacity) {
         throw new HttpsError("failed-precondition", "Group is full");
@@ -435,30 +466,33 @@ export const updateUserLeague = onCall(async (request) => {
         throw new HttpsError("invalid-argument", "Points cannot be negative");
       }
 
-      // Add member
+      // Add member (walidacja points już powyżej)
       trx.set(memberRef, {
         userId,
         points: memberPoints,
         lastActivityAt: FieldValue.serverTimestamp(),
       });
 
-      // Update group count
-      trx.update(groupDoc.ref, {
+      // Update group count z whitelist/parse
+      const safeGroupUpdate = LeagueGroupUpdateSchema.parse({
         currentCount: currentCount + 1,
         isFull: currentCount + 1 >= capacity,
       });
+      trx.update(groupDoc.ref, safeGroupUpdate);
 
-      // Update user's group assignment
-      trx.update(userSeasonPointsRef, {
+      // Update user's group assignment (season points) z whitelist
+      const safeSeasonAssignUpdate = SeasonUserPointsUpdateSchema.parse({
         groupId: targetGroupId,
         league: newLeague,
       });
+      trx.update(userSeasonPointsRef, safeSeasonAssignUpdate);
 
-      // Update user document
-      trx.update(db.doc(`users/${userId}`), {
+      // Update user document (league + group) z whitelist
+      const safeUserAssignUpdate = UserLeagueUpdateSchema.parse({
         currentGroupId: targetGroupId,
         league: newLeague,
       });
+      trx.update(db.doc(`users/${userId}`), safeUserAssignUpdate);
     });
 
     logger.info("User league updated", {

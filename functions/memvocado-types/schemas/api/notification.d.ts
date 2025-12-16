@@ -80,13 +80,13 @@ export declare const NotifySeasonEndRequestSchema: z.ZodObject<{
     finalPosition: z.ZodOptional<z.ZodNumber>;
     leagueNumber: z.ZodOptional<z.ZodNumber>;
 }, "strict", z.ZodTypeAny, {
-    seasonId: string;
     userId: string;
+    seasonId: string;
     leagueNumber?: number | undefined;
     finalPosition?: number | undefined;
 }, {
-    seasonId: string;
     userId: string;
+    seasonId: string;
     leagueNumber?: number | undefined;
     finalPosition?: number | undefined;
 }>;

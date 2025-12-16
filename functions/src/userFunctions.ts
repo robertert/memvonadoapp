@@ -1,6 +1,6 @@
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
-import { getFirestore, FieldValue, Timestamp } from "firebase-admin/firestore";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import {
   Deck,
@@ -18,7 +18,6 @@ import {
   type LeagueGroup,
   UserProgressSchema,
   UserSchema,
-  User,
   CardSchema,
   CardGrade,
   Card,
@@ -73,6 +72,24 @@ const handleZodError = (error: unknown, context: string) => {
 };
 
 /**
+ * Whitelistowane schematy do aktualizacji statystyk użytkownika.
+ */
+const UserStatsStreakUpdateSchema = UserStatsSchema.pick({
+  currentStreak: true,
+  longestStreak: true,
+  lastStreakDate: true,
+}).partial();
+
+/**
+ * Whitelist dla częściowych aktualizacji pól ligowych użytkownika.
+ * Używany tam, gdzie aktualizujemy tylko league/currentGroupId.
+ */
+const UserLeagueUpdateSchema = UserSchema.pick({
+  league: true,
+  currentGroupId: true,
+}).partial();
+
+/**
  * Pomocniczo: formatuje datę na łańcuch w formacie YYYY-MM-DD w zadanej strefie czasowej.
  * @param {Date} date Data wejściowa w czasie UTC/systemowym
  * @param {string} timeZone Identyfikator strefy czasowej IANA, np. "Europe/Warsaw"
@@ -118,29 +135,35 @@ async function updateStreakForTodayIfQualified(params: {
   const userRef = db.doc(`users/${userId}`);
   const userSnap = await userRef.get();
   if (!userSnap.exists) {
-    throw new Error("User not found");
+    throw new HttpsError("not-found", "User not found");
   }
-  const userData = userSnap.data() as {
-    settings?: { timeZone?: string };
-    stats?: {
-      currentStreak?: number;
-      longestStreak?: number;
-      lastStreakDate?: string | null;
-    };
-  };
 
-  const tz: string = timeZone || userData?.settings?.timeZone || "UTC";
+  const rawUser = userSnap.data() || {};
+  const rawSettings = (rawUser as { settings?: unknown }).settings ?? {};
+  const rawStats = (rawUser as { stats?: unknown }).stats ?? {};
+
+  // Logika streaka wymaga poprawnych ustawień/timeZone oraz pól streaka.
+  const settings = UserSettingsSchema.partial().parse(rawSettings);
+  const stats = UserStatsSchema.partial().parse(rawStats);
+
+  const tz: string = timeZone || settings.timeZone || "UTC";
   const nowLocal = new Date();
   const todayYmd = formatYmdInTimeZone(nowLocal, tz);
 
+  const lastStreakDate = stats.lastStreakDate;
+  const lastStreakYmd =
+    lastStreakDate instanceof Date
+      ? formatYmdInTimeZone(lastStreakDate, tz)
+      : null;
+
   // Idempotencja – jeśli już zaliczony dzień, nic nie rób
-  if (userData?.stats?.lastStreakDate === todayYmd) {
+  if (lastStreakYmd === todayYmd) {
     return {
       qualified: false,
       updated: false,
-      currentStreak: Number(userData?.stats?.currentStreak || 0),
-      longestStreak: Number(userData?.stats?.longestStreak || 0),
-      lastStreakDate: userData?.stats?.lastStreakDate || null,
+      currentStreak: Number(stats.currentStreak || 0),
+      longestStreak: Number(stats.longestStreak || 0),
+      lastStreakDate: lastStreakYmd,
       threshold: dailyThreshold,
       todayCount: undefined,
     };
@@ -171,31 +194,40 @@ async function updateStreakForTodayIfQualified(params: {
     return {
       qualified,
       updated: false,
-      currentStreak: Number(userData?.stats?.currentStreak || 0),
-      longestStreak: Number(userData?.stats?.longestStreak || 0),
-      lastStreakDate: userData?.stats?.lastStreakDate || null,
+      currentStreak: Number(stats.currentStreak || 0),
+      longestStreak: Number(stats.longestStreak || 0),
+      lastStreakDate: lastStreakYmd,
       threshold: dailyThreshold,
       todayCount,
     };
   }
 
-  const current = Number(userData?.stats?.currentStreak || 0);
-  const longest = Number(userData?.stats?.longestStreak || 0);
+  const current = Number(stats.currentStreak || 0);
+  const longest = Number(stats.longestStreak || 0);
   const nextCurrent = current + 1;
   const nextLongest = Math.max(longest, nextCurrent);
 
+  // Przechowujemy w bazie Date, a na wyjściu zwracamy string YYYY-MM-DD.
+  const streakDateForStore = new Date(nowLocal);
+
+  const safeStatsUpdate = UserStatsStreakUpdateSchema.parse({
+    currentStreak: nextCurrent,
+    longestStreak: nextLongest,
+    lastStreakDate: streakDateForStore,
+  });
+
   await userRef.update({
-    "stats.currentStreak": nextCurrent,
-    "stats.longestStreak": nextLongest,
-    "stats.lastStreakDate": todayYmd,
-  } as Partial<User>);
+    "stats.currentStreak": safeStatsUpdate.currentStreak,
+    "stats.longestStreak": safeStatsUpdate.longestStreak,
+    "stats.lastStreakDate": safeStatsUpdate.lastStreakDate,
+  });
 
   return {
     qualified: true,
     updated: true,
     currentStreak: nextCurrent,
     longestStreak: nextLongest,
-    lastStreakDate: todayYmd,
+    lastStreakDate: formatYmdInTimeZone(streakDateForStore, tz),
     threshold: dailyThreshold,
     todayCount,
   };
@@ -227,9 +259,9 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
     if (!userSnap.exists) {
       throw new HttpsError("not-found", "User not found");
     }
-    const userData = userSnap.data() as User;
+    const userData = UserSchema.parse(userSnap.data() || {});
 
-    const tz: string = timeZone || userData?.settings?.timeZone || "UTC";
+    const tz: string = timeZone || userData.settings.timeZone || "UTC";
 
     // YYYY-MM-DD dla wczoraj w strefie użytkownika
     const now = new Date();
@@ -238,11 +270,17 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
     const yesterdayYmd = formatYmdInTimeZone(yesterday, tz);
 
     // Jeżeli już zaktualizowane dla wczoraj, nic nie rób (idempotencja)
-    if (userData?.stats?.lastStreakDate?.toDateString() === yesterdayYmd) {
+    const lastStreakDate = userData.stats.lastStreakDate;
+    const lastStreakYmd =
+      lastStreakDate instanceof Date
+        ? formatYmdInTimeZone(lastStreakDate, tz)
+        : null;
+
+    if (lastStreakYmd === yesterdayYmd) {
       return serializeTimestamps({
-        currentStreak: Number(userData?.stats?.currentStreak || 0),
-        longestStreak: Number(userData?.stats?.longestStreak || 0),
-        lastStreakDate: userData?.stats?.lastStreakDate || null,
+        currentStreak: Number(userData.stats.currentStreak || 0),
+        longestStreak: Number(userData.stats.longestStreak || 0),
+        lastStreakDate,
         updated: false,
       });
     }
@@ -271,18 +309,24 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
       return false;
     });
 
-    const current = Number(userData?.stats?.currentStreak || 0);
-    const longest = Number(userData?.stats?.longestStreak || 0);
+    const current = Number(userData.stats.currentStreak || 0);
+    const longest = Number(userData.stats.longestStreak || 0);
 
     const nextCurrent = hadStudyYesterday ? current + 1 : 0;
     const nextLongest = hadStudyYesterday
       ? Math.max(longest, nextCurrent)
       : longest;
 
+    const safeStatsUpdate = UserStatsStreakUpdateSchema.parse({
+      currentStreak: nextCurrent,
+      longestStreak: nextLongest,
+      lastStreakDate: yesterday,
+    });
+
     await userRef.update({
-      "stats.currentStreak": nextCurrent,
-      "stats.longestStreak": nextLongest,
-      "stats.lastStreakDate": yesterdayYmd,
+      "stats.currentStreak": safeStatsUpdate.currentStreak,
+      "stats.longestStreak": safeStatsUpdate.longestStreak,
+      "stats.lastStreakDate": safeStatsUpdate.lastStreakDate,
     });
 
     const rawResponse = {
@@ -511,7 +555,7 @@ export const getUserProgress = onCall(async (request) => {
     if (!userDoc.exists) {
       throw new HttpsError("not-found", "User not found");
     }
-    const userData = userDoc.data() as User;
+    const userData = UserSchema.parse(userDoc.data() || {});
 
     const now = new Date();
 
@@ -537,7 +581,7 @@ export const getUserProgress = onCall(async (request) => {
     const userProgress = UserProgressSchema.parse({
       stats: userData.stats || {},
       recentSessions: sessions,
-      dailyGoal: userData.settings.dailyGoal || 120,
+      dailyGoal: userData.settings.dailyGoal ?? 120,
       todaySessionsCount: todaySessionsCount.data().count,
     });
     const rawResponse = { userProgress };
@@ -805,220 +849,232 @@ export const submitPoints = onCall(async (request) => {
       issues: parsedRequest.error.issues,
     });
   }
+  try {
+    const { userId, delta } = parsedRequest.data;
 
-  const { userId, delta } = parsedRequest.data;
-
-  // Call local function directly to avoid nested onCall.run typing
-  const seasonSnap = await db.doc("ranking/currentSeason").get();
-  let seasonId: string | undefined;
-  if (seasonSnap.exists) {
-    const data = seasonSnap.data() as { seasonId?: string };
-    seasonId = data?.seasonId;
-  } else {
-    // initialize if missing
-    const now = new Date();
-    const day = now.getUTCDay();
-    const diffToMonday = (day + 6) % 7;
-    const start = new Date(
-      Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate(),
-        0,
-        0,
-        0,
-        0
-      )
-    );
-    start.setUTCDate(start.getUTCDate() - diffToMonday);
-    const end = new Date(start);
-    end.setUTCDate(end.getUTCDate() + 7);
-    seasonId = `${start.toISOString().slice(0, 10)}_${end
-      .toISOString()
-      .slice(0, 10)}`;
-    await seasonSnap.ref.set({
-      seasonId,
-      startAt: start,
-      endAt: end,
-      status: "active",
-      createdAt: FieldValue.serverTimestamp(),
-    });
-  }
-  if (!seasonId) {
-    throw new HttpsError("failed-precondition", "No active season");
-  }
-
-  const docRef = db.doc(`seasonUserPoints/${seasonId}/users/${userId}`);
-
-  // Get user's current data to determine league and check for group
-  const userDoc = await db.doc(`users/${userId}`).get();
-  const userData = userDoc.exists
-    ? (userDoc.data() as { league?: number })
-    : {};
-  const userSeasonPoints = await docRef.get();
-  const seasonData = userSeasonPoints.exists
-    ? (userSeasonPoints.data() as {
-        points?: number;
-        league?: number;
-        groupId?: string;
-      })
-    : {};
-  const userLeague = seasonData?.league ?? userData?.league ?? 1;
-  let groupId = seasonData?.groupId;
-
-  // Assign to group if needed (before transaction)
-  if (!groupId) {
-    const groupsRef = db
-      .collection("leagueGroups")
-      .doc(`${seasonId}_${userLeague}`)
-      .collection("groups");
-    const allGroupsSnapshot = await groupsRef.get();
-
-    let targetGroupId: string | null = null;
-
-    // Find first group with capacity
-    for (const groupDoc of allGroupsSnapshot.docs) {
-      const groupData = groupDoc.data() as {
-        currentCount?: number;
-        isFull?: boolean;
-        capacity?: number;
-      };
-
-      const currentCount = groupData?.currentCount ?? 0;
-      const capacity = groupData?.capacity ?? 20;
-      const isFull = groupData?.isFull ?? false;
-
-      if (!isFull && currentCount < capacity) {
-        targetGroupId = groupDoc.id;
-        break;
+    // Call local function directly to avoid nested onCall.run typing
+    const seasonSnap = await db.doc("ranking/currentSeason").get();
+    let seasonId: string | undefined;
+    if (seasonSnap.exists) {
+      const parsedSeason = GetCurrentSeasonResponseSchema.pick({
+        seasonId: true,
+      }).safeParse(seasonSnap.data() || {});
+      if (!parsedSeason.success) {
+        logger.error("submitPoints: invalid currentSeason document", {
+          issues: parsedSeason.error.issues,
+        });
+        throw new HttpsError("internal", "Invalid current season data");
       }
-    }
-
-    // If no group found, create a new one
-    if (!targetGroupId) {
-      const newGroupRef = groupsRef.doc();
-      targetGroupId = newGroupRef.id;
-
-      // Waliduj i typuj LeagueGroup przed zapisem (bez createdAt - użyjemy FieldValue)
-      const leagueGroupData: Omit<LeagueGroup, "createdAt" | "id"> = {
-        isFull: false,
-        capacity: 20,
-        currentCount: 0,
-        leagueNumber: userLeague,
-      };
-      LeagueGroupSchema.omit({ createdAt: true, id: true }).parse(
-        leagueGroupData
+      seasonId = parsedSeason.data.seasonId;
+    } else {
+      // initialize if missing
+      const now = new Date();
+      const day = now.getUTCDay();
+      const diffToMonday = (day + 6) % 7;
+      const start = new Date(
+        Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate(),
+          0,
+          0,
+          0,
+          0
+        )
       );
-
-      // Create group before transaction
-      await newGroupRef.set({
-        ...leagueGroupData,
+      start.setUTCDate(start.getUTCDate() - diffToMonday);
+      const end = new Date(start);
+      end.setUTCDate(end.getUTCDate() + 7);
+      seasonId = `${start.toISOString().slice(0, 10)}_${end
+        .toISOString()
+        .slice(0, 10)}`;
+      const seasonWindow = {
+        seasonId,
+        startAt: start,
+        endAt: end,
+        status: "active",
+      };
+      // Walidacja całego okna sezonu zanim trafi do bazy
+      GetCurrentSeasonResponseSchema.parse(seasonWindow);
+      await seasonSnap.ref.set({
+        ...seasonWindow,
         createdAt: FieldValue.serverTimestamp(),
       });
     }
+    if (!seasonId) {
+      throw new HttpsError("failed-precondition", "No active season");
+    }
 
-    groupId = targetGroupId;
-  }
+    const docRef = db.doc(`seasonUserPoints/${seasonId}/users/${userId}`);
 
-  // Now run transaction to update points and group membership atomically
-  await db.runTransaction(async (trx) => {
-    // All reads must happen before any writes
-    const snap = await trx.get(docRef);
-    const prev = snap.exists
-      ? (snap.data() as { points?: number; league?: number; groupId?: string })
-      : { points: 0 };
-    const nextPoints = (prev.points || 0) + delta;
+    // Get user's current data to determine league and check for group
+    const userDoc = await db.doc(`users/${userId}`).get();
+    const userData = userDoc.exists ? userDoc.data() || {} : {};
+    const userSeasonPoints = await docRef.get();
+    const seasonData = userSeasonPoints.exists
+      ? SeasonUserPointsSchema.partial().parse(userSeasonPoints.data() || {})
+      : {};
+    const userLeague =
+      seasonData.league ??
+      (typeof (userData as { league?: unknown }).league === "number"
+        ? ((userData as { league?: number }).league as number)
+        : 1);
+    let groupId = seasonData.groupId;
 
-    // Read group document if this is a new assignment (must be before writes)
-    let groupDoc = null;
-    if (!prev.groupId && groupId) {
-      const groupRef = db
+    // Assign to group if needed (before transaction)
+    if (!groupId) {
+      const groupsRef = db
         .collection("leagueGroups")
         .doc(`${seasonId}_${userLeague}`)
-        .collection("groups")
-        .doc(groupId);
-      groupDoc = await trx.get(groupRef);
-    }
+        .collection("groups");
+      const allGroupsSnapshot = await groupsRef.get();
 
-    // Now all writes can happen
-    // Waliduj i typuj season user points (bez lastActivityAt - użyjemy FieldValue)
-    const seasonUserPointsData: Omit<SeasonUserPoints, "lastActivityAt"> = {
-      points: nextPoints,
-      league: userLeague,
-      groupId: groupId,
-    };
-    // Walidacja częściowa (bez lastActivityAt)
-    SeasonUserPointsSchema.omit({ lastActivityAt: true }).parse(
-      seasonUserPointsData
-    );
+      let targetGroupId: string | null = null;
 
-    // Update season user points
-    trx.set(
-      docRef,
-      {
-        ...seasonUserPointsData,
-        lastActivityAt: FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
-
-    // Update user document (partial update - nie wymaga pełnej walidacji)
-    trx.update(db.doc(`users/${userId}`), {
-      currentGroupId: groupId,
-      league: userLeague,
-    });
-
-    // Update group member points
-    const memberRef = db
-      .collection("leagueGroups")
-      .doc(`${seasonId}_${userLeague}`)
-      .collection("groups")
-      .doc(groupId)
-      .collection("members")
-      .doc(userId);
-
-    // Waliduj dane członka grupy (bez id i username - to są opcjonalne w members collection)
-    const memberData = {
-      userId,
-      points: nextPoints,
-    };
-    // Sprawdź tylko wymagane pola
-    if (memberData.points < 0) {
-      throw new HttpsError("invalid-argument", "Points cannot be negative");
-    }
-
-    trx.set(
-      memberRef,
-      {
-        ...memberData,
-        lastActivityAt: FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
-
-    // If this is a new group assignment, update group count
-    if (!prev.groupId && groupId && groupDoc) {
-      if (groupDoc.exists) {
+      // Find first group with capacity
+      for (const groupDoc of allGroupsSnapshot.docs) {
         const groupData = groupDoc.data() as {
           currentCount?: number;
+          isFull?: boolean;
           capacity?: number;
         };
-        const newCount = (groupData?.currentCount ?? 0) + 1;
-        const groupRefForUpdate = db
+
+        const currentCount = groupData?.currentCount ?? 0;
+        const capacity = groupData?.capacity ?? 20;
+        const isFull = groupData?.isFull ?? false;
+
+        if (!isFull && currentCount < capacity) {
+          targetGroupId = groupDoc.id;
+          break;
+        }
+      }
+
+      // If no group found, create a new one
+      if (!targetGroupId) {
+        const newGroupRef = groupsRef.doc();
+        targetGroupId = newGroupRef.id;
+
+        // Waliduj i typuj LeagueGroup przed zapisem (bez createdAt - użyjemy FieldValue)
+        const leagueGroupData: Omit<LeagueGroup, "createdAt" | "id"> = {
+          isFull: false,
+          capacity: 20,
+          currentCount: 0,
+          leagueNumber: userLeague,
+        };
+        LeagueGroupSchema.omit({ createdAt: true, id: true }).parse(
+          leagueGroupData
+        );
+
+        // Create group before transaction
+        await newGroupRef.set({
+          ...leagueGroupData,
+          createdAt: FieldValue.serverTimestamp(),
+        });
+      }
+
+      groupId = targetGroupId;
+    }
+
+    // Now run transaction to update points and group membership atomically
+    await db.runTransaction(async (trx) => {
+      // All reads must happen before any writes
+      const snap = await trx.get(docRef);
+      const prev = snap.exists
+        ? SeasonUserPointsSchema.partial().parse(snap.data() || {})
+        : {};
+      const nextPoints = (prev.points || 0) + delta;
+
+      // Read group document if this is a new assignment (must be before writes)
+      let groupDoc = null;
+      if (!prev.groupId && groupId) {
+        const groupRef = db
           .collection("leagueGroups")
           .doc(`${seasonId}_${userLeague}`)
           .collection("groups")
           .doc(groupId);
-
-        trx.update(groupRefForUpdate, {
-          currentCount: newCount,
-          isFull: newCount >= (groupData?.capacity ?? 20),
-        });
+        groupDoc = await trx.get(groupRef);
       }
-    }
-  });
 
-  try {
+      // Now all writes can happen
+      // Waliduj i typuj season user points (bez lastActivityAt - użyjemy FieldValue)
+      const seasonUserPointsData: Omit<SeasonUserPoints, "lastActivityAt"> = {
+        points: nextPoints,
+        league: userLeague,
+        groupId: groupId,
+      };
+      // Walidacja częściowa (bez lastActivityAt)
+      SeasonUserPointsSchema.omit({ lastActivityAt: true }).parse(
+        seasonUserPointsData
+      );
+
+      // Update season user points
+      trx.set(
+        docRef,
+        {
+          ...seasonUserPointsData,
+          lastActivityAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      // Update user document (partial update – z whitelistą pól)
+      const safeUserLeagueUpdate = UserLeagueUpdateSchema.parse({
+        currentGroupId: groupId,
+        league: userLeague,
+      });
+      trx.update(db.doc(`users/${userId}`), safeUserLeagueUpdate);
+
+      // Update group member points
+      const memberRef = db
+        .collection("leagueGroups")
+        .doc(`${seasonId}_${userLeague}`)
+        .collection("groups")
+        .doc(groupId)
+        .collection("members")
+        .doc(userId);
+
+      // Waliduj dane członka grupy (bez id i username - to są opcjonalne w members collection)
+      const memberData = {
+        userId,
+        points: nextPoints,
+      };
+      // Sprawdź tylko wymagane pola
+      if (memberData.points < 0) {
+        throw new HttpsError("invalid-argument", "Points cannot be negative");
+      }
+
+      trx.set(
+        memberRef,
+        {
+          ...memberData,
+          lastActivityAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      // If this is a new group assignment, update group count
+      if (!prev.groupId && groupId && groupDoc) {
+        if (groupDoc.exists) {
+          const rawGroupData = groupDoc.data() || {};
+          const currentCount =
+            (rawGroupData as { currentCount?: number }).currentCount ?? 0;
+          const capacity =
+            (rawGroupData as { capacity?: number }).capacity ?? 20;
+          const newCount = currentCount + 1;
+          const groupRefForUpdate = db
+            .collection("leagueGroups")
+            .doc(`${seasonId}_${userLeague}`)
+            .collection("groups")
+            .doc(groupId);
+
+          trx.update(groupRefForUpdate, {
+            currentCount: newCount,
+            isFull: newCount >= capacity,
+          });
+        }
+      }
+    });
+
     logger.info("Points submitted", { userId, delta, seasonId, groupId });
     const rawResponse = { success: true };
     const validatedResponse = ApiSubmitPointsResponseSchema.parse(rawResponse);
@@ -1041,12 +1097,13 @@ export const weeklyRollOver = onCall(async () => {
   if (!seasonDoc.exists) {
     throw new HttpsError("failed-precondition", "No current season");
   }
-  const { seasonId, endAt } = seasonDoc.data() as unknown as {
-    seasonId: string;
-    endAt: Timestamp;
-  };
+  const { seasonId, endAt } = GetCurrentSeasonResponseSchema.pick({
+    seasonId: true,
+    endAt: true,
+  }).parse(seasonDoc.data() || {});
+
   const now = new Date();
-  if (endAt?.toDate && now < endAt.toDate()) {
+  if (endAt && now < endAt) {
     // Not yet ended, but allow manual publish
     logger.warn("weeklyRollOver called before season end", { seasonId });
   }
@@ -1077,7 +1134,7 @@ export const weeklyRollOver = onCall(async () => {
   );
 
   // Initialize next season window
-  const end = endAt?.toDate ? endAt.toDate() : new Date();
+  const end = endAt || new Date();
   const nextStart = new Date(end);
   const nextEnd = new Date(nextStart);
   nextEnd.setUTCDate(nextEnd.getUTCDate() + 7);

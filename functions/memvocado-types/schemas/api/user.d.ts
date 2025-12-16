@@ -161,8 +161,8 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
     }>;
     scheduledTime: z.ZodNumber;
 }, "strict", z.ZodTypeAny, {
-    deckId: string;
     userId: string;
+    deckId: string;
     card: {
         createdAt: Date;
         id: string;
@@ -194,8 +194,8 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
     };
     scheduledTime: number;
 }, {
-    deckId: string;
     userId: string;
+    deckId: string;
     card: {
         id: string;
         cardData: {
