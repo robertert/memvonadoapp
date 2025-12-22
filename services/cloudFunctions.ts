@@ -60,7 +60,11 @@ import {
   WeeklyRollOverResponse,
   WeeklyRollOverResponseSchema,
 } from "@/types/schemas/api/user";
-import { GetFriendsStreaksResponseSchema } from "@/types/schemas/api_refs";
+import {
+  GetFriendsStreaksRequest,
+  GetFriendsStreaksResponse,
+  GetFriendsStreaksResponseSchema,
+} from "@/types/schemas/api_refs";
 import {
   GetLeagueInfoRequestSchema,
   GetUserGroupRequestSchema,
@@ -85,7 +89,11 @@ import {
   GetFollowingRankingsResponseSchema,
 } from "@/types/schemas/api/ranking";
 import {
+  GetNotificationsRequest,
+  GetNotificationsResponse,
   GetNotificationsResponseSchema,
+  MarkNotificationReadRequest,
+  MarkNotificationReadResponse,
   MarkNotificationReadResponseSchema,
 } from "@/types/schemas/api/notification";
 
@@ -116,7 +124,6 @@ import type {
   DeleteDeckResponse,
   CheckCardChangesResponse,
   SyncDeckCardsResponse,
-  UpdateCardContentResponse,
   StartLearningDeckResponse,
 } from "@/types/schemas/api_refs";
 import {
@@ -124,6 +131,8 @@ import {
   GetDeckDetailsRequest,
   GetDeckCardsRequest,
   GetPopularDecksRequest,
+  GetPopularDecksResponse,
+  GetPopularDecksResponseSchema,
   GetUserDeckDetailsRequest,
   GetUserDeckCardsRequest,
   GetUserDueDeckCardsRequest,
@@ -136,12 +145,13 @@ import {
   CheckCardChangesRequest,
   SyncDeckCardsRequest,
   UpdateCardContentRequest,
+  UpdateCardContentResponse,
+  UpdateCardContentResponseSchema,
   CreateDeckWithCardsResponseSchema,
   GetDeckDetailsResponseSchema,
   GetDeckCardsResponseSchema,
   GetDueDeckCardsResponseSchema,
   GetNewDeckCardsResponseSchema,
-  GetPopularDecksResponseSchema,
   GetUserDecksResponseSchema,
   GetUserDeckDetailsResponseSchema,
   GetUserDeckCardsResponseSchema,
@@ -151,12 +161,17 @@ import {
   DeleteDeckResponseSchema,
   CheckCardChangesResponseSchema,
   SyncDeckCardsResponseSchema,
-  UpdateCardContentResponseSchema,
 } from "@/types/schemas/api/deck";
 import {
   CheckUsernameAvailabilityRequest,
   CheckUsernameAvailabilityResponse,
   CheckUsernameAvailabilityResponseSchema,
+  EnsureUserDocumentRequest,
+  EnsureUserDocumentResponse,
+  EnsureUserDocumentResponseSchema,
+  CompleteOnboardingRequest,
+  CompleteOnboardingResponse,
+  CompleteOnboardingResponseSchema,
 } from "@/types/schemas/api/auth";
 
 // Cloud Functions calls
@@ -180,9 +195,14 @@ export const cloudFunctions = {
 
   // Ensure user document exists - tworzy podstawowy dokument po rejestracji
   ensureUserDocument: async () => {
-    const fn = httpsCallable(functions, "ensureUserDocument");
+    const fn = httpsCallable<
+      EnsureUserDocumentRequest,
+      EnsureUserDocumentResponse
+    >(functions, "ensureUserDocument");
     const result = await fn({});
-    const validatedData = SuccessResponseSchema.safeParse(result.data);
+    const validatedData = EnsureUserDocumentResponseSchema.safeParse(
+      result.data
+    );
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from ensureUserDocument");
@@ -196,9 +216,14 @@ export const cloudFunctions = {
     photoUrl?: string;
     interests: string[];
   }) => {
-    const fn = httpsCallable(functions, "completeOnboarding");
+    const fn = httpsCallable<
+      CompleteOnboardingRequest,
+      CompleteOnboardingResponse
+    >(functions, "completeOnboarding");
     const result = await fn(data);
-    const validatedData = SuccessResponseSchema.safeParse(result.data);
+    const validatedData = CompleteOnboardingResponseSchema.safeParse(
+      result.data
+    );
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from completeOnboarding");
@@ -465,7 +490,10 @@ export const cloudFunctions = {
 
   // Get popular public decks
   getPopularDecks: async (limit: number = 8) => {
-    const fn = httpsCallable(functions, "getPopularDecks");
+    const fn = httpsCallable<GetPopularDecksRequest, GetPopularDecksResponse>(
+      functions,
+      "getPopularDecks"
+    );
     const result = await fn({ limit });
     const validatedData = GetPopularDecksResponseSchema.safeParse(result.data);
     if (!validatedData.success) {
@@ -684,10 +712,10 @@ export const cloudFunctions = {
 
   // Get user activity heatmap
   getUserActivityHeatmap: async (userId: string, weeks: number = 16) => {
-    const getUserActivityHeatmapFunction = httpsCallable(
-      functions,
-      "getUserActivityHeatmap"
-    );
+    const getUserActivityHeatmapFunction = httpsCallable<
+      GetUserActivityHeatmapRequest,
+      GetUserActivityHeatmapResponse
+    >(functions, "getUserActivityHeatmap");
     const result = await getUserActivityHeatmapFunction({ userId, weeks });
     const validatedData = GetUserActivityHeatmapResponseSchema.safeParse(
       result.data
@@ -746,10 +774,10 @@ export const cloudFunctions = {
 
   // Get friends streaks
   getFriendsStreaks: async (userId: string) => {
-    const getFriendsStreaksFunction = httpsCallable(
-      functions,
-      "getFriendsStreaks"
-    );
+    const getFriendsStreaksFunction = httpsCallable<
+      GetFriendsStreaksRequest,
+      GetFriendsStreaksResponse
+    >(functions, "getFriendsStreaks");
     const result = await getFriendsStreaksFunction({ userId });
     const validatedData = GetFriendsStreaksResponseSchema.safeParse(
       result.data
@@ -810,10 +838,10 @@ export const cloudFunctions = {
 
   // Get notifications
   getNotifications: async (userId: string, limit: number = 50) => {
-    const getNotificationsFunction = httpsCallable(
-      functions,
-      "getNotifications"
-    );
+    const getNotificationsFunction = httpsCallable<
+      GetNotificationsRequest,
+      GetNotificationsResponse
+    >(functions, "getNotifications");
     const result = await getNotificationsFunction({ userId, limit });
     const validatedData = GetNotificationsResponseSchema.safeParse(result.data);
     if (!validatedData.success) {
@@ -825,10 +853,10 @@ export const cloudFunctions = {
 
   // Mark notification as read
   markNotificationRead: async (userId: string, notificationId: string) => {
-    const markNotificationReadFunction = httpsCallable(
-      functions,
-      "markNotificationRead"
-    );
+    const markNotificationReadFunction = httpsCallable<
+      MarkNotificationReadRequest,
+      MarkNotificationReadResponse
+    >(functions, "markNotificationRead");
     const result = await markNotificationReadFunction({
       userId,
       notificationId,
@@ -918,7 +946,9 @@ export const cloudFunctions = {
       UpdateCardContentResponse
     >(functions, "updateCardContent");
     const result = await fn({ deckId, cardId, cardData });
-    const validatedData = SuccessResponseSchema.safeParse(result.data);
+    const validatedData = UpdateCardContentResponseSchema.safeParse(
+      result.data
+    );
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from updateCardContent");

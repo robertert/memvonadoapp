@@ -15,7 +15,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { router, useLocalSearchParams } from "expo-router";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
-import { Card, CardCore, safeValidateCard } from "@/types";
+import { Card, CardCore } from "@/types";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 interface EditCardParams {
@@ -78,16 +78,10 @@ export default function editCard(): React.JSX.Element {
         throw new Error("Card not found");
       }
 
-      const validatedCard = safeValidateCard(foundCard);
-      if (!validatedCard.success) {
-        throw new Error("Invalid card data");
-      }
-
-      const validCard = validatedCard.data;
-      setCard(validCard);
-      setFront(validCard.cardData.front);
-      setBack(validCard.cardData.back);
-      setTags(validCard.tags || []);
+      setCard(foundCard);
+      setFront(foundCard.cardData.front);
+      setBack(foundCard.cardData.back);
+      setTags(foundCard.tags || []);
     } catch (error) {
       console.error("Error fetching card:", error);
       router.back();

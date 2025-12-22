@@ -13,7 +13,6 @@ import {
 } from "../../app/stack/learnScreen.constants";
 import { EdgeInsets } from "react-native-safe-area-context";
 import { AnimationValues } from "../../app/stack/learnScreen.types";
-import { useState } from "react";
 import * as Haptics from "expo-haptics";
 import { CardGrade } from "@/types/schemas";
 

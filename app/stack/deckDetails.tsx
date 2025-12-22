@@ -36,10 +36,7 @@ import {
 
 import {
   CardSchema,
-  DeckLearningData,
-  DeckSchema,
   safeValidateArray,
-  safeValidateCard,
   safeValidateDeck,
   type Card,
   type Deck,
@@ -152,11 +149,6 @@ export default function deckDetails(): React.JSX.Element {
 
         if (!deckData) throw new Error("Deck not found");
 
-        const resultDeck = safeValidateDeck(deckData);
-        if (!resultDeck.success) {
-          console.error("Invalid deck data from API", resultDeck.error);
-        }
-
         // Get first batch of cards
         const {
           cards: deckCards,
@@ -166,15 +158,10 @@ export default function deckDetails(): React.JSX.Element {
 
         if (!deckCards) throw new Error("Cards not found");
 
-        const resultCards = safeValidateArray(deckCards, CardSchema);
-        if (!resultCards.success) {
-          console.error("Invalid cards data from API", resultCards.error);
-        }
-
         setDateAgo(calculateDateAgo(new Date(deckData.createdAt)));
         setUsername(username);
-        setDeck(resultDeck?.success ? resultDeck.data : ({} as Deck));
-        setCards(resultCards?.success ? resultCards.data : ([] as Card[]));
+        setDeck(deckData);
+        setCards(deckCards);
         setHasMoreCards(hasMore);
         setLastDocId(newLastDocId);
       }
@@ -197,13 +184,8 @@ export default function deckDetails(): React.JSX.Element {
       } = await cloudFunctions.getDeckCards(typedParams.deckId, 20, lastDocId);
 
       if (!moreCards) throw new Error("Cards not found");
-      const resultCards = safeValidateArray(moreCards, CardSchema);
-      if (!resultCards.success) {
-        console.error("Invalid cards data from API", resultCards.error);
-        throw new Error("Invalid cards data structure");
-      }
 
-      setCards((prevCards) => [...prevCards, ...(resultCards.data as Card[])]);
+      setCards((prevCards) => [...prevCards, ...moreCards]);
       setHasMoreCards(hasMore);
       setLastDocId(newLastDocId);
     } catch (error) {

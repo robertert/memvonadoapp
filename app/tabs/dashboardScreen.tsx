@@ -3,9 +3,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
-  Dimensions,
   Alert,
   ActivityIndicator,
   RefreshControl,
@@ -14,7 +12,7 @@ import { Colors, Fonts } from "../../constants/colors";
 import { CATEGORY_OPTIONS } from "@/constants/settings";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { AntDesign, MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ScrollView } from "react-native";
 import { router } from "expo-router";
 import { UserContext } from "../../store/user-context";
@@ -23,14 +21,7 @@ import { BellIcon, FireIcon, LanguageIcon } from "react-native-heroicons/solid";
 import PieChart from "../../components/CustomPieChart";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
 import { placeholderDecks } from "../../constants/placeholderData";
-import {
-  DeckSchema,
-  UserProgress,
-  UserProgressSchema,
-  Deck,
-  safeValidateUserProgress,
-  safeValidateArray,
-} from "@/types";
+import { DeckSchema, UserProgress, Deck } from "@/types";
 
 export default function decksScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
@@ -58,25 +49,8 @@ export default function decksScreen(): React.JSX.Element {
           cloudFunctions.getUserProgress(userCtx.id),
           cloudFunctions.getUserDecks(userCtx.id),
         ]);
-
-        const validatedUserProgress = safeValidateUserProgress(userProgress);
-        if (!validatedUserProgress.success) {
-          console.error(
-            "Invalid user progress data from API",
-            validatedUserProgress.error
-          );
-          setUserProgress(undefined);
-        } else {
-          setUserProgress(validatedUserProgress.data);
-        }
-
-        const validatedDecks = safeValidateArray(userDecks.decks, DeckSchema);
-        if (!validatedDecks.success) {
-          console.error("Invalid decks data from API", validatedDecks.error);
-          setDecks([]);
-        } else {
-          setDecks(validatedDecks.data);
-        }
+        setUserProgress(userProgress);
+        setDecks(userDecks.decks);
       }
 
       setIsLoading(false);

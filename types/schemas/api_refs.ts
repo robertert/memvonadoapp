@@ -26,6 +26,16 @@ export type SuccessResponse = z.infer<typeof SuccessResponseSchema>;
 // Social Functions
 // ============================================================================
 
+export const GetFriendsStreaksRequestSchema = z
+  .object({
+    userId: z.string(),
+  })
+  .strict();
+
+export type GetFriendsStreaksRequest = z.infer<
+  typeof GetFriendsStreaksRequestSchema
+>;
+
 export const GetFriendsStreaksResponseSchema = z.object({
   friendsStreaks: z.array(
     z.object({

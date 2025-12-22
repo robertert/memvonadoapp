@@ -19,12 +19,7 @@ import { ArrowLeftIcon } from "react-native-heroicons/solid";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "@/store/user-context";
-import {
-  Deck,
-  DeckLearningData,
-  safeValidateDeck,
-  safeValidateDeckLearningData,
-} from "../../types/index";
+import { Deck, DeckLearningData } from "../../types/index";
 
 import {
   CATEGORY_OPTIONS,
@@ -79,9 +74,7 @@ export default function deckSettings(): React.JSX.Element {
           typedParams.deckId
         );
         if (!deckData) throw new Error("Deck not found");
-        const validatedDeck = safeValidateDeck(deckData);
-        if (!validatedDeck.success) throw new Error("Invalid deckData");
-        setAuthorDeck(validatedDeck.data);
+        setAuthorDeck(deckData);
       }
 
       const { deck: deckData } = await cloudFunctions.getUserDeckDetails(
@@ -95,11 +88,9 @@ export default function deckSettings(): React.JSX.Element {
         if (!result.success) throw new Error("Failed to start learning deck");
         if (!result.deck) throw new Error("No deck returned");
         setDeck(result.deck);
+      } else {
+        setDeck(deckData);
       }
-      const validatedDeck = safeValidateDeckLearningData(deckData);
-      if (!validatedDeck.success) throw new Error("Invalid deckData");
-
-      setDeck(validatedDeck.data);
     } catch (error) {
       console.error("Error fetching deck data:", error);
     } finally {
