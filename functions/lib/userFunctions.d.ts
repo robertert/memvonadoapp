@@ -6,7 +6,12 @@
 export declare const updateUserStreakOnLogin: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     currentStreak: number;
     longestStreak: number;
-    lastStreakDate: any;
+    lastStreakDate: Date | undefined;
+    updated: boolean;
+} | {
+    currentStreak: number;
+    longestStreak: number;
+    lastStreakDate: string;
     updated: boolean;
 }>, unknown>;
 /**
@@ -19,13 +24,13 @@ export declare const updateUserStreakOnLogin: import("firebase-functions/v2/http
  * request.data: { userId: string, timeZone?: string, threshold?: number }
  */
 export declare const updateUserStreakIfQualified: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    qualified: boolean;
-    updated: boolean;
     currentStreak: number;
     longestStreak: number;
     lastStreakDate: string | null;
     threshold: number;
-    todayCount: number | undefined;
+    qualified: boolean;
+    updated: boolean;
+    todayCount?: number | undefined;
 }>, unknown>;
 /**
  * Get user decks with cards
@@ -53,6 +58,7 @@ export declare const getUserDecks: import("firebase-functions/v2/https").Callabl
  */
 export declare const updateCardProgress: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
+    message?: string | undefined;
 }>, unknown>;
 /**
  * Get user progress and statistics
@@ -78,7 +84,7 @@ export declare const getUserProgress: import("firebase-functions/v2/https").Call
  * Get user settings
  */
 export declare const getUserSettings: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    settings: any;
+    settings: {};
 }>, unknown>;
 /**
  * Validate user data on creation
@@ -100,15 +106,10 @@ export declare const serverNow: import("firebase-functions/v2/https").CallableFu
  * Collection: ranking/currentSeason
  */
 export declare const getCurrentSeason: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    readonly seasonId: string;
-    readonly startAt: Date;
-    readonly endAt: Date;
-    readonly status: "active";
-} | {
-    seasonId: string;
-    startAt: any;
-    endAt: any;
     status: string;
+    seasonId: string;
+    startAt: Date;
+    endAt: Date;
 }>, unknown>;
 /**
  * Submit points for current season (authoritative, server-timestamped)
@@ -130,14 +131,29 @@ export declare const weeklyRollOver: import("firebase-functions/v2/https").Calla
  */
 export declare const updateUserSettings: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
+    message?: string | undefined;
 }>, unknown>;
 /**
  * Get user profile with full information
  */
 export declare const getUserProfile: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    userId: any;
     username: string;
-    email: string | null;
+    email: string;
+    settings: {
+        theme: "light" | "dark";
+        notificationsEnabled: boolean;
+        dailyGoal: number;
+        dailyNew: number;
+        language: string;
+        timeZone: string;
+    };
+    createdAt: Date;
+    updatedAt: Date;
+    id: string;
+    league: number;
+    currentGroupId: string;
+    experiencePoints: number;
+    currencyCount: number;
     stats: {
         totalCards: number;
         totalDecks: number;
@@ -148,11 +164,10 @@ export declare const getUserProfile: import("firebase-functions/v2/https").Calla
         lastStreakDate?: Date | undefined;
         lastStudyDate?: Date | undefined;
     };
-    streak: number;
-    league: number;
-    points: number;
-    followers: number;
-    following: number;
+    followingCount: number;
+    followersCount: number;
+    interests: string[];
+    profileCompleted?: boolean | undefined;
 }>, unknown>;
 /**
  * Get user activity heatmap data
@@ -167,7 +182,5 @@ export declare const getUserActivityHeatmap: import("firebase-functions/v2/https
  * Get user awards
  */
 export declare const getUserAwards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    awards: {
-        id: string;
-    }[];
+    awards: any[];
 }>, unknown>;

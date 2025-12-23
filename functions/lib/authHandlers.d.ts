@@ -5,7 +5,10 @@
  */
 export declare const ensureUserDocument: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
-    message: string;
+    message?: string | undefined;
+}>, unknown>;
+export declare const checkUsernameAvailability: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    isAvailable: boolean;
 }>, unknown>;
 /**
  * Callable Function: zapisuje dane onboardingu użytkownika w Firestore.
@@ -13,5 +16,5 @@ export declare const ensureUserDocument: import("firebase-functions/v2/https").C
  */
 export declare const completeOnboarding: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
-    message: string;
+    message?: string | undefined;
 }>, unknown>;

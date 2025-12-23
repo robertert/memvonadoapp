@@ -14,7 +14,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GetFriendsStreaksResponseSchema = exports.SuccessResponseSchema = void 0;
+exports.GetFriendsStreaksResponseSchema = exports.GetFriendsStreaksRequestSchema = exports.SuccessResponseSchema = void 0;
 const zod_1 = require("zod");
 __exportStar(require("./api/auth"), exports);
 __exportStar(require("./api/deck"), exports);
@@ -34,6 +34,11 @@ exports.SuccessResponseSchema = zod_1.z.object({
 // ============================================================================
 // Social Functions
 // ============================================================================
+exports.GetFriendsStreaksRequestSchema = zod_1.z
+    .object({
+    userId: zod_1.z.string(),
+})
+    .strict();
 exports.GetFriendsStreaksResponseSchema = zod_1.z.object({
     friendsStreaks: zod_1.z.array(zod_1.z.object({
         userId: zod_1.z.string(),

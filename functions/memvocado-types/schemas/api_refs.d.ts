@@ -18,6 +18,14 @@ export declare const SuccessResponseSchema: z.ZodObject<{
     message?: string | undefined;
 }>;
 export type SuccessResponse = z.infer<typeof SuccessResponseSchema>;
+export declare const GetFriendsStreaksRequestSchema: z.ZodObject<{
+    userId: z.ZodString;
+}, "strict", z.ZodTypeAny, {
+    userId: string;
+}, {
+    userId: string;
+}>;
+export type GetFriendsStreaksRequest = z.infer<typeof GetFriendsStreaksRequestSchema>;
 export declare const GetFriendsStreaksResponseSchema: z.ZodObject<{
     friendsStreaks: z.ZodArray<z.ZodObject<{
         userId: z.ZodString;

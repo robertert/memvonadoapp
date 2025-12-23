@@ -16,8 +16,14 @@ exports.EnsureUserDocumentRequestSchema = zod_1.z.object({}).strict();
  */
 exports.CompleteOnboardingRequestSchema = zod_1.z
     .object({
-    username: zod_1.z.string().min(3).max(32),
-    interests: zod_1.z.array(zod_1.z.string()).min(3),
+    username: zod_1.z
+        .string()
+        .min(3)
+        .max(32)
+        .regex(/^[a-zA-Z0-9_]+$/, {
+        message: "Username can only contain letters, numbers, and underscores",
+    }),
+    interests: zod_1.z.array(zod_1.z.string()).min(1),
 })
     .strict();
 // ============================================================================
@@ -35,7 +41,13 @@ exports.EnsureUserDocumentResponseSchema = exports.AuthSuccessResponseSchema;
 exports.CompleteOnboardingResponseSchema = exports.AuthSuccessResponseSchema;
 exports.CheckUsernameAvailabilityRequestSchema = zod_1.z
     .object({
-    username: zod_1.z.string().min(3).max(32),
+    username: zod_1.z
+        .string()
+        .min(3)
+        .max(32)
+        .regex(/^[a-zA-Z0-9_]+$/, {
+        message: "Username can only contain letters, numbers, and underscores",
+    }),
 })
     .strict();
 exports.CheckUsernameAvailabilityResponseSchema = zod_1.z

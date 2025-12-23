@@ -22,8 +22,14 @@ export type EnsureUserDocumentRequest = z.infer<
  */
 export const CompleteOnboardingRequestSchema = z
   .object({
-    username: z.string().min(3).max(32),
-    interests: z.array(z.string()).min(3),
+    username: z
+      .string()
+      .min(3)
+      .max(32)
+      .regex(/^[a-zA-Z0-9_]+$/, {
+        message: "Username can only contain letters, numbers, and underscores",
+      }),
+    interests: z.array(z.string()).min(1),
   })
   .strict();
 
@@ -60,7 +66,13 @@ export type CompleteOnboardingResponse = z.infer<
 
 export const CheckUsernameAvailabilityRequestSchema = z
   .object({
-    username: z.string().min(3).max(32),
+    username: z
+      .string()
+      .min(3)
+      .max(32)
+      .regex(/^[a-zA-Z0-9_]+$/, {
+        message: "Username can only contain letters, numbers, and underscores",
+      }),
   })
   .strict();
 

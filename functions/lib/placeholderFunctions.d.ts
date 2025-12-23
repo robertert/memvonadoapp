@@ -4,7 +4,7 @@
  */
 export declare const addPlaceholderData: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
-    userId: any;
+    userId: string;
     decksCreated: number;
     totalCards: number;
     deckIds: string[];

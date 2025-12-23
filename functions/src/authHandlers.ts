@@ -209,9 +209,12 @@ export const checkUsernameAvailability = onCall(
       if (!username) {
         throw new HttpsError("invalid-argument", "Username is required");
       }
+      // Schema już zablokowała nieprawidłowe znaki, więc tylko normalizujemy do lowercase
+      const normalizedUsername = username.trim().toLowerCase();
+
       const usernameQuery = await db
         .collection("users")
-        .where("username", "==", username)
+        .where("username", "==", normalizedUsername)
         .get();
       const rawResponse = {
         isAvailable: usernameQuery.empty,
@@ -260,12 +263,13 @@ export const completeOnboarding = onCall(
       const snap = await userRef.get();
 
       const email = request.auth?.token?.email || "";
-      const sanitizedUsername = sanitizeUsername(username.trim());
+      // Schema już zablokowała nieprawidłowe znaki, więc tylko normalizujemy do lowercase
+      const normalizedUsername = username.trim();
 
       // Sprawdź czy username jest już zajęty
       const usernameQuery = await db
         .collection("users")
-        .where("username", "==", sanitizedUsername)
+        .where("username", "==", normalizedUsername)
         .get();
 
       if (!usernameQuery.empty) {
@@ -274,10 +278,23 @@ export const completeOnboarding = onCall(
         if (!rawExistingUserData) {
           throw new HttpsError("internal", "Invalid user data format");
         }
-        const validatedExistingUser = UserSchema.pick({ id: true }).parse({
+        logger.info(
+          `completeOnboarding: Existing user data: ${JSON.stringify(
+            rawExistingUserData
+          )}`
+        );
+        const validatedExistingUser = UserSchema.pick({
+          id: true,
+          username: true,
+          email: true,
+          createdAt: true,
+          updatedAt: true,
+          profileCompleted: true,
+        }).parse({
           id: existingUserDoc.id,
           ...rawExistingUserData,
         });
+
         if (validatedExistingUser.id !== uid) {
           throw new HttpsError("already-exists", "Username is already taken");
         }
@@ -286,7 +303,7 @@ export const completeOnboarding = onCall(
       if (snap.exists) {
         // Aktualizuj istniejący dokument
         const safeUpdate = CompleteOnboardingUpdateSchema.parse({
-          username: sanitizedUsername,
+          username: normalizedUsername,
           interests,
           profileCompleted: true,
           updatedAt: new Date(),
@@ -299,7 +316,7 @@ export const completeOnboarding = onCall(
         const userDoc = buildUserDocument({
           uid,
           email,
-          username: sanitizedUsername,
+          username: normalizedUsername,
         });
 
         const fullUserDoc = UserSchema.parse({

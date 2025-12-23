@@ -6,35 +6,49 @@ export declare const getLeaderboard: import("firebase-functions/v2/https").Calla
     entries: never[];
     groupId: null;
     leagueNumber: null;
-    seasonId: any;
+    seasonId: string;
+    totalMembers: number;
 } | {
     entries: never[];
     groupId: null;
     leagueNumber: number;
-    seasonId: any;
+    seasonId: string;
+    totalMembers: number;
 } | {
     entries: {
         userId: string;
         username: string;
         points: number;
         position: number;
-        lastActivityAt: any;
+        lastActivityAt: FirebaseFirestore.Timestamp | null;
     }[];
     groupId: string;
     leagueNumber: number;
-    seasonId: any;
+    seasonId: string;
     totalMembers: number;
 }>, unknown>;
 /**
  * Get user's ranking position in their group
  */
 export declare const getUserRanking: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    position: null;
+    groupId: null;
+    leagueNumber: null;
+    points: number;
+    totalMembers: null;
+} | {
+    position: null;
+    groupId: null;
+    leagueNumber: number;
+    points: number;
+    totalMembers: null;
+} | {
     position: number;
     groupId: string;
     leagueNumber: number;
     points: number;
     totalMembers: number;
-} | null>, unknown>;
+}>, unknown>;
 /**
  * Get rankings for followed users (friends in their groups)
  */
@@ -55,7 +69,7 @@ export declare const getFollowingRankings: import("firebase-functions/v2/https")
         leagueNumber: number;
         groupId: string;
         totalMembers: number;
-    })[];
+    } | null)[];
 }>, unknown>;
 /**
  * Assign user to a league group
