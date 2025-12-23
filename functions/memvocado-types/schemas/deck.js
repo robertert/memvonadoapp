@@ -8,12 +8,11 @@ const base_1 = require("./base");
  */
 exports.DeckCoreSchema = zod_1.z
     .object({
-    title: zod_1.z.string(),
-    category: zod_1.z.string().optional(),
+    title: zod_1.z.string().min(1),
+    category: zod_1.z.string().nullable().optional(),
     icon: zod_1.z.string().default("cards"),
     tags: zod_1.z.array(zod_1.z.string()).default([]),
     isPublic: zod_1.z.boolean(),
-    updatedAt: base_1.TimestampSchema.optional(),
 })
     .strict();
 /**
@@ -22,6 +21,7 @@ exports.DeckCoreSchema = zod_1.z
 exports.DeckTimestampSchema = zod_1.z
     .object({
     createdAt: base_1.TimestampSchema,
+    updatedAt: base_1.TimestampSchema,
 })
     .strict();
 /**
@@ -69,7 +69,7 @@ exports.DeckLearningCoreSchema = zod_1.z
 exports.DeckLearningTimestampSchema = zod_1.z
     .object({
     lastReviewDate: base_1.TimestampSchema.optional(),
-    updatedAt: base_1.TimestampSchema.optional(),
+    updatedAt: base_1.TimestampSchema,
 })
     .strict();
 exports.DeckLearningMetaSchema = zod_1.z

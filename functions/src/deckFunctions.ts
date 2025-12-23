@@ -102,7 +102,7 @@ export const createDeckWithCards = onCall(async (request) => {
     const deck = {
       id: deckRef.id,
       title: validatedDeckCore.title,
-      category: validatedDeckCore.category,
+      category: validatedDeckCore.category ?? null,
       icon: validatedDeckCore.icon,
       cardsNum: validatedCards.length,
       createdBy: userId,
@@ -181,9 +181,10 @@ export const getDeckDetails = onCall(async (request) => {
     if (!deckDataRaw) {
       throw new HttpsError("not-found", "Deck not found");
     }
-    const validatedDeckData = DeckSchema.pick({ is_deleted: true }).parse(
-      deckDataRaw
-    );
+    const validatedDeckData = DeckSchema.parse({
+      ...deckDataRaw,
+      id: deckSnap.id,
+    });
 
     const userRef = db.doc(`users/${deckDataRaw.createdBy}`);
     const userSnap = await userRef.get();
@@ -198,13 +199,10 @@ export const getDeckDetails = onCall(async (request) => {
       throw new HttpsError("not-found", "Deck not found");
     }
 
-    const deckData = { ...deckDataRaw } as Deck;
-
     // Use document ID (override any id field in data)
-    deckData.id = deckSnap.id;
-    const validatedDeck = DeckSchema.parse(deckData);
+
     const response = {
-      deck: validatedDeck as Deck,
+      deck: validatedDeckData,
       username: userData.username,
     };
     const validatedResponse = GetDeckDetailsResponseSchema.parse(response);
@@ -315,7 +313,9 @@ export const getPopularDecks = onCall(async (request) => {
       .limit(limit)
       .get();
 
-    const decks = snapshot.docs.map((doc) => doc.data() as Deck);
+    const decks = snapshot.docs.map(
+      (doc) => ({ ...doc.data(), id: doc.id } as Deck)
+    );
     const validatedDecks = decks.map((deck) => DeckSchema.parse(deck));
 
     const response = { decks: validatedDecks as Deck[] };
@@ -362,7 +362,10 @@ export const getUserDeckDetails = onCall(async (request) => {
     if (!deckSnap.exists) {
       throw new HttpsError("not-found", "Deck not found");
     }
-    const deckData = deckSnap.data() as DeckLearningData;
+    const deckData = {
+      ...deckSnap.data(),
+      id: deckSnap.id,
+    };
     const validatedDeck = DeckLearningDataSchema.parse(deckData);
     const response = { deck: validatedDeck as DeckLearningData };
     const validatedResponse = GetUserDeckDetailsResponseSchema.parse(response);
@@ -897,9 +900,9 @@ export const updateDeckSettings = onCall(async (request) => {
     if (!rawDeckData) {
       throw new HttpsError("not-found", "Deck not found");
     }
-    const validatedDeckData = DeckSchema.pick({ createdBy: true }).parse(
-      rawDeckData
-    );
+    const validatedDeckData = DeckSchema.omit({
+      id: true,
+    }).parse(rawDeckData);
 
     // Check if user is the creator of the deck
     if (validatedDeckData.createdBy !== userId) {
@@ -1069,7 +1072,6 @@ export const startLearningDeck = onCall(async (request) => {
       };
       // Validate before saving
       const validatedData = DeckLearningDataSchema.parse(userDeckData);
-
       await userDeckRef.set(validatedData);
       userDeck = validatedData;
       // Copy all cards from source deck to user's collection (full copy)
@@ -1085,8 +1087,7 @@ export const startLearningDeck = onCall(async (request) => {
         for (const sourceCardDoc of sourceCardsSnap.docs) {
           const sourceCardData = sourceCardDoc.data() as Card;
 
-          const card: Card = {
-            id: sourceCardDoc.id,
+          const card: Omit<Card, "id"> = {
             cardData: {
               front: sourceCardData.cardData.front || "",
               back: sourceCardData.cardData.back || "",
@@ -1099,8 +1100,9 @@ export const startLearningDeck = onCall(async (request) => {
             },
           };
 
-          const validatedCard = CardSchema.parse(card);
-
+          const validatedCard = CardSchema.omit({
+            id: true,
+          }).parse(card);
           const userCardRef = userCardsRef.doc(sourceCardDoc.id);
           currentBatch.set(userCardRef, validatedCard, { merge: true });
 
@@ -1131,7 +1133,7 @@ export const startLearningDeck = onCall(async (request) => {
     } else {
       // Deck already exists, get it
       const existingDeck = userDeckSnap.data() as DeckLearningData;
-      userDeck = DeckLearningDataSchema.parse(existingDeck);
+      userDeck = DeckLearningDataSchema.parse({ ...existingDeck, id: deckId });
     }
 
     logger.info("Deck copied to user space", { userId, deckId });
@@ -1190,10 +1192,8 @@ export const deleteDeck = onCall(async (request) => {
     if (!rawDeckData) {
       throw new HttpsError("not-found", "Deck not found");
     }
-    const validatedDeckData = DeckSchema.pick({
-      createdBy: true,
-      is_deleted: true,
-      title: true,
+    const validatedDeckData = DeckSchema.omit({
+      id: true,
     }).parse(rawDeckData);
 
     // Check if user is the creator of the deck
@@ -1318,12 +1318,10 @@ export const checkCardChanges = onCall(async (request) => {
     if (!rawSourceDeckData || !rawUserDeckData) {
       throw new HttpsError("not-found", "Deck data not found");
     }
-    const validatedSourceDeckData = DeckSchema.pick({
-      updatedAt: true,
+    const validatedSourceDeckData = DeckSchema.omit({
+      id: true,
     }).parse(rawSourceDeckData);
-    const validatedUserDeckData = DeckLearningDataSchema.pick({
-      updatedAt: true,
-    }).parse(rawUserDeckData);
+    const validatedUserDeckData = DeckLearningDataSchema.parse(rawUserDeckData);
     if (validatedUserDeckData.updatedAt == validatedSourceDeckData.updatedAt) {
       const response = { changes: [] };
       const validatedResponse = CheckCardChangesResponseSchema.parse(response);
@@ -1506,8 +1504,8 @@ export const syncDeckCards = onCall(async (request) => {
     if (!rawSourceDeckData) {
       throw new HttpsError("not-found", "Source deck not found");
     }
-    const validatedSourceDeckData = DeckSchema.pick({
-      updatedAt: true,
+    const validatedSourceDeckData = DeckSchema.omit({
+      id: true,
     }).parse(rawSourceDeckData);
     const updatedAt = validatedSourceDeckData.updatedAt;
     if (updatedAt) {
@@ -1717,9 +1715,9 @@ export const updateCardContent = onCall(async (request) => {
     if (!rawDeckData) {
       throw new HttpsError("not-found", "Deck not found");
     }
-    const validatedDeckData = DeckSchema.pick({ createdBy: true }).parse(
-      rawDeckData
-    );
+    const validatedDeckData = DeckSchema.omit({
+      id: true,
+    }).parse(rawDeckData);
     if (validatedDeckData.createdBy !== userId) {
       throw new HttpsError(
         "permission-denied",

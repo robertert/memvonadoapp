@@ -57,13 +57,13 @@ exports.ResetDeckRequestSchema = zod_1.z
 exports.UpdateDeckSettingsRequestSchema = zod_1.z
     .object({
     deckId: zod_1.z.string(),
-    deck: index_1.DeckSchema,
+    deck: index_1.DeckSchema.partial(),
 })
     .strict();
 exports.UpdateUserDeckSettingsRequestSchema = zod_1.z
     .object({
     deckId: zod_1.z.string(),
-    deck: index_1.DeckLearningDataSchema,
+    deck: index_1.DeckLearningDataSchema.partial(),
 })
     .strict();
 exports.StartLearningDeckRequestSchema = zod_1.z

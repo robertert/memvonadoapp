@@ -7,12 +7,11 @@ import { TimestampSchema } from "./base";
  */
 export const DeckCoreSchema = z
   .object({
-    title: z.string(),
-    category: z.string().optional(),
+    title: z.string().min(1),
+    category: z.string().nullable().optional(),
     icon: z.string().default("cards"),
     tags: z.array(z.string()).default([]),
     isPublic: z.boolean(),
-    updatedAt: TimestampSchema.optional(),
   })
   .strict();
 
@@ -24,6 +23,7 @@ export type DeckCore = z.infer<typeof DeckCoreSchema>;
 export const DeckTimestampSchema = z
   .object({
     createdAt: TimestampSchema,
+    updatedAt: TimestampSchema,
   })
   .strict();
 
@@ -87,7 +87,7 @@ export type DeckLearningCore = z.infer<typeof DeckLearningCoreSchema>;
 export const DeckLearningTimestampSchema = z
   .object({
     lastReviewDate: TimestampSchema.optional(),
-    updatedAt: TimestampSchema.optional(),
+    updatedAt: TimestampSchema,
   })
   .strict();
 

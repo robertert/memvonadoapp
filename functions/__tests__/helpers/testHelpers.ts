@@ -164,6 +164,7 @@ export async function createTestDeck(
     cardsNum: 0,
     createdBy: userId,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     isPublic: false,
     views: 0,
     likes: 0,
@@ -177,28 +178,75 @@ export async function createTestDeck(
 export async function createTestCard(
   deckId: string,
   cardId: string,
-  data: Partial<typeof import("./mockData").mockCard> = {}
+  data: {
+    cardData?: { front: string; back: string };
+    tags?: string[];
+    cardAlgo?: {
+      difficulty: number;
+      stability: number;
+      reps: number;
+      lapses: number;
+      scheduled_days: number;
+      elapsed_days: number;
+      last_review?: Date;
+      state: number;
+      due: Date;
+    };
+    firstLearn?: {
+      isNew: boolean;
+      isFirst?: boolean;
+      due?: Date;
+      consecutiveGood?: number;
+    };
+    grade?: CardGrade;
+    createdAt?: Date;
+  } = {}
 ): Promise<void> {
-  await db.doc(`decks/${deckId}/cards/${cardId}`).set({
-    front: "Test question",
-    back: "Test answer",
-    tags: [],
-    cardAlgo: {
-      difficulty: 2.5,
-      stability: 0,
-      reps: 0,
-      lapses: 0,
-      scheduled_days: 1,
-      elapsed_days: 0,
-      last_review: admin.firestore.Timestamp.now(),
-      state: 0,
-      due: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 86400000)),
+  const cardData: any = {
+    id: cardId,
+    cardData: data.cardData || {
+      front: "Test question",
+      back: "Test answer",
     },
-    grade: CardGrade.NotGraded,
-    difficulty: 2.5,
-    nextReviewInterval: 1,
-    ...data,
-  });
+    tags: data.tags || [],
+    createdAt: data.createdAt
+      ? admin.firestore.Timestamp.fromDate(data.createdAt)
+      : admin.firestore.FieldValue.serverTimestamp(),
+    firstLearn: data.firstLearn
+      ? {
+          isNew: data.firstLearn.isNew,
+          isFirst: data.firstLearn.isFirst,
+          due: data.firstLearn.due
+            ? admin.firestore.Timestamp.fromDate(data.firstLearn.due)
+            : undefined,
+          consecutiveGood: data.firstLearn.consecutiveGood,
+        }
+      : {
+          isNew: true,
+        },
+  };
+
+  if (data.cardAlgo) {
+    cardData.cardAlgo = {
+      difficulty: data.cardAlgo.difficulty,
+      stability: data.cardAlgo.stability,
+      reps: data.cardAlgo.reps,
+      lapses: data.cardAlgo.lapses,
+      scheduled_days: data.cardAlgo.scheduled_days,
+      elapsed_days: data.cardAlgo.elapsed_days,
+      last_review: data.cardAlgo.last_review
+        ? admin.firestore.Timestamp.fromDate(data.cardAlgo.last_review)
+        : undefined,
+      state: data.cardAlgo.state,
+      due: admin.firestore.Timestamp.fromDate(data.cardAlgo.due),
+    };
+  }
+
+  if (data.grade !== undefined) {
+    cardData.grade = data.grade;
+  }
+
+  await db.doc(`decks/${deckId}/cards/${cardId}`).set(cardData);
 }
 
 /**
@@ -342,4 +390,159 @@ export async function createTestStudySession(
  */
 export async function waitForFirestore(ms: number = 50): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Test Builder: Create mock callable request with auth
+ * This helper ensures type safety while allowing partial mocks for testing
+ */
+export function createMockCallableRequest<T = unknown>(options: {
+  auth?: { uid: string } | null;
+  data?: T;
+}): any {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return {
+    auth: options.auth ?? null,
+    data: options.data,
+  } as any;
+}
+
+/**
+ * Create a test user deck document (users/{userId}/decks/{deckId})
+ */
+export async function createTestUserDeck(
+  userId: string,
+  deckId: string,
+  data: {
+    title?: string;
+    cardsNum?: number;
+    settings?: {
+      zenMode?: boolean;
+      dueCardsNumPerDay?: number;
+      newCardsNumPerDay?: number;
+    };
+    updatedAt?: Date;
+    lastReviewDate?: Date;
+  } = {}
+): Promise<void> {
+  const deckData: Record<string, unknown> = {
+    id: deckId,
+    title: data.title || "Test User Deck",
+    cardsNum: data.cardsNum || 0,
+    settings: (() => {
+      const settings: Record<string, unknown> = {
+        zenMode: data.settings?.zenMode || false,
+      };
+      // Only add optional fields if provided (schema expects number | undefined, not null)
+      if (data.settings?.dueCardsNumPerDay !== undefined) {
+        settings.dueCardsNumPerDay = data.settings.dueCardsNumPerDay;
+      }
+      if (data.settings?.newCardsNumPerDay !== undefined) {
+        settings.newCardsNumPerDay = data.settings.newCardsNumPerDay;
+      }
+      return settings;
+    })(),
+    updatedAt: data.updatedAt
+      ? admin.firestore.Timestamp.fromDate(data.updatedAt)
+      : admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  // Only add lastReviewDate if provided (Firestore doesn't accept undefined)
+  if (data.lastReviewDate !== undefined) {
+    deckData.lastReviewDate = admin.firestore.Timestamp.fromDate(
+      data.lastReviewDate
+    );
+  }
+
+  await db.doc(`users/${userId}/decks/${deckId}`).set(deckData);
+}
+
+/**
+ * Create a test user card document (users/{userId}/decks/{deckId}/cards/{cardId})
+ */
+export async function createTestUserCard(
+  userId: string,
+  deckId: string,
+  cardId: string,
+  data: {
+    cardData?: { front: string; back: string };
+    tags?: string[];
+    cardAlgo?: {
+      difficulty: number;
+      stability: number;
+      reps: number;
+      lapses: number;
+      scheduled_days: number;
+      elapsed_days: number;
+      last_review?: Date;
+      state: number;
+      due: Date;
+    };
+    firstLearn?: {
+      isNew: boolean;
+      isFirst?: boolean;
+      due?: Date;
+      consecutiveGood?: number;
+    };
+    grade?: CardGrade;
+    createdAt?: Date;
+  } = {}
+): Promise<void> {
+  const cardData: any = {
+    id: cardId,
+    cardData: data.cardData || {
+      front: "Test question",
+      back: "Test answer",
+    },
+    tags: data.tags || [],
+    createdAt: data.createdAt
+      ? admin.firestore.Timestamp.fromDate(data.createdAt)
+      : admin.firestore.FieldValue.serverTimestamp(),
+    firstLearn: data.firstLearn
+      ? {
+          isNew: data.firstLearn.isNew,
+        }
+      : {
+          isNew: true,
+        },
+  };
+
+  if (data.firstLearn?.isFirst !== undefined) {
+    cardData.firstLearn.isFirst = data.firstLearn.isFirst;
+  }
+
+  if (data.firstLearn?.due !== undefined) {
+    cardData.firstLearn.due = admin.firestore.Timestamp.fromDate(
+      data.firstLearn.due
+    );
+  }
+
+  if (data.firstLearn?.consecutiveGood !== undefined) {
+    cardData.firstLearn.consecutiveGood = data.firstLearn.consecutiveGood;
+  }
+
+  if (data.cardAlgo) {
+    cardData.cardAlgo = {
+      difficulty: data.cardAlgo.difficulty,
+      stability: data.cardAlgo.stability,
+      reps: data.cardAlgo.reps,
+      lapses: data.cardAlgo.lapses,
+      scheduled_days: data.cardAlgo.scheduled_days,
+      elapsed_days: data.cardAlgo.elapsed_days,
+      state: data.cardAlgo.state,
+      due: admin.firestore.Timestamp.fromDate(data.cardAlgo.due),
+    };
+  }
+
+  if (data.cardAlgo?.last_review !== undefined) {
+    cardData.cardAlgo.last_review = admin.firestore.Timestamp.fromDate(
+      data.cardAlgo?.last_review
+    );
+  }
+
+  if (data.grade !== undefined) {
+    cardData.grade = data.grade;
+  }
+
+  await db.doc(`users/${userId}/decks/${deckId}/cards/${cardId}`).set(cardData);
 }

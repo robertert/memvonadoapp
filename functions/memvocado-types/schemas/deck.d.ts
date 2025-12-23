@@ -4,24 +4,21 @@ import { z } from "zod";
  */
 export declare const DeckCoreSchema: z.ZodObject<{
     title: z.ZodString;
-    category: z.ZodOptional<z.ZodString>;
+    category: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     icon: z.ZodDefault<z.ZodString>;
     tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     isPublic: z.ZodBoolean;
-    updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
 }, "strict", z.ZodTypeAny, {
     tags: string[];
     title: string;
     icon: string;
     isPublic: boolean;
-    updatedAt?: Date | undefined;
-    category?: string | undefined;
+    category?: string | null | undefined;
 }, {
     title: string;
     isPublic: boolean;
-    updatedAt?: unknown;
     tags?: string[] | undefined;
-    category?: string | undefined;
+    category?: string | null | undefined;
     icon?: string | undefined;
 }>;
 export type DeckCore = z.infer<typeof DeckCoreSchema>;
@@ -30,10 +27,13 @@ export type DeckCore = z.infer<typeof DeckCoreSchema>;
  */
 export declare const DeckTimestampSchema: z.ZodObject<{
     createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
+    updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
 }, "strict", z.ZodTypeAny, {
     createdAt: Date;
+    updatedAt: Date;
 }, {
     createdAt?: unknown;
+    updatedAt?: unknown;
 }>;
 export type DeckTimestamp = z.infer<typeof DeckTimestampSchema>;
 /**
@@ -70,11 +70,10 @@ export type DeckMeta = z.infer<typeof DeckMetaSchema>;
  */
 export declare const DeckSchema: z.ZodObject<{
     title: z.ZodString;
-    category: z.ZodOptional<z.ZodString>;
+    category: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     icon: z.ZodDefault<z.ZodString>;
     tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     isPublic: z.ZodBoolean;
-    updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
 } & {
     id: z.ZodString;
     views: z.ZodDefault<z.ZodNumber>;
@@ -85,8 +84,10 @@ export declare const DeckSchema: z.ZodObject<{
     deletedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
 } & {
     createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
+    updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
 }, "strict", z.ZodTypeAny, {
     createdAt: Date;
+    updatedAt: Date;
     id: string;
     tags: string[];
     title: string;
@@ -97,8 +98,7 @@ export declare const DeckSchema: z.ZodObject<{
     cardsNum: number;
     createdBy: string;
     is_deleted: boolean;
-    updatedAt?: Date | undefined;
-    category?: string | undefined;
+    category?: string | null | undefined;
     deletedAt?: Date | undefined;
 }, {
     id: string;
@@ -109,7 +109,7 @@ export declare const DeckSchema: z.ZodObject<{
     createdAt?: unknown;
     updatedAt?: unknown;
     tags?: string[] | undefined;
-    category?: string | undefined;
+    category?: string | null | undefined;
     icon?: string | undefined;
     views?: number | undefined;
     likes?: number | undefined;
@@ -170,9 +170,9 @@ export declare const DeckLearningCoreSchema: z.ZodObject<{
 export type DeckLearningCore = z.infer<typeof DeckLearningCoreSchema>;
 export declare const DeckLearningTimestampSchema: z.ZodObject<{
     lastReviewDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-    updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+    updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
 }, "strict", z.ZodTypeAny, {
-    updatedAt?: Date | undefined;
+    updatedAt: Date;
     lastReviewDate?: Date | undefined;
 }, {
     updatedAt?: unknown;
@@ -210,17 +210,17 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
     }>;
 } & {
     lastReviewDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-    updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+    updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
 }, "strict", z.ZodTypeAny, {
     settings: {
         zenMode: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
     };
+    updatedAt: Date;
     id: string;
     title: string;
     cardsNum: number;
-    updatedAt?: Date | undefined;
     lastReviewDate?: Date | undefined;
 }, {
     settings: {
@@ -241,23 +241,20 @@ export type DeckLearningData = z.infer<typeof DeckLearningDataSchema>;
  */
 export declare const DeckCoreUpdateSchema: z.ZodObject<{
     title: z.ZodOptional<z.ZodString>;
-    category: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    category: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
     icon: z.ZodOptional<z.ZodDefault<z.ZodString>>;
     tags: z.ZodOptional<z.ZodDefault<z.ZodArray<z.ZodString, "many">>>;
     isPublic: z.ZodOptional<z.ZodBoolean>;
-    updatedAt: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>>;
 }, "strict", z.ZodTypeAny, {
-    updatedAt?: Date | undefined;
     tags?: string[] | undefined;
     title?: string | undefined;
-    category?: string | undefined;
+    category?: string | null | undefined;
     icon?: string | undefined;
     isPublic?: boolean | undefined;
 }, {
-    updatedAt?: unknown;
     tags?: string[] | undefined;
     title?: string | undefined;
-    category?: string | undefined;
+    category?: string | null | undefined;
     icon?: string | undefined;
     isPublic?: boolean | undefined;
 }>;
@@ -285,7 +282,7 @@ export type DeckSettingsUpdate = z.infer<typeof DeckSettingsUpdateSchema>;
  */
 export declare const DeckUpdateSchema: z.ZodObject<{
     title: z.ZodOptional<z.ZodString>;
-    category: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    category: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
     icon: z.ZodOptional<z.ZodDefault<z.ZodString>>;
     tags: z.ZodOptional<z.ZodDefault<z.ZodArray<z.ZodString, "many">>>;
     isPublic: z.ZodOptional<z.ZodBoolean>;
@@ -295,14 +292,14 @@ export declare const DeckUpdateSchema: z.ZodObject<{
     updatedAt?: Date | undefined;
     tags?: string[] | undefined;
     title?: string | undefined;
-    category?: string | undefined;
+    category?: string | null | undefined;
     icon?: string | undefined;
     isPublic?: boolean | undefined;
 }, {
     updatedAt?: unknown;
     tags?: string[] | undefined;
     title?: string | undefined;
-    category?: string | undefined;
+    category?: string | null | undefined;
     icon?: string | undefined;
     isPublic?: boolean | undefined;
 }>;

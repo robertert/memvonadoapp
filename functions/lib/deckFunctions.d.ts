@@ -12,6 +12,7 @@ export declare const getDeckDetails: import("firebase-functions/v2/https").Calla
     username: string;
     deck: {
         createdAt: Date;
+        updatedAt: Date;
         id: string;
         tags: string[];
         title: string;
@@ -22,8 +23,7 @@ export declare const getDeckDetails: import("firebase-functions/v2/https").Calla
         cardsNum: number;
         createdBy: string;
         is_deleted: boolean;
-        updatedAt?: Date | undefined;
-        category?: string | undefined;
+        category?: string | null | undefined;
         deletedAt?: Date | undefined;
     } | null;
 }>, unknown>;
@@ -69,6 +69,7 @@ export declare const getDeckCards: import("firebase-functions/v2/https").Callabl
 export declare const getPopularDecks: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     decks: {
         createdAt: Date;
+        updatedAt: Date;
         id: string;
         tags: string[];
         title: string;
@@ -79,8 +80,7 @@ export declare const getPopularDecks: import("firebase-functions/v2/https").Call
         cardsNum: number;
         createdBy: string;
         is_deleted: boolean;
-        updatedAt?: Date | undefined;
-        category?: string | undefined;
+        category?: string | null | undefined;
         deletedAt?: Date | undefined;
     }[];
 }>, unknown>;
@@ -94,10 +94,10 @@ export declare const getUserDeckDetails: import("firebase-functions/v2/https").C
             dueCardsNumPerDay?: number | undefined;
             newCardsNumPerDay?: number | undefined;
         };
+        updatedAt: Date;
         id: string;
         title: string;
         cardsNum: number;
-        updatedAt?: Date | undefined;
         lastReviewDate?: Date | undefined;
     };
 }>, unknown>;
@@ -237,10 +237,10 @@ export declare const startLearningDeck: import("firebase-functions/v2/https").Ca
             dueCardsNumPerDay?: number | undefined;
             newCardsNumPerDay?: number | undefined;
         };
+        updatedAt: Date;
         id: string;
         title: string;
         cardsNum: number;
-        updatedAt?: Date | undefined;
         lastReviewDate?: Date | undefined;
     };
 }>, unknown>;

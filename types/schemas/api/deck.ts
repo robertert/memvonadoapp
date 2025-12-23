@@ -93,7 +93,7 @@ export type ResetDeckRequest = z.infer<typeof ResetDeckRequestSchema>;
 export const UpdateDeckSettingsRequestSchema = z
   .object({
     deckId: z.string(),
-    deck: DeckSchema,
+    deck: DeckSchema.partial(),
   })
   .strict();
 export type UpdateDeckSettingsRequest = z.infer<
@@ -103,7 +103,7 @@ export type UpdateDeckSettingsRequest = z.infer<
 export const UpdateUserDeckSettingsRequestSchema = z
   .object({
     deckId: z.string(),
-    deck: DeckLearningDataSchema,
+    deck: DeckLearningDataSchema.partial(),
   })
   .strict();
 export type UpdateUserDeckSettingsRequest = z.infer<

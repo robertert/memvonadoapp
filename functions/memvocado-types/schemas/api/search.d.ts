@@ -47,11 +47,10 @@ export type GetSearchLogsRequest = z.infer<typeof GetSearchLogsRequestSchema>;
 export declare const SearchDecksResponseSchema: z.ZodObject<{
     results: z.ZodArray<z.ZodObject<{
         title: z.ZodString;
-        category: z.ZodOptional<z.ZodString>;
+        category: z.ZodOptional<z.ZodNullable<z.ZodString>>;
         icon: z.ZodDefault<z.ZodString>;
         tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
         isPublic: z.ZodBoolean;
-        updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
     } & {
         id: z.ZodString;
         views: z.ZodDefault<z.ZodNumber>;
@@ -62,8 +61,10 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
         deletedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
     } & {
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
+        updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strict", z.ZodTypeAny, {
         createdAt: Date;
+        updatedAt: Date;
         id: string;
         tags: string[];
         title: string;
@@ -74,8 +75,7 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
         cardsNum: number;
         createdBy: string;
         is_deleted: boolean;
-        updatedAt?: Date | undefined;
-        category?: string | undefined;
+        category?: string | null | undefined;
         deletedAt?: Date | undefined;
     }, {
         id: string;
@@ -86,7 +86,7 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
         createdAt?: unknown;
         updatedAt?: unknown;
         tags?: string[] | undefined;
-        category?: string | undefined;
+        category?: string | null | undefined;
         icon?: string | undefined;
         views?: number | undefined;
         likes?: number | undefined;
@@ -97,6 +97,7 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     results: {
         createdAt: Date;
+        updatedAt: Date;
         id: string;
         tags: string[];
         title: string;
@@ -107,8 +108,7 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
         cardsNum: number;
         createdBy: string;
         is_deleted: boolean;
-        updatedAt?: Date | undefined;
-        category?: string | undefined;
+        category?: string | null | undefined;
         deletedAt?: Date | undefined;
     }[];
     total: number;
@@ -122,7 +122,7 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
         createdAt?: unknown;
         updatedAt?: unknown;
         tags?: string[] | undefined;
-        category?: string | undefined;
+        category?: string | null | undefined;
         icon?: string | undefined;
         views?: number | undefined;
         likes?: number | undefined;

@@ -38,6 +38,7 @@ export declare const updateUserStreakIfQualified: import("firebase-functions/v2/
 export declare const getUserDecks: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     decks: {
         createdAt: Date;
+        updatedAt: Date;
         id: string;
         tags: string[];
         title: string;
@@ -48,8 +49,7 @@ export declare const getUserDecks: import("firebase-functions/v2/https").Callabl
         cardsNum: number;
         createdBy: string;
         is_deleted: boolean;
-        updatedAt?: Date | undefined;
-        category?: string | undefined;
+        category?: string | null | undefined;
         deletedAt?: Date | undefined;
     }[];
 }>, unknown>;
