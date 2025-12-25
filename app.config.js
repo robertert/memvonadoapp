@@ -7,12 +7,12 @@ export default {
     scheme: "memvocado",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/icon.png",
+    icon: "./assets/memvocadoicon.png",
     userInterfaceStyle: "automatic",
     splash: {
-      image: "./assets/splash.png",
+      image: "./assets/memvocadoicon.png",
       resizeMode: "contain",
-      backgroundColor: "#ffffff",
+      backgroundColor: "#FFF8E7",
     },
     assetBundlePatterns: ["**/*"],
     ios: {
@@ -27,8 +27,8 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#ffffff",
+        foregroundImage: "./assets/memvocadoicon.png",
+        backgroundColor: "#FFF8E7",
       },
       package: "com.memvocado.app",
       permissions: ["RECORD_AUDIO"],
