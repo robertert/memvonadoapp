@@ -7,7 +7,7 @@ export default {
     scheme: "memvocado",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/memvocadoicon.png",
+    icon: "./assets/memvocadoicon-fill.png",
     userInterfaceStyle: "automatic",
     splash: {
       image: "./assets/memvocadoicon.png",
