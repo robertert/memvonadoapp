@@ -61,7 +61,7 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
     createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     league: z.ZodDefault<z.ZodNumber>;
-    currentGroupId: z.ZodString;
+    currentGroupId: z.ZodNullable<z.ZodString>;
     experiencePoints: z.ZodDefault<z.ZodNumber>;
     currencyCount: z.ZodDefault<z.ZodNumber>;
     stats: z.ZodObject<{
@@ -123,7 +123,7 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
     createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     league: z.ZodDefault<z.ZodNumber>;
-    currentGroupId: z.ZodString;
+    currentGroupId: z.ZodNullable<z.ZodString>;
     experiencePoints: z.ZodDefault<z.ZodNumber>;
     currencyCount: z.ZodDefault<z.ZodNumber>;
     stats: z.ZodObject<{
@@ -185,7 +185,7 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
     createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     league: z.ZodDefault<z.ZodNumber>;
-    currentGroupId: z.ZodString;
+    currentGroupId: z.ZodNullable<z.ZodString>;
     experiencePoints: z.ZodDefault<z.ZodNumber>;
     currencyCount: z.ZodDefault<z.ZodNumber>;
     stats: z.ZodObject<{
@@ -252,7 +252,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         league: z.ZodDefault<z.ZodNumber>;
-        currentGroupId: z.ZodString;
+        currentGroupId: z.ZodNullable<z.ZodString>;
         experiencePoints: z.ZodDefault<z.ZodNumber>;
         currencyCount: z.ZodDefault<z.ZodNumber>;
         stats: z.ZodObject<{
@@ -314,7 +314,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         league: z.ZodDefault<z.ZodNumber>;
-        currentGroupId: z.ZodString;
+        currentGroupId: z.ZodNullable<z.ZodString>;
         experiencePoints: z.ZodDefault<z.ZodNumber>;
         currencyCount: z.ZodDefault<z.ZodNumber>;
         stats: z.ZodObject<{
@@ -376,7 +376,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         league: z.ZodDefault<z.ZodNumber>;
-        currentGroupId: z.ZodString;
+        currentGroupId: z.ZodNullable<z.ZodString>;
         experiencePoints: z.ZodDefault<z.ZodNumber>;
         currencyCount: z.ZodDefault<z.ZodNumber>;
         stats: z.ZodObject<{
@@ -428,7 +428,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
         updatedAt: Date;
         id: string;
         league: number;
-        currentGroupId: string;
+        currentGroupId: string | null;
         experiencePoints: number;
         currencyCount: number;
         stats: {
@@ -461,7 +461,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             timeZone?: string | undefined;
         };
         id: string;
-        currentGroupId: string;
+        currentGroupId: string | null;
         stats: {
             totalCards?: number | undefined;
             totalDecks?: number | undefined;
@@ -519,7 +519,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         league: z.ZodDefault<z.ZodNumber>;
-        currentGroupId: z.ZodString;
+        currentGroupId: z.ZodNullable<z.ZodString>;
         experiencePoints: z.ZodDefault<z.ZodNumber>;
         currencyCount: z.ZodDefault<z.ZodNumber>;
         stats: z.ZodObject<{
@@ -581,7 +581,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         league: z.ZodDefault<z.ZodNumber>;
-        currentGroupId: z.ZodString;
+        currentGroupId: z.ZodNullable<z.ZodString>;
         experiencePoints: z.ZodDefault<z.ZodNumber>;
         currencyCount: z.ZodDefault<z.ZodNumber>;
         stats: z.ZodObject<{
@@ -643,7 +643,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         league: z.ZodDefault<z.ZodNumber>;
-        currentGroupId: z.ZodString;
+        currentGroupId: z.ZodNullable<z.ZodString>;
         experiencePoints: z.ZodDefault<z.ZodNumber>;
         currencyCount: z.ZodDefault<z.ZodNumber>;
         stats: z.ZodObject<{
@@ -709,7 +709,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         league: z.ZodDefault<z.ZodNumber>;
-        currentGroupId: z.ZodString;
+        currentGroupId: z.ZodNullable<z.ZodString>;
         experiencePoints: z.ZodDefault<z.ZodNumber>;
         currencyCount: z.ZodDefault<z.ZodNumber>;
         stats: z.ZodObject<{
@@ -778,7 +778,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         league: z.ZodDefault<z.ZodNumber>;
-        currentGroupId: z.ZodString;
+        currentGroupId: z.ZodNullable<z.ZodString>;
         experiencePoints: z.ZodDefault<z.ZodNumber>;
         currencyCount: z.ZodDefault<z.ZodNumber>;
         stats: z.ZodObject<{

@@ -538,7 +538,7 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
 } & {
     id: z.ZodString;
     league: z.ZodDefault<z.ZodNumber>;
-    currentGroupId: z.ZodString;
+    currentGroupId: z.ZodNullable<z.ZodString>;
     experiencePoints: z.ZodDefault<z.ZodNumber>;
     currencyCount: z.ZodDefault<z.ZodNumber>;
     stats: z.ZodObject<{
@@ -591,7 +591,7 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
     updatedAt: Date;
     id: string;
     league: number;
-    currentGroupId: string;
+    currentGroupId: string | null;
     experiencePoints: number;
     currencyCount: number;
     stats: {
@@ -620,7 +620,7 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
         timeZone?: string | undefined;
     };
     id: string;
-    currentGroupId: string;
+    currentGroupId: string | null;
     stats: {
         totalCards?: number | undefined;
         totalDecks?: number | undefined;

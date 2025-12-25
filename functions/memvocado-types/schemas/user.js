@@ -49,7 +49,7 @@ exports.UserMetaSchema = zod_1.z
     .object({
     id: zod_1.z.string(),
     league: zod_1.z.number().min(1).max(15).default(1),
-    currentGroupId: zod_1.z.string(),
+    currentGroupId: zod_1.z.string().nullable(),
     experiencePoints: zod_1.z.number().min(0).default(0),
     currencyCount: zod_1.z.number().min(0).default(0),
     stats: exports.UserStatsSchema,

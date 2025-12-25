@@ -151,7 +151,7 @@ export declare const getUserProfile: import("firebase-functions/v2/https").Calla
     updatedAt: Date;
     id: string;
     league: number;
-    currentGroupId: string;
+    currentGroupId: string | null;
     experiencePoints: number;
     currencyCount: number;
     stats: {

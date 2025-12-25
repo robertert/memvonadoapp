@@ -60,7 +60,7 @@ export const UserMetaSchema = z
   .object({
     id: z.string(),
     league: z.number().min(1).max(15).default(1),
-    currentGroupId: z.string(),
+    currentGroupId: z.string().nullable(),
     experiencePoints: z.number().min(0).default(0),
     currencyCount: z.number().min(0).default(0),
     stats: UserStatsSchema,

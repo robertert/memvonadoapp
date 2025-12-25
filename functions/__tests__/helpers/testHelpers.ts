@@ -3,7 +3,7 @@
  */
 
 import * as admin from "firebase-admin";
-import { CardGrade } from "../../src/types/common";
+import { CardGrade, SeasonUserPoints, User } from "../../src/types/common";
 
 const db = admin.firestore();
 
@@ -87,6 +87,17 @@ export async function clearSeasonUserPoints(
 }
 
 /**
+ * Clear current season document
+ */
+export async function clearCurrentSeason(): Promise<void> {
+  try {
+    await db.doc("ranking/currentSeason").delete();
+  } catch (error) {
+    console.warn(`Error clearing current season:`, error);
+  }
+}
+
+/**
  * Clear league group data
  */
 export async function clearLeagueGroup(
@@ -129,26 +140,82 @@ export function generateTestId(prefix: string = "test"): string {
  */
 export async function createTestUser(
   userId: string,
-  data: Partial<typeof import("./mockData").mockUser> = {}
+  data: {
+    username?: string;
+    email?: string;
+    league?: number;
+    currentGroupId?: string;
+    experiencePoints?: number;
+    currencyCount?: number;
+    stats?: {
+      totalCards?: number;
+      totalDecks?: number;
+      totalReviews?: number;
+      averageDifficulty?: number;
+      currentStreak?: number;
+      longestStreak?: number;
+      lastStreakDate?: Date;
+      lastStudyDate?: Date;
+    };
+    settings?: {
+      theme?: "light" | "dark";
+      notificationsEnabled?: boolean;
+      dailyGoal?: number;
+      dailyNew?: number;
+      language?: string;
+      timeZone?: string;
+    };
+    followingCount?: number;
+    followersCount?: number;
+    profileCompleted?: boolean;
+    interests?: string[];
+  } = {}
 ): Promise<void> {
-  await db.doc(`users/${userId}`).set({
-    username: `user-${userId}`,
-    name: "Test User",
-    email: `${userId}@test.com`,
-    league: 1,
-    currentGroupId: null,
-    stats: {
-      totalCards: 0,
-      totalDecks: 0,
-      totalReviews: 0,
-      averageDifficulty: 0,
+  const userData: User = {
+    id: userId,
+    username: data.username || `user-${userId}`,
+    email: data.email || `${userId}@test.com`,
+    settings: {
+      theme: data.settings?.theme || "light",
+      notificationsEnabled: data.settings?.notificationsEnabled ?? true,
+      dailyGoal: data.settings?.dailyGoal ?? 10,
+      dailyNew: data.settings?.dailyNew ?? 5,
+      language: data.settings?.language || "en",
+      timeZone: data.settings?.timeZone || "UTC",
     },
-    friends: [],
-    pending: [],
-    incoming: [],
-    theme: "light",
-    ...data,
-  });
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    league: data.league ?? 1,
+    experiencePoints: data.experiencePoints ?? 0,
+    currencyCount: data.currencyCount ?? 0,
+    stats: {
+      totalCards: data.stats?.totalCards ?? 0,
+      totalDecks: data.stats?.totalDecks ?? 0,
+      totalReviews: data.stats?.totalReviews ?? 0,
+      averageDifficulty: data.stats?.averageDifficulty ?? 0,
+      currentStreak: data.stats?.currentStreak ?? 0,
+      longestStreak: data.stats?.longestStreak ?? 0,
+    },
+    followingCount: data.followingCount ?? 0,
+    followersCount: data.followersCount ?? 0,
+    profileCompleted: data.profileCompleted ?? false,
+    interests: data.interests || [],
+    currentGroupId: data.currentGroupId ?? null,
+  };
+
+  if (data.currentGroupId !== undefined) {
+    userData.currentGroupId = data.currentGroupId;
+  }
+
+  if (data.stats?.lastStreakDate !== undefined) {
+    userData.stats.lastStreakDate = data.stats.lastStreakDate;
+  }
+
+  if (data.stats?.lastStudyDate !== undefined) {
+    userData.stats.lastStudyDate = data.stats.lastStudyDate;
+  }
+
+  await db.doc(`users/${userId}`).set(userData);
 }
 
 /**
@@ -282,8 +349,8 @@ export async function createTestSeason(
       new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     ),
     endAt: admin.firestore.Timestamp.fromDate(now),
+    id: seasonId,
     status: "active",
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
     ...data,
   });
 }
@@ -300,13 +367,18 @@ export async function createSeasonUserPoints(
     groupId?: string;
   } = {}
 ): Promise<void> {
-  await db.doc(`seasonUserPoints/${seasonId}/users/${userId}`).set({
-    points: 0,
-    league: 1,
-    groupId: null,
-    lastActivityAt: admin.firestore.FieldValue.serverTimestamp(),
-    ...data,
-  });
+  const seasonUserPointsDoc: SeasonUserPoints = {
+    points: data.points || 0,
+    league: data.league || 1,
+    lastActivityAt: new Date(),
+  };
+  if (data.groupId !== undefined) {
+    seasonUserPointsDoc.groupId = data.groupId;
+  }
+
+  await db
+    .doc(`seasonUserPoints/${seasonId}/users/${userId}`)
+    .set(seasonUserPointsDoc);
 }
 
 /**
@@ -337,7 +409,6 @@ export async function createTestGroup(
       isFull: false,
       capacity: 20,
       currentCount: 0,
-      seasonId,
       leagueNumber,
       ...data,
     });

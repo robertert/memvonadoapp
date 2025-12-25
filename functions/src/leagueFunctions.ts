@@ -160,6 +160,10 @@ export const getUserGroup = onCall(async (request) => {
     const userSeasonPoints = await userSeasonPointsRef.get();
 
     if (!userSeasonPoints.exists) {
+      logger.info("User not found in seasonUserPoints", {
+        userId,
+        seasonId: currentSeasonId,
+      });
       // Zwróć odpowiedź zgodną ze schematem z null dla groupId i leagueNumber
       const rawResponse = {
         groupId: null,
@@ -197,21 +201,16 @@ export const getUserGroup = onCall(async (request) => {
     const groupDoc = await groupRef.get();
 
     if (!groupDoc.exists) {
-      logger.error("Group not found", {
+      logger.error("Group not found - data inconsistency", {
         seasonId: currentSeasonId,
         league: validatedUserData.league,
         groupId: validatedUserData.groupId,
+        userId,
       });
-      // Zwróć odpowiedź zgodną ze schematem z null dla groupId i leagueNumber
-      const rawResponse = {
-        groupId: null,
-        leagueNumber: null,
-        memberCount: 0,
-        capacity: 20,
-        isFull: false,
-      };
-      GetUserGroupResponseSchema.parse(rawResponse);
-      return serializeTimestamps(rawResponse);
+      throw new HttpsError(
+        "failed-precondition",
+        "User's assigned group does not exist. Data may be inconsistent."
+      );
     }
 
     const groupData = { id: groupRef.id, ...groupDoc.data() } as LeagueGroup;
@@ -304,9 +303,7 @@ export const updateUserLeague = onCall(async (request) => {
     const oldUserSeasonPoints = await userSeasonPointsRef.get();
 
     const oldData = oldUserSeasonPoints.exists
-      ? SeasonUserPointsSchema.pick({ league: true, groupId: true }).parse(
-          oldUserSeasonPoints.data()
-        )
+      ? SeasonUserPointsSchema.parse(oldUserSeasonPoints.data())
       : null;
     const oldLeague = oldData?.league ?? currentLeague;
     const oldGroupId = oldData?.groupId;
@@ -318,16 +315,12 @@ export const updateUserLeague = onCall(async (request) => {
         .collection("groups")
         .doc(oldGroupId);
       const oldGroupDoc = await oldGroupRef.get();
-
       if (oldGroupDoc.exists) {
-        const rawOldGroupData = oldGroupDoc.data();
-        const validatedOldGroupData = LeagueGroupSchema.pick({
-          currentCount: true,
-        }).parse(rawOldGroupData);
-        const newCount = Math.max(
-          0,
-          (validatedOldGroupData.currentCount ?? 1) - 1
-        );
+        const rawOldGroupData = oldGroupDoc.data() || {};
+
+        const currentCount =
+          (rawOldGroupData as { currentCount?: number }).currentCount ?? 1;
+        const newCount = Math.max(0, currentCount - 1);
         const safeGroupUpdate = LeagueGroupUpdateSchema.parse({
           currentCount: newCount,
           isFull: false,
@@ -382,11 +375,9 @@ export const updateUserLeague = onCall(async (request) => {
     // Find first group with capacity
     for (const groupDoc of allGroupsSnapshot.docs) {
       const rawGroupData = groupDoc.data();
-      const validatedGroupData = LeagueGroupSchema.pick({
-        currentCount: true,
-        isFull: true,
-        capacity: true,
-      }).parse(rawGroupData);
+      const validatedGroupData = LeagueGroupSchema.omit({ id: true }).parse(
+        rawGroupData
+      );
 
       const currentCount = validatedGroupData.currentCount ?? 0;
       const capacity = validatedGroupData.capacity ?? 20;
@@ -421,9 +412,7 @@ export const updateUserLeague = onCall(async (request) => {
     }
 
     const userPointsData = oldUserSeasonPoints.exists
-      ? SeasonUserPointsSchema.pick({ points: true }).parse(
-          oldUserSeasonPoints.data()
-        )
+      ? SeasonUserPointsSchema.parse(oldUserSeasonPoints.data())
       : { points: 0 };
 
     // Add user to new group
@@ -446,13 +435,17 @@ export const updateUserLeague = onCall(async (request) => {
       );
 
       const rawGroupData = groupDoc.data();
-      const validatedGroupData = LeagueGroupSchema.pick({
-        currentCount: true,
-        capacity: true,
-      }).parse(rawGroupData);
+      const validatedGroupData = LeagueGroupSchema.omit({ id: true }).parse(
+        rawGroupData
+      );
 
       const currentCount = validatedGroupData.currentCount ?? 0;
       const capacity = validatedGroupData.capacity ?? 20;
+
+      logger.info("Group capacity", {
+        currentCount,
+        capacity,
+      });
 
       if (currentCount >= capacity) {
         throw new HttpsError("failed-precondition", "Group is full");

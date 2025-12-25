@@ -123,7 +123,7 @@ export type UserTimestamp = z.infer<typeof UserTimestampSchema>;
 export declare const UserMetaSchema: z.ZodObject<{
     id: z.ZodString;
     league: z.ZodDefault<z.ZodNumber>;
-    currentGroupId: z.ZodString;
+    currentGroupId: z.ZodNullable<z.ZodString>;
     experiencePoints: z.ZodDefault<z.ZodNumber>;
     currencyCount: z.ZodDefault<z.ZodNumber>;
     stats: z.ZodObject<{
@@ -161,7 +161,7 @@ export declare const UserMetaSchema: z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     id: string;
     league: number;
-    currentGroupId: string;
+    currentGroupId: string | null;
     experiencePoints: number;
     currencyCount: number;
     stats: {
@@ -180,7 +180,7 @@ export declare const UserMetaSchema: z.ZodObject<{
     profileCompleted?: boolean | undefined;
 }, {
     id: string;
-    currentGroupId: string;
+    currentGroupId: string | null;
     stats: {
         totalCards?: number | undefined;
         totalDecks?: number | undefined;
@@ -228,7 +228,7 @@ export declare const UserSchema: z.ZodObject<{
 } & {
     id: z.ZodString;
     league: z.ZodDefault<z.ZodNumber>;
-    currentGroupId: z.ZodString;
+    currentGroupId: z.ZodNullable<z.ZodString>;
     experiencePoints: z.ZodDefault<z.ZodNumber>;
     currencyCount: z.ZodDefault<z.ZodNumber>;
     stats: z.ZodObject<{
@@ -281,7 +281,7 @@ export declare const UserSchema: z.ZodObject<{
     updatedAt: Date;
     id: string;
     league: number;
-    currentGroupId: string;
+    currentGroupId: string | null;
     experiencePoints: number;
     currencyCount: number;
     stats: {
@@ -310,7 +310,7 @@ export declare const UserSchema: z.ZodObject<{
         timeZone?: string | undefined;
     };
     id: string;
-    currentGroupId: string;
+    currentGroupId: string | null;
     stats: {
         totalCards?: number | undefined;
         totalDecks?: number | undefined;
