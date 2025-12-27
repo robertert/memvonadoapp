@@ -460,6 +460,7 @@ export const getFollowingRankings = onCall(async (request) => {
 export const assignUserToGroup = onCall(async (request) => {
   const parsed = AssignUserToGroupRequestSchema.safeParse(request.data || {});
   if (!parsed.success) {
+    logger.error("Invalid request data", { parsed: parsed.error.issues });
     throw new HttpsError("invalid-argument", "Invalid request data", {
       issues: parsed.error.issues,
     });
@@ -475,9 +476,7 @@ export const assignUserToGroup = onCall(async (request) => {
     }
 
     const rawUserData = userDoc.data();
-    const validatedUserData = UserSchema.pick({ league: true }).parse(
-      rawUserData
-    );
+    const validatedUserData = UserSchema.omit({ id: true }).parse(rawUserData);
     const userLeague = leagueNumber ?? validatedUserData.league ?? 1;
 
     // Find a group with less than 20 members
@@ -493,12 +492,9 @@ export const assignUserToGroup = onCall(async (request) => {
     // Find first group with capacity
     for (const groupDoc of allGroupsSnapshot.docs) {
       const rawGroupData = groupDoc.data();
-      const validatedGroupData = LeagueGroupSchema.pick({
-        currentCount: true,
-        isFull: true,
-        capacity: true,
-      }).parse(rawGroupData);
-
+      // Add id from document ID for validation
+      const groupDataWithId = { ...rawGroupData, id: groupDoc.id };
+      const validatedGroupData = LeagueGroupSchema.parse(groupDataWithId);
       const currentCount = validatedGroupData.currentCount ?? 0;
       const capacity = validatedGroupData.capacity ?? 20;
       const isFull = validatedGroupData.isFull ?? false;
@@ -508,38 +504,33 @@ export const assignUserToGroup = onCall(async (request) => {
         break;
       }
     }
-
     // If no group found, create a new one
     if (!targetGroupId) {
       const newGroupRef = groupsRef.doc();
       targetGroupId = newGroupRef.id;
 
       // Waliduj i typuj LeagueGroup przed zapisem (bez createdAt - użyjemy FieldValue)
-      const leagueGroupData: Omit<LeagueGroup, "createdAt" | "id"> = {
+      const leagueGroupData: LeagueGroup = {
+        id: targetGroupId,
         isFull: false,
         capacity: 20,
         currentCount: 0,
         leagueNumber: userLeague,
+        createdAt: new Date(),
       };
-      LeagueGroupSchema.omit({ createdAt: true, id: true }).parse(
-        leagueGroupData
-      );
+      LeagueGroupSchema.parse(leagueGroupData);
 
       await newGroupRef.set({
         ...leagueGroupData,
-        createdAt: FieldValue.serverTimestamp(),
       });
     }
-
     // Get user's points
     const userSeasonPointsRef = db.doc(
       `seasonUserPoints/${seasonId}/users/${userId}`
     );
     const userSeasonPoints = await userSeasonPointsRef.get();
     const userPointsData = userSeasonPoints.exists
-      ? SeasonUserPointsSchema.pick({ points: true }).parse(
-          userSeasonPoints.data()
-        )
+      ? SeasonUserPointsSchema.parse(userSeasonPoints.data())
       : { points: 0 };
 
     // Add user to group members
@@ -562,10 +553,9 @@ export const assignUserToGroup = onCall(async (request) => {
       );
 
       const rawGroupData = groupDoc.data();
-      const validatedGroupData = LeagueGroupSchema.pick({
-        currentCount: true,
-        capacity: true,
-      }).parse(rawGroupData);
+      // Add id from document ID for validation
+      const groupDataWithId = { ...rawGroupData, id: groupDoc.id };
+      const validatedGroupData = LeagueGroupSchema.parse(groupDataWithId);
 
       const currentCount = validatedGroupData.currentCount ?? 0;
       const capacity = validatedGroupData.capacity ?? 20;
@@ -595,11 +585,22 @@ export const assignUserToGroup = onCall(async (request) => {
       trx.update(groupDoc.ref, safeGroupUpdate);
 
       // Update user's group assignment (season points) z whitelist
-      const safeSeasonUpdate = SeasonUserPointsAssignUpdateSchema.parse({
+      // Use set with merge to create document if it doesn't exist
+      const seasonPointsUpdate = {
         groupId: targetGroupId,
         league: userLeague,
-      });
-      trx.update(userSeasonPointsRef, safeSeasonUpdate);
+        points: userPointsData.points ?? 0,
+      };
+      const safeSeasonUpdate =
+        SeasonUserPointsAssignUpdateSchema.parse(seasonPointsUpdate);
+      trx.set(
+        userSeasonPointsRef,
+        {
+          ...safeSeasonUpdate,
+          lastActivityAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
 
       // Update user document (league + group) z whitelist
       const safeUserUpdate = UserLeagueAssignUpdateSchema.parse({

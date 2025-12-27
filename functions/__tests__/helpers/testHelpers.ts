@@ -152,6 +152,42 @@ export async function clearLeagueGroup(
 }
 
 /**
+ * Clear all league groups for a specific season and league
+ */
+export async function clearAllLeagueGroups(
+  seasonId: string,
+  leagueNumber: number
+): Promise<void> {
+  try {
+    const leagueDocRef = db
+      .collection("leagueGroups")
+      .doc(`${seasonId}_${leagueNumber}`);
+
+    const groupsSnapshot = await leagueDocRef.collection("groups").get();
+
+    // Delete all groups and their members
+    for (const groupDoc of groupsSnapshot.docs) {
+      const groupRef = leagueDocRef.collection("groups").doc(groupDoc.id);
+
+      // Delete members
+      const membersSnapshot = await groupRef.collection("members").get();
+      const batch = db.batch();
+      membersSnapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      if (membersSnapshot.docs.length > 0) {
+        await batch.commit();
+      }
+
+      // Delete group
+      await groupRef.delete();
+    }
+  } catch (error) {
+    console.warn(`Error clearing all league groups:`, error);
+  }
+}
+
+/**
  * Generate unique test ID
  */
 export function generateTestId(prefix: string = "test"): string {
@@ -194,8 +230,7 @@ export async function createTestUser(
     interests?: string[];
   } = {}
 ): Promise<void> {
-  const userData: User = {
-    id: userId,
+  const userData: Omit<User, "id"> = {
     username: data.username || `user-${userId}`,
     email: data.email || `${userId}@test.com`,
     settings: {
