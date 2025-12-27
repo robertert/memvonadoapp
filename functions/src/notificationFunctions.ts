@@ -155,7 +155,7 @@ export const createNotification = onCall(async (request) => {
         title: notification.title,
         body: notification.body,
         type: notification.type || "info",
-        linkTo: notification.linkTo,
+        linkTo: notification.linkTo || null,
         read: false,
       };
     NotificationSchema.omit({ createdAt: true, readAt: true, id: true }).parse(

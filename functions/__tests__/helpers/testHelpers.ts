@@ -8,6 +8,28 @@ import { CardGrade, SeasonUserPoints, User } from "../../src/types/common";
 const db = admin.firestore();
 
 /**
+ * Clear notifications for a specific user (even if user doesn't exist)
+ */
+export async function clearTestNotifications(userId: string): Promise<void> {
+  try {
+    const userRef = db.doc(`users/${userId}`);
+    const notificationsSnapshot = await userRef
+      .collection("notifications")
+      .get();
+
+    if (notificationsSnapshot.docs.length > 0) {
+      const batch = db.batch();
+      notificationsSnapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+    }
+  } catch (error) {
+    console.warn(`Error clearing notifications for ${userId}:`, error);
+  }
+}
+
+/**
  * Clear all test data from Firestore for specific user
  */
 export async function clearUserData(userId: string): Promise<void> {
@@ -16,28 +38,29 @@ export async function clearUserData(userId: string): Promise<void> {
     const userRef = db.doc(`users/${userId}`);
     const userDoc = await userRef.get();
 
-    if (userDoc.exists) {
-      // Delete subcollections
-      const collections = [
-        "notifications",
-        "studySessions",
-        "awards",
-        "searchLogs",
-        "decks",
-      ];
+    // Always try to clear subcollections, even if user doesn't exist
+    // (in case notifications were created without user document)
+    const collections = [
+      "notifications",
+      "studySessions",
+      "awards",
+      "searchLogs",
+      "decks",
+    ];
 
-      for (const collection of collections) {
-        const snapshot = await userRef.collection(collection).get();
-        const batch = db.batch();
-        snapshot.docs.forEach((doc) => {
-          batch.delete(doc.ref);
-        });
-        if (snapshot.docs.length > 0) {
-          await batch.commit();
-        }
+    for (const collection of collections) {
+      const snapshot = await userRef.collection(collection).get();
+      const batch = db.batch();
+      snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      if (snapshot.docs.length > 0) {
+        await batch.commit();
       }
+    }
 
-      // Delete user document
+    // Delete user document if it exists
+    if (userDoc.exists) {
       await userRef.delete();
     }
   } catch (error) {
@@ -436,6 +459,18 @@ export async function addUserToGroup(
       points,
       lastActivityAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+}
+
+/**
+ * Create a following relationship between users
+ */
+export async function createFollowingRelationship(
+  userId: string,
+  followingUserId: string
+): Promise<void> {
+  await db
+    .doc(`users/${userId}/following/${followingUserId}`)
+    .set({ userId: followingUserId });
 }
 
 /**

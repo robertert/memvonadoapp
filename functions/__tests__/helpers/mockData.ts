@@ -1,7 +1,7 @@
 /**
  * Mock data for Cloud Functions tests
  */
-import { CardGrade } from "@/types/schemas";
+import { CardGrade } from "../../src/types/common";
 
 export const mockUserId = "test-user-id-123";
 export const mockUserId2 = "test-user-id-456";
