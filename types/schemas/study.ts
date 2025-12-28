@@ -9,7 +9,7 @@ export const StudySessionCreateSchema = z
   .object({
     deckId: z.string(),
     cardId: z.string().optional(),
-    grade: z.number().min(0).max(5).optional(),
+    grade: z.number().min(-1).max(5).optional(),
     reviewTime: TimestampSchema,
   })
   .strict();

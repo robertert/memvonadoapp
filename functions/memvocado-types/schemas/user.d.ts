@@ -37,22 +37,22 @@ export type UserStats = z.infer<typeof UserStatsSchema>;
 export declare const UserSettingsSchema: z.ZodObject<{
     theme: z.ZodDefault<z.ZodEnum<["light", "dark"]>>;
     notificationsEnabled: z.ZodDefault<z.ZodBoolean>;
-    dailyGoal: z.ZodNumber;
-    dailyNew: z.ZodNumber;
+    dailyGoal: z.ZodDefault<z.ZodNumber>;
+    dailyNew: z.ZodOptional<z.ZodNumber>;
     language: z.ZodDefault<z.ZodString>;
     timeZone: z.ZodDefault<z.ZodString>;
 }, "strict", z.ZodTypeAny, {
     theme: "light" | "dark";
     notificationsEnabled: boolean;
     dailyGoal: number;
-    dailyNew: number;
     language: string;
     timeZone: string;
+    dailyNew?: number | undefined;
 }, {
-    dailyGoal: number;
-    dailyNew: number;
     theme?: "light" | "dark" | undefined;
     notificationsEnabled?: boolean | undefined;
+    dailyGoal?: number | undefined;
+    dailyNew?: number | undefined;
     language?: string | undefined;
     timeZone?: string | undefined;
 }>;
@@ -66,22 +66,22 @@ export declare const UserCoreSchema: z.ZodObject<{
     settings: z.ZodObject<{
         theme: z.ZodDefault<z.ZodEnum<["light", "dark"]>>;
         notificationsEnabled: z.ZodDefault<z.ZodBoolean>;
-        dailyGoal: z.ZodNumber;
-        dailyNew: z.ZodNumber;
+        dailyGoal: z.ZodDefault<z.ZodNumber>;
+        dailyNew: z.ZodOptional<z.ZodNumber>;
         language: z.ZodDefault<z.ZodString>;
         timeZone: z.ZodDefault<z.ZodString>;
     }, "strict", z.ZodTypeAny, {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
         dailyGoal: number;
-        dailyNew: number;
         language: string;
         timeZone: string;
+        dailyNew?: number | undefined;
     }, {
-        dailyGoal: number;
-        dailyNew: number;
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
+        dailyGoal?: number | undefined;
+        dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
     }>;
@@ -92,18 +92,18 @@ export declare const UserCoreSchema: z.ZodObject<{
         theme: "light" | "dark";
         notificationsEnabled: boolean;
         dailyGoal: number;
-        dailyNew: number;
         language: string;
         timeZone: string;
+        dailyNew?: number | undefined;
     };
 }, {
     username: string;
     email: string;
     settings: {
-        dailyGoal: number;
-        dailyNew: number;
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
+        dailyGoal?: number | undefined;
+        dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
     };
@@ -206,22 +206,22 @@ export declare const UserSchema: z.ZodObject<{
     settings: z.ZodObject<{
         theme: z.ZodDefault<z.ZodEnum<["light", "dark"]>>;
         notificationsEnabled: z.ZodDefault<z.ZodBoolean>;
-        dailyGoal: z.ZodNumber;
-        dailyNew: z.ZodNumber;
+        dailyGoal: z.ZodDefault<z.ZodNumber>;
+        dailyNew: z.ZodOptional<z.ZodNumber>;
         language: z.ZodDefault<z.ZodString>;
         timeZone: z.ZodDefault<z.ZodString>;
     }, "strict", z.ZodTypeAny, {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
         dailyGoal: number;
-        dailyNew: number;
         language: string;
         timeZone: string;
+        dailyNew?: number | undefined;
     }, {
-        dailyGoal: number;
-        dailyNew: number;
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
+        dailyGoal?: number | undefined;
+        dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
     }>;
@@ -273,9 +273,9 @@ export declare const UserSchema: z.ZodObject<{
         theme: "light" | "dark";
         notificationsEnabled: boolean;
         dailyGoal: number;
-        dailyNew: number;
         language: string;
         timeZone: string;
+        dailyNew?: number | undefined;
     };
     createdAt: Date;
     updatedAt: Date;
@@ -302,10 +302,10 @@ export declare const UserSchema: z.ZodObject<{
     username: string;
     email: string;
     settings: {
-        dailyGoal: number;
-        dailyNew: number;
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
+        dailyGoal?: number | undefined;
+        dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
     };

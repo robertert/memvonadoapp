@@ -25,8 +25,8 @@ exports.UserSettingsSchema = zod_1.z
     .object({
     theme: zod_1.z.enum(["light", "dark"]).default("light"),
     notificationsEnabled: zod_1.z.boolean().default(true),
-    dailyGoal: zod_1.z.number().min(0),
-    dailyNew: zod_1.z.number().min(0),
+    dailyGoal: zod_1.z.number().min(0).default(120),
+    dailyNew: zod_1.z.number().min(0).optional(),
     language: zod_1.z.string().default("en"),
     timeZone: zod_1.z.string().default("UTC"),
 })

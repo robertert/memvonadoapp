@@ -10,7 +10,7 @@ exports.StudySessionCreateSchema = zod_1.z
     .object({
     deckId: zod_1.z.string(),
     cardId: zod_1.z.string().optional(),
-    grade: zod_1.z.number().min(0).max(5).optional(),
+    grade: zod_1.z.number().min(-1).max(5).optional(),
     reviewTime: base_1.TimestampSchema,
 })
     .strict();

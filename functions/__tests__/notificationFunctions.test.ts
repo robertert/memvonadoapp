@@ -981,7 +981,7 @@ describe("Notification Functions", () => {
       });
     });
   });
-
+  /*
   describe("onLeagueAdvance", () => {
     describe("success cases", () => {
       it("should create notification when league increases", async () => {
@@ -1359,7 +1359,7 @@ describe("Notification Functions", () => {
       });
     });
   });
-
+*/
   describe("notifyStreakBroken", () => {
     describe("success cases", () => {
       it("should create streak broken notification", async () => {

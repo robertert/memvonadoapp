@@ -259,7 +259,7 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
     if (!userSnap.exists) {
       throw new HttpsError("not-found", "User not found");
     }
-    const userData = UserSchema.parse(userSnap.data() || {});
+    const userData = UserSchema.omit({ id: true }).parse(userSnap.data());
 
     const tz: string = timeZone || userData.settings.timeZone || "UTC";
 
@@ -280,7 +280,7 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
       return serializeTimestamps({
         currentStreak: Number(userData.stats.currentStreak || 0),
         longestStreak: Number(userData.stats.longestStreak || 0),
-        lastStreakDate,
+        lastStreakDate: lastStreakYmd || formatYmdInTimeZone(new Date(), tz),
         updated: false,
       });
     }
@@ -555,7 +555,7 @@ export const getUserProgress = onCall(async (request) => {
     if (!userDoc.exists) {
       throw new HttpsError("not-found", "User not found");
     }
-    const userData = UserSchema.parse(userDoc.data() || {});
+    const userData = UserSchema.omit({ id: true }).parse(userDoc.data() || {});
 
     const now = new Date();
 
@@ -581,7 +581,7 @@ export const getUserProgress = onCall(async (request) => {
     const userProgress = UserProgressSchema.parse({
       stats: userData.stats || {},
       recentSessions: sessions,
-      dailyGoal: userData.settings.dailyGoal ?? 120,
+      dailyGoal: userData.settings?.dailyGoal ?? undefined,
       todaySessionsCount: todaySessionsCount.data().count,
     });
     const rawResponse = { userProgress };
@@ -619,6 +619,8 @@ export const getUserSettings = onCall(async (request) => {
     const settingsDocPath = db.doc(`users/${userId}/settings/app`);
     const settingsDoc = await settingsDocPath.get();
 
+    logger.info("settingsDoc", { settingsDoc });
+
     if (settingsDoc.exists) {
       const settingsFromDoc = (settingsDoc.data() || {}) as unknown;
       const validatedSettings = UserSettingsSchema.parse(settingsFromDoc);
@@ -633,7 +635,7 @@ export const getUserSettings = onCall(async (request) => {
     if (!userDoc.exists) {
       return serializeTimestamps({ settings: {} });
     }
-    const userData = userDoc.data() || ({} as Record<string, unknown>);
+    const userData = UserSchema.omit({ id: true }).parse(userDoc.data());
 
     // Get settings from user document
     // validateUserData sets theme: "light" at root level, not in settings object

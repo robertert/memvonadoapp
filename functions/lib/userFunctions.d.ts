@@ -6,11 +6,6 @@
 export declare const updateUserStreakOnLogin: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     currentStreak: number;
     longestStreak: number;
-    lastStreakDate: Date | undefined;
-    updated: boolean;
-} | {
-    currentStreak: number;
-    longestStreak: number;
     lastStreakDate: string;
     updated: boolean;
 }>, unknown>;
@@ -143,9 +138,9 @@ export declare const getUserProfile: import("firebase-functions/v2/https").Calla
         theme: "light" | "dark";
         notificationsEnabled: boolean;
         dailyGoal: number;
-        dailyNew: number;
         language: string;
         timeZone: string;
+        dailyNew?: number | undefined;
     };
     createdAt: Date;
     updatedAt: Date;

@@ -27,8 +27,8 @@ export const UserSettingsSchema = z
   .object({
     theme: z.enum(["light", "dark"]).default("light"),
     notificationsEnabled: z.boolean().default(true),
-    dailyGoal: z.number().min(0),
-    dailyNew: z.number().min(0),
+    dailyGoal: z.number().min(0).default(120),
+    dailyNew: z.number().min(0).optional(),
     language: z.string().default("en"),
     timeZone: z.string().default("UTC"),
   })

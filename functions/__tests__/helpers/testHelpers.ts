@@ -46,6 +46,7 @@ export async function clearUserData(userId: string): Promise<void> {
       "awards",
       "searchLogs",
       "decks",
+      "settings",
     ];
 
     for (const collection of collections) {
@@ -236,7 +237,7 @@ export async function createTestUser(
     settings: {
       theme: data.settings?.theme || "light",
       notificationsEnabled: data.settings?.notificationsEnabled ?? true,
-      dailyGoal: data.settings?.dailyGoal ?? 10,
+      dailyGoal: data.settings?.dailyGoal ?? 120,
       dailyNew: data.settings?.dailyNew ?? 5,
       language: data.settings?.language || "en",
       timeZone: data.settings?.timeZone || "UTC",
