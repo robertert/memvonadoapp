@@ -87,15 +87,15 @@ export type GetDeckDetailsRequest = z.infer<typeof GetDeckDetailsRequestSchema>;
 export declare const GetDeckCardsRequestSchema: z.ZodObject<{
     deckId: z.ZodString;
     limit: z.ZodOptional<z.ZodNumber>;
-    startAfter: z.ZodOptional<z.ZodString>;
+    startAfter: z.ZodNullable<z.ZodOptional<z.ZodString>>;
 }, "strict", z.ZodTypeAny, {
     deckId: string;
     limit?: number | undefined;
-    startAfter?: string | undefined;
+    startAfter?: string | null | undefined;
 }, {
     deckId: string;
     limit?: number | undefined;
-    startAfter?: string | undefined;
+    startAfter?: string | null | undefined;
 }>;
 export type GetDeckCardsRequest = z.infer<typeof GetDeckCardsRequestSchema>;
 export declare const GetPopularDecksRequestSchema: z.ZodObject<{
@@ -117,15 +117,15 @@ export type GetUserDeckDetailsRequest = z.infer<typeof GetUserDeckDetailsRequest
 export declare const GetUserDeckCardsRequestSchema: z.ZodObject<{
     deckId: z.ZodString;
     limit: z.ZodOptional<z.ZodNumber>;
-    startAfter: z.ZodOptional<z.ZodString>;
+    startAfter: z.ZodNullable<z.ZodOptional<z.ZodString>>;
 }, "strict", z.ZodTypeAny, {
     deckId: string;
     limit?: number | undefined;
-    startAfter?: string | undefined;
+    startAfter?: string | null | undefined;
 }, {
     deckId: string;
     limit?: number | undefined;
-    startAfter?: string | undefined;
+    startAfter?: string | null | undefined;
 }>;
 export type GetUserDeckCardsRequest = z.infer<typeof GetUserDeckCardsRequestSchema>;
 export declare const GetUserDueDeckCardsRequestSchema: z.ZodObject<{
@@ -1335,7 +1335,7 @@ export declare const DeleteDeckResponseSchema: z.ZodObject<{
 }>;
 export type DeleteDeckResponse = z.infer<typeof DeleteDeckResponseSchema>;
 export declare const GetUserDeckDetailsResponseSchema: z.ZodObject<{
-    deck: z.ZodObject<{
+    deck: z.ZodNullable<z.ZodObject<{
         id: z.ZodString;
         cardsNum: z.ZodNumber;
     } & {
@@ -1378,7 +1378,7 @@ export declare const GetUserDeckDetailsResponseSchema: z.ZodObject<{
         cardsNum: number;
         updatedAt?: unknown;
         lastReviewDate?: unknown;
-    }>;
+    }>>;
 }, "strip", z.ZodTypeAny, {
     deck: {
         settings: {
@@ -1391,7 +1391,7 @@ export declare const GetUserDeckDetailsResponseSchema: z.ZodObject<{
         title: string;
         cardsNum: number;
         lastReviewDate?: Date | undefined;
-    };
+    } | null;
 }, {
     deck: {
         settings: {
@@ -1404,7 +1404,7 @@ export declare const GetUserDeckDetailsResponseSchema: z.ZodObject<{
         cardsNum: number;
         updatedAt?: unknown;
         lastReviewDate?: unknown;
-    };
+    } | null;
 }>;
 export type GetUserDeckDetailsResponse = z.infer<typeof GetUserDeckDetailsResponseSchema>;
 export declare const GetUserDeckCardsResponseSchema: z.ZodObject<{

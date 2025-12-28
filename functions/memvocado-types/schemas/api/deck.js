@@ -21,7 +21,7 @@ exports.GetDeckCardsRequestSchema = zod_1.z
     .object({
     deckId: zod_1.z.string(),
     limit: zod_1.z.number().int().min(1).max(1000).optional(),
-    startAfter: zod_1.z.string().optional(),
+    startAfter: zod_1.z.string().optional().nullable(),
 })
     .strict();
 exports.GetPopularDecksRequestSchema = zod_1.z
@@ -139,7 +139,7 @@ exports.DeleteDeckResponseSchema = zod_1.z.object({
     notifiedUsers: zod_1.z.number(),
 });
 exports.GetUserDeckDetailsResponseSchema = zod_1.z.object({
-    deck: index_1.DeckLearningDataSchema,
+    deck: index_1.DeckLearningDataSchema.nullable(),
 });
 exports.GetUserDeckCardsResponseSchema = zod_1.z.object({
     cards: zod_1.z.array(index_1.CardSchema),

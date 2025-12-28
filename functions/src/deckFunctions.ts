@@ -255,7 +255,6 @@ export const getDeckCards = onCall(async (request) => {
     }
 
     const cardsSnap = await query.get();
-    const cards = cardsSnap.docs.map((doc) => doc.data() as Card);
     // Check if there are more cards by trying to get one more
     let hasMore = false;
     if (cardsSnap.docs.length === limit) {
@@ -269,7 +268,12 @@ export const getDeckCards = onCall(async (request) => {
       hasMore = nextSnap.docs.length > 0;
     }
 
-    const validatedCards = cards.map((card) => CardSchema.parse(card));
+    const validatedCards = cardsSnap.docs.map((doc) =>
+      CardSchema.parse({
+        id: doc.id,
+        ...doc.data(),
+      })
+    );
 
     const response = {
       cards: validatedCards as Card[],
@@ -362,7 +366,7 @@ export const getUserDeckDetails = onCall(async (request) => {
     const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
     const deckSnap = await deckRef.get();
     if (!deckSnap.exists) {
-      throw new HttpsError("not-found", "Deck not found");
+      return serializeTimestamps({ deck: null });
     }
     const deckData = {
       ...deckSnap.data(),
@@ -487,7 +491,10 @@ async function joinCardsWithProgress(
   const userCardsMap = new Map(
     userCardsSnap.docs.map((doc) => {
       const rawData = doc.data();
-      const validatedData = CardSchema.parse(rawData);
+      const validatedData = CardSchema.parse({
+        id: doc.id,
+        ...rawData,
+      });
       return [doc.id, validatedData];
     })
   );
@@ -500,7 +507,10 @@ async function joinCardsWithProgress(
   // Process source cards (use source content, user's progress)
   for (const cardDoc of sourceCards) {
     const rawCardData = cardDoc.data();
-    const validatedCardData = CardSchema.parse(rawCardData);
+    const validatedCardData = CardSchema.parse({
+      id: cardDoc.id,
+      ...rawCardData,
+    });
     const userCardData = userCardsMap.get(cardDoc.id);
     const progress = userCardData || null;
 
@@ -601,8 +611,10 @@ export const getUserDueDeckCards = onCall(async (request) => {
     const cardsSnap = await deckRef.collection("cards").get();
     const now = Date.now();
     const validatedRaw: Card[] = cardsSnap.docs.map((doc) => {
-      const rawData = doc.data();
-      return CardSchema.parse(rawData);
+      return CardSchema.parse({
+        id: doc.id,
+        ...doc.data(),
+      });
     });
 
     const dueFirst: Card[] = validatedRaw.filter(
@@ -612,9 +624,7 @@ export const getUserDueDeckCards = onCall(async (request) => {
       (c) => c.cardAlgo?.due && c.cardAlgo.due.getTime() <= now
     );
 
-    const validatedCards: Card[] = [...dueFirst, ...dueFSRS].map((c) =>
-      CardSchema.parse(c)
-    );
+    const validatedCards: Card[] = [...dueFirst, ...dueFSRS];
 
     const cards =
       limit === -1 ? validatedCards : validatedCards.slice(0, limit);
@@ -718,10 +728,10 @@ export const updateUserStats = onDocumentWritten(
 
         cardsSnapshot.forEach((cardDoc) => {
           const rawCardData = cardDoc.data();
-          const validatedCardData = CardSchema.pick({
-            grade: true,
-            cardAlgo: true,
-          }).parse(rawCardData);
+          const validatedCardData = CardSchema.parse({
+            id: cardDoc.id,
+            ...rawCardData,
+          });
           if (validatedCardData.grade !== undefined) {
             totalReviews++;
             totalDifficulty += validatedCardData.cardAlgo?.difficulty || 2.5;
@@ -1102,9 +1112,10 @@ export const startLearningDeck = onCall(async (request) => {
             },
           };
 
-          const validatedCard = CardSchema.omit({
-            id: true,
-          }).parse(card);
+          const validatedCard = CardSchema.parse({
+            id: sourceCardDoc.id,
+            ...card,
+          });
           const userCardRef = userCardsRef.doc(sourceCardDoc.id);
           currentBatch.set(userCardRef, validatedCard, { merge: true });
 
@@ -1320,9 +1331,7 @@ export const checkCardChanges = onCall(async (request) => {
     if (!rawSourceDeckData || !rawUserDeckData) {
       throw new HttpsError("not-found", "Deck data not found");
     }
-    const validatedSourceDeckData = DeckSchema.omit({
-      id: true,
-    }).parse(rawSourceDeckData);
+    const validatedSourceDeckData = DeckSchema.parse(rawSourceDeckData);
     const validatedUserDeckData = DeckLearningDataSchema.parse(rawUserDeckData);
     if (validatedUserDeckData.updatedAt == validatedSourceDeckData.updatedAt) {
       const response = { changes: [] };
@@ -1334,7 +1343,10 @@ export const checkCardChanges = onCall(async (request) => {
     const sourceCardsMap = new Map(
       sourceCardsSnap.docs.map((doc) => {
         const rawData = doc.data();
-        const validatedData = CardSchema.parse(rawData);
+        const validatedData = CardSchema.parse({
+          id: doc.id,
+          ...rawData,
+        });
         return [doc.id, validatedData];
       })
     );
@@ -1344,7 +1356,10 @@ export const checkCardChanges = onCall(async (request) => {
     const userCardsMap = new Map(
       userCardsSnap.docs.map((doc) => {
         const rawData = doc.data();
-        const validatedData = CardSchema.parse(rawData);
+        const validatedData = CardSchema.parse({
+          id: doc.id,
+          ...rawData,
+        });
         return [doc.id, validatedData];
       })
     );
@@ -1480,7 +1495,10 @@ export const syncDeckCards = onCall(async (request) => {
     const sourceCardsMap = new Map(
       sourceCardsSnap.docs.map((doc) => {
         const rawData = doc.data();
-        const validatedData = CardSchema.parse(rawData);
+        const validatedData = CardSchema.parse({
+          id: doc.id,
+          ...rawData,
+        });
         return [doc.id, validatedData];
       })
     );
@@ -1492,7 +1510,10 @@ export const syncDeckCards = onCall(async (request) => {
     const userCardsMap = new Map(
       userCardsSnap.docs.map((doc) => {
         const rawData = doc.data();
-        const validatedData = CardSchema.parse(rawData);
+        const validatedData = CardSchema.parse({
+          id: doc.id,
+          ...rawData,
+        });
         return [doc.id, validatedData];
       })
     );

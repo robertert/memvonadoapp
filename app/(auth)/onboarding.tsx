@@ -158,7 +158,6 @@ export default function OnboardingScreen(): React.JSX.Element {
       // Wywołaj Cloud Function do zapisania wszystkich danych
       await cloudFunctions.completeOnboarding({
         username: data.username || username,
-        photoUrl,
         interests: selectedInterests,
       });
 

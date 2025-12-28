@@ -33,7 +33,7 @@ export const GetDeckCardsRequestSchema = z
   .object({
     deckId: z.string(),
     limit: z.number().int().min(1).max(1000).optional(),
-    startAfter: z.string().optional(),
+    startAfter: z.string().optional().nullable(),
   })
   .strict();
 export type GetDeckCardsRequest = z.infer<typeof GetDeckCardsRequestSchema>;
@@ -231,7 +231,7 @@ export const DeleteDeckResponseSchema = z.object({
 export type DeleteDeckResponse = z.infer<typeof DeleteDeckResponseSchema>;
 
 export const GetUserDeckDetailsResponseSchema = z.object({
-  deck: DeckLearningDataSchema,
+  deck: DeckLearningDataSchema.nullable(),
 });
 export type GetUserDeckDetailsResponse = z.infer<
   typeof GetUserDeckDetailsResponseSchema

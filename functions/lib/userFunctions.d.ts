@@ -82,14 +82,6 @@ export declare const getUserSettings: import("firebase-functions/v2/https").Call
     settings: {};
 }>, unknown>;
 /**
- * Validate user data on creation
- * @param {any} event - event object
- * @return {Promise<void>}
- */
-export declare const validateUserData: import("firebase-functions/core").CloudFunction<import("firebase-functions/v2/firestore").FirestoreEvent<import("firebase-functions/v2/firestore").Change<import("firebase-functions/v2/firestore").DocumentSnapshot> | undefined, {
-    userId: string;
-}>>;
-/**
  * Return server authoritative time and optional active season info
  */
 export declare const serverNow: import("firebase-functions/v2/https").CallableFunction<any, Promise<{

@@ -99,7 +99,7 @@ export declare const getUserDeckDetails: import("firebase-functions/v2/https").C
         title: string;
         cardsNum: number;
         lastReviewDate?: Date | undefined;
-    };
+    } | null;
 }>, unknown>;
 export declare const getUserDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     cards: {

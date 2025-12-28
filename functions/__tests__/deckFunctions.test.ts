@@ -753,9 +753,9 @@ describe("Deck Functions", () => {
       } as any);
 
       expect(result.deck).toBeDefined();
-      expect(result.deck.id).toBe(deckId);
-      expect(result.deck.title).toBe("My Deck");
-      expect(result.deck.cardsNum).toBe(5);
+      expect(result.deck?.id).toBe(deckId);
+      expect(result.deck?.title).toBe("My Deck");
+      expect(result.deck?.cardsNum).toBe(5);
 
       await clearUserData(userId);
     });

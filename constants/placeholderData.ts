@@ -25,6 +25,7 @@ const _placeholderUser = {
     dailyGoal: 120,
     dailyNew: 20,
     language: "en",
+    timeZone: "UTC",
   },
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -61,6 +62,7 @@ const _placeholderDecks = [
     cardsNum: 10,
     createdBy: "placeholder-user",
     createdAt: new Date(),
+    updatedAt: new Date(),
     is_deleted: false,
   },
   {
@@ -75,6 +77,7 @@ const _placeholderDecks = [
     cardsNum: 10,
     createdBy: "placeholder-user",
     createdAt: new Date(),
+    updatedAt: new Date(),
     is_deleted: false,
   },
 ];

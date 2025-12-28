@@ -286,6 +286,7 @@ export const addPlaceholderData = onCall(async (request) => {
         (card: { front: string; back: string; tags: string[] }) => {
           const cardRef = deckRef.collection("cards").doc();
           batch.set(cardRef, {
+            id: cardRef.id,
             front: card.front,
             back: card.back,
             tags: card.tags,

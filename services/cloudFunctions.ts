@@ -324,7 +324,7 @@ export const cloudFunctions = {
   getDeckCards: async (
     deckId: string,
     limit: number = 20,
-    startAfter?: string
+    startAfter: string | null = null
   ) => {
     const getDeckCardsFunction = httpsCallable<
       GetDeckCardsRequest,

@@ -356,22 +356,26 @@ export function useCardLogic(id: string) {
         setIsLoading(false);
         return;
       }
-      // Ensure user personal copy exists; if not, create it
 
-      const { deck: userDeck } = await cloudFunctions.getUserDeckDetails(id);
+      // Ensure user personal copy exists; if not, create it
+      if (!userCtx.id) throw new Error("No userCtx");
+      let { deck: userDeck } = await cloudFunctions.getUserDeckDetails(id);
       if (!userDeck) {
         await cloudFunctions.startLearningDeck(id);
+        const { deck: newUserDeck } = await cloudFunctions.getUserDeckDetails(
+          id
+        );
+        userDeck = newUserDeck;
       }
 
       // Get user deck details
-      const { deck: currentDeck } = await cloudFunctions.getUserDeckDetails(id);
       const { settings } = await cloudFunctions.getUserSettings(userCtx.id!);
 
       const dailyGoal = -1; // liczba dziennych powtórek (FSRS) - nie używamy tego w tej wersji
       const dailyNew = settings.dailyNew ?? 20; // liczba nowych kart do wprowadzenia
 
-      if (currentDeck) {
-        setDeck(currentDeck);
+      if (userDeck) {
+        setDeck(userDeck);
 
         // Server-side: fetch due FSRS + due firstLearn + new candidates from user deck
         const [dueRes, newRes] = await Promise.all([

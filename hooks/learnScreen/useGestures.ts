@@ -237,7 +237,7 @@ export function useGestures({
       setIsTurn(true);
       setTimeout(() => {
         setIsTurn(false);
-      }, 500);
+      }, 600);
     });
 
   const comp = Gesture.Exclusive(pan, tap);

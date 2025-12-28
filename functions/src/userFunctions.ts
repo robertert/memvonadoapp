@@ -1,7 +1,6 @@
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import {
   Deck,
   DeckSchema,
@@ -13,7 +12,6 @@ import {
   type CardAlgo,
   type StudySessionCreate,
   type UserSettings,
-  type UserStats,
   type SeasonUserPoints,
   type LeagueGroup,
   UserProgressSchema,
@@ -558,10 +556,7 @@ export const getUserProgress = onCall(async (request) => {
     if (!userDoc.exists) {
       throw new HttpsError("not-found", "User not found");
     }
-    const userData = UserSchema.parse({
-      id: userDoc.id,
-      ...(userDoc.data() || {}),
-    });
+    const userData = UserSchema.parse(userDoc.data());
 
     const now = new Date();
 
@@ -676,91 +671,6 @@ export const getUserSettings = onCall(async (request) => {
     throw new HttpsError("internal", "Failed to get user settings");
   }
 });
-
-/**
- * Validate user data on creation
- * @param {any} event - event object
- * @return {Promise<void>}
- */
-export const validateUserData = onDocumentWritten(
-  "users/{userId}",
-  async (event) => {
-    const beforeData = event.data?.before.data();
-    const afterData = event.data?.after.data();
-
-    if (!afterData) {
-      return;
-    }
-
-    try {
-      // Check for duplicate email
-      if (afterData.email) {
-        const emailQuery = await db
-          .collection("users")
-          .where("email", "==", afterData.email)
-          .get();
-
-        if (emailQuery.size > 1) {
-          logger.warn("Duplicate email detected", {
-            userId: event.params.userId,
-            email: afterData.email,
-          });
-        }
-      }
-
-      // Only initialize missing fields to avoid infinite loop
-      // Check if this is a new document (before doesn't exist) or if fields are missing
-      const isNewDocument = !beforeData;
-      const needsInit =
-        isNewDocument ||
-        !afterData.stats ||
-        !afterData.theme ||
-        afterData.followersCount === undefined ||
-        afterData.followingCount === undefined;
-
-      if (needsInit) {
-        const updates: Record<string, unknown> = {};
-
-        // Only set stats if they don't exist
-        if (!afterData.stats) {
-          const defaultStats: UserStats = UserStatsSchema.parse({
-            totalCards: 0,
-            totalDecks: 0,
-            totalReviews: 0,
-            averageDifficulty: 0,
-            currentStreak: 0,
-            longestStreak: 0,
-          });
-          updates.stats = defaultStats;
-        }
-
-        // Initialize counts if missing
-        if (afterData.followersCount === undefined) {
-          updates.followersCount = 0;
-        }
-        if (afterData.followingCount === undefined) {
-          updates.followingCount = 0;
-        }
-
-        // Only set theme if it doesn't exist
-        if (!afterData.theme) {
-          updates.theme = "light";
-        }
-
-        // Only update if there are fields to set
-        if (Object.keys(updates).length > 0) {
-          await event.data?.after.ref.update(updates);
-          logger.info("User data validated and initialized", {
-            userId: event.params.userId,
-            fieldsUpdated: Object.keys(updates),
-          });
-        }
-      }
-    } catch (error) {
-      logger.error("Error validating user data", error);
-    }
-  }
-);
 
 /**
  * Return server authoritative time and optional active season info

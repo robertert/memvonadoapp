@@ -135,28 +135,21 @@ export default function deckDetails(): React.JSX.Element {
         setHasMoreCards(false);
         setLastDocId(null);
       } else {
-        // Get deck details first
-        const { deck: deckData, username } =
-          await cloudFunctions.getDeckDetails(typedParams.deckId);
-
-        const { deck: userDeckData } = await cloudFunctions.getUserDeckDetails(
-          typedParams.deckId
-        );
+        const [
+          { deck: deckData },
+          { deck: userDeckData },
+          { cards: deckCards, hasMore, lastDocId: newLastDocId },
+        ] = await Promise.all([
+          cloudFunctions.getDeckDetails(typedParams.deckId),
+          cloudFunctions.getUserDeckDetails(typedParams.deckId),
+          cloudFunctions.getDeckCards(typedParams.deckId, 20),
+        ]);
 
         if (userDeckData) {
           checkForChanges();
         }
 
         if (!deckData) throw new Error("Deck not found");
-
-        // Get first batch of cards
-        const {
-          cards: deckCards,
-          hasMore,
-          lastDocId: newLastDocId,
-        } = await cloudFunctions.getDeckCards(typedParams.deckId, 20);
-
-        if (!deckCards) throw new Error("Cards not found");
 
         setDateAgo(calculateDateAgo(new Date(deckData.createdAt)));
         setUsername(username);
@@ -182,8 +175,6 @@ export default function deckDetails(): React.JSX.Element {
         hasMore,
         lastDocId: newLastDocId,
       } = await cloudFunctions.getDeckCards(typedParams.deckId, 20, lastDocId);
-
-      if (!moreCards) throw new Error("Cards not found");
 
       setCards((prevCards) => [...prevCards, ...moreCards]);
       setHasMoreCards(hasMore);

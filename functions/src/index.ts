@@ -34,7 +34,6 @@ export {
   getUserProfile,
   getUserActivityHeatmap,
   getUserAwards,
-  validateUserData,
 } from "./userFunctions";
 export {
   createDeckWithCards,
