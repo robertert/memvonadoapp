@@ -476,7 +476,10 @@ export const assignUserToGroup = onCall(async (request) => {
     }
 
     const rawUserData = userDoc.data();
-    const validatedUserData = UserSchema.omit({ id: true }).parse(rawUserData);
+    const validatedUserData = UserSchema.parse({
+      id: userDoc.id,
+      ...rawUserData,
+    });
     const userLeague = leagueNumber ?? validatedUserData.league ?? 1;
 
     // Find a group with less than 20 members

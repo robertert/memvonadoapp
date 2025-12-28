@@ -76,4 +76,8 @@ export {
   getAllLeaguesInfo,
 } from "./leagueFunctions";
 export { addPlaceholderData } from "./placeholderFunctions";
-export { ensureUserDocument, completeOnboarding } from "./authHandlers";
+export {
+  ensureUserDocument,
+  completeOnboarding,
+  checkUsernameAvailability,
+} from "./authHandlers";

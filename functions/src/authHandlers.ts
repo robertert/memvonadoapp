@@ -103,7 +103,7 @@ function buildUserDocument(params: UserDocumentParams): User {
     createdAt: now,
     updatedAt: now,
     league: 1,
-    currentGroupId: "unassigned",
+    currentGroupId: null,
     experiencePoints: 0,
     currencyCount: 0,
     stats: { ...DEFAULT_STATS },

@@ -231,7 +231,8 @@ export async function createTestUser(
     interests?: string[];
   } = {}
 ): Promise<void> {
-  const userData: Omit<User, "id"> = {
+  const userData: User = {
+    id: userId,
     username: data.username || `user-${userId}`,
     email: data.email || `${userId}@test.com`,
     settings: {

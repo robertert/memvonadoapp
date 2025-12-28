@@ -259,7 +259,10 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
     if (!userSnap.exists) {
       throw new HttpsError("not-found", "User not found");
     }
-    const userData = UserSchema.omit({ id: true }).parse(userSnap.data());
+    const userData = UserSchema.parse({
+      id: userSnap.id,
+      ...userSnap.data(),
+    });
 
     const tz: string = timeZone || userData.settings.timeZone || "UTC";
 
@@ -555,7 +558,10 @@ export const getUserProgress = onCall(async (request) => {
     if (!userDoc.exists) {
       throw new HttpsError("not-found", "User not found");
     }
-    const userData = UserSchema.omit({ id: true }).parse(userDoc.data() || {});
+    const userData = UserSchema.parse({
+      id: userDoc.id,
+      ...(userDoc.data() || {}),
+    });
 
     const now = new Date();
 
@@ -635,7 +641,10 @@ export const getUserSettings = onCall(async (request) => {
     if (!userDoc.exists) {
       return serializeTimestamps({ settings: {} });
     }
-    const userData = UserSchema.omit({ id: true }).parse(userDoc.data());
+    const userData = UserSchema.parse({
+      id: userDoc.id,
+      ...userDoc.data(),
+    });
 
     // Get settings from user document
     // validateUserData sets theme: "light" at root level, not in settings object
