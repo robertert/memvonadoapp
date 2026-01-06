@@ -107,9 +107,11 @@ export default function deckSettings(): React.JSX.Element {
 
       await Promise.all([
         cloudFunctions.updateDeckSettings(typedParams.deckId, authorDeck),
-        cloudFunctions.updateUserDeckSettings(typedParams.deckId, deck),
+        cloudFunctions.updateUserDeckSettings(
+          typedParams.deckId,
+          deck.settings
+        ),
       ]);
-      console.log("Settings saved successfully");
       router.back();
     } catch (error) {
       console.error("Error saving settings:", error);
@@ -441,7 +443,7 @@ export default function deckSettings(): React.JSX.Element {
                       ]}
                       onPress={() => {
                         if (!authorDeck) return;
-                        setAuthorDeck({ ...authorDeck, icon: icon as any });
+                        setAuthorDeck({ ...authorDeck, icon: icon });
                         setShowIconModal(false);
                       }}
                     >

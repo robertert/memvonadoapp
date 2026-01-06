@@ -340,17 +340,17 @@ export declare const UpdateUserStreakIfQualifiedResponseSchema: z.ZodObject<{
     currentStreak: number;
     longestStreak: number;
     lastStreakDate: string | null;
+    updated: boolean;
     threshold: number;
     qualified: boolean;
-    updated: boolean;
     todayCount?: number | undefined;
 }, {
     currentStreak: number;
     longestStreak: number;
     lastStreakDate: string | null;
+    updated: boolean;
     threshold: number;
     qualified: boolean;
-    updated: boolean;
     todayCount?: number | undefined;
 }>;
 export type UpdateUserStreakIfQualifiedResponse = z.infer<typeof UpdateUserStreakIfQualifiedResponseSchema>;

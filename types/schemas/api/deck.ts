@@ -6,6 +6,7 @@ import {
   CardCoreSchema,
   DeckCoreSchema,
   CardChangeWithTypeSchema,
+  DeckSettingsUpdateSchema,
 } from "../index";
 
 // ===========================
@@ -103,7 +104,7 @@ export type UpdateDeckSettingsRequest = z.infer<
 export const UpdateUserDeckSettingsRequestSchema = z
   .object({
     deckId: z.string(),
-    deck: DeckLearningDataSchema.partial(),
+    settings: DeckSettingsUpdateSchema,
   })
   .strict();
 export type UpdateUserDeckSettingsRequest = z.infer<
@@ -163,6 +164,21 @@ export const UpdateCardContentRequestSchema = z
 export type UpdateCardContentRequest = z.infer<
   typeof UpdateCardContentRequestSchema
 >;
+
+export const UpdateDeckRequestSchema = z
+  .object({
+    deckId: z.string(),
+    deckData: DeckCoreSchema,
+    changes: z
+      .object({
+        created: z.array(CardCoreSchema),
+        updated: z.array(CardCoreSchema.extend({ id: z.string() })),
+        deleted: z.array(z.string()),
+      })
+      .strict(),
+  })
+  .strict();
+export type UpdateDeckRequest = z.infer<typeof UpdateDeckRequestSchema>;
 
 // ===========================
 // Deck response schemas
@@ -279,3 +295,11 @@ export const UpdateCardContentResponseSchema = z.object({
 export type UpdateCardContentResponse = z.infer<
   typeof UpdateCardContentResponseSchema
 >;
+
+export const UpdateDeckResponseSchema = z.object({
+  success: z.boolean(),
+  updatedCount: z.number(),
+  createdCount: z.number(),
+  deletedCount: z.number(),
+});
+export type UpdateDeckResponse = z.infer<typeof UpdateDeckResponseSchema>;

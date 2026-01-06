@@ -38,6 +38,7 @@ export {
 export {
   createDeckWithCards,
   updateUserStats,
+  syncDeckMetadataToUserCopies,
   getDeckDetails,
   getDeckCards,
   getPopularDecks,
@@ -53,6 +54,7 @@ export {
   checkCardChanges,
   syncDeckCards,
   updateCardContent,
+  updateDeck,
 } from "./deckFunctions";
 export {
   getLeaderboard,

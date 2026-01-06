@@ -36,9 +36,7 @@ export default function profileScreen(): React.JSX.Element {
   const [awards, setAwards] = useState<
     Array<{ id?: string; key?: number; name?: string }>
   >([]);
-  const [friendsStreaks, setFriendsStreaks] = useState<
-    Array<{ userId?: string; key?: number; name: string; streak: number }>
-  >([]);
+
   const [myDecks, setMyDecks] = useState<
     Array<{
       id?: string;
@@ -81,10 +79,6 @@ export default function profileScreen(): React.JSX.Element {
           { id: "a1", key: 1, name: "Liga 3" },
           { id: "a2", key: 2, name: "Streak 5" },
         ]);
-        setFriendsStreaks([
-          { userId: "f1", key: 1, name: "Alice", streak: 7 },
-          { userId: "f2", key: 2, name: "Bob", streak: 3 },
-        ]);
         setMyDecks(
           placeholderDecks.slice(0, 3).map((deck, idx) => ({
             id: deck.id,
@@ -97,16 +91,14 @@ export default function profileScreen(): React.JSX.Element {
         return;
       }
 
-      const [profile, heatmap, awardsData, streaks, decks] = await Promise.all([
+      const [profile, heatmap, awardsData, decks] = await Promise.all([
         cloudFunctions.getUserProfile(userCtx.id!!),
         cloudFunctions.getUserActivityHeatmap(userCtx.id!!, weeks),
         cloudFunctions.getUserAwards(userCtx.id!!),
-        cloudFunctions.getFriendsStreaks(userCtx.id!!),
         cloudFunctions.getUserDecks(userCtx.id!!),
       ]);
 
       setProfileData(profile);
-
       setHeatmapData(heatmap.heatmapData);
       setAwards(
         awardsData.awards.map((a: any, idx: number) => ({
@@ -118,15 +110,6 @@ export default function profileScreen(): React.JSX.Element {
               : a.type === "streak"
               ? `Streak ${a.streakDays}`
               : a.milestoneType || "Award",
-        }))
-      );
-
-      setFriendsStreaks(
-        streaks.friendsStreaks.map((fs: any, idx: number) => ({
-          userId: fs.userId,
-          key: idx + 1,
-          name: fs.name,
-          streak: fs.streak,
         }))
       );
 
@@ -159,10 +142,7 @@ export default function profileScreen(): React.JSX.Element {
           { id: "a1", key: 1, name: "Liga 3" },
           { id: "a2", key: 2, name: "Streak 5" },
         ]);
-        setFriendsStreaks([
-          { userId: "f1", key: 1, name: "Alice", streak: 7 },
-          { userId: "f2", key: 2, name: "Bob", streak: 3 },
-        ]);
+
         setMyDecks(
           placeholderDecks.slice(0, 3).map((deck, idx) => ({
             id: deck.id,
@@ -288,35 +268,6 @@ export default function profileScreen(): React.JSX.Element {
               </View>
             </>
           )}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.subTitle}>Mutal streaks</Text>
-            <ScrollView
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-              style={styles.horizontalScroll}
-            >
-              {friendsStreaks.length > 0 ? (
-                friendsStreaks.map((friend) => (
-                  <View
-                    key={friend.key || friend.userId}
-                    style={styles.friendStreakItem}
-                  >
-                    <Text style={styles.friendStreakName}>{friend.name}</Text>
-                    <MaterialCommunityIcons
-                      name="penguin"
-                      size={36}
-                      color={Colors.primary_700}
-                    />
-                    <Text style={styles.friendStreakDays}>
-                      {friend.streak} days
-                    </Text>
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.emptyText}>No friends streaks yet</Text>
-              )}
-            </ScrollView>
-          </View>
           <View style={styles.sectionContainer}>
             <Text style={styles.subTitle}>Your awards</Text>
             <ScrollView

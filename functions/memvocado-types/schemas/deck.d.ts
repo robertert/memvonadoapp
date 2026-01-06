@@ -8,18 +8,24 @@ export declare const DeckCoreSchema: z.ZodObject<{
     icon: z.ZodDefault<z.ZodString>;
     tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     isPublic: z.ZodBoolean;
+    frontLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    backLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
 }, "strict", z.ZodTypeAny, {
     tags: string[];
     title: string;
     icon: string;
     isPublic: boolean;
     category?: string | null | undefined;
+    frontLanguage?: string | null | undefined;
+    backLanguage?: string | null | undefined;
 }, {
     title: string;
     isPublic: boolean;
     tags?: string[] | undefined;
     category?: string | null | undefined;
     icon?: string | undefined;
+    frontLanguage?: string | null | undefined;
+    backLanguage?: string | null | undefined;
 }>;
 export type DeckCore = z.infer<typeof DeckCoreSchema>;
 /**
@@ -74,6 +80,8 @@ export declare const DeckSchema: z.ZodObject<{
     icon: z.ZodDefault<z.ZodString>;
     tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     isPublic: z.ZodBoolean;
+    frontLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    backLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
 } & {
     id: z.ZodString;
     views: z.ZodDefault<z.ZodNumber>;
@@ -99,6 +107,8 @@ export declare const DeckSchema: z.ZodObject<{
     createdBy: string;
     is_deleted: boolean;
     category?: string | null | undefined;
+    frontLanguage?: string | null | undefined;
+    backLanguage?: string | null | undefined;
     deletedAt?: Date | undefined;
 }, {
     id: string;
@@ -111,6 +121,8 @@ export declare const DeckSchema: z.ZodObject<{
     tags?: string[] | undefined;
     category?: string | null | undefined;
     icon?: string | undefined;
+    frontLanguage?: string | null | undefined;
+    backLanguage?: string | null | undefined;
     views?: number | undefined;
     likes?: number | undefined;
     is_deleted?: boolean | undefined;
@@ -182,17 +194,33 @@ export type DeckLearningTimestamp = z.infer<typeof DeckLearningTimestampSchema>;
 export declare const DeckLearningMetaSchema: z.ZodObject<{
     id: z.ZodString;
     cardsNum: z.ZodNumber;
+    category: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    icon: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    tags: z.ZodOptional<z.ZodNullable<z.ZodArray<z.ZodString, "many">>>;
+    isPublic: z.ZodOptional<z.ZodNullable<z.ZodBoolean>>;
 }, "strict", z.ZodTypeAny, {
     id: string;
     cardsNum: number;
+    tags?: string[] | null | undefined;
+    category?: string | null | undefined;
+    icon?: string | null | undefined;
+    isPublic?: boolean | null | undefined;
 }, {
     id: string;
     cardsNum: number;
+    tags?: string[] | null | undefined;
+    category?: string | null | undefined;
+    icon?: string | null | undefined;
+    isPublic?: boolean | null | undefined;
 }>;
 export type DeckLearningMeta = z.infer<typeof DeckLearningMetaSchema>;
 export declare const DeckLearningDataSchema: z.ZodObject<{
     id: z.ZodString;
     cardsNum: z.ZodNumber;
+    category: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    icon: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    tags: z.ZodOptional<z.ZodNullable<z.ZodArray<z.ZodString, "many">>>;
+    isPublic: z.ZodOptional<z.ZodNullable<z.ZodBoolean>>;
 } & {
     title: z.ZodString;
     settings: z.ZodObject<{
@@ -221,6 +249,10 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
     id: string;
     title: string;
     cardsNum: number;
+    tags?: string[] | null | undefined;
+    category?: string | null | undefined;
+    icon?: string | null | undefined;
+    isPublic?: boolean | null | undefined;
     lastReviewDate?: Date | undefined;
 }, {
     settings: {
@@ -232,6 +264,10 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
     title: string;
     cardsNum: number;
     updatedAt?: unknown;
+    tags?: string[] | null | undefined;
+    category?: string | null | undefined;
+    icon?: string | null | undefined;
+    isPublic?: boolean | null | undefined;
     lastReviewDate?: unknown;
 }>;
 export type DeckLearningData = z.infer<typeof DeckLearningDataSchema>;
@@ -245,18 +281,24 @@ export declare const DeckCoreUpdateSchema: z.ZodObject<{
     icon: z.ZodOptional<z.ZodDefault<z.ZodString>>;
     tags: z.ZodOptional<z.ZodDefault<z.ZodArray<z.ZodString, "many">>>;
     isPublic: z.ZodOptional<z.ZodBoolean>;
+    frontLanguage: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
+    backLanguage: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
 }, "strict", z.ZodTypeAny, {
     tags?: string[] | undefined;
     title?: string | undefined;
     category?: string | null | undefined;
     icon?: string | undefined;
     isPublic?: boolean | undefined;
+    frontLanguage?: string | null | undefined;
+    backLanguage?: string | null | undefined;
 }, {
     tags?: string[] | undefined;
     title?: string | undefined;
     category?: string | null | undefined;
     icon?: string | undefined;
     isPublic?: boolean | undefined;
+    frontLanguage?: string | null | undefined;
+    backLanguage?: string | null | undefined;
 }>;
 export type DeckCoreUpdate = z.infer<typeof DeckCoreUpdateSchema>;
 /**
@@ -286,6 +328,8 @@ export declare const DeckUpdateSchema: z.ZodObject<{
     icon: z.ZodOptional<z.ZodDefault<z.ZodString>>;
     tags: z.ZodOptional<z.ZodDefault<z.ZodArray<z.ZodString, "many">>>;
     isPublic: z.ZodOptional<z.ZodBoolean>;
+    frontLanguage: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
+    backLanguage: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
 } & {
     updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
 }, "strict", z.ZodTypeAny, {
@@ -295,6 +339,8 @@ export declare const DeckUpdateSchema: z.ZodObject<{
     category?: string | null | undefined;
     icon?: string | undefined;
     isPublic?: boolean | undefined;
+    frontLanguage?: string | null | undefined;
+    backLanguage?: string | null | undefined;
 }, {
     updatedAt?: unknown;
     tags?: string[] | undefined;
@@ -302,6 +348,8 @@ export declare const DeckUpdateSchema: z.ZodObject<{
     category?: string | null | undefined;
     icon?: string | undefined;
     isPublic?: boolean | undefined;
+    frontLanguage?: string | null | undefined;
+    backLanguage?: string | null | undefined;
 }>;
 export type DeckUpdate = z.infer<typeof DeckUpdateSchema>;
 /**

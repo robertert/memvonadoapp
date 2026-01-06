@@ -148,4 +148,6 @@ export {
   FollowersArraySchema,
   FollowingSchema,
   FollowersSchema,
+  UpdateDeckResponseSchema,
+  UpdateDeckRequestSchema,
 } from "memvocado-types";

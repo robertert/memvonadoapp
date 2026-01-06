@@ -51,6 +51,8 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
         icon: z.ZodDefault<z.ZodString>;
         tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
         isPublic: z.ZodBoolean;
+        frontLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        backLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     } & {
         id: z.ZodString;
         views: z.ZodDefault<z.ZodNumber>;
@@ -76,6 +78,8 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
         createdBy: string;
         is_deleted: boolean;
         category?: string | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
         deletedAt?: Date | undefined;
     }, {
         id: string;
@@ -88,6 +92,8 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
         tags?: string[] | undefined;
         category?: string | null | undefined;
         icon?: string | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
         views?: number | undefined;
         likes?: number | undefined;
         is_deleted?: boolean | undefined;
@@ -109,6 +115,8 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
         createdBy: string;
         is_deleted: boolean;
         category?: string | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
         deletedAt?: Date | undefined;
     }[];
     total: number;
@@ -124,6 +132,8 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
         tags?: string[] | undefined;
         category?: string | null | undefined;
         icon?: string | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
         views?: number | undefined;
         likes?: number | undefined;
         is_deleted?: boolean | undefined;

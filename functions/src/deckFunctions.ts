@@ -5,23 +5,34 @@ import { getFirestore, FieldValue, WriteBatch } from "firebase-admin/firestore";
 import { z } from "zod";
 import {
   Card,
+  CardCore,
   DeckLearningData,
   DeckSchema,
   DeckSettings,
   Deck,
   CardSchema,
-  DeckUpdateSchema,
-  DeckLearningDataUpdateSchema,
   FirstLearn,
   DeckLearningDataSchema,
-  CardDataUpdateSchema,
   CardCoreUpdateSchema,
-  type CardDataUpdate,
-  type CardCoreUpdate,
   UserStats,
   UserStatsSchema,
   CardGrade,
   UserSchema,
+  DeckSettingsUpdateSchema,
+  CreateDeckWithCardsResponseSchema,
+  GetDeckDetailsResponseSchema,
+  GetDeckCardsResponseSchema,
+  GetPopularDecksResponseSchema,
+  GetUserDeckDetailsResponseSchema,
+  GetUserDeckCardsResponseSchema,
+  GetUserDueDeckCardsResponseSchema,
+  GetUserNewDeckCardsResponseSchema,
+  SuccessResponseSchema,
+  StartLearningDeckResponseSchema,
+  DeleteDeckResponseSchema,
+  SyncDeckCardsResponseSchema,
+  UpdateCardContentResponseSchema,
+  UpdateDeckResponseSchema,
 } from "./types/common";
 import { serializeTimestamps } from "./utils/serialization";
 import {
@@ -41,23 +52,9 @@ import {
   CheckCardChangesRequestSchema,
   SyncDeckCardsRequestSchema,
   UpdateCardContentRequestSchema,
+  UpdateDeckRequestSchema,
   CheckCardChangesResponseSchema,
 } from "memvocado-types/schemas/api/deck";
-import {
-  CreateDeckWithCardsResponseSchema,
-  GetDeckDetailsResponseSchema,
-  GetDeckCardsResponseSchema,
-  GetPopularDecksResponseSchema,
-  GetUserDeckDetailsResponseSchema,
-  GetUserDeckCardsResponseSchema,
-  GetUserDueDeckCardsResponseSchema,
-  GetUserNewDeckCardsResponseSchema,
-  SuccessResponseSchema,
-  StartLearningDeckResponseSchema,
-  DeleteDeckResponseSchema,
-  SyncDeckCardsResponseSchema,
-  UpdateCardContentResponseSchema,
-} from "./types/common";
 
 const db = getFirestore();
 
@@ -772,6 +769,130 @@ export const updateUserStats = onDocumentWritten(
 );
 
 /**
+ * Sync denormalized fields (category, icon, tags) to all user copies when source deck is updated
+ */
+export const syncDeckMetadataToUserCopies = onDocumentWritten(
+  "decks/{deckId}",
+  async (event) => {
+    const deckId = event.params.deckId;
+    const beforeData = event.data?.before.data();
+    const afterData = event.data?.after.data();
+
+    // Skip if document was deleted
+    if (!afterData) {
+      return;
+    }
+
+    // Check if category, icon, or tags changed
+    const categoryChanged =
+      beforeData?.category !== afterData?.category ||
+      (beforeData?.category === undefined &&
+        afterData?.category !== undefined) ||
+      (beforeData?.category !== undefined && afterData?.category === undefined);
+
+    const iconChanged =
+      beforeData?.icon !== afterData?.icon ||
+      (beforeData?.icon === undefined && afterData?.icon !== undefined) ||
+      (beforeData?.icon !== undefined && afterData?.icon === undefined);
+
+    const tagsChanged =
+      JSON.stringify(beforeData?.tags || []) !==
+      JSON.stringify(afterData?.tags || []);
+
+    // If nothing changed, skip
+    if (!categoryChanged && !iconChanged && !tagsChanged) {
+      return;
+    }
+
+    try {
+      // Prepare update data with only changed fields
+      const updateData: {
+        category?: string | null;
+        icon?: string | null;
+        tags?: string[] | null;
+        updatedAt: ReturnType<typeof FieldValue.serverTimestamp>;
+      } = {
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+
+      if (categoryChanged) {
+        updateData.category = afterData.category || null;
+      }
+      if (iconChanged) {
+        updateData.icon = afterData.icon || null;
+      }
+      if (tagsChanged) {
+        updateData.tags = afterData.tags || null;
+      }
+
+      // Find all users who have a copy of this deck
+      // We need to query all users/{userId}/decks/{deckId} collections
+      // Since Firestore doesn't support wildcard queries across collections,
+      // we'll use a collection group query
+      const userDeckCopies = await db
+        .collectionGroup("decks")
+        .where("id", "==", deckId)
+        .get();
+
+      if (userDeckCopies.empty) {
+        logger.info("No user copies found for deck", { deckId });
+        return;
+      }
+
+      // Use batches to update all copies (Firestore batch limit is 500)
+      const batches: WriteBatch[] = [];
+      let currentBatch = db.batch();
+      let batchCount = 0;
+      let updatedCount = 0;
+
+      for (const userDeckDoc of userDeckCopies.docs) {
+        // Validate that this is actually a user deck copy
+        // Collection group query returns docs from users/{userId}/decks/{deckId}
+        const pathParts = userDeckDoc.ref.path.split("/");
+        if (pathParts.length !== 4 || pathParts[0] !== "users") {
+          continue;
+        }
+
+        currentBatch.update(userDeckDoc.ref, updateData);
+        updatedCount++;
+        batchCount++;
+
+        // Firestore batch limit is 500 operations
+        if (batchCount >= 500) {
+          batches.push(currentBatch);
+          currentBatch = db.batch();
+          batchCount = 0;
+        }
+      }
+
+      // Add the last batch if it has operations
+      if (batchCount > 0) {
+        batches.push(currentBatch);
+      }
+
+      // Commit all batches
+      if (batches.length > 0) {
+        await Promise.all(batches.map((batch) => batch.commit()));
+      }
+
+      logger.info("Synced deck metadata to user copies", {
+        deckId,
+        updatedCount,
+        categoryChanged,
+        iconChanged,
+        tagsChanged,
+      });
+    } catch (error) {
+      logger.error("Error syncing deck metadata to user copies", {
+        deckId,
+        error,
+      });
+      // Don't throw - we don't want to fail the source deck update
+    }
+  }
+);
+
+/**
  * Reset deck progress - removes all card progress data
  */
 
@@ -912,9 +1033,7 @@ export const updateDeckSettings = onCall(async (request) => {
     if (!rawDeckData) {
       throw new HttpsError("not-found", "Deck not found");
     }
-    const validatedDeckData = DeckSchema.omit({
-      id: true,
-    }).parse(rawDeckData);
+    const validatedDeckData = DeckSchema.parse(rawDeckData);
 
     // Check if user is the creator of the deck
     if (validatedDeckData.createdBy !== userId) {
@@ -925,13 +1044,56 @@ export const updateDeckSettings = onCall(async (request) => {
     }
 
     // Waliduj i typuj częściową aktualizację ustawień (whitelist pól)
-    const validatedDeck = DeckUpdateSchema.parse(deck);
+    const validatedDeck = DeckSchema.parse(deck);
 
-    // Update deck settings
-    await deckRef.update({
-      ...validatedDeck,
+    // Porównaj z obecnymi danymi i zbuduj update tylko dla zmienionych pól
+    const updateData: {
+      [key: string]: unknown;
+    } = {
       updatedAt: FieldValue.serverTimestamp(),
-    });
+    };
+
+    // Sprawdź które pola się zmieniły i dodaj tylko te do updateData
+    if (
+      validatedDeck.title !== undefined &&
+      validatedDeck.title !== validatedDeckData.title
+    ) {
+      updateData.title = validatedDeck.title;
+    }
+
+    if (
+      validatedDeck.category !== undefined &&
+      validatedDeck.category !== validatedDeckData.category
+    ) {
+      updateData.category = validatedDeck.category;
+    }
+
+    if (
+      validatedDeck.icon !== undefined &&
+      validatedDeck.icon !== validatedDeckData.icon
+    ) {
+      updateData.icon = validatedDeck.icon;
+    }
+
+    if (
+      validatedDeck.tags !== undefined &&
+      JSON.stringify(validatedDeck.tags || []) !==
+        JSON.stringify(validatedDeckData.tags || [])
+    ) {
+      updateData.tags = validatedDeck.tags;
+    }
+
+    if (
+      validatedDeck.isPublic !== undefined &&
+      validatedDeck.isPublic !== validatedDeckData.isPublic
+    ) {
+      updateData.isPublic = validatedDeck.isPublic;
+    }
+
+    // Aktualizuj tylko jeśli są jakieś zmiany (poza updatedAt)
+    if (Object.keys(updateData).length > 1) {
+      await deckRef.update(updateData);
+    }
 
     logger.info("Deck settings updated successfully", {
       deckId,
@@ -964,7 +1126,7 @@ export const updateUserDeckSettings = onCall(async (request) => {
     });
   }
 
-  const { deckId, deck } = validationResult.data;
+  const { deckId, settings } = validationResult.data;
   const auth = request.auth;
 
   if (!auth) {
@@ -976,7 +1138,7 @@ export const updateUserDeckSettings = onCall(async (request) => {
   if (!deckId || typeof deckId !== "string") {
     throw new HttpsError("invalid-argument", "deckId is required");
   }
-  if (!deck || typeof deck !== "object") {
+  if (!settings || typeof settings !== "object") {
     throw new HttpsError("invalid-argument", "deck is required");
   }
 
@@ -989,13 +1151,16 @@ export const updateUserDeckSettings = onCall(async (request) => {
       throw new HttpsError("not-found", "Deck not found");
     }
 
-    // Waliduj i typuj częściową aktualizację ustawień (whitelist pól)
-    const validatedDeck = DeckLearningDataUpdateSchema.parse(deck);
+    const currentDeckData = deckSnap.data() as DeckLearningData;
 
-    // Update deck settings
+    // Waliduj i typuj częściową aktualizację ustawień (whitelist pól)
+    const validatedSettings = DeckSettingsUpdateSchema.parse(settings);
+
     await deckRef.update({
-      ...validatedDeck,
-      updatedAt: FieldValue.serverTimestamp(),
+      settings: {
+        ...currentDeckData.settings,
+        ...validatedSettings,
+      },
     });
 
     logger.info("User deck settings updated successfully", {
@@ -1081,6 +1246,9 @@ export const startLearningDeck = onCall(async (request) => {
         cardsNum: srcDeck.cardsNum,
         settings: { zenMode: false } as DeckSettings,
         updatedAt: srcDeck.updatedAt,
+        category: srcDeck.category,
+        icon: srcDeck.icon,
+        tags: srcDeck.tags,
       };
       // Validate before saving
       const validatedData = DeckLearningDataSchema.parse(userDeckData);
@@ -1489,182 +1657,133 @@ export const syncDeckCards = onCall(async (request) => {
   }
 
   try {
-    // Get source deck cards
     const sourceDeckRef = db.collection("decks").doc(deckId);
-    const sourceCardsSnap = await sourceDeckRef.collection("cards").get();
-    const sourceCardsMap = new Map(
-      sourceCardsSnap.docs.map((doc) => {
-        const rawData = doc.data();
-        const validatedData = CardSchema.parse({
-          id: doc.id,
-          ...rawData,
-        });
-        return [doc.id, validatedData];
-      })
-    );
-
-    // Get user's local cards
     const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
     const userCardsRef = userDeckRef.collection("cards");
-    const userCardsSnap = await userCardsRef.get();
-    const userCardsMap = new Map(
-      userCardsSnap.docs.map((doc) => {
-        const rawData = doc.data();
-        const validatedData = CardSchema.parse({
-          id: doc.id,
-          ...rawData,
-        });
-        return [doc.id, validatedData];
-      })
-    );
 
-    const now = new Date();
-    let syncedCount = 0;
-    const batch = db.batch();
+    const [sourceDeckSnap, sourceCardsSnap, userCardsSnap] = await Promise.all([
+      sourceDeckRef.get(),
+      sourceDeckRef.collection("cards").get(),
+      userCardsRef.get(),
+    ]);
 
-    const sourceDeckSnap = await sourceDeckRef.get();
+    if (!sourceDeckSnap.exists) {
+      throw new HttpsError("not-found", "Source deck not found");
+    }
+
     const rawSourceDeckData = sourceDeckSnap.data();
     if (!rawSourceDeckData) {
       throw new HttpsError("not-found", "Source deck not found");
     }
-    const validatedSourceDeckData = DeckSchema.omit({
-      id: true,
-    }).parse(rawSourceDeckData);
-    const updatedAt = validatedSourceDeckData.updatedAt;
-    if (updatedAt) {
-      batch.update(userDeckRef, {
-        updatedAt: updatedAt,
+    const validatedSourceDeckData = DeckSchema.parse(rawSourceDeckData);
+
+    const sourceCardsMap = new Map(
+      sourceCardsSnap.docs.map((doc) => {
+        const parsedCard = CardSchema.parse({
+          id: doc.id,
+          ...doc.data(),
+        });
+
+        const sanitizedCore = CardCoreUpdateSchema.parse({
+          cardData: {
+            front: parsedCard.cardData.front || "",
+            back: parsedCard.cardData.back || "",
+          },
+          tags: Array.isArray(parsedCard.tags) ? parsedCard.tags : [],
+        });
+
+        return [
+          doc.id,
+          {
+            parsedCard,
+            sanitizedCore,
+          },
+        ];
+      })
+    );
+
+    const userCardIds = new Set(userCardsSnap.docs.map((doc) => doc.id));
+
+    const cardsToSync = syncAll
+      ? Array.from(userCardIds)
+      : cardIds.filter((id: string) => userCardIds.has(id));
+
+    const now = new Date();
+    let syncedCount = 0;
+
+    const batches: WriteBatch[] = [];
+    let currentBatch = db.batch();
+    let operationCount = 0;
+    const enqueue = (mutate: (batch: WriteBatch) => void) => {
+      mutate(currentBatch);
+      operationCount++;
+      if (operationCount >= 450) {
+        batches.push(currentBatch);
+        currentBatch = db.batch();
+        operationCount = 0;
+      }
+    };
+
+    if (validatedSourceDeckData.updatedAt) {
+      enqueue((batch) =>
+        batch.update(userDeckRef, {
+          updatedAt: validatedSourceDeckData.updatedAt,
+        })
+      );
+    }
+
+    cardsToSync.forEach((cardId) => {
+      const sourceCard = sourceCardsMap.get(cardId);
+      if (!sourceCard) {
+        return;
+      }
+
+      const { sanitizedCore } = sourceCard;
+      const tags = sanitizedCore.tags ?? [];
+      enqueue((batch) =>
+        batch.update(userCardsRef.doc(cardId), {
+          cardData: sanitizedCore.cardData,
+          tags,
+          updatedAt: now,
+        })
+      );
+      syncedCount++;
+    });
+
+    if (syncAll) {
+      sourceCardsMap.forEach(({ parsedCard, sanitizedCore }, cardId) => {
+        if (userCardIds.has(cardId)) {
+          return;
+        }
+
+        const tags = sanitizedCore.tags ?? [];
+        const newCard = CardSchema.parse({
+          ...parsedCard,
+          id: cardId,
+          cardData: sanitizedCore.cardData,
+          tags,
+          createdAt: parsedCard.createdAt || now,
+          firstLearn: {
+            isNew: true,
+            due: now,
+            consecutiveGood: 0,
+          },
+          grade: CardGrade.NotGraded,
+        });
+
+        enqueue((batch) =>
+          batch.set(userCardsRef.doc(cardId), newCard, { merge: true })
+        );
+        syncedCount++;
       });
     }
 
-    // Determine which cards to sync
-    const cardsToSync = syncAll
-      ? Array.from(userCardsMap.keys())
-      : cardIds.filter((id: string) => userCardsMap.has(id));
-
-    // Sync modified cards
-    for (const cardId of cardsToSync) {
-      const sourceCardData = sourceCardsMap.get(cardId);
-      const userCardRef = userCardsRef.doc(cardId);
-
-      if (sourceCardData) {
-        // Waliduj i typuj dane karty
-        const cardDataUpdate: CardDataUpdate = CardDataUpdateSchema.parse({
-          front: sourceCardData.cardData.front || "",
-          back: sourceCardData.cardData.back || "",
-        });
-
-        const cardCoreUpdate: CardCoreUpdate = CardCoreUpdateSchema.parse({
-          cardData: cardDataUpdate,
-          tags: Array.isArray(sourceCardData.tags) ? sourceCardData.tags : [],
-        });
-
-        // Update card content from source
-        batch.update(userCardRef, {
-          cardData: cardCoreUpdate.cardData,
-          tags: cardCoreUpdate.tags,
-          updatedAt: new Date(),
-        });
-        syncedCount++;
-      }
-      // If card doesn't exist in source (deleted), we keep user's copy
-      // User can continue learning from their local copy
+    if (operationCount > 0) {
+      batches.push(currentBatch);
     }
 
-    // Add new cards (in source but not in user's copy)
-    if (syncAll) {
-      for (const [cardId, sourceCardData] of sourceCardsMap.entries()) {
-        if (!userCardsMap.has(cardId)) {
-          // Waliduj i typuj dane karty
-          const cardDataUpdate: CardDataUpdate = CardDataUpdateSchema.parse({
-            front: sourceCardData.cardData.front || "",
-            back: sourceCardData.cardData.back || "",
-          });
-
-          const cardCoreUpdate: CardCoreUpdate = CardCoreUpdateSchema.parse({
-            cardData: cardDataUpdate,
-            tags: Array.isArray(sourceCardData.tags) ? sourceCardData.tags : [],
-          });
-
-          const newCardRef = userCardsRef.doc(cardId);
-
-          const newCard = CardSchema.parse({
-            id: cardId,
-            cardData: cardCoreUpdate.cardData,
-            tags: cardCoreUpdate.tags,
-            createdAt: sourceCardData.createdAt || new Date(),
-            firstLearn: {
-              isNew: true,
-              due: new Date(),
-              consecutiveGood: 0,
-            },
-            grade: CardGrade.NotGraded,
-            contentVersion: now,
-          });
-
-          batch.set(newCardRef, newCard, { merge: true });
-          syncedCount++;
-          if (syncedCount >= 500) {
-            // Batch limit reached, commit and create new batch
-            await batch.commit();
-            syncedCount = 0;
-            // Note: This will break the logic, but syncAll with >500 new cards is rare
-            // Better to handle this properly if needed
-          }
-        }
-      }
-    }
-
-    // Commit batch (Firestore batch limit is 500)
-    if (syncedCount > 0) {
-      if (syncedCount <= 500) {
-        await batch.commit();
-      } else {
-        // Split into multiple batches if needed
-        const batches: WriteBatch[] = [];
-        let currentBatch = db.batch();
-        let batchCount = 0;
-
-        // Re-create batches
-        for (const cardId of cardsToSync) {
-          const sourceCardData = sourceCardsMap.get(cardId);
-          const userCardRef = userCardsRef.doc(cardId);
-
-          if (sourceCardData) {
-            // Waliduj i typuj dane karty
-            const cardDataUpdate: CardDataUpdate = CardDataUpdateSchema.parse({
-              front: sourceCardData.cardData.front || "",
-              back: sourceCardData.cardData.back || "",
-            });
-
-            const cardCoreUpdate: CardCoreUpdate = CardCoreUpdateSchema.parse({
-              cardData: cardDataUpdate,
-              tags: Array.isArray(sourceCardData.tags)
-                ? sourceCardData.tags
-                : [],
-            });
-
-            currentBatch.update(userCardRef, {
-              cardData: cardCoreUpdate.cardData,
-              tags: cardCoreUpdate.tags,
-              contentVersion: now.getTime(),
-            });
-            batchCount++;
-
-            if (batchCount >= 500) {
-              batches.push(currentBatch);
-              currentBatch = db.batch();
-              batchCount = 0;
-            }
-          }
-        }
-
-        if (batchCount > 0) {
-          batches.push(currentBatch);
-        }
-
-        await Promise.all(batches.map((b) => b.commit()));
-      }
+    if (batches.length > 0) {
+      await Promise.all(batches.map((batch) => batch.commit()));
     }
 
     logger.info("Cards synchronized", {
@@ -1674,11 +1793,10 @@ export const syncDeckCards = onCall(async (request) => {
       syncAll,
     });
 
-    const response = {
+    const validatedResponse = SyncDeckCardsResponseSchema.parse({
       success: true,
       syncedCount,
-    };
-    const validatedResponse = SyncDeckCardsResponseSchema.parse(response);
+    });
     return validatedResponse;
   } catch (error) {
     logger.error("Error syncing deck cards", error);
@@ -1779,5 +1897,226 @@ export const updateCardContent = onCall(async (request) => {
       throw error;
     }
     throw new HttpsError("internal", "Failed to update card content");
+  }
+});
+
+/**
+ * Update deck with cards - accepts only changes (no card fetching)
+ * Optimized to avoid Firestore reads by accepting client-side diffing
+ */
+export const updateDeck = onCall(async (request) => {
+  const validationResult = UpdateDeckRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckId, deckData, changes } = validationResult.data;
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  try {
+    const deckRef = db.collection("decks").doc(deckId);
+    const deckSnap = await deckRef.get();
+
+    if (!deckSnap.exists) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
+
+    const rawDeckData = deckSnap.data();
+    if (!rawDeckData) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
+
+    const validatedDeckData = DeckSchema.parse(rawDeckData);
+
+    // Check if user is the owner
+    if (validatedDeckData.createdBy !== userId) {
+      throw new HttpsError(
+        "permission-denied",
+        "You don't have permission to edit this deck"
+      );
+    }
+
+    // Calculate final card count: current count + created - deleted
+    // Note: updated cards don't change the count
+    const currentCardCount = validatedDeckData.cardsNum || 0;
+    const finalCardCount =
+      currentCardCount + changes.created.length - changes.deleted.length;
+
+    // Firestore batch limit is 500 operations
+    const BATCH_LIMIT = 500;
+    const totalOps =
+      changes.deleted.length +
+      changes.updated.length +
+      changes.created.length +
+      1; // +1 for deck update
+
+    // Prepare deck update
+    const deckUpdate: Record<string, unknown> = {
+      title: deckData.title,
+      category: deckData.category ?? null,
+      icon: deckData.icon,
+      isPublic: deckData.isPublic,
+      tags: deckData.tags || [],
+      updatedAt: new Date(),
+      cardsNum: finalCardCount,
+    };
+
+    // Add frontLanguage and backLanguage if they exist in deckData
+    if ("frontLanguage" in deckData) {
+      deckUpdate.frontLanguage = deckData.frontLanguage ?? null;
+    }
+    if ("backLanguage" in deckData) {
+      deckUpdate.backLanguage = deckData.backLanguage ?? null;
+    }
+
+    // If operations exceed batch limit, split into multiple batches
+    if (totalOps > BATCH_LIMIT) {
+      // Process in chunks
+      const allOperations: Array<{
+        type: "delete" | "update" | "create";
+        cardId?: string;
+        card?: CardCore;
+        cardWithId?: CardCore & { id: string };
+      }> = [];
+
+      // Add delete operations
+      changes.deleted.forEach((cardId) => {
+        allOperations.push({ type: "delete", cardId });
+      });
+
+      // Add update operations
+      changes.updated.forEach((card) => {
+        allOperations.push({ type: "update", cardWithId: card });
+      });
+
+      // Add create operations
+      changes.created.forEach((card) => {
+        allOperations.push({ type: "create", card });
+      });
+
+      // Process in batches of 499 (leaving 1 for deck update)
+      const chunkSize = BATCH_LIMIT - 1;
+      for (let i = 0; i < allOperations.length; i += chunkSize) {
+        const chunk = allOperations.slice(i, i + chunkSize);
+        const batch = db.batch();
+
+        // Add deck update to first batch only
+        if (i === 0) {
+          batch.update(deckRef, deckUpdate);
+        }
+
+        chunk.forEach(
+          (op: {
+            type: "delete" | "update" | "create";
+            cardId?: string;
+            card?: CardCore;
+            cardWithId?: CardCore & { id: string };
+          }) => {
+            if (op.type === "delete" && op.cardId) {
+              const cardRef = deckRef.collection("cards").doc(op.cardId);
+              batch.delete(cardRef);
+            } else if (op.type === "update" && op.cardWithId) {
+              const cardRef = deckRef.collection("cards").doc(op.cardWithId.id);
+              batch.update(cardRef, {
+                cardData: op.cardWithId.cardData,
+                tags: op.cardWithId.tags || [],
+              });
+            } else if (op.type === "create" && op.card) {
+              const cardRef = deckRef.collection("cards").doc();
+              const cardData = {
+                ...op.card,
+                createdAt: new Date(),
+                firstLearn: {
+                  isNew: true,
+                } as FirstLearn,
+              } as Card;
+
+              const validatedCard = CardSchema.parse({
+                ...cardData,
+                id: cardRef.id,
+              });
+              batch.set(cardRef, validatedCard);
+            }
+          }
+        );
+
+        await batch.commit();
+      }
+    } else {
+      // Single batch - all operations fit
+      const batch = db.batch();
+
+      // Update deck
+      batch.update(deckRef, deckUpdate);
+
+      // Delete cards
+      changes.deleted.forEach((cardId: string) => {
+        const cardRef = deckRef.collection("cards").doc(cardId);
+        batch.delete(cardRef);
+      });
+
+      // Update cards
+      changes.updated.forEach((card: CardCore & { id: string }) => {
+        const cardRef = deckRef.collection("cards").doc(card.id);
+        batch.update(cardRef, {
+          cardData: card.cardData,
+          tags: card.tags || [],
+        });
+      });
+
+      // Create new cards
+      changes.created.forEach((card: CardCore) => {
+        const cardRef = deckRef.collection("cards").doc();
+        const cardData = {
+          ...card,
+          createdAt: new Date(),
+          firstLearn: {
+            isNew: true,
+          } as FirstLearn,
+        } as Card;
+
+        const validatedCard = CardSchema.parse({
+          ...cardData,
+          id: cardRef.id,
+        });
+        batch.set(cardRef, validatedCard);
+      });
+
+      await batch.commit();
+    }
+
+    logger.info("Deck updated successfully", {
+      userId,
+      deckId,
+      updatedCount: changes.updated.length,
+      createdCount: changes.created.length,
+      deletedCount: changes.deleted.length,
+    });
+
+    const response = {
+      success: true,
+      updatedCount: changes.updated.length,
+      createdCount: changes.created.length,
+      deletedCount: changes.deleted.length,
+    };
+    const validatedResponse = UpdateDeckResponseSchema.parse(response);
+    return validatedResponse;
+  } catch (error) {
+    logger.error("Error updating deck", error);
+    handleZodError(error, "updateDeck");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to update deck");
   }
 });

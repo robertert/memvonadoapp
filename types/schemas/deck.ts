@@ -12,6 +12,8 @@ export const DeckCoreSchema = z
     icon: z.string().default("cards"),
     tags: z.array(z.string()).default([]),
     isPublic: z.boolean(),
+    frontLanguage: z.string().nullable().optional(),
+    backLanguage: z.string().nullable().optional(),
   })
   .strict();
 
@@ -97,6 +99,10 @@ export const DeckLearningMetaSchema = z
   .object({
     id: z.string(),
     cardsNum: z.number().min(0),
+    category: z.string().nullable().optional(),
+    icon: z.string().nullable().optional(),
+    tags: z.array(z.string()).nullable().optional(),
+    isPublic: z.boolean().nullable().optional(),
   })
   .strict();
 

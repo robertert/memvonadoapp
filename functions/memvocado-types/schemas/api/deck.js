@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateCardContentResponseSchema = exports.SyncDeckCardsResponseSchema = exports.CheckCardChangesResponseSchema = exports.GetUserNewDeckCardsResponseSchema = exports.GetUserDueDeckCardsResponseSchema = exports.GetUserDeckCardsResponseSchema = exports.GetUserDeckDetailsResponseSchema = exports.DeleteDeckResponseSchema = exports.StartLearningDeckResponseSchema = exports.GetPopularDecksResponseSchema = exports.CreateDeckWithCardsResponseSchema = exports.GetUserDecksResponseSchema = exports.GetNewDeckCardsResponseSchema = exports.GetDueDeckCardsResponseSchema = exports.GetDeckCardsResponseSchema = exports.GetDeckDetailsResponseSchema = exports.UpdateCardContentRequestSchema = exports.SyncDeckCardsRequestSchema = exports.CheckCardChangesRequestSchema = exports.DeleteDeckRequestSchema = exports.StartLearningDeckRequestSchema = exports.UpdateUserDeckSettingsRequestSchema = exports.UpdateDeckSettingsRequestSchema = exports.ResetDeckRequestSchema = exports.GetUserNewDeckCardsRequestSchema = exports.GetUserDueDeckCardsRequestSchema = exports.GetUserDeckCardsRequestSchema = exports.GetUserDeckDetailsRequestSchema = exports.GetPopularDecksRequestSchema = exports.GetDeckCardsRequestSchema = exports.GetDeckDetailsRequestSchema = exports.CreateDeckWithCardsRequestSchema = void 0;
+exports.UpdateDeckResponseSchema = exports.UpdateCardContentResponseSchema = exports.SyncDeckCardsResponseSchema = exports.CheckCardChangesResponseSchema = exports.GetUserNewDeckCardsResponseSchema = exports.GetUserDueDeckCardsResponseSchema = exports.GetUserDeckCardsResponseSchema = exports.GetUserDeckDetailsResponseSchema = exports.DeleteDeckResponseSchema = exports.StartLearningDeckResponseSchema = exports.GetPopularDecksResponseSchema = exports.CreateDeckWithCardsResponseSchema = exports.GetUserDecksResponseSchema = exports.GetNewDeckCardsResponseSchema = exports.GetDueDeckCardsResponseSchema = exports.GetDeckCardsResponseSchema = exports.GetDeckDetailsResponseSchema = exports.UpdateDeckRequestSchema = exports.UpdateCardContentRequestSchema = exports.SyncDeckCardsRequestSchema = exports.CheckCardChangesRequestSchema = exports.DeleteDeckRequestSchema = exports.StartLearningDeckRequestSchema = exports.UpdateUserDeckSettingsRequestSchema = exports.UpdateDeckSettingsRequestSchema = exports.ResetDeckRequestSchema = exports.GetUserNewDeckCardsRequestSchema = exports.GetUserDueDeckCardsRequestSchema = exports.GetUserDeckCardsRequestSchema = exports.GetUserDeckDetailsRequestSchema = exports.GetPopularDecksRequestSchema = exports.GetDeckCardsRequestSchema = exports.GetDeckDetailsRequestSchema = exports.CreateDeckWithCardsRequestSchema = void 0;
 const zod_1 = require("zod");
 const index_1 = require("../index");
 // ===========================
@@ -63,7 +63,7 @@ exports.UpdateDeckSettingsRequestSchema = zod_1.z
 exports.UpdateUserDeckSettingsRequestSchema = zod_1.z
     .object({
     deckId: zod_1.z.string(),
-    deck: index_1.DeckLearningDataSchema.partial(),
+    settings: index_1.DeckSettingsUpdateSchema,
 })
     .strict();
 exports.StartLearningDeckRequestSchema = zod_1.z
@@ -101,6 +101,19 @@ exports.UpdateCardContentRequestSchema = zod_1.z
     deckId: zod_1.z.string(),
     cardId: zod_1.z.string(),
     cardData: index_1.CardCoreSchema,
+})
+    .strict();
+exports.UpdateDeckRequestSchema = zod_1.z
+    .object({
+    deckId: zod_1.z.string(),
+    deckData: index_1.DeckCoreSchema,
+    changes: zod_1.z
+        .object({
+        created: zod_1.z.array(index_1.CardCoreSchema),
+        updated: zod_1.z.array(index_1.CardCoreSchema.extend({ id: zod_1.z.string() })),
+        deleted: zod_1.z.array(zod_1.z.string()),
+    })
+        .strict(),
 })
     .strict();
 // ===========================
@@ -161,4 +174,10 @@ exports.SyncDeckCardsResponseSchema = zod_1.z.object({
 });
 exports.UpdateCardContentResponseSchema = zod_1.z.object({
     success: zod_1.z.boolean(),
+});
+exports.UpdateDeckResponseSchema = zod_1.z.object({
+    success: zod_1.z.boolean(),
+    updatedCount: zod_1.z.number(),
+    createdCount: zod_1.z.number(),
+    deletedCount: zod_1.z.number(),
 });

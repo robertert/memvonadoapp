@@ -22,9 +22,9 @@ export declare const updateUserStreakIfQualified: import("firebase-functions/v2/
     currentStreak: number;
     longestStreak: number;
     lastStreakDate: string | null;
+    updated: boolean;
     threshold: number;
     qualified: boolean;
-    updated: boolean;
     todayCount?: number | undefined;
 }>, unknown>;
 /**
@@ -45,6 +45,8 @@ export declare const getUserDecks: import("firebase-functions/v2/https").Callabl
         createdBy: string;
         is_deleted: boolean;
         category?: string | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
         deletedAt?: Date | undefined;
     }[];
 }>, unknown>;

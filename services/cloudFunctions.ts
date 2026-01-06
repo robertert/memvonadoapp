@@ -20,6 +20,7 @@ import type {
   DeckLearningData,
   Card,
   User,
+  DeckSettingsUpdate,
 } from "../types";
 import {
   SuccessResponseSchema,
@@ -147,6 +148,9 @@ import {
   UpdateCardContentRequest,
   UpdateCardContentResponse,
   UpdateCardContentResponseSchema,
+  UpdateDeckRequest,
+  UpdateDeckResponse,
+  UpdateDeckResponseSchema,
   CreateDeckWithCardsResponseSchema,
   GetDeckDetailsResponseSchema,
   GetDeckCardsResponseSchema,
@@ -533,14 +537,17 @@ export const cloudFunctions = {
     return validatedData.data;
   },
 
-  updateUserDeckSettings: async (deckId: string, deck: DeckLearningData) => {
+  updateUserDeckSettings: async (
+    deckId: string,
+    settings: DeckSettingsUpdate
+  ) => {
     const updateUserDeckSettingsFunction = httpsCallable<
       UpdateUserDeckSettingsRequest,
       SuccessResponse
     >(functions, "updateUserDeckSettings");
     const result = await updateUserDeckSettingsFunction({
       deckId,
-      deck,
+      settings,
     });
     const validatedData = SuccessResponseSchema.safeParse(result.data);
     if (!validatedData.success) {
@@ -952,6 +959,33 @@ export const cloudFunctions = {
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from updateCardContent");
+    }
+    return validatedData.data;
+  },
+
+  // Update deck with cards - accepts only changes (created, updated, deleted)
+  updateDeck: async (
+    deckId: string,
+    deckData: DeckCore,
+    changes: {
+      created: CardCore[];
+      updated: (CardCore & { id: string })[];
+      deleted: string[];
+    }
+  ) => {
+    const updateDeckFunction = httpsCallable<
+      UpdateDeckRequest,
+      UpdateDeckResponse
+    >(functions, "updateDeck");
+    const result = await updateDeckFunction({
+      deckId,
+      deckData,
+      changes,
+    });
+    const validatedData = UpdateDeckResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from updateDeck");
     }
     return validatedData.data;
   },

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -7,10 +7,10 @@ import {
   Pressable,
   TextInput,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Fonts } from "../../constants/colors";
-import { LinearGradient } from "expo-linear-gradient";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -21,92 +21,87 @@ import {
   MagnifyingGlassIcon,
 } from "react-native-heroicons/solid";
 
+import { cloudFunctions } from "../../services/cloudFunctions";
+import { UserContext } from "../../store/user-context";
+import type { Deck } from "@/types";
+import { CATEGORY_OPTIONS } from "../../constants/settings";
+
+interface LibraryDeckItem {
+  id: string | number;
+  name: string;
+  category: string;
+  cards: number;
+  lastStudied: string;
+  progress: number;
+}
+
 export default function MyLibraryScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
+  const userCtx = useContext(UserContext);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("wszystkie");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [backendDecks, setBackendDecks] = useState<Deck[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const categories = [
-    { key: "wszystkie", name: "Wszystkie" },
-    { key: "jezyki", name: "Języki" },
-    { key: "nauka", name: "Nauka" },
-    { key: "historia", name: "Historia" },
-    { key: "inne", name: "Inne" },
+    { key: "all", name: "Wszystkie" },
+    ...CATEGORY_OPTIONS.map((cat) => ({ key: cat, name: cat })),
   ];
 
-  const getMyDecks = () => {
+  useEffect(() => {
+    if (PLACEHOLDER_MODE || !userCtx.id) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchUserDecks = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const result = await cloudFunctions.getUserDecks(userCtx.id as string);
+        if (!isMounted) return;
+        setBackendDecks(result.decks || []);
+      } catch (e) {
+        console.error("Error fetching user decks:", e);
+        if (isMounted) {
+          setError("Nie udało się pobrać talii. Spróbuj ponownie później.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchUserDecks();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userCtx.id]);
+
+  const getMyDecks = (): LibraryDeckItem[] => {
     if (PLACEHOLDER_MODE) {
       return placeholderDecks.map((deck, idx) => ({
         id: deck.id,
         name: deck.title,
-        category:
-          deck.category === "Języki obce"
-            ? "jezyki"
-            : deck.category === "Historia"
-            ? "historia"
-            : "nauka",
+        category: deck.category || "Other",
         cards: deck.cardsNum || 10,
         lastStudied: idx === 0 ? "2 dni temu" : `${idx + 1} dni temu`,
         progress: 50 + idx * 10,
-        difficulty: idx % 2 === 0 ? "Łatwy" : "Średni",
       }));
     }
-    return [
-      {
-        id: 1,
-        name: "Angielski - Podstawy",
-        category: "jezyki",
-        cards: 45,
-        lastStudied: "2 dni temu",
-        progress: 75,
-        difficulty: "Łatwy",
-      },
-      {
-        id: 2,
-        name: "Historia Polski",
-        category: "historia",
-        cards: 78,
-        lastStudied: "1 tydzień temu",
-        progress: 60,
-        difficulty: "Średni",
-      },
-      {
-        id: 3,
-        name: "Matematyka - Algebra",
-        category: "nauka",
-        cards: 32,
-        lastStudied: "3 dni temu",
-        progress: 90,
-        difficulty: "Trudny",
-      },
-      {
-        id: 4,
-        name: "Francuski - Słownictwo",
-        category: "jezyki",
-        cards: 67,
-        lastStudied: "5 dni temu",
-        progress: 45,
-        difficulty: "Średni",
-      },
-      {
-        id: 5,
-        name: "Biologia - Anatomia",
-        category: "nauka",
-        cards: 89,
-        lastStudied: "1 dzień temu",
-        progress: 30,
-        difficulty: "Trudny",
-      },
-      {
-        id: 6,
-        name: "Geografia - Stolice",
-        category: "nauka",
-        cards: 195,
-        lastStudied: "4 dni temu",
-        progress: 85,
-        difficulty: "Łatwy",
-      },
-    ];
+    // Rzeczywiste decki użytkownika z backendu
+    return backendDecks.map((deck) => ({
+      id: deck.id,
+      name: deck.title,
+      category: deck.category || "Other",
+      cards: deck.cardsNum,
+      lastStudied: "—",
+      progress: 0,
+    }));
   };
 
   const myDecks = getMyDecks();
@@ -116,29 +111,16 @@ export default function MyLibraryScreen(): React.JSX.Element {
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesCategory =
-      selectedCategory === "wszystkie" || deck.category === selectedCategory;
+      selectedCategory === "all" || deck.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "Łatwy":
-        return Colors.accent_500;
-      case "Średni":
-        return "#FFA500";
-      case "Trudny":
-        return "#FF4444";
-      default:
-        return Colors.primary_700;
-    }
-  };
-
-  const renderDeckItem = ({ item }: { item: any }) => (
+  const renderDeckItem = ({ item }: { item: LibraryDeckItem }) => (
     <Pressable
       style={styles.deckCard}
       onPress={() => {
         // Navigate to deck details
-        router.push(`../stack/deckDetails?id=${item.id}`);
+        router.push(`../stack/deckDetails?deckId=${item.id}`);
       }}
     >
       <View style={styles.deckHeader}>
@@ -170,14 +152,6 @@ export default function MyLibraryScreen(): React.JSX.Element {
               style={[styles.progressFill, { width: `${item.progress}%` }]}
             />
           </View>
-        </View>
-        <View
-          style={[
-            styles.difficultyBadge,
-            { backgroundColor: getDifficultyColor(item.difficulty) },
-          ]}
-        >
-          <Text style={styles.difficultyText}>{item.difficulty}</Text>
         </View>
       </View>
     </Pressable>
@@ -238,6 +212,15 @@ export default function MyLibraryScreen(): React.JSX.Element {
         <Text style={styles.sectionTitle}>
           Twoje decki ({filteredDecks.length})
         </Text>
+
+        {!PLACEHOLDER_MODE && isLoading && (
+          <ActivityIndicator
+            size="large"
+            color={Colors.accent_500}
+            style={{ marginBottom: 12 }}
+          />
+        )}
+        {error && <Text style={styles.errorText}>{error}</Text>}
 
         <FlatList
           data={filteredDecks}
@@ -407,5 +390,11 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.primary,
     color: Colors.primary_100,
     fontWeight: "700",
+  },
+  errorText: {
+    fontSize: 14,
+    fontFamily: Fonts.primary,
+    color: "#FF4444",
+    marginBottom: 8,
   },
 });

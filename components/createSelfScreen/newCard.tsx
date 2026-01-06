@@ -37,7 +37,8 @@ interface EditableCard extends CardCore {
 
 interface NewCardProps {
   card: EditableCard;
-  setCards: React.Dispatch<React.SetStateAction<EditableCard[]>>;
+  onUpdate: (cardId: string, updates: Partial<EditableCard>) => void;
+  onDelete: (cardId: string) => void;
   deckLanguage?: string;
 }
 
@@ -94,9 +95,10 @@ function getSuggestions(lang: string | undefined, query: string): string[] {
   return list.filter((w) => w.toLowerCase().startsWith(q)).slice(0, 6);
 }
 
-export default function NewCard({
+function NewCard({
   card,
-  setCards,
+  onUpdate,
+  onDelete,
   deckLanguage,
 }: NewCardProps): React.JSX.Element {
   // Zostaw frontFields/backFields bo sterują aktywnymi sekcjami
@@ -160,13 +162,9 @@ export default function NewCard({
       audioRecorderFront.uri &&
       audioRecorderFront.uri !== card.frontAudio
     ) {
-      setCards((prev) =>
-        prev.map((c) =>
-          c.id === card.id
-            ? { ...c, frontAudio: audioRecorderFront.uri || undefined }
-            : c
-        )
-      );
+      onUpdate(card.id, {
+        frontAudio: audioRecorderFront.uri || undefined,
+      });
     }
   }, [recorderStateFront.isRecording, audioRecorderFront.uri]);
 
@@ -177,13 +175,9 @@ export default function NewCard({
       audioRecorderBack.uri &&
       audioRecorderBack.uri !== card.backAudio
     ) {
-      setCards((prev) =>
-        prev.map((c) =>
-          c.id === card.id
-            ? { ...c, backAudio: audioRecorderBack.uri || undefined }
-            : c
-        )
-      );
+      onUpdate(card.id, {
+        backAudio: audioRecorderBack.uri || undefined,
+      });
     }
   }, [recorderStateBack.isRecording, audioRecorderBack.uri]);
 
@@ -262,9 +256,7 @@ export default function NewCard({
         // Use setTimeout for deletion to allow animation to complete
         runOnJS(() => {
           setTimeout(() => {
-            setCards((prev) => [
-              ...prev.filter((thisCard) => card.id !== thisCard.id),
-            ]);
+            onDelete(card.id);
           }, 300);
         })();
       } else {
@@ -338,17 +330,11 @@ export default function NewCard({
     isFront: boolean,
     gotCard: EditableCard
   ): void {
-    setCards((prev) => {
-      return prev.map((c) => {
-        if (c.id === gotCard.id) {
-          if (isFront) {
-            c.cardData.front = text;
-          } else {
-            c.cardData.back = text;
-          }
-        }
-        return c;
-      });
+    onUpdate(gotCard.id, {
+      cardData: {
+        ...gotCard.cardData,
+        [isFront ? "front" : "back"]: text,
+      },
     });
   }
 
@@ -356,21 +342,17 @@ export default function NewCard({
   function addTagFromInput(side: Side) {
     const value = side === "front" ? currentFrontTag : currentBackTag;
     if (!value.trim()) return;
-    setCards((prev) =>
-      prev.map((c) =>
-        c.id === card.id ? { ...c, tags: [...(c.tags || []), value.trim()] } : c
-      )
-    );
+    onUpdate(card.id, {
+      tags: [...(card.tags || []), value.trim()],
+    });
     if (side === "front") setCurrentFrontTag("");
     else setCurrentBackTag("");
   }
 
   function removeTag(tag: string) {
-    setCards((prev) =>
-      prev.map((c) =>
-        c.id === card.id ? { ...c, tags: c.tags.filter((t) => t !== tag) } : c
-      )
-    );
+    onUpdate(card.id, {
+      tags: card.tags.filter((t) => t !== tag),
+    });
   }
 
   // Obrazki (uogólnione)
@@ -382,40 +364,25 @@ export default function NewCard({
     });
     if (!res.canceled && res.assets && res.assets.length > 0) {
       const uri = res.assets[0].uri;
-      setCards((prev) =>
-        prev.map((c) =>
-          c.id === card.id
-            ? side === "front"
-              ? { ...c, frontImage: uri }
-              : { ...c, backImage: uri }
-            : c
-        )
-      );
+      onUpdate(card.id, {
+        [side === "front" ? "frontImage" : "backImage"]: uri,
+      });
     }
   }
   function removeImage(side: Side) {
-    setCards((prev) =>
-      prev.map((c) =>
-        c.id === card.id
-          ? side === "front"
-            ? { ...c, frontImage: undefined }
-            : { ...c, backImage: undefined }
-          : c
-      )
-    );
+    onUpdate(card.id, {
+      [side === "front" ? "frontImage" : "backImage"]: undefined,
+    });
   }
 
   // Sugestie (uogólnione)
   function applySuggestion(side: Side, word: string) {
-    setCards((prev) =>
-      prev.map((c) =>
-        c.id === card.id
-          ? side === "front"
-            ? { ...c, front: word }
-            : { ...c, back: word }
-          : c
-      )
-    );
+    onUpdate(card.id, {
+      cardData: {
+        ...card.cardData,
+        [side === "front" ? "front" : "back"]: word,
+      },
+    });
   }
 
   // Uogólnione funkcje audio (DRY)
@@ -461,18 +428,9 @@ export default function NewCard({
 
   function handleDeleteAudio(side: Side) {
     side === "front" ? setIsDeleteBusyFront(true) : setIsDeleteBusyBack(true);
-    setCards((prev) =>
-      prev.map((c) =>
-        c.id === card.id
-          ? {
-              ...c,
-              ...(side === "front"
-                ? { frontAudio: undefined }
-                : { backAudio: undefined }),
-            }
-          : c
-      )
-    );
+    onUpdate(card.id, {
+      [side === "front" ? "frontAudio" : "backAudio"]: undefined,
+    });
     if (side === "front") {
       audioPlayerFront.pause();
     } else {
@@ -496,15 +454,9 @@ export default function NewCard({
       }
     }
     if (uri) {
-      setCards((prev) =>
-        prev.map((c) =>
-          c.id === card.id
-            ? side === "front"
-              ? { ...c, frontAudio: uri }
-              : { ...c, backAudio: uri }
-            : c
-        )
-      );
+      onUpdate(card.id, {
+        [side === "front" ? "frontAudio" : "backAudio"]: uri,
+      });
     }
   }
 
@@ -1515,3 +1467,5 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.primary,
   },
 });
+
+export default React.memo(NewCard);

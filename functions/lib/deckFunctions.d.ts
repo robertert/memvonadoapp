@@ -24,6 +24,8 @@ export declare const getDeckDetails: import("firebase-functions/v2/https").Calla
         createdBy: string;
         is_deleted: boolean;
         category?: string | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
         deletedAt?: Date | undefined;
     } | null;
 }>, unknown>;
@@ -81,6 +83,8 @@ export declare const getPopularDecks: import("firebase-functions/v2/https").Call
         createdBy: string;
         is_deleted: boolean;
         category?: string | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
         deletedAt?: Date | undefined;
     }[];
 }>, unknown>;
@@ -98,6 +102,10 @@ export declare const getUserDeckDetails: import("firebase-functions/v2/https").C
         id: string;
         title: string;
         cardsNum: number;
+        tags?: string[] | null | undefined;
+        category?: string | null | undefined;
+        icon?: string | null | undefined;
+        isPublic?: boolean | null | undefined;
         lastReviewDate?: Date | undefined;
     } | null;
 }>, unknown>;
@@ -204,6 +212,12 @@ export declare const updateUserStats: import("firebase-functions/core").CloudFun
     deckId: string;
 }>>;
 /**
+ * Sync denormalized fields (category, icon, tags) to all user copies when source deck is updated
+ */
+export declare const syncDeckMetadataToUserCopies: import("firebase-functions/core").CloudFunction<import("firebase-functions/v2/firestore").FirestoreEvent<import("firebase-functions/v2/firestore").Change<import("firebase-functions/v2/firestore").DocumentSnapshot> | undefined, {
+    deckId: string;
+}>>;
+/**
  * Reset deck progress - removes all card progress data
  */
 export declare const resetDeck: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
@@ -241,6 +255,10 @@ export declare const startLearningDeck: import("firebase-functions/v2/https").Ca
         id: string;
         title: string;
         cardsNum: number;
+        tags?: string[] | null | undefined;
+        category?: string | null | undefined;
+        icon?: string | null | undefined;
+        isPublic?: boolean | null | undefined;
         lastReviewDate?: Date | undefined;
     };
 }>, unknown>;
@@ -279,4 +297,14 @@ export declare const syncDeckCards: import("firebase-functions/v2/https").Callab
  */
 export declare const updateCardContent: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
+}>, unknown>;
+/**
+ * Update deck with cards - accepts only changes (no card fetching)
+ * Optimized to avoid Firestore reads by accepting client-side diffing
+ */
+export declare const updateDeck: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+    updatedCount: number;
+    createdCount: number;
+    deletedCount: number;
 }>, unknown>;

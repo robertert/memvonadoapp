@@ -1,4 +1,11 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -9,16 +16,15 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Fonts, generageRandomUid } from "../../constants/colors";
-import { View } from "react-native";
+import { View, ScrollView } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import NewCard from "../../components/createSelfScreen/newCard";
+import CardSkeleton from "../../components/createSelfScreen/CardSkeleton";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { router, useLocalSearchParams } from "expo-router";
 
 import { UserContext } from "../../store/user-context";
-import { ScrollView } from "react-native-gesture-handler";
 import {
   CardCoreSchema,
   CardCore,
@@ -26,15 +32,29 @@ import {
   Card,
   DeckCore,
 } from "@/types";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CATEGORY_OPTIONS, LANGUAGE_OPTIONS } from "@/constants/settings";
+import { FlashList } from "@shopify/flash-list";
+import { useDeckDraft } from "@/hooks/useDeckDraft";
 
 interface CreateSelfParams {
   cards?: string;
+  edit?: string;
+  deckId?: string;
 }
 
-// Lokalny typ dla edycji - CardCore z id do identyfikacji podczas edycji
-type EditableCard = CardCore & { id: string };
+// EditableCard interface with tracking flags
+interface EditableCard extends CardCore {
+  id: string;
+  isNew: boolean; // true if added in this session
+  isDirty?: boolean; // true if modified from initial state
+}
+
+// CardDiff type for sending only changes
+type CardDiff = {
+  created: CardCore[];
+  updated: (CardCore & { id: string })[];
+  deleted: string[];
+};
 
 export default function createSelfScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
@@ -42,7 +62,6 @@ export default function createSelfScreen(): React.JSX.Element {
   const typedParams = params as CreateSelfParams;
 
   const [cards, setCards] = useState<EditableCard[]>([]);
-
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [title, setTitle] = useState<string>("");
   const [deckCategory, setDeckCategory] = useState<string>(CATEGORY_OPTIONS[0]);
@@ -52,146 +71,221 @@ export default function createSelfScreen(): React.JSX.Element {
   const [backLanguage, setBackLanguage] = useState<string>(
     LANGUAGE_OPTIONS[1]?.code || LANGUAGE_OPTIONS[0]?.code || "pl"
   );
-  const [showDraftModal, setShowDraftModal] = useState<boolean>(false);
-  const [draftFound, setDraftFound] = useState<any>(null);
 
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const periodicSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const draftKeyRef = "deck_draft";
+  // Paginacja dla trybu edycji
+  const [hasMoreCards, setHasMoreCards] = useState<boolean>(false);
+  const [lastDocId, setLastDocId] = useState<string | null>(null);
+  const [isLoadingMoreCards, setIsLoadingMoreCards] = useState<boolean>(false);
+  const [isLoadingCards, setIsLoadingCards] = useState<boolean>(false);
+
+  // Client-side diffing state
+  const initialCardIdsRef = useRef<Set<string>>(new Set());
+  const [deletedCardIds, setDeletedCardIds] = useState<Set<string>>(new Set());
 
   const userCtx = useContext(UserContext);
 
+  // Use draft hook
+  const {
+    draftFound,
+    showDraftModal,
+    loadDraft,
+    clearDraft,
+    handleContinueDraft: handleContinueDraftHook,
+    handleStartFresh,
+  } = useDeckDraft(cards, title, deckCategory, frontLanguage, backLanguage);
+
+  // Calculate card diff for sending to backend
+  const calculateCardDiff = useCallback((): CardDiff => {
+    const created: CardCore[] = [];
+    const updated: (CardCore & { id: string })[] = [];
+    const deleted: string[] = Array.from(deletedCardIds);
+
+    cards.forEach((card) => {
+      if (card.isNew) {
+        // New card - add to created
+        created.push({
+          cardData: card.cardData,
+          tags: card.tags || [],
+        });
+      } else if (card.isDirty && initialCardIdsRef.current.has(card.id)) {
+        // Existing card that was modified - add to updated
+        updated.push({
+          id: card.id,
+          cardData: card.cardData,
+          tags: card.tags || [],
+        });
+      }
+    });
+
+    return { created, updated, deleted };
+  }, [cards, deletedCardIds]);
+
+  // Update card callback (memoized for performance)
+  const updateCard = useCallback(
+    (cardId: string, updates: Partial<EditableCard>) => {
+      setCards((prev) =>
+        prev.map((card) => {
+          if (card.id === cardId) {
+            // Mark as dirty if it's an existing card (not new)
+            const isDirty = card.isNew ? false : true;
+            return { ...card, ...updates, isDirty };
+          }
+          return card;
+        })
+      );
+    },
+    []
+  );
+
+  // Delete card handler
+  const deleteCard = useCallback((cardId: string) => {
+    setCards((prev) => {
+      const card = prev.find((c) => c.id === cardId);
+      if (card?.isNew) {
+        // If it's a new card, just remove it (don't track in deleted)
+        return prev.filter((c) => c.id !== cardId);
+      } else {
+        // If it's an existing card, add to deleted set
+        setDeletedCardIds((prevDeleted) => new Set(prevDeleted).add(cardId));
+        return prev.filter((c) => c.id !== cardId);
+      }
+    });
+  }, []);
+
   // Load draft on mount
   useEffect(() => {
-    const loadDraft = async () => {
-      try {
-        if (typedParams.cards) {
-          // If cards are passed via params, load them directly
-          const gotCards = JSON.parse(typedParams.cards).map((card: any) => ({
-            id: generageRandomUid(),
-            cardData: {
-              front: card.front,
-              back: card.back,
-            },
-            tags: card.tags || [],
-          })) as EditableCard[];
-          setCards(gotCards);
-        } else {
-          // Check if draft exists in AsyncStorage
-          const draftData = await AsyncStorage.getItem(draftKeyRef);
-          if (draftData) {
-            try {
-              const draft = JSON.parse(draftData);
-              if (draft.title || (draft.cards && draft.cards.length > 0)) {
-                // Draft found - show modal to ask user
-                setDraftFound(draft);
-                setShowDraftModal(true);
-              }
-            } catch (parseError) {
-              console.error("Error parsing draft:", parseError);
-              // Clear corrupted draft
-              await AsyncStorage.removeItem(draftKeyRef);
-            }
-          }
+    const initializeData = async () => {
+      if (typedParams.edit === "true" && typedParams.deckId) {
+        await loadEditData();
+      } else {
+        const loadedCards = await loadDraft(typedParams.cards);
+        if (loadedCards) {
+          // Cards from params or draft should be marked as new
+          const cardsWithFlags = loadedCards.map((card) => ({
+            ...card,
+            isNew: true,
+            isDirty: false,
+          }));
+          setCards(cardsWithFlags);
         }
-      } catch (error) {
-        console.error("Error loading draft:", error);
       }
     };
-    loadDraft();
+    initializeData();
   }, []);
+
+  async function loadEditData(): Promise<void> {
+    if (typedParams.edit === "true" && typedParams.deckId) {
+      setIsLoadingCards(true);
+      try {
+        const { deck: deckData } = await cloudFunctions.getDeckDetails(
+          typedParams.deckId
+        );
+        const {
+          cards: deckCards,
+          hasMore,
+          lastDocId: lastId,
+        } = await cloudFunctions.getDeckCards(typedParams.deckId, 20);
+
+        // Konwersja Card[] na EditableCard[] and track initial IDs
+        const editableCards: EditableCard[] = deckCards.map((card) => ({
+          id: card.id,
+          cardData: card.cardData,
+          tags: card.tags || [],
+          isNew: false, // Cards from DB are not new
+          isDirty: false, // Initially not dirty
+        }));
+
+        // Store initial card IDs for diffing
+        initialCardIdsRef.current = new Set(editableCards.map((c) => c.id));
+        setDeletedCardIds(new Set()); // Reset deleted IDs
+
+        setCards(editableCards);
+        setHasMoreCards(hasMore);
+        setLastDocId(lastId);
+
+        if (!deckData) {
+          throw new Error("Deck not found");
+        }
+        setTitle(deckData.title);
+        setDeckCategory(deckData.category || CATEGORY_OPTIONS[0]);
+        setFrontLanguage(
+          deckData.frontLanguage || LANGUAGE_OPTIONS[0]?.code || "en"
+        );
+        setBackLanguage(
+          deckData.backLanguage || LANGUAGE_OPTIONS[1]?.code || "pl"
+        );
+      } catch (error) {
+        console.error("Error loading edit data:", error);
+      } finally {
+        setIsLoadingCards(false);
+      }
+    }
+  }
+
+  async function loadMoreCards(): Promise<void> {
+    if (
+      !typedParams.edit ||
+      typedParams.edit !== "true" ||
+      !typedParams.deckId ||
+      !hasMoreCards ||
+      isLoadingMoreCards ||
+      !lastDocId
+    ) {
+      return;
+    }
+
+    setIsLoadingMoreCards(true);
+    try {
+      const {
+        cards: deckCards,
+        hasMore,
+        lastDocId: lastId,
+      } = await cloudFunctions.getDeckCards(typedParams.deckId, 20, lastDocId);
+
+      // Konwersja Card[] na EditableCard[]
+      const newEditableCards: EditableCard[] = deckCards.map((card) => ({
+        id: card.id,
+        cardData: card.cardData,
+        tags: card.tags || [],
+        isNew: false, // Cards from DB are not new
+        isDirty: false, // Initially not dirty
+      }));
+
+      // Add new card IDs to initial set
+      newEditableCards.forEach((card) => {
+        initialCardIdsRef.current.add(card.id);
+      });
+
+      setCards((prev) => [...prev, ...newEditableCards]);
+      setHasMoreCards(hasMore);
+      setLastDocId(lastId);
+    } catch (error) {
+      console.error("Error loading more cards:", error);
+    } finally {
+      setIsLoadingMoreCards(false);
+    }
+  }
 
   // Handle user choice: continue with draft
   const handleContinueDraft = () => {
-    if (draftFound) {
-      setTitle(draftFound.title || "");
-      const cardsWithId = (draftFound.cards || []).map((card: any) => ({
-        id: card.id || generageRandomUid(),
-        cardData: card.cardData || { front: "", back: "" },
-        tags: card.tags || [],
-      })) as EditableCard[];
-      setCards(cardsWithId);
-      setDeckCategory(draftFound.deckCategory || CATEGORY_OPTIONS[0]);
-      setFrontLanguage(
-        draftFound.frontLanguage || LANGUAGE_OPTIONS[0]?.code || "en"
-      );
-      setBackLanguage(
-        draftFound.backLanguage ||
-          LANGUAGE_OPTIONS[1]?.code ||
-          LANGUAGE_OPTIONS[0]?.code ||
-          "pl"
-      );
+    const draftData = handleContinueDraftHook();
+    if (draftData) {
+      setTitle(draftData.title);
+      // Ensure cards have proper flags (preserved from draft or set to new)
+      const cardsWithFlags = draftData.cards.map((card) => ({
+        ...card,
+        isNew: card.isNew !== undefined ? card.isNew : true,
+        isDirty: card.isDirty || false,
+      }));
+      setCards(cardsWithFlags);
+      setDeckCategory(draftData.deckCategory);
+      setFrontLanguage(draftData.frontLanguage);
+      setBackLanguage(draftData.backLanguage);
+      // Reset tracking for draft (not edit mode)
+      initialCardIdsRef.current = new Set();
+      setDeletedCardIds(new Set());
     }
-    setShowDraftModal(false);
-    setDraftFound(null);
   };
-
-  // Handle user choice: start fresh
-  const handleStartFresh = async () => {
-    // Clear the draft
-    await AsyncStorage.removeItem(draftKeyRef);
-    setShowDraftModal(false);
-    setDraftFound(null);
-    // Reset to empty state
-    setTitle("");
-    setCards([]);
-    setDeckCategory(CATEGORY_OPTIONS[0]);
-  };
-
-  // Autosave draft (3 seconds debounce)
-  useEffect(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    // Only save if there's actual content
-    const hasContent = title.trim().length > 0 || cards.length > 0;
-    if (!hasContent) return;
-
-    saveTimeoutRef.current = setTimeout(() => {
-      saveDraft();
-    }, 2000); // 2 seconds debounce
-
-    // Cleanup on unmount
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [cards, title, deckCategory]);
-
-  // Save draft on unmount
-
-  // Save draft to AsyncStorage (autosave)
-  async function saveDraft(): Promise<void> {
-    try {
-      const hasContent = title.trim().length > 0 || cards.length > 0;
-      if (!hasContent) {
-        // Clear draft if empty
-        await AsyncStorage.removeItem(draftKeyRef);
-        return;
-      }
-
-      const draft = {
-        title,
-        cards: cards.map((card) => ({
-          id: card.id,
-          cardData: card.cardData,
-          tags: card.tags,
-        })),
-        deckCategory,
-        frontLanguage,
-        backLanguage,
-        savedAt: Date.now(),
-      };
-
-      await AsyncStorage.setItem(draftKeyRef, JSON.stringify(draft));
-      const draftData = await AsyncStorage.getItem(draftKeyRef);
-      console.log("Draft saved", draftData);
-    } catch (error) {
-      console.error("Error saving draft:", error);
-    }
-  }
 
   // Final save (create deck in Firestore)
   async function saveHandler(): Promise<void> {
@@ -199,39 +293,42 @@ export default function createSelfScreen(): React.JSX.Element {
       setIsLoading(true);
 
       // Clear draft after successful save
-      await AsyncStorage.removeItem(draftKeyRef);
-
-      // Prepare cards data for Cloud Function
-      const cardsData = cards.map((card) => ({
-        cardData: {
-          front: card.cardData.front,
-          back: card.cardData.back,
-        },
-        tags: card.tags || [],
-      }));
+      await clearDraft();
 
       const deckData = {
         title,
         category: deckCategory,
         icon: "cards",
         isPublic: true,
+        frontLanguage: frontLanguage || null,
+        backLanguage: backLanguage || null,
+        tags: [],
       } as DeckCore;
-
-      const resultCards = safeValidateArray(cardsData, CardCoreSchema);
-      if (!resultCards.success) {
-        console.error("Invalid cards data", resultCards.error);
-        throw new Error("Invalid cards data");
-      }
 
       if (!userCtx.id) {
         throw new Error("User ID is required");
       }
 
-      // Use Cloud Function to create deck with cards
-      const result = await cloudFunctions.createDeckWithCards(
-        deckData,
-        resultCards.data
-      );
+      let result;
+      if (typedParams.edit === "true" && typedParams.deckId) {
+        // Calculate diff for edit mode
+        const changes = calculateCardDiff();
+
+        await cloudFunctions.updateDeck(typedParams.deckId, deckData, changes);
+        // Use existing deckId for edit mode
+        result = { deckId: typedParams.deckId };
+      } else {
+        // Create mode - send all cards
+        const cardsData = cards.map((card) => ({
+          cardData: {
+            front: card.cardData.front,
+            back: card.cardData.back,
+          },
+          tags: card.tags || [],
+        }));
+
+        result = await cloudFunctions.createDeckWithCards(deckData, cardsData);
+      }
 
       router.replace({
         pathname: "/stack/deckDetails",
@@ -255,6 +352,8 @@ export default function createSelfScreen(): React.JSX.Element {
             back: "",
           },
           tags: [],
+          isNew: true, // Mark as new card
+          isDirty: false, // Not dirty yet
         },
       ];
     });
@@ -264,164 +363,188 @@ export default function createSelfScreen(): React.JSX.Element {
     setTitle(text);
   }
 
-  return (
-    <GestureHandlerRootView style={styles.container}>
-      <LinearGradient
-        start={{ x: 0, y: 0 }}
-        style={styles.background}
-        colors={[Colors.primary_100, Colors.primary_100]}
-      >
-        <View
-          style={[styles.headerContainer, { paddingTop: safeArea.top + 8 }]}
-        >
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <AntDesign name="arrow-left" size={24} color={Colors.primary_700} />
-          </Pressable>
-          <Text style={styles.headerTitle}>Nowy Deck</Text>
-          <View style={styles.headerSpacer} />
+  // ListHeaderComponent for FlashList
+  const ListHeaderComponent = useMemo(
+    () => (
+      <View>
+        <View style={styles.titleSection}>
+          <Text style={styles.titleLabel}>Tytuł decku</Text>
+          <View style={styles.titleInputContainer}>
+            <TextInput
+              style={styles.titleInput}
+              onChangeText={titleChangeHandler}
+              value={title}
+              placeholder="Wprowadź tytuł..."
+              placeholderTextColor={Colors.primary_700_50}
+            />
+          </View>
         </View>
 
-        <View style={styles.contentContainer}>
-          {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size={"large"} color={Colors.accent_500} />
-            </View>
-          ) : (
-            <>
-              <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-              >
-                <View style={styles.titleSection}>
-                  <Text style={styles.titleLabel}>Tytuł decku</Text>
-                  <View style={styles.titleInputContainer}>
-                    <TextInput
-                      style={styles.titleInput}
-                      onChangeText={titleChangeHandler}
-                      value={title}
-                      placeholder="Wprowadź tytuł..."
-                      placeholderTextColor={Colors.primary_700_50}
-                    />
-                  </View>
-                </View>
-
-                {/* Wybór kategorii */}
-                <View style={styles.categorySection}>
-                  <Text style={styles.sectionTitle}>Kategoria</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.categoryScrollContent}
+        {/* Wybór kategorii */}
+        <View style={styles.categorySection}>
+          <Text style={styles.sectionTitle}>Kategoria</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryScrollContent}
+          >
+            {CATEGORY_OPTIONS.map((category) => {
+              const isActive = category === deckCategory;
+              return (
+                <Pressable
+                  key={category}
+                  onPress={() => setDeckCategory(category)}
+                  style={[
+                    styles.categoryChip,
+                    isActive && styles.categoryChipActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      isActive && styles.categoryChipTextActive,
+                    ]}
                   >
-                    {CATEGORY_OPTIONS.map((category) => {
-                      const isActive = category === deckCategory;
-                      return (
-                        <Pressable
-                          key={category}
-                          onPress={() => setDeckCategory(category)}
-                          style={[
-                            styles.categoryChip,
-                            isActive && styles.categoryChipActive,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.categoryChipText,
-                              isActive && styles.categoryChipTextActive,
-                            ]}
-                          >
-                            {category}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-                {/* Wybór języków przodu i tyłu fiszek */}
-                {["English", "Spanish", "French", "German"].includes(
-                  deckCategory
-                ) && (
-                  <View style={styles.languageSection}>
-                    <Text style={styles.sectionTitle}>Języki fiszek</Text>
+                    {category}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+        {/* Wybór języków przodu i tyłu fiszek */}
+        {["English", "Spanish", "French", "German"].includes(deckCategory) && (
+          <View style={styles.languageSection}>
+            <Text style={styles.sectionTitle}>Języki fiszek</Text>
 
-                    <View style={styles.languageRow}>
-                      <Text style={styles.languageLabel}>Przód</Text>
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.languageScrollContent}
+            <View style={styles.languageRow}>
+              <Text style={styles.languageLabel}>Przód</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.languageScrollContent}
+              >
+                {LANGUAGE_OPTIONS.map((lang) => {
+                  const isActive = lang.code === frontLanguage;
+                  return (
+                    <Pressable
+                      key={`front-${lang.code}`}
+                      onPress={() => setFrontLanguage(lang.code)}
+                      style={[
+                        styles.languageChip,
+                        isActive && styles.languageChipActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.languageChipText,
+                          isActive && styles.languageChipTextActive,
+                        ]}
                       >
-                        {LANGUAGE_OPTIONS.map((lang) => {
-                          const isActive = lang.code === frontLanguage;
-                          return (
-                            <Pressable
-                              key={`front-${lang.code}`}
-                              onPress={() => setFrontLanguage(lang.code)}
-                              style={[
-                                styles.languageChip,
-                                isActive && styles.languageChipActive,
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.languageChipText,
-                                  isActive && styles.languageChipTextActive,
-                                ]}
-                              >
-                                {lang.label}
-                              </Text>
-                            </Pressable>
-                          );
-                        })}
-                      </ScrollView>
-                    </View>
+                        {lang.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
 
-                    <View style={styles.languageRow}>
-                      <Text style={styles.languageLabel}>Tył</Text>
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.languageScrollContent}
+            <View style={styles.languageRow}>
+              <Text style={styles.languageLabel}>Tył</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.languageScrollContent}
+              >
+                {LANGUAGE_OPTIONS.map((lang) => {
+                  const isActive = lang.code === backLanguage;
+                  return (
+                    <Pressable
+                      key={`back-${lang.code}`}
+                      onPress={() => setBackLanguage(lang.code)}
+                      style={[
+                        styles.languageChip,
+                        isActive && styles.languageChipActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.languageChipText,
+                          isActive && styles.languageChipTextActive,
+                        ]}
                       >
-                        {LANGUAGE_OPTIONS.map((lang) => {
-                          const isActive = lang.code === backLanguage;
-                          return (
-                            <Pressable
-                              key={`back-${lang.code}`}
-                              onPress={() => setBackLanguage(lang.code)}
-                              style={[
-                                styles.languageChip,
-                                isActive && styles.languageChipActive,
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.languageChipText,
-                                  isActive && styles.languageChipTextActive,
-                                ]}
-                              >
-                                {lang.label}
-                              </Text>
-                            </Pressable>
-                          );
-                        })}
-                      </ScrollView>
-                    </View>
-                  </View>
-                )}
-                <View style={styles.cardsSection}>
-                  <Text style={styles.sectionTitle}>Karty</Text>
-                  {cards.map((card) => {
-                    return (
-                      <NewCard
-                        key={card.id}
-                        card={card}
-                        setCards={setCards}
-                        deckLanguage={frontLanguage}
+                        {lang.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        )}
+        <View style={styles.cardsSection}>
+          <Text style={styles.sectionTitle}>Karty</Text>
+        </View>
+      </View>
+    ),
+    [title, deckCategory, frontLanguage, backLanguage]
+  );
+
+  // Render item for FlashList
+  const renderItem = useCallback(
+    ({ item: card }: { item: EditableCard }) => (
+      <NewCard
+        card={card}
+        onUpdate={updateCard}
+        onDelete={deleteCard}
+        deckLanguage={frontLanguage}
+      />
+    ),
+    [updateCard, deleteCard, frontLanguage]
+  );
+
+  return (
+    <GestureHandlerRootView style={styles.container}>
+      <View style={[styles.headerContainer, { paddingTop: safeArea.top + 8 }]}>
+        <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <AntDesign name="arrow-left" size={24} color={Colors.primary_700} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Nowy Deck</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <View style={styles.contentContainer}>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size={"large"} color={Colors.accent_500} />
+          </View>
+        ) : isLoadingCards ? (
+          <View style={styles.loadingContainer}>
+            {[1, 2, 3].map((index) => (
+              <CardSkeleton key={index} />
+            ))}
+          </View>
+        ) : (
+          <>
+            <FlashList
+              data={cards}
+              renderItem={renderItem}
+              keyExtractor={(item) => item.id}
+              ListHeaderComponent={ListHeaderComponent}
+              onEndReached={
+                typedParams.edit === "true" ? loadMoreCards : undefined
+              }
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={
+                <>
+                  {isLoadingMoreCards ? (
+                    <View style={styles.loadingMoreContainer}>
+                      <ActivityIndicator
+                        size="small"
+                        color={Colors.accent_500}
                       />
-                    );
-                  })}
+                    </View>
+                  ) : null}
                   <Pressable
                     onPress={createNewHandler}
                     style={styles.addCardButton}
@@ -433,64 +556,68 @@ export default function createSelfScreen(): React.JSX.Element {
                     />
                     <Text style={styles.addCardText}>Dodaj kartę</Text>
                   </Pressable>
-                </View>
-              </ScrollView>
-              <Pressable onPress={saveHandler} style={styles.saveButton}>
-                <Text style={styles.saveText}>Utwórz Deck</Text>
-              </Pressable>
-            </>
-          )}
-        </View>
+                </>
+              }
+              contentContainerStyle={styles.flashListContent}
+            />
 
-        {/* Draft Modal */}
-        <Modal
-          visible={showDraftModal}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowDraftModal(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Znaleziono wersję roboczą</Text>
-              </View>
-
-              <Text style={styles.modalText}>
-                Znaleziono zapisaną wersję roboczą decku. Czy chcesz kontynuować
-                pracę nad nią?
+            <Pressable onPress={saveHandler} style={styles.saveButton}>
+              <Text style={styles.saveText}>
+                {typedParams.edit === "true" ? "Zapisz zmiany" : "Utwórz Deck"}
               </Text>
+            </Pressable>
+          </>
+        )}
+      </View>
 
-              {draftFound && (
-                <View style={styles.draftInfo}>
-                  <Text style={styles.draftInfoText}>
-                    Tytuł: {draftFound.title || "(brak tytułu)"}
-                  </Text>
-                  <Text style={styles.draftInfoText}>
-                    Karty: {draftFound.cards?.length || 0}
-                  </Text>
-                </View>
-              )}
+      {/* Draft Modal */}
+      <Modal
+        visible={showDraftModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleStartFresh}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Znaleziono wersję roboczą</Text>
+            </View>
 
-              <View style={styles.modalButtons}>
-                <Pressable
-                  onPress={handleStartFresh}
-                  style={[styles.modalButton, styles.modalButtonSecondary]}
-                >
-                  <Text style={styles.modalButtonTextSecondary}>
-                    Zacznij od nowa
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={handleContinueDraft}
-                  style={[styles.modalButton, styles.modalButtonPrimary]}
-                >
-                  <Text style={styles.modalButtonTextPrimary}>Kontynuuj</Text>
-                </Pressable>
+            <Text style={styles.modalText}>
+              Znaleziono zapisaną wersję roboczą decku. Czy chcesz kontynuować
+              pracę nad nią?
+            </Text>
+
+            {draftFound && (
+              <View style={styles.draftInfo}>
+                <Text style={styles.draftInfoText}>
+                  Tytuł: {draftFound.title || "(brak tytułu)"}
+                </Text>
+                <Text style={styles.draftInfoText}>
+                  Karty: {draftFound.cards?.length || 0}
+                </Text>
               </View>
+            )}
+
+            <View style={styles.modalButtons}>
+              <Pressable
+                onPress={handleStartFresh}
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+              >
+                <Text style={styles.modalButtonTextSecondary}>
+                  Zacznij od nowa
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleContinueDraft}
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+              >
+                <Text style={styles.modalButtonTextPrimary}>Kontynuuj</Text>
+              </Pressable>
             </View>
           </View>
-        </Modal>
-      </LinearGradient>
+        </View>
+      </Modal>
     </GestureHandlerRootView>
   );
 }
@@ -498,14 +625,9 @@ export default function createSelfScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.primary_100,
   },
-  background: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    height: "100%",
-  },
+
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -643,6 +765,13 @@ const styles = StyleSheet.create({
     color: Colors.primary_700,
     fontWeight: "900",
     marginBottom: 15,
+  },
+  loadingMoreContainer: {
+    paddingVertical: 20,
+    alignItems: "center",
+  },
+  flashListContent: {
+    paddingBottom: 200,
   },
   addCardButton: {
     flexDirection: "row",

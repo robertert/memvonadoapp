@@ -13,6 +13,8 @@ exports.DeckCoreSchema = zod_1.z
     icon: zod_1.z.string().default("cards"),
     tags: zod_1.z.array(zod_1.z.string()).default([]),
     isPublic: zod_1.z.boolean(),
+    frontLanguage: zod_1.z.string().nullable().optional(),
+    backLanguage: zod_1.z.string().nullable().optional(),
 })
     .strict();
 /**
@@ -76,6 +78,10 @@ exports.DeckLearningMetaSchema = zod_1.z
     .object({
     id: zod_1.z.string(),
     cardsNum: zod_1.z.number().min(0),
+    category: zod_1.z.string().nullable().optional(),
+    icon: zod_1.z.string().nullable().optional(),
+    tags: zod_1.z.array(zod_1.z.string()).nullable().optional(),
+    isPublic: zod_1.z.boolean().nullable().optional(),
 })
     .strict();
 exports.DeckLearningDataSchema = exports.DeckLearningMetaSchema.merge(exports.DeckLearningCoreSchema)
