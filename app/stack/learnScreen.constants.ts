@@ -2,8 +2,8 @@ import { generatorParameters } from "ts-fsrs";
 import { Dimensions } from "react-native";
 
 // Gesture thresholds
-export const X_THRESHOLD = 0.25;
-export const Y_THRESHOLD = 0.2;
+export const X_THRESHOLD = 0.16;
+export const Y_THRESHOLD = 0.12;
 
 // Dimensions - tylko specyficzne dla tego komponentu
 export const DIMENSIONS = {

@@ -113,9 +113,6 @@ export function useAnimations() {
       return rotateCard.value;
     },
     (newValue, previousValue) => {
-      if (newValue === 180) {
-        rotateCard.value = 0;
-      }
       // Dodaj efekt skalowania podczas obrotu dla większego realizmu
       const rotationProgress = Math.abs(newValue) / 180;
       const scaleProgress = Math.sin(rotationProgress * Math.PI);

@@ -1,5 +1,5 @@
 import type { Card, DeckLearningData } from "@/types";
-import { SharedValue } from "react-native-reanimated";
+import { SharedValue, useAnimatedStyle } from "react-native-reanimated";
 
 export interface ProgressState {
   easy: number;
@@ -48,7 +48,7 @@ export interface AnimationValues {
 }
 
 // Animated style types - using any for compatibility with React Native Animated
-export type AnimatedStyle = any;
+export type AnimatedStyle = ReturnType<typeof useAnimatedStyle>;
 
 // Gesture types
 export type GestureType =

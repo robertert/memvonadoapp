@@ -45,8 +45,6 @@ export default function learnScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
   const screenDimensions = Dimensions.get("window");
 
-  const [isTurn, setIsTurn] = useState(false);
-
   // Use extracted hooks
   const {
     cardLogicState,
@@ -69,7 +67,6 @@ export default function learnScreen(): React.JSX.Element {
     setIsBack,
     TOP,
     safeArea,
-    setIsTurn,
   });
 
   const { cards, isLoading, isBack, tooltip, progress } = cardLogicState;
@@ -375,8 +372,8 @@ export default function learnScreen(): React.JSX.Element {
           card={cards ? (cards[0] as Card) : undefined}
           isBack={isBack}
           rStyle={rStyle}
+          rotateValue={animationValues.rotateCard}
           gesture={comp}
-          isTurn={isTurn}
           streakLost={streakLost}
           deckId={id}
         />

@@ -50,7 +50,6 @@ interface UseGesturesProps {
   setIsBack: (value: React.SetStateAction<boolean>) => void;
   TOP: number;
   safeArea?: EdgeInsets;
-  setIsTurn: (value: React.SetStateAction<boolean>) => void;
 }
 
 /**
@@ -67,7 +66,6 @@ export function useGestures({
   setIsBack,
   TOP,
   safeArea,
-  setIsTurn,
 }: UseGesturesProps) {
   const {
     translateX,
@@ -99,7 +97,7 @@ export function useGestures({
       if (e.translationX > dimensions.width * X_THRESHOLD) {
         const progress =
           (e.translationX - dimensions.width * X_THRESHOLD) /
-          (dimensions.width * 0.3);
+          (dimensions.width * 0.12);
         translateXrInfo.value = -Math.min(120, progress * 120); // Wysuwa się w lewo (0 → -120), max 120px
       }
 
@@ -107,7 +105,7 @@ export function useGestures({
       if (e.translationX < dimensions.width * -X_THRESHOLD) {
         const progress =
           (-e.translationX - dimensions.width * X_THRESHOLD) /
-          (dimensions.width * 0.3);
+          (dimensions.width * 0.12);
         translateXlInfo.value = Math.min(120, progress * 120); // Wysuwa się w prawo (0 → 120), max 120px
       }
 
@@ -115,7 +113,7 @@ export function useGestures({
       if (e.translationY > dimensions.height * Y_THRESHOLD) {
         const progress =
           (e.translationY - dimensions.height * Y_THRESHOLD) /
-          (dimensions.height * 0.25);
+          (dimensions.height * 0.12);
         const maxSlide = 70 + (safeArea?.bottom ?? 0);
         translateYbInfo.value = -Math.min(maxSlide, progress * maxSlide); // Wysuwa się w górę, powiększone o safe area
       }
@@ -124,7 +122,7 @@ export function useGestures({
       if (e.translationY < dimensions.height * -Y_THRESHOLD) {
         const progress =
           (-e.translationY - dimensions.height * Y_THRESHOLD) /
-          (dimensions.height * 0.25);
+          (dimensions.height * 0.12);
         const maxSlide = 70 + (safeArea?.top ?? 0);
         translateYtInfo.value = Math.min(maxSlide, progress * maxSlide); // Wysuwa się w dół, powiększone o safe area
       }
@@ -226,18 +224,19 @@ export function useGestures({
     });
 
   const tap = Gesture.Tap()
+    .onBegin((e) => {
+      setIsBack((prev) => !prev);
+    })
     .runOnJS(true)
     .onEnd((e) => {
-      setIsBack((prev) => !prev);
       // Realistyczna animacja obrotu z easing i dłuższym czasem
-      rotateCard.value = withTiming(180, {
-        duration: 600, // Dłuższa animacja dla większej płynności
-        easing: Easing.bezier(0.34, 1.56, 0.64, 1), // Bardziej dynamiczna krzywa beziera
-      });
-      setIsTurn(true);
-      setTimeout(() => {
-        setIsTurn(false);
-      }, 600);
+      rotateCard.value = withTiming(
+        Math.round(rotateCard.value / 180) * 180 + (180 % 360),
+        {
+          duration: 400, // Dłuższa animacja dla większej płynności
+          easing: Easing.bezier(0.34, 1.56, 0.64, 1), // Bardziej dynamiczna krzywa beziera
+        }
+      );
     });
 
   const comp = Gesture.Exclusive(pan, tap);
