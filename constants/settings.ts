@@ -72,6 +72,7 @@ export const DEFAULT_DECK_LEARNING_DATA = {
     dueCardsNumPerDay: 0,
     newCardsNumPerDay: 0,
     zenMode: false,
+    shuffleNewCards: false,
   },
 };
 

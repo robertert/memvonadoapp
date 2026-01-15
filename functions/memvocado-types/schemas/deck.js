@@ -57,6 +57,7 @@ exports.DeckSettingsSchema = zod_1.z
     dueCardsNumPerDay: zod_1.z.number().min(0).optional(),
     newCardsNumPerDay: zod_1.z.number().min(0).optional(),
     zenMode: zod_1.z.boolean().default(false),
+    shuffleNewCards: zod_1.z.boolean().default(false),
 })
     .strict();
 /**

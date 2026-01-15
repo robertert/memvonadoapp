@@ -69,6 +69,7 @@ export const DeckSettingsSchema = z
     dueCardsNumPerDay: z.number().min(0).optional(),
     newCardsNumPerDay: z.number().min(0).optional(),
     zenMode: z.boolean().default(false),
+    shuffleNewCards: z.boolean().default(false),
   })
   .strict();
 

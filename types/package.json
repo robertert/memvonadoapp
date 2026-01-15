@@ -1,8 +1,8 @@
 {
   "name": "memvocado-types",
   "version": "1.0.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "index.ts",
+  "types": "index.ts",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
@@ -11,7 +11,9 @@
     "prepare": "npm run build"
   },
   "files": [
-    "dist"
+    "dist",
+    "index.ts",
+    "schemas"
   ],
   "devDependencies": {
     "rimraf": "^5.0.5",

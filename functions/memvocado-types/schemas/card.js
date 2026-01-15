@@ -97,7 +97,7 @@ exports.CardMetaSchema = zod_1.z
     .object({
     id: zod_1.z.string(),
     hasChanges: zod_1.z.boolean().optional(),
-    contentVersion: zod_1.z.date().optional(),
+    updatedAt: base_1.TimestampSchema.optional(),
 })
     .strict();
 /**

@@ -229,15 +229,15 @@ export type CardLearning = z.infer<typeof CardLearningSchema>;
 export declare const CardMetaSchema: z.ZodObject<{
     id: z.ZodString;
     hasChanges: z.ZodOptional<z.ZodBoolean>;
-    contentVersion: z.ZodOptional<z.ZodDate>;
+    updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
 }, "strict", z.ZodTypeAny, {
     id: string;
+    updatedAt?: Date | undefined;
     hasChanges?: boolean | undefined;
-    contentVersion?: Date | undefined;
 }, {
     id: string;
+    updatedAt?: unknown;
     hasChanges?: boolean | undefined;
-    contentVersion?: Date | undefined;
 }>;
 export type CardMeta = z.infer<typeof CardMetaSchema>;
 /**
@@ -309,7 +309,7 @@ export declare const CardSchema: z.ZodObject<{
 } & {
     id: z.ZodString;
     hasChanges: z.ZodOptional<z.ZodBoolean>;
-    contentVersion: z.ZodOptional<z.ZodDate>;
+    updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
 }, "strict", z.ZodTypeAny, {
     createdAt: Date;
     id: string;
@@ -324,6 +324,7 @@ export declare const CardSchema: z.ZodObject<{
         isFirst?: boolean | undefined;
         consecutiveGood?: number | undefined;
     };
+    updatedAt?: Date | undefined;
     cardAlgo?: {
         difficulty: number;
         scheduled_days: number;
@@ -337,7 +338,6 @@ export declare const CardSchema: z.ZodObject<{
     } | undefined;
     grade?: CardGrade | undefined;
     hasChanges?: boolean | undefined;
-    contentVersion?: Date | undefined;
 }, {
     id: string;
     cardData: {
@@ -351,6 +351,7 @@ export declare const CardSchema: z.ZodObject<{
         consecutiveGood?: number | undefined;
     };
     createdAt?: unknown;
+    updatedAt?: unknown;
     tags?: string[] | undefined;
     cardAlgo?: {
         difficulty: number;
@@ -365,7 +366,6 @@ export declare const CardSchema: z.ZodObject<{
     } | undefined;
     grade?: CardGrade | undefined;
     hasChanges?: boolean | undefined;
-    contentVersion?: Date | undefined;
 }>;
 export type Card = z.infer<typeof CardSchema>;
 /**

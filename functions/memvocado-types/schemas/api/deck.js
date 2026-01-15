@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateDeckResponseSchema = exports.UpdateCardContentResponseSchema = exports.SyncDeckCardsResponseSchema = exports.CheckCardChangesResponseSchema = exports.GetUserNewDeckCardsResponseSchema = exports.GetUserDueDeckCardsResponseSchema = exports.GetUserDeckCardsResponseSchema = exports.GetUserDeckDetailsResponseSchema = exports.DeleteDeckResponseSchema = exports.StartLearningDeckResponseSchema = exports.GetPopularDecksResponseSchema = exports.CreateDeckWithCardsResponseSchema = exports.GetUserDecksResponseSchema = exports.GetNewDeckCardsResponseSchema = exports.GetDueDeckCardsResponseSchema = exports.GetDeckCardsResponseSchema = exports.GetDeckDetailsResponseSchema = exports.UpdateDeckRequestSchema = exports.UpdateCardContentRequestSchema = exports.SyncDeckCardsRequestSchema = exports.CheckCardChangesRequestSchema = exports.DeleteDeckRequestSchema = exports.StartLearningDeckRequestSchema = exports.UpdateUserDeckSettingsRequestSchema = exports.UpdateDeckSettingsRequestSchema = exports.ResetDeckRequestSchema = exports.GetUserNewDeckCardsRequestSchema = exports.GetUserDueDeckCardsRequestSchema = exports.GetUserDeckCardsRequestSchema = exports.GetUserDeckDetailsRequestSchema = exports.GetPopularDecksRequestSchema = exports.GetDeckCardsRequestSchema = exports.GetDeckDetailsRequestSchema = exports.CreateDeckWithCardsRequestSchema = void 0;
+exports.ImportAnkiDeckResponseSchema = exports.ImportAnkiDeckRequestSchema = exports.UpdateDeckResponseSchema = exports.UpdateCardContentResponseSchema = exports.SyncDeckCardsResponseSchema = exports.CheckCardChangesResponseSchema = exports.GetUserNewDeckCardsResponseSchema = exports.GetUserDueDeckCardsResponseSchema = exports.GetUserDeckCardsResponseSchema = exports.GetUserDeckDetailsResponseSchema = exports.DeleteDeckResponseSchema = exports.StartLearningDeckResponseSchema = exports.GetPopularDecksResponseSchema = exports.CreateDeckWithCardsResponseSchema = exports.GetUserDecksResponseSchema = exports.GetNewDeckCardsResponseSchema = exports.GetDueDeckCardsResponseSchema = exports.GetDeckCardsResponseSchema = exports.GetDeckDetailsResponseSchema = exports.UpdateDeckRequestSchema = exports.UpdateCardContentRequestSchema = exports.SyncDeckCardsRequestSchema = exports.CheckCardChangesRequestSchema = exports.DeleteDeckRequestSchema = exports.StartLearningDeckRequestSchema = exports.UpdateUserDeckSettingsRequestSchema = exports.UpdateDeckSettingsRequestSchema = exports.ResetDeckRequestSchema = exports.GetUserNewDeckCardsRequestSchema = exports.GetUserDueDeckCardsRequestSchema = exports.GetUserDeckCardsRequestSchema = exports.GetUserDeckDetailsRequestSchema = exports.GetPopularDecksRequestSchema = exports.GetDeckCardsRequestSchema = exports.GetDeckDetailsRequestSchema = exports.CreateDeckWithCardsRequestSchema = void 0;
 const zod_1 = require("zod");
 const index_1 = require("../index");
 // ===========================
@@ -180,4 +180,13 @@ exports.UpdateDeckResponseSchema = zod_1.z.object({
     updatedCount: zod_1.z.number(),
     createdCount: zod_1.z.number(),
     deletedCount: zod_1.z.number(),
+});
+exports.ImportAnkiDeckRequestSchema = zod_1.z
+    .object({
+    apkgBase64: zod_1.z.string().min(1), // base64 encoded .apkg file
+})
+    .strict();
+exports.ImportAnkiDeckResponseSchema = zod_1.z.object({
+    cards: zod_1.z.array(index_1.CardSchema),
+    count: zod_1.z.number(),
 });

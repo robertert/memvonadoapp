@@ -20,12 +20,17 @@
   },
   "main": "lib/index.js",
   "dependencies": {
+    "@mongodb-js/zstd": "^2.0.0",
+    "adm-zip": "^0.5.16",
+    "better-sqlite3": "^11.7.0",
     "firebase-admin": "^12.6.0",
     "firebase-functions": "^6.0.1",
     "memvocado-types": "file:memvocado-types",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/better-sqlite3": "^7.6.11",
     "@types/jest": "^29.5.8",
     "@typescript-eslint/eslint-plugin": "^5.12.0",
     "@typescript-eslint/parser": "^5.12.0",

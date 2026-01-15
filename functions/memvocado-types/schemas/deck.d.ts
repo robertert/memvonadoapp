@@ -136,14 +136,17 @@ export declare const DeckSettingsSchema: z.ZodObject<{
     dueCardsNumPerDay: z.ZodOptional<z.ZodNumber>;
     newCardsNumPerDay: z.ZodOptional<z.ZodNumber>;
     zenMode: z.ZodDefault<z.ZodBoolean>;
+    shuffleNewCards: z.ZodDefault<z.ZodBoolean>;
 }, "strict", z.ZodTypeAny, {
     zenMode: boolean;
+    shuffleNewCards: boolean;
     dueCardsNumPerDay?: number | undefined;
     newCardsNumPerDay?: number | undefined;
 }, {
     dueCardsNumPerDay?: number | undefined;
     newCardsNumPerDay?: number | undefined;
     zenMode?: boolean | undefined;
+    shuffleNewCards?: boolean | undefined;
 }>;
 export type DeckSettings = z.infer<typeof DeckSettingsSchema>;
 /**
@@ -155,18 +158,22 @@ export declare const DeckLearningCoreSchema: z.ZodObject<{
         dueCardsNumPerDay: z.ZodOptional<z.ZodNumber>;
         newCardsNumPerDay: z.ZodOptional<z.ZodNumber>;
         zenMode: z.ZodDefault<z.ZodBoolean>;
+        shuffleNewCards: z.ZodDefault<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
         zenMode: boolean;
+        shuffleNewCards: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
     }, {
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         zenMode?: boolean | undefined;
+        shuffleNewCards?: boolean | undefined;
     }>;
 }, "strict", z.ZodTypeAny, {
     settings: {
         zenMode: boolean;
+        shuffleNewCards: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
     };
@@ -176,6 +183,7 @@ export declare const DeckLearningCoreSchema: z.ZodObject<{
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         zenMode?: boolean | undefined;
+        shuffleNewCards?: boolean | undefined;
     };
     title: string;
 }>;
@@ -227,14 +235,17 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
         dueCardsNumPerDay: z.ZodOptional<z.ZodNumber>;
         newCardsNumPerDay: z.ZodOptional<z.ZodNumber>;
         zenMode: z.ZodDefault<z.ZodBoolean>;
+        shuffleNewCards: z.ZodDefault<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
         zenMode: boolean;
+        shuffleNewCards: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
     }, {
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         zenMode?: boolean | undefined;
+        shuffleNewCards?: boolean | undefined;
     }>;
 } & {
     lastReviewDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
@@ -242,6 +253,7 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     settings: {
         zenMode: boolean;
+        shuffleNewCards: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
     };
@@ -259,6 +271,7 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         zenMode?: boolean | undefined;
+        shuffleNewCards?: boolean | undefined;
     };
     id: string;
     title: string;
@@ -308,14 +321,17 @@ export declare const DeckSettingsUpdateSchema: z.ZodObject<{
     dueCardsNumPerDay: z.ZodOptional<z.ZodOptional<z.ZodNumber>>;
     newCardsNumPerDay: z.ZodOptional<z.ZodOptional<z.ZodNumber>>;
     zenMode: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
+    shuffleNewCards: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
 }, "strict", z.ZodTypeAny, {
     dueCardsNumPerDay?: number | undefined;
     newCardsNumPerDay?: number | undefined;
     zenMode?: boolean | undefined;
+    shuffleNewCards?: boolean | undefined;
 }, {
     dueCardsNumPerDay?: number | undefined;
     newCardsNumPerDay?: number | undefined;
     zenMode?: boolean | undefined;
+    shuffleNewCards?: boolean | undefined;
 }>;
 export type DeckSettingsUpdate = z.infer<typeof DeckSettingsUpdateSchema>;
 /**
@@ -361,20 +377,24 @@ export declare const DeckLearningDataUpdateSchema: z.ZodObject<{
         dueCardsNumPerDay: z.ZodOptional<z.ZodNumber>;
         newCardsNumPerDay: z.ZodOptional<z.ZodNumber>;
         zenMode: z.ZodDefault<z.ZodBoolean>;
+        shuffleNewCards: z.ZodDefault<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
         zenMode: boolean;
+        shuffleNewCards: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
     }, {
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         zenMode?: boolean | undefined;
+        shuffleNewCards?: boolean | undefined;
     }>>;
 } & {
     lastReviewDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
 }, "strict", z.ZodTypeAny, {
     settings?: {
         zenMode: boolean;
+        shuffleNewCards: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
     } | undefined;
@@ -385,6 +405,7 @@ export declare const DeckLearningDataUpdateSchema: z.ZodObject<{
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         zenMode?: boolean | undefined;
+        shuffleNewCards?: boolean | undefined;
     } | undefined;
     title?: string | undefined;
     lastReviewDate?: unknown;

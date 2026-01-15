@@ -30,6 +30,10 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 
+*.ipa
+
+unpack_anki/
+
 # macOS
 .DS_Store
 *.pem

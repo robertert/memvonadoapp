@@ -136,7 +136,7 @@ export default function deckDetails(): React.JSX.Element {
         setLastDocId(null);
       } else {
         const [
-          { deck: deckData },
+          { deck: deckData, username: deckUsername },
           { deck: userDeckData },
           { cards: deckCards, hasMore, lastDocId: newLastDocId },
         ] = await Promise.all([
@@ -152,7 +152,7 @@ export default function deckDetails(): React.JSX.Element {
         if (!deckData) throw new Error("Deck not found");
 
         setDateAgo(calculateDateAgo(new Date(deckData.createdAt)));
-        setUsername(username);
+        setUsername(deckUsername);
         setDeck(deckData);
         setCards(deckCards);
         setHasMoreCards(hasMore);

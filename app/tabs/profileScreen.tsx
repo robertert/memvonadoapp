@@ -19,7 +19,7 @@ import ContributionHeatmap from "../../components/profileScreen/ContributionHeat
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
-import { User } from "../../types/schemas";
+import type { User } from "@/types";
 import {
   placeholderUser,
   placeholderDecks,

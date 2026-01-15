@@ -47,6 +47,7 @@ export declare const getDeckCards: import("firebase-functions/v2/https").Callabl
             isFirst?: boolean | undefined;
             consecutiveGood?: number | undefined;
         };
+        updatedAt?: Date | undefined;
         cardAlgo?: {
             difficulty: number;
             scheduled_days: number;
@@ -60,7 +61,6 @@ export declare const getDeckCards: import("firebase-functions/v2/https").Callabl
         } | undefined;
         grade?: import("memvocado-types/schemas/card").CardGrade | undefined;
         hasChanges?: boolean | undefined;
-        contentVersion?: Date | undefined;
     }[];
     hasMore: boolean;
     lastDocId: string | null;
@@ -95,6 +95,7 @@ export declare const getUserDeckDetails: import("firebase-functions/v2/https").C
     deck: {
         settings: {
             zenMode: boolean;
+            shuffleNewCards: boolean;
             dueCardsNumPerDay?: number | undefined;
             newCardsNumPerDay?: number | undefined;
         };
@@ -124,6 +125,7 @@ export declare const getUserDeckCards: import("firebase-functions/v2/https").Cal
             isFirst?: boolean | undefined;
             consecutiveGood?: number | undefined;
         };
+        updatedAt?: Date | undefined;
         cardAlgo?: {
             difficulty: number;
             scheduled_days: number;
@@ -137,7 +139,6 @@ export declare const getUserDeckCards: import("firebase-functions/v2/https").Cal
         } | undefined;
         grade?: import("memvocado-types/schemas/card").CardGrade | undefined;
         hasChanges?: boolean | undefined;
-        contentVersion?: Date | undefined;
     }[];
     hasMore: boolean;
     lastDocId: string | null;
@@ -157,6 +158,7 @@ export declare const getUserDueDeckCards: import("firebase-functions/v2/https").
             isFirst?: boolean | undefined;
             consecutiveGood?: number | undefined;
         };
+        updatedAt?: Date | undefined;
         cardAlgo?: {
             difficulty: number;
             scheduled_days: number;
@@ -170,7 +172,6 @@ export declare const getUserDueDeckCards: import("firebase-functions/v2/https").
         } | undefined;
         grade?: import("memvocado-types/schemas/card").CardGrade | undefined;
         hasChanges?: boolean | undefined;
-        contentVersion?: Date | undefined;
     }[];
 }>, unknown>;
 export declare const getUserNewDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
@@ -188,6 +189,7 @@ export declare const getUserNewDeckCards: import("firebase-functions/v2/https").
             isFirst?: boolean | undefined;
             consecutiveGood?: number | undefined;
         };
+        updatedAt?: Date | undefined;
         cardAlgo?: {
             difficulty: number;
             scheduled_days: number;
@@ -201,7 +203,6 @@ export declare const getUserNewDeckCards: import("firebase-functions/v2/https").
         } | undefined;
         grade?: import("memvocado-types/schemas/card").CardGrade | undefined;
         hasChanges?: boolean | undefined;
-        contentVersion?: Date | undefined;
     }[];
 }>, unknown>;
 /**
@@ -213,6 +214,7 @@ export declare const updateUserStats: import("firebase-functions/core").CloudFun
 }>>;
 /**
  * Sync denormalized fields (category, icon, tags) to all user copies when source deck is updated
+ * Triggered on write to decks/{deckId}
  */
 export declare const syncDeckMetadataToUserCopies: import("firebase-functions/core").CloudFunction<import("firebase-functions/v2/firestore").FirestoreEvent<import("firebase-functions/v2/firestore").Change<import("firebase-functions/v2/firestore").DocumentSnapshot> | undefined, {
     deckId: string;
@@ -248,6 +250,7 @@ export declare const startLearningDeck: import("firebase-functions/v2/https").Ca
     deck: {
         settings: {
             zenMode: boolean;
+            shuffleNewCards: boolean;
             dueCardsNumPerDay?: number | undefined;
             newCardsNumPerDay?: number | undefined;
         };
@@ -307,4 +310,39 @@ export declare const updateDeck: import("firebase-functions/v2/https").CallableF
     updatedCount: number;
     createdCount: number;
     deletedCount: number;
+}>, unknown>;
+/**
+ * Import Anki deck (.apkg file) and convert to Memvocado cards
+ */
+export declare const importAnkiDeck: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    cards: {
+        createdAt: Date;
+        id: string;
+        cardData: {
+            front: string;
+            back: string;
+        };
+        tags: string[];
+        firstLearn: {
+            isNew: boolean;
+            due?: Date | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        };
+        updatedAt?: Date | undefined;
+        cardAlgo?: {
+            difficulty: number;
+            scheduled_days: number;
+            due: Date;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            last_review?: Date | undefined;
+        } | undefined;
+        grade?: import("memvocado-types/schemas/card").CardGrade | undefined;
+        hasChanges?: boolean | undefined;
+    }[];
+    count: number;
 }>, unknown>;

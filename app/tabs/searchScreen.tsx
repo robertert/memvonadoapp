@@ -23,7 +23,7 @@ import { placeholderDecks } from "../../constants/placeholderData";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { ScrollView } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { SearchFilters, SearchLog } from "../../types/schemas/search";
+import type { SearchFilters, SearchLog } from "@/types";
 
 interface Deck {
   id: string;

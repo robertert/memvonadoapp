@@ -21,7 +21,7 @@ import type {
   Card,
   User,
   DeckSettingsUpdate,
-} from "../types";
+} from "@/types";
 import {
   SuccessResponseSchema,
   SuccessResponse,
@@ -151,6 +151,9 @@ import {
   UpdateDeckRequest,
   UpdateDeckResponse,
   UpdateDeckResponseSchema,
+  ImportAnkiDeckRequest,
+  ImportAnkiDeckResponse,
+  ImportAnkiDeckResponseSchema,
   CreateDeckWithCardsResponseSchema,
   GetDeckDetailsResponseSchema,
   GetDeckCardsResponseSchema,
@@ -986,6 +989,21 @@ export const cloudFunctions = {
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from updateDeck");
+    }
+    return validatedData.data;
+  },
+
+  // Import Anki deck (.apkg file)
+  importAnkiDeck: async (apkgBase64: string) => {
+    const fn = httpsCallable<ImportAnkiDeckRequest, ImportAnkiDeckResponse>(
+      functions,
+      "importAnkiDeck"
+    );
+    const result = await fn({ apkgBase64 });
+    const validatedData = ImportAnkiDeckResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from importAnkiDeck");
     }
     return validatedData.data;
   },

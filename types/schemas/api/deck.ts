@@ -303,3 +303,18 @@ export const UpdateDeckResponseSchema = z.object({
   deletedCount: z.number(),
 });
 export type UpdateDeckResponse = z.infer<typeof UpdateDeckResponseSchema>;
+
+export const ImportAnkiDeckRequestSchema = z
+  .object({
+    apkgBase64: z.string().min(1), // base64 encoded .apkg file
+  })
+  .strict();
+export type ImportAnkiDeckRequest = z.infer<typeof ImportAnkiDeckRequestSchema>;
+
+export const ImportAnkiDeckResponseSchema = z.object({
+  cards: z.array(CardSchema),
+  count: z.number(),
+});
+export type ImportAnkiDeckResponse = z.infer<
+  typeof ImportAnkiDeckResponseSchema
+>;

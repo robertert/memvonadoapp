@@ -55,6 +55,7 @@ export {
   syncDeckCards,
   updateCardContent,
   updateDeck,
+  importAnkiDeck,
 } from "./deckFunctions";
 export {
   getLeaderboard,

@@ -114,7 +114,7 @@ export const CardMetaSchema = z
   .object({
     id: z.string(),
     hasChanges: z.boolean().optional(),
-    contentVersion: z.date().optional(),
+    updatedAt: TimestampSchema.optional(),
   })
   .strict();
 

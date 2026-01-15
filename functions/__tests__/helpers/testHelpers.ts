@@ -563,6 +563,7 @@ export async function createTestUserDeck(
       zenMode?: boolean;
       dueCardsNumPerDay?: number;
       newCardsNumPerDay?: number;
+      shuffleNewCards?: boolean;
     };
     updatedAt?: Date;
     lastReviewDate?: Date;
@@ -575,6 +576,7 @@ export async function createTestUserDeck(
     settings: (() => {
       const settings: Record<string, unknown> = {
         zenMode: data.settings?.zenMode || false,
+        shuffleNewCards: data.settings?.shuffleNewCards || false,
       };
       // Only add optional fields if provided (schema expects number | undefined, not null)
       if (data.settings?.dueCardsNumPerDay !== undefined) {

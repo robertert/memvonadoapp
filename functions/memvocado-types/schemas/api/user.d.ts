@@ -101,7 +101,7 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
     } & {
         id: z.ZodString;
         hasChanges: z.ZodOptional<z.ZodBoolean>;
-        contentVersion: z.ZodOptional<z.ZodDate>;
+        updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
     }, "strict", z.ZodTypeAny, {
         createdAt: Date;
         id: string;
@@ -116,6 +116,7 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
             isFirst?: boolean | undefined;
             consecutiveGood?: number | undefined;
         };
+        updatedAt?: Date | undefined;
         cardAlgo?: {
             difficulty: number;
             scheduled_days: number;
@@ -129,7 +130,6 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
         } | undefined;
         grade?: import("../card").CardGrade | undefined;
         hasChanges?: boolean | undefined;
-        contentVersion?: Date | undefined;
     }, {
         id: string;
         cardData: {
@@ -143,6 +143,7 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
             consecutiveGood?: number | undefined;
         };
         createdAt?: unknown;
+        updatedAt?: unknown;
         tags?: string[] | undefined;
         cardAlgo?: {
             difficulty: number;
@@ -157,7 +158,6 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
         } | undefined;
         grade?: import("../card").CardGrade | undefined;
         hasChanges?: boolean | undefined;
-        contentVersion?: Date | undefined;
     }>;
     scheduledTime: z.ZodNumber;
 }, "strict", z.ZodTypeAny, {
@@ -177,6 +177,7 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
             isFirst?: boolean | undefined;
             consecutiveGood?: number | undefined;
         };
+        updatedAt?: Date | undefined;
         cardAlgo?: {
             difficulty: number;
             scheduled_days: number;
@@ -190,7 +191,6 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
         } | undefined;
         grade?: import("../card").CardGrade | undefined;
         hasChanges?: boolean | undefined;
-        contentVersion?: Date | undefined;
     };
     scheduledTime: number;
 }, {
@@ -209,6 +209,7 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
             consecutiveGood?: number | undefined;
         };
         createdAt?: unknown;
+        updatedAt?: unknown;
         tags?: string[] | undefined;
         cardAlgo?: {
             difficulty: number;
@@ -223,7 +224,6 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
         } | undefined;
         grade?: import("../card").CardGrade | undefined;
         hasChanges?: boolean | undefined;
-        contentVersion?: Date | undefined;
     };
     scheduledTime: number;
 }>;

@@ -19,6 +19,7 @@ import {
   PlusIcon,
   DocumentTextIcon,
   CameraIcon,
+  ArchiveBoxIcon,
 } from "react-native-heroicons/solid";
 
 export default function createScreen(): React.JSX.Element {
@@ -45,6 +46,11 @@ export default function createScreen(): React.JSX.Element {
     setShowModal(false);
     // TODO: Implement scan document functionality
     console.log("Scan Document clicked");
+  };
+
+  const handleImportAnki = () => {
+    setShowModal(false);
+    router.push("../stack/ankiImportScreen");
   };
 
   return (
@@ -89,6 +95,12 @@ export default function createScreen(): React.JSX.Element {
               <Pressable style={styles.optionButton} onPress={handleImportDeck}>
                 <DocumentTextIcon size={20} color={Colors.primary_700} />
                 <Text style={styles.optionText}>Importuj talię</Text>
+              </Pressable>
+
+              {/* Import Anki */}
+              <Pressable style={styles.optionButton} onPress={handleImportAnki}>
+                <ArchiveBoxIcon size={20} color={Colors.primary_700} />
+                <Text style={styles.optionText}>Importuj z Anki</Text>
               </Pressable>
 
               {/* Scan Document */}

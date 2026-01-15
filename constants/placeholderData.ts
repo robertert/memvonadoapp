@@ -5,14 +5,14 @@ import {
   UserSchema,
   CardSchema,
   LeagueGroupMemberSchema,
-} from "../types/schemas";
+} from "@/types/schemas";
 import type {
   Deck,
   Notification,
   User,
   Card,
   LeagueGroupMember,
-} from "../types";
+} from "@/types";
 
 // Walidacja i eksport danych placeholder użytkownika zgodnych z UserSchema
 const _placeholderUser = {

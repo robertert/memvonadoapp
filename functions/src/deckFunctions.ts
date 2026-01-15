@@ -54,7 +54,10 @@ import {
   UpdateCardContentRequestSchema,
   UpdateDeckRequestSchema,
   CheckCardChangesResponseSchema,
+  ImportAnkiDeckRequestSchema,
+  ImportAnkiDeckResponseSchema,
 } from "memvocado-types/schemas/api/deck";
+import { convertAnkiApkg } from "./ankiConverter";
 
 const db = getFirestore();
 
@@ -674,12 +677,29 @@ export const getUserNewDeckCards = onCall(async (request) => {
       throw new HttpsError("not-found", "Deck not found");
     }
 
+    // Get deck settings to check shuffleNewCards
+    const userDeckData = userDeckSnap.data() as DeckLearningData;
+    const shuffleNewCards =
+      (userDeckData.settings as DeckSettings)?.shuffleNewCards ?? false;
+
     // Get new cards directly from user's collection (all cards are already copied)
     const userCardsRef = userDeckRef.collection("cards");
-    const userCardsSnap = await userCardsRef
-      .where("firstLearn.isNew", "==", true)
-      .limit(limit)
-      .get();
+    let userCardsSnap;
+
+    if (shuffleNewCards) {
+      // Shuffle włączony: obecne zachowanie - limit bez sortowania
+      userCardsSnap = await userCardsRef
+        .where("firstLearn.isNew", "==", true)
+        .limit(limit)
+        .get();
+    } else {
+      // Shuffle wyłączony: sortuj po createdAt ASC (najstarsze najpierw)
+      userCardsSnap = await userCardsRef
+        .where("firstLearn.isNew", "==", true)
+        .orderBy("createdAt", "asc")
+        .limit(limit)
+        .get();
+    }
 
     const cards = userCardsSnap.docs.map((doc) => {
       return {
@@ -770,6 +790,7 @@ export const updateUserStats = onDocumentWritten(
 
 /**
  * Sync denormalized fields (category, icon, tags) to all user copies when source deck is updated
+ * Triggered on write to decks/{deckId}
  */
 export const syncDeckMetadataToUserCopies = onDocumentWritten(
   "decks/{deckId}",
@@ -780,27 +801,46 @@ export const syncDeckMetadataToUserCopies = onDocumentWritten(
 
     // Skip if document was deleted
     if (!afterData) {
+      logger.info("Deck deleted, skipping sync", { deckId });
+      return;
+    }
+
+    // Validate source deck data
+    let validatedAfterData: Deck;
+    try {
+      validatedAfterData = DeckSchema.parse({
+        id: deckId,
+        ...afterData,
+      });
+    } catch (error) {
+      logger.error("Invalid deck data, skipping sync", {
+        deckId,
+        error,
+      });
       return;
     }
 
     // Check if category, icon, or tags changed
-    const categoryChanged =
-      beforeData?.category !== afterData?.category ||
-      (beforeData?.category === undefined &&
-        afterData?.category !== undefined) ||
-      (beforeData?.category !== undefined && afterData?.category === undefined);
+    const beforeCategory = beforeData?.category ?? null;
+    const afterCategory = validatedAfterData.category ?? null;
+    const categoryChanged = beforeCategory !== afterCategory;
 
-    const iconChanged =
-      beforeData?.icon !== afterData?.icon ||
-      (beforeData?.icon === undefined && afterData?.icon !== undefined) ||
-      (beforeData?.icon !== undefined && afterData?.icon === undefined);
+    const beforeIcon = beforeData?.icon ?? "cards";
+    const afterIcon = validatedAfterData.icon ?? "cards";
+    const iconChanged = beforeIcon !== afterIcon;
 
+    const beforeTags = Array.isArray(beforeData?.tags)
+      ? [...beforeData.tags].sort()
+      : [];
+    const afterTags = Array.isArray(validatedAfterData.tags)
+      ? [...validatedAfterData.tags].sort()
+      : [];
     const tagsChanged =
-      JSON.stringify(beforeData?.tags || []) !==
-      JSON.stringify(afterData?.tags || []);
+      JSON.stringify(beforeTags) !== JSON.stringify(afterTags);
 
     // If nothing changed, skip
     if (!categoryChanged && !iconChanged && !tagsChanged) {
+      logger.debug("No metadata changes detected, skipping sync", { deckId });
       return;
     }
 
@@ -808,31 +848,59 @@ export const syncDeckMetadataToUserCopies = onDocumentWritten(
       // Prepare update data with only changed fields
       const updateData: {
         category?: string | null;
-        icon?: string | null;
-        tags?: string[] | null;
+        icon?: string;
+        tags?: string[];
         updatedAt: ReturnType<typeof FieldValue.serverTimestamp>;
       } = {
         updatedAt: FieldValue.serverTimestamp(),
       };
 
       if (categoryChanged) {
-        updateData.category = afterData.category || null;
+        updateData.category = afterCategory;
       }
       if (iconChanged) {
-        updateData.icon = afterData.icon || null;
+        updateData.icon = afterIcon;
       }
       if (tagsChanged) {
-        updateData.tags = afterData.tags || null;
+        updateData.tags = validatedAfterData.tags;
       }
 
       // Find all users who have a copy of this deck
       // We need to query all users/{userId}/decks/{deckId} collections
       // Since Firestore doesn't support wildcard queries across collections,
       // we'll use a collection group query
-      const userDeckCopies = await db
-        .collectionGroup("decks")
-        .where("id", "==", deckId)
-        .get();
+      // NOTE: Requires index on collectionGroup "decks" with field "id"
+      let userDeckCopies;
+      try {
+        userDeckCopies = await db
+          .collectionGroup("decks")
+          .where("id", "==", deckId)
+          .get();
+      } catch (queryError) {
+        // Check if it's an index error
+        if (
+          queryError instanceof Error &&
+          queryError.message.includes("index")
+        ) {
+          logger.error(
+            "Collection group query requires index. Please create index for collectionGroup 'decks' with field 'id'",
+            {
+              deckId,
+              error: queryError.message,
+            }
+          );
+        } else {
+          logger.error("Error executing collection group query", {
+            deckId,
+            error:
+              queryError instanceof Error
+                ? queryError.message
+                : String(queryError),
+          });
+        }
+        // Don't throw - we don't want to fail the source deck update
+        return;
+      }
 
       if (userDeckCopies.empty) {
         logger.info("No user copies found for deck", { deckId });
@@ -850,18 +918,79 @@ export const syncDeckMetadataToUserCopies = onDocumentWritten(
         // Collection group query returns docs from users/{userId}/decks/{deckId}
         const pathParts = userDeckDoc.ref.path.split("/");
         if (pathParts.length !== 4 || pathParts[0] !== "users") {
+          logger.warn("Invalid path structure in collection group query", {
+            path: userDeckDoc.ref.path,
+          });
           continue;
         }
 
-        currentBatch.update(userDeckDoc.ref, updateData);
-        updatedCount++;
-        batchCount++;
+        const userIdFromPath = pathParts[1];
+        const deckIdFromPath = pathParts[3];
 
-        // Firestore batch limit is 500 operations
-        if (batchCount >= 500) {
-          batches.push(currentBatch);
-          currentBatch = db.batch();
-          batchCount = 0;
+        // Verify deckId from path matches the source deckId
+        if (deckIdFromPath !== deckId) {
+          logger.warn("Deck ID from path doesn't match source deck ID", {
+            pathDeckId: deckIdFromPath,
+            sourceDeckId: deckId,
+            path: userDeckDoc.ref.path,
+          });
+          continue;
+        }
+
+        // Validate existing user deck data before update
+        const existingUserDeckData = userDeckDoc.data();
+        if (!existingUserDeckData) {
+          logger.warn("User deck document has no data", {
+            userId: userIdFromPath,
+            deckId: deckIdFromPath,
+            path: userDeckDoc.ref.path,
+          });
+          continue;
+        }
+
+        try {
+          // Use deckId from path (which should match the source deckId)
+          // The 'id' field in the document should also match, but we verify from path
+          const validatedUserDeck = DeckLearningDataSchema.parse({
+            ...existingUserDeckData,
+            id: deckIdFromPath, // Use deckId from path, not document ID
+          });
+
+          // Double-check: the id field in document should match
+          if (validatedUserDeck.id !== deckId) {
+            logger.warn("User deck ID field doesn't match source deck ID", {
+              userDeckId: validatedUserDeck.id,
+              sourceDeckId: deckId,
+              path: userDeckDoc.ref.path,
+            });
+            continue;
+          }
+
+          currentBatch.update(userDeckDoc.ref, updateData);
+          updatedCount++;
+          batchCount++;
+
+          // Firestore batch limit is 500 operations
+          if (batchCount >= 500) {
+            batches.push(currentBatch);
+            currentBatch = db.batch();
+            batchCount = 0;
+          }
+        } catch (validationError) {
+          logger.error("Invalid user deck data, skipping update", {
+            userId: userIdFromPath,
+            deckId: deckIdFromPath,
+            path: userDeckDoc.ref.path,
+            error:
+              validationError instanceof Error
+                ? validationError.message
+                : String(validationError),
+            errorStack:
+              validationError instanceof Error
+                ? validationError.stack
+                : undefined,
+          });
+          continue;
         }
       }
 
@@ -873,15 +1002,16 @@ export const syncDeckMetadataToUserCopies = onDocumentWritten(
       // Commit all batches
       if (batches.length > 0) {
         await Promise.all(batches.map((batch) => batch.commit()));
+        logger.info("Synced deck metadata to user copies", {
+          deckId,
+          updatedCount,
+          categoryChanged,
+          iconChanged,
+          tagsChanged,
+        });
+      } else {
+        logger.info("No valid user copies to update", { deckId });
       }
-
-      logger.info("Synced deck metadata to user copies", {
-        deckId,
-        updatedCount,
-        categoryChanged,
-        iconChanged,
-        tagsChanged,
-      });
     } catch (error) {
       logger.error("Error syncing deck metadata to user copies", {
         deckId,
@@ -1244,7 +1374,7 @@ export const startLearningDeck = onCall(async (request) => {
         id: deckId,
         title: srcDeck.title,
         cardsNum: srcDeck.cardsNum,
-        settings: { zenMode: false } as DeckSettings,
+        settings: { zenMode: false, shuffleNewCards: false } as DeckSettings,
         updatedAt: srcDeck.updatedAt,
         category: srcDeck.category,
         icon: srcDeck.icon,
@@ -1373,9 +1503,7 @@ export const deleteDeck = onCall(async (request) => {
     if (!rawDeckData) {
       throw new HttpsError("not-found", "Deck not found");
     }
-    const validatedDeckData = DeckSchema.omit({
-      id: true,
-    }).parse(rawDeckData);
+    const validatedDeckData = DeckSchema.parse(rawDeckData);
 
     // Check if user is the creator of the deck
     if (validatedDeckData.createdBy !== userId) {
@@ -1856,9 +1984,7 @@ export const updateCardContent = onCall(async (request) => {
     if (!rawDeckData) {
       throw new HttpsError("not-found", "Deck not found");
     }
-    const validatedDeckData = DeckSchema.omit({
-      id: true,
-    }).parse(rawDeckData);
+    const validatedDeckData = DeckSchema.parse(rawDeckData);
     if (validatedDeckData.createdBy !== userId) {
       throw new HttpsError(
         "permission-denied",
@@ -2118,5 +2244,55 @@ export const updateDeck = onCall(async (request) => {
       throw error;
     }
     throw new HttpsError("internal", "Failed to update deck");
+  }
+});
+
+/**
+ * Import Anki deck (.apkg file) and convert to Memvocado cards
+ */
+export const importAnkiDeck = onCall(async (request) => {
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  // Walidacja request
+  const validationResult = ImportAnkiDeckRequestSchema.safeParse(request.data);
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { apkgBase64 } = validationResult.data;
+
+  try {
+    // Konwersja Anki → Cards
+    const cards = await convertAnkiApkg(apkgBase64);
+
+    logger.info("Anki deck imported successfully", {
+      userId: auth.uid,
+      cardCount: cards.length,
+    });
+
+    // Walidacja i zwrócenie odpowiedzi
+    const response = {
+      cards,
+      count: cards.length,
+    };
+
+    return serializeTimestamps(ImportAnkiDeckResponseSchema.parse(response));
+  } catch (error) {
+    logger.error("Error importing Anki deck", error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError(
+      "internal",
+      `Failed to import Anki deck: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 });

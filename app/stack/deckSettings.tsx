@@ -19,7 +19,7 @@ import { ArrowLeftIcon } from "react-native-heroicons/solid";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "@/store/user-context";
-import { Deck, DeckLearningData } from "../../types/index";
+import type { Deck, DeckLearningData } from "@/types";
 
 import {
   CATEGORY_OPTIONS,
@@ -287,6 +287,34 @@ export default function deckSettings(): React.JSX.Element {
                   setDeck({
                     ...deck,
                     settings: { ...deck.settings, zenMode: value },
+                  });
+                }}
+                trackColor={{
+                  false: Colors.primary_500,
+                  true: Colors.accent_500,
+                }}
+                thumbColor={Colors.primary_700}
+              />
+            </View>
+          </View>
+
+          {/* Mieszaj nowe karty */}
+          <View style={styles.section}>
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingTitle}>Mieszaj nowe karty</Text>
+                <Text style={styles.settingDescription}>
+                  Losowo mieszaj kolejność nowych kart zamiast pokazywać je od
+                  najstarszej
+                </Text>
+              </View>
+              <Switch
+                value={deck?.settings.shuffleNewCards ?? false}
+                onValueChange={(value) => {
+                  if (!deck) return;
+                  setDeck({
+                    ...deck,
+                    settings: { ...deck.settings, shuffleNewCards: value },
                   });
                 }}
                 trackColor={{

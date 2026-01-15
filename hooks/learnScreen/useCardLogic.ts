@@ -326,7 +326,7 @@ export function useCardLogic(id: string) {
           id: placeholderDeck.id,
           title: placeholderDeck.title,
           cardsNum: placeholderDeck.cardsNum,
-          settings: { zenMode: false },
+          settings: { zenMode: false, shuffleNewCards: false },
         } as DeckLearningData);
 
         // Przekształć placeholderCards na format Card
@@ -382,6 +382,8 @@ export function useCardLogic(id: string) {
           cloudFunctions.getUserDueDeckCards(id, dailyGoal),
           cloudFunctions.getUserNewDeckCards(id, dailyNew),
         ]);
+
+        console.log("newRes", JSON.stringify(newRes.cards, null, 2));
 
         const sessionCards = [...dueRes.cards, ...newRes.cards] as Card[];
 
