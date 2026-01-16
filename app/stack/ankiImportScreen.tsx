@@ -5,6 +5,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -12,9 +13,9 @@ import { Colors, Fonts } from "../../constants/colors";
 import { router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
+import { ref, uploadBytes } from "firebase/storage";
+import { storage } from "../../firebase";
 import { cloudFunctions } from "../../services/cloudFunctions";
-import type { Card } from "@/types";
 
 export default function ankiImportScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
@@ -24,6 +25,7 @@ export default function ankiImportScreen(): React.JSX.Element {
   } | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isImporting, setIsImporting] = useState<boolean>(false);
+  const [deckTitle, setDeckTitle] = useState<string>("");
 
   async function pickAnkiFile(): Promise<void> {
     try {
@@ -61,28 +63,25 @@ export default function ankiImportScreen(): React.JSX.Element {
     try {
       setIsImporting(true);
 
-      // Odczytaj plik jako base64 używając nowego API Expo SDK 54
-      const file = await FileSystem.readAsStringAsync(selectedFile.uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      const response = await fetch(selectedFile.uri);
+      const blob = await response.blob();
 
-      // Wywołaj Cloud Function
-      const importResponse = await cloudFunctions.importAnkiDeck(file);
+      const timestamp = Date.now();
+      const fileName = selectedFile.name || `deck_${timestamp}.apkg`;
+      const storagePath = `imports/${timestamp}_${fileName}`;
+      const storageRef = ref(storage, storagePath);
 
-      // Konwersja kart z formatu Card na format oczekiwany przez loadDraft
-      // loadDraft oczekuje formatu: { front: string, back: string, tags: string[] }[]
-      console.log(JSON.stringify(importResponse, null, 2));
+      await uploadBytes(storageRef, blob);
 
-      const cardsForDraft = importResponse.cards.map((card: Card) => ({
-        front: card.cardData.front,
-        back: card.cardData.back,
-        tags: card.tags || [],
-      }));
+      const importResponse = await cloudFunctions.importAnkiDeck(
+        storagePath,
+        deckTitle.trim() || undefined
+      );
 
-      // Przekieruj do createSelfScreen z zaimportowanymi kartami
-      router.push({
-        pathname: "../stack/createSelfScreen",
-        params: { cards: JSON.stringify(cardsForDraft) },
+      // Przekieruj do szczegółów utworzonej talii
+      router.replace({
+        pathname: "../stack/deckDetails",
+        params: { deckId: importResponse.deckId },
       });
     } catch (error) {
       setIsImporting(false);
@@ -117,6 +116,18 @@ export default function ankiImportScreen(): React.JSX.Element {
         <Text style={styles.subtitle}>
           Wybierz plik .apkg z talii Anki do zaimportowania
         </Text>
+
+        {/* Pole tytułu talii */}
+        <View style={styles.titleInputContainer}>
+          <Text style={styles.titleLabel}>Tytuł talii</Text>
+          <TextInput
+            style={styles.titleInput}
+            value={deckTitle}
+            onChangeText={setDeckTitle}
+            placeholder="Wprowadź tytuł talii..."
+            placeholderTextColor={Colors.primary_700_50}
+          />
+        </View>
 
         {/* Przycisk wyboru pliku */}
         <Pressable
@@ -288,5 +299,30 @@ const styles = StyleSheet.create({
     color: Colors.primary_700,
     fontWeight: "500",
     textAlign: "center",
+  },
+  titleInputContainer: {
+    width: "100%",
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  titleLabel: {
+    fontFamily: Fonts.primary,
+    fontSize: 18,
+    color: Colors.primary_700,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+  titleInput: {
+    width: "100%",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    backgroundColor: Colors.primary_100,
+    borderRadius: 16,
+    borderWidth: 3,
+    borderColor: Colors.primary_700,
+    fontFamily: Fonts.primary,
+    fontSize: 18,
+    color: Colors.primary_700,
+    fontWeight: "600",
   },
 });
