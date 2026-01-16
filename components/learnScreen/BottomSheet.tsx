@@ -4,6 +4,7 @@ import { GestureDetector } from "react-native-gesture-handler";
 import Animated from "react-native-reanimated";
 import { ProgressState, TooltipState } from "../../app/stack/learnScreen.types";
 import { Colors } from "../../constants/colors";
+import type { DailyStats } from "@/types";
 
 interface BottomSheetProps {
   progress: ProgressState;
@@ -16,6 +17,7 @@ interface BottomSheetProps {
   bottomStyle: any;
   insideDisplayStyles: any;
   safeArea: any;
+  dailyStats: DailyStats | null;
 }
 
 /**
@@ -32,6 +34,7 @@ export default function BottomSheet({
   bottomStyle,
   insideDisplayStyles,
   safeArea,
+  dailyStats,
 }: BottomSheetProps) {
   return (
     <Animated.View
@@ -67,25 +70,7 @@ export default function BottomSheet({
                   fontWeight: "bold",
                 }}
               >
-                {progress.easy}
-              </Text>
-              <Text
-                style={{
-                  color: Colors.green,
-                  fontSize: 25,
-                  fontWeight: "bold",
-                }}
-              >
-                {progress.good}
-              </Text>
-              <Text
-                style={{
-                  color: Colors.yellow,
-                  fontSize: 25,
-                  fontWeight: "bold",
-                }}
-              >
-                {progress.hard}
+                {dailyStats?.newCardsRemaining}
               </Text>
               <Text
                 style={{
@@ -94,7 +79,26 @@ export default function BottomSheet({
                   fontWeight: "bold",
                 }}
               >
-                {progress.wrong}
+                {dailyStats?.dueCardsRemaining}
+              </Text>
+              <Text
+                style={{
+                  color: Colors.yellow,
+                  fontSize: 25,
+                  fontWeight: "bold",
+                }}
+              >
+                {(dailyStats?.inProgressDueCards ?? 0) +
+                  (dailyStats?.inProgressNewCards ?? 0)}
+              </Text>
+              <Text
+                style={{
+                  color: Colors.green,
+                  fontSize: 25,
+                  fontWeight: "bold",
+                }}
+              >
+                {dailyStats?.completedToday}
               </Text>
               <Text
                 style={{
@@ -103,7 +107,11 @@ export default function BottomSheet({
                   fontWeight: "bold",
                 }}
               >
-                {progress.todo}
+                {(dailyStats?.newCardsRemaining ?? 0) +
+                  (dailyStats?.dueCardsRemaining ?? 0) +
+                  (dailyStats?.inProgressDueCards ?? 0) +
+                  (dailyStats?.inProgressNewCards ?? 0) +
+                  (dailyStats?.completedToday ?? 0)}
               </Text>
             </View>
           </Animated.View>
@@ -194,6 +202,62 @@ export default function BottomSheet({
                   />
                 </View>
               </View>
+
+              {/* Daily Stats Section */}
+              {dailyStats && (
+                <>
+                  <View
+                    style={{
+                      width: "90%",
+                      height: 1,
+                      marginVertical: 10,
+                      backgroundColor: "#ffffff",
+                      alignSelf: "center",
+                    }}
+                  />
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      marginVertical: 10,
+                      justifyContent: "space-around",
+                    }}
+                  >
+                    <View style={{ alignItems: "center" }}>
+                      <Text style={{ color: "#ffffff", fontSize: 30 }}>
+                        {dailyStats.newCardsRemaining}
+                      </Text>
+                      <Text style={{ color: "#ffffff", fontSize: 20 }}>
+                        Nowe
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: "center" }}>
+                      <Text style={{ color: "#ffffff", fontSize: 30 }}>
+                        {dailyStats.dueCardsRemaining}
+                      </Text>
+                      <Text style={{ color: "#ffffff", fontSize: 20 }}>
+                        Due
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: "center" }}>
+                      <Text style={{ color: "#ffffff", fontSize: 30 }}>
+                        {dailyStats.inProgressDueCards +
+                          dailyStats.inProgressNewCards}
+                      </Text>
+                      <Text style={{ color: "#ffffff", fontSize: 20 }}>
+                        In Progress
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: "center" }}>
+                      <Text style={{ color: "#ffffff", fontSize: 30 }}>
+                        {dailyStats.completedToday}
+                      </Text>
+                      <Text style={{ color: "#ffffff", fontSize: 20 }}>
+                        Zrobione
+                      </Text>
+                    </View>
+                  </View>
+                </>
+              )}
 
               {/* Divider */}
               <View

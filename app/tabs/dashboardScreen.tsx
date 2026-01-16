@@ -20,13 +20,16 @@ import { cloudFunctions } from "../../services/cloudFunctions";
 import { BellIcon, FireIcon, LanguageIcon } from "react-native-heroicons/solid";
 import PieChart from "../../components/CustomPieChart";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
-import { placeholderDecks } from "../../constants/placeholderData";
-import { DeckSchema, UserProgress, Deck } from "@/types";
+import {
+  placeholderDecks,
+  placeholderDecksLearningData,
+} from "../../constants/placeholderData";
+import { DeckSchema, UserProgress, Deck, DeckLearningData } from "@/types";
 
 export default function decksScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
 
-  const [decks, setDecks] = useState<Deck[]>();
+  const [decks, setDecks] = useState<DeckLearningData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isRefresh, setIsRefresh] = useState<boolean>(false);
   const [userProgress, setUserProgress] = useState<UserProgress>();
@@ -42,7 +45,7 @@ export default function decksScreen(): React.JSX.Element {
       setIsLoading(true);
       if (PLACEHOLDER_MODE || !userCtx.id) {
         // Tryb placeholder lub brak użytkownika: pokaż deki demo
-        setDecks(placeholderDecks);
+        setDecks(placeholderDecksLearningData);
       } else if (userCtx.id) {
         // Get user progress and statistics from Cloud Function
         const [userProgress, userDecks] = await Promise.all([
@@ -58,7 +61,7 @@ export default function decksScreen(): React.JSX.Element {
       console.log(e);
       // W trybie demo pokaż placeholdery zamiast błędu
       if (PLACEHOLDER_MODE) {
-        setDecks(placeholderDecks.map((d) => DeckSchema.parse(d as Deck)));
+        setDecks(placeholderDecksLearningData);
       } else {
         Alert.alert("Error", "Try again later");
       }
@@ -66,7 +69,7 @@ export default function decksScreen(): React.JSX.Element {
     }
   }
 
-  function openDeckHandler(gotDeck: Deck): void {
+  function openDeckHandler(gotDeck: DeckLearningData): void {
     if (!gotDeck) return;
     router.push({
       pathname: "../stack/deckDetails",
@@ -157,7 +160,7 @@ export default function decksScreen(): React.JSX.Element {
           </Pressable>
           <Text style={styles.subtitle}>Your decks</Text>
           <View style={styles.decksList}>
-            {decks?.slice(0, 2).map((deck: Deck) => {
+            {decks?.slice(0, 2).map((deck) => {
               return (
                 <Pressable key={deck.id} onPress={() => openDeckHandler(deck)}>
                   <View style={styles.deckContainer}>
@@ -165,7 +168,19 @@ export default function decksScreen(): React.JSX.Element {
                       {deck.title || "Untitled Deck"}
                     </Text>
                     <View style={styles.chartContainer}>
-                      <PieChart percentage={50} radius={35} />
+                      <PieChart
+                        percentage={Math.round(
+                          deck.dailyStats?.completedToday
+                            ? (deck.dailyStats?.completedToday * 100) /
+                                (deck.dailyStats?.completedToday +
+                                  deck.dailyStats?.inProgressDueCards +
+                                  deck.dailyStats?.inProgressNewCards +
+                                  deck.dailyStats?.dueCardsRemaining +
+                                  deck.dailyStats?.newCardsRemaining)
+                            : 0
+                        )}
+                        radius={35}
+                      />
                     </View>
                   </View>
                 </Pressable>

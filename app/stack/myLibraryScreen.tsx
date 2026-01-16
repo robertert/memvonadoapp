@@ -23,24 +23,15 @@ import {
 
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
-import type { Deck } from "@/types";
+import type { DeckLearningData } from "@/types";
 import { CATEGORY_OPTIONS } from "../../constants/settings";
-
-interface LibraryDeckItem {
-  id: string | number;
-  name: string;
-  category: string;
-  cards: number;
-  lastStudied: string;
-  progress: number;
-}
 
 export default function MyLibraryScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
   const userCtx = useContext(UserContext);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [backendDecks, setBackendDecks] = useState<Deck[]>([]);
+  const [backendDecks, setBackendDecks] = useState<DeckLearningData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,32 +73,8 @@ export default function MyLibraryScreen(): React.JSX.Element {
     };
   }, [userCtx.id]);
 
-  const getMyDecks = (): LibraryDeckItem[] => {
-    if (PLACEHOLDER_MODE) {
-      return placeholderDecks.map((deck, idx) => ({
-        id: deck.id,
-        name: deck.title,
-        category: deck.category || "Other",
-        cards: deck.cardsNum || 10,
-        lastStudied: idx === 0 ? "2 dni temu" : `${idx + 1} dni temu`,
-        progress: 50 + idx * 10,
-      }));
-    }
-    // Rzeczywiste decki użytkownika z backendu
-    return backendDecks.map((deck) => ({
-      id: deck.id,
-      name: deck.title,
-      category: deck.category || "Other",
-      cards: deck.cardsNum,
-      lastStudied: "—",
-      progress: 0,
-    }));
-  };
-
-  const myDecks = getMyDecks();
-
-  const filteredDecks = myDecks.filter((deck) => {
-    const matchesSearch = deck.name
+  const filteredDecks = backendDecks.filter((deck) => {
+    const matchesSearch = deck.title
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesCategory =
@@ -115,7 +82,7 @@ export default function MyLibraryScreen(): React.JSX.Element {
     return matchesSearch && matchesCategory;
   });
 
-  const renderDeckItem = ({ item }: { item: LibraryDeckItem }) => (
+  const renderDeckItem = ({ item }: { item: DeckLearningData }) => (
     <Pressable
       style={styles.deckCard}
       onPress={() => {
@@ -130,9 +97,9 @@ export default function MyLibraryScreen(): React.JSX.Element {
           color={Colors.primary_700}
         />
         <View style={styles.deckInfo}>
-          <Text style={styles.deckName}>{item.name}</Text>
+          <Text style={styles.deckName}>{item.title}</Text>
           <Text style={styles.deckStats}>
-            {item.cards} kart • {item.lastStudied}
+            {item.cardsNum} kart • {item.lastReviewDate?.toLocaleDateString()}
           </Text>
         </View>
         <View style={styles.deckActions}>
@@ -146,10 +113,37 @@ export default function MyLibraryScreen(): React.JSX.Element {
 
       <View style={styles.deckFooter}>
         <View style={styles.progressContainer}>
-          <Text style={styles.progressText}>Postęp: {item.progress}%</Text>
+          <Text style={styles.progressText}>
+            Dzisiejszy postęp:{" "}
+            {Math.round(
+              item.dailyStats?.completedToday
+                ? (item.dailyStats?.completedToday * 100) /
+                    (item.dailyStats?.completedToday +
+                      item.dailyStats?.inProgressDueCards +
+                      item.dailyStats?.inProgressNewCards +
+                      item.dailyStats?.dueCardsRemaining +
+                      item.dailyStats?.newCardsRemaining)
+                : 0
+            )}
+            %{" "}
+          </Text>
           <View style={styles.progressBar}>
             <View
-              style={[styles.progressFill, { width: `${item.progress}%` }]}
+              style={[
+                styles.progressFill,
+                {
+                  width: `${
+                    item.dailyStats?.completedToday
+                      ? (item.dailyStats?.completedToday * 100) /
+                        (item.dailyStats?.dueCardsRemaining +
+                          item.dailyStats?.inProgressDueCards +
+                          item.dailyStats?.inProgressNewCards +
+                          item.dailyStats?.newCardsRemaining +
+                          item.dailyStats?.completedToday || 1)
+                      : 0
+                  }%`,
+                },
+              ]}
             />
           </View>
         </View>

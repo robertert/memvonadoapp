@@ -40,6 +40,7 @@ import {
   safeValidateDeck,
   type Card,
   type Deck,
+  type DeckLearningData,
 } from "@/types";
 
 import { calculateDateAgo } from "@/utils/date";
@@ -60,6 +61,7 @@ export default function deckDetails(): React.JSX.Element {
   const [hasMoreCards, setHasMoreCards] = useState<boolean>(true);
   const [lastDocId, setLastDocId] = useState<string | null>(null);
   const [deck, setDeck] = useState<Deck>();
+  const [userDeck, setUserDeck] = useState<DeckLearningData>();
   const [cards, setCards] = useState<Card[]>([]);
   const [syncModalVisible, setSyncModalVisible] = useState<boolean>(false);
   const [cardChanges, setCardChanges] = useState<any[]>([]);
@@ -92,6 +94,7 @@ export default function deckDetails(): React.JSX.Element {
     if (!userCtx.id || !typedParams.deckId) return;
 
     try {
+      setIsLoading(true);
       const result = await cloudFunctions.syncDeckCards(
         typedParams.deckId,
         true
@@ -102,11 +105,12 @@ export default function deckDetails(): React.JSX.Element {
       );
       setSyncModalVisible(false);
       setCardChanges([]);
-      // Refresh deck
       fetchDeck();
     } catch (error) {
       console.error("Error syncing cards:", error);
       Alert.alert("Błąd", "Nie udało się zsynchronizować kart.");
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -137,7 +141,7 @@ export default function deckDetails(): React.JSX.Element {
       } else {
         const [
           { deck: deckData, username: deckUsername },
-          { deck: userDeckData },
+          { deck: userDeckData, createdDeck: createdDeck },
           { cards: deckCards, hasMore, lastDocId: newLastDocId },
         ] = await Promise.all([
           cloudFunctions.getDeckDetails(typedParams.deckId),
@@ -145,15 +149,12 @@ export default function deckDetails(): React.JSX.Element {
           cloudFunctions.getDeckCards(typedParams.deckId, 20),
         ]);
 
-        if (userDeckData) {
-          checkForChanges();
-        }
-
         if (!deckData) throw new Error("Deck not found");
 
         setDateAgo(calculateDateAgo(new Date(deckData.createdAt)));
         setUsername(deckUsername);
         setDeck(deckData);
+        setUserDeck(userDeckData ?? undefined);
         setCards(deckCards);
         setHasMoreCards(hasMore);
         setLastDocId(newLastDocId);
@@ -162,6 +163,7 @@ export default function deckDetails(): React.JSX.Element {
       console.error("Error fetching deck:", error);
     } finally {
       setIsLoading(false);
+      checkForChanges();
     }
   }
 
@@ -462,9 +464,39 @@ export default function deckDetails(): React.JSX.Element {
         <View style={styles.progressCard}>
           <Text style={styles.progressTitle}>Your Progress</Text>
           <View style={styles.progressStats}>
-            <View style={styles.progressItem}>
-              {/* TODO: Add progress stats */}
-            </View>
+            {userDeck?.dailyStats ? (
+              <>
+                <View style={styles.progressItem}>
+                  <Text style={styles.progressNumber}>
+                    {userDeck.dailyStats.newCardsRemaining}
+                  </Text>
+                  <Text style={styles.progressLabel}>New</Text>
+                </View>
+                <View style={styles.progressItem}>
+                  <Text style={styles.progressNumber}>
+                    {userDeck.dailyStats.dueCardsRemaining}
+                  </Text>
+                  <Text style={styles.progressLabel}>Due</Text>
+                </View>
+                <View style={styles.progressItem}>
+                  <Text style={styles.progressNumber}>
+                    {userDeck.dailyStats.inProgressDueCards +
+                      userDeck.dailyStats.inProgressNewCards}
+                  </Text>
+                  <Text style={styles.progressLabel}>Work</Text>
+                </View>
+                <View style={styles.progressItem}>
+                  <Text style={styles.progressNumber}>
+                    {userDeck.dailyStats.completedToday}
+                  </Text>
+                  <Text style={styles.progressLabel}>Done</Text>
+                </View>
+              </>
+            ) : (
+              <View style={styles.progressItem}>
+                <Text style={styles.progressLabel}>Brak statystyk</Text>
+              </View>
+            )}
           </View>
         </View>
         <Pressable
@@ -610,14 +642,14 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   startButtonGradient: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    paddingVertical: 20,
+    paddingHorizontal: 40,
     alignItems: "center",
     backgroundColor: Colors.accent_500,
   },
   startButtonText: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 24,
+    fontWeight: "900",
     color: Colors.primary_700,
     fontFamily: Fonts.primary,
   },
@@ -715,7 +747,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   progressCard: {
-    width: "100%",
+    width: "70%",
     backgroundColor: Colors.primary_500,
     borderRadius: 16,
     padding: 20,
@@ -723,7 +755,7 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   progressTitle: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: "900",
     color: Colors.primary_700,
     fontFamily: Fonts.primary,
@@ -746,9 +778,9 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.primary,
   },
   progressLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: Colors.primary_100,
-    fontWeight: "600",
+    fontWeight: "800",
     fontFamily: Fonts.primary,
     marginTop: 4,
   },

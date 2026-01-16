@@ -66,7 +66,7 @@ exports.CardAlgoSchema = zod_1.z
  */
 exports.FirstLearnSchema = zod_1.z
     .object({
-    isNew: zod_1.z.boolean(), // Card never seen
+    isNew: zod_1.z.boolean().default(true), // Card never seen
     isFirst: zod_1.z.boolean().optional(), // Card is in first learning phase
     due: base_1.TimestampSchema.optional(),
     consecutiveGood: zod_1.z.number().min(0).optional(), // Number of consecutive good answers

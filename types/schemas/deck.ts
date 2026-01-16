@@ -76,6 +76,22 @@ export const DeckSettingsSchema = z
 export type DeckSettings = z.infer<typeof DeckSettingsSchema>;
 
 /**
+ * Statystyki dzienne dla talii
+ */
+export const DailyStatsSchema = z
+  .object({
+    newCardsRemaining: z.number().min(0),
+    dueCardsRemaining: z.number().min(0),
+    inProgressDueCards: z.number().min(0),
+    inProgressNewCards: z.number().min(0),
+    completedToday: z.number().min(0),
+    lastUpdatedStats: TimestampSchema,
+  })
+  .strict();
+
+export type DailyStats = z.infer<typeof DailyStatsSchema>;
+
+/**
  * Talia do nauki (users/{userId}/decks/{deckId})
  */
 export const DeckLearningCoreSchema = z
@@ -113,6 +129,9 @@ export const DeckLearningDataSchema = DeckLearningMetaSchema.merge(
   DeckLearningCoreSchema
 )
   .merge(DeckLearningTimestampSchema)
+  .extend({
+    dailyStats: DailyStatsSchema.optional().nullable(),
+  })
   .strict();
 
 export type DeckLearningData = z.infer<typeof DeckLearningDataSchema>;
@@ -152,6 +171,7 @@ export type DeckUpdate = z.infer<typeof DeckUpdateSchema>;
 export const DeckLearningDataUpdateSchema = DeckLearningCoreSchema.partial()
   .extend({
     lastReviewDate: TimestampSchema.optional(),
+    dailyStats: DailyStatsSchema.optional().nullable(),
   })
   .strict();
 

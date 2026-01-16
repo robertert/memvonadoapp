@@ -80,17 +80,8 @@ export default function deckSettings(): React.JSX.Element {
       const { deck: deckData } = await cloudFunctions.getUserDeckDetails(
         typedParams.deckId
       );
-
-      if (!deckData) {
-        const result = await cloudFunctions.startLearningDeck(
-          typedParams.deckId
-        );
-        if (!result.success) throw new Error("Failed to start learning deck");
-        if (!result.deck) throw new Error("No deck returned");
-        setDeck(result.deck);
-      } else {
-        setDeck(deckData);
-      }
+      if (!deckData) throw new Error("Deck not found");
+      setDeck(deckData);
     } catch (error) {
       console.error("Error fetching deck data:", error);
     } finally {

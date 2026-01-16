@@ -13,11 +13,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 
 interface ProgressParams {
-  easy?: string;
-  good?: string;
-  hard?: string;
-  all?: string;
-  todo?: string;
+  newCardsRemaining?: number;
+  dueCardsRemaining?: number;
+  inProgressDueCards?: number;
+  inProgressNewCards?: number;
+  completedToday?: number;
+  lastUpdatedStats?: Date;
   empty?: string;
 }
 
@@ -143,19 +144,19 @@ export default function victoryScreen(): React.JSX.Element {
               <View style={styles.insideRow}>
                 <View style={styles.insideSection}>
                   <Text style={[styles.num, { color: Colors.blue }]}>
-                    {progress.easy}
+                    {progress.newCardsRemaining}
                   </Text>
                   <Text style={styles.desc}>Easy</Text>
                 </View>
                 <View style={styles.insideSection}>
                   <Text style={[styles.num, { color: Colors.green }]}>
-                    {progress.good}
+                    {progress.inProgressDueCards}
                   </Text>
                   <Text style={styles.desc}>Good</Text>
                 </View>
                 <View style={styles.insideSection}>
                   <Text style={[styles.num, { color: Colors.yellow }]}>
-                    {progress.hard}
+                    {progress.inProgressNewCards}
                   </Text>
                   <Text style={styles.desc}>Hard</Text>
                 </View>
@@ -164,13 +165,13 @@ export default function victoryScreen(): React.JSX.Element {
               <View style={styles.insideRow}>
                 <View style={styles.insideSection}>
                   <Text style={[styles.num, { color: Colors.accent_500 }]}>
-                    {progress.all}
+                    {progress.completedToday}
                   </Text>
                   <Text style={styles.desc}>Razem dzisiaj</Text>
                 </View>
                 <View style={styles.insideSection}>
                   <Text style={[styles.num, { color: Colors.accent_500 }]}>
-                    {progress.todo}
+                    {progress.dueCardsRemaining}
                   </Text>
                   <Text style={styles.desc}>Zostało na później</Text>
                 </View>

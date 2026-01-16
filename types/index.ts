@@ -24,6 +24,7 @@ import type {
   DeckSettings,
   DeckLearningData,
   DeckLearningCore,
+  DailyStats,
   StudySession,
   Notification,
   Season,

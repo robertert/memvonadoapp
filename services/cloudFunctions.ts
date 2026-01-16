@@ -21,6 +21,7 @@ import type {
   Card,
   User,
   DeckSettingsUpdate,
+  DailyStats,
 } from "@/types";
 import {
   SuccessResponseSchema,
@@ -114,8 +115,6 @@ import {
 import type {
   GetDeckDetailsResponse,
   GetDeckCardsResponse,
-  GetDueDeckCardsResponse,
-  GetNewDeckCardsResponse,
   GetUserDecksResponse,
   CreateDeckWithCardsResponse,
   GetUserDeckDetailsResponse,
@@ -157,8 +156,6 @@ import {
   CreateDeckWithCardsResponseSchema,
   GetDeckDetailsResponseSchema,
   GetDeckCardsResponseSchema,
-  GetDueDeckCardsResponseSchema,
-  GetNewDeckCardsResponseSchema,
   GetUserDecksResponseSchema,
   GetUserDeckDetailsResponseSchema,
   GetUserDeckCardsResponseSchema,
@@ -168,6 +165,12 @@ import {
   DeleteDeckResponseSchema,
   CheckCardChangesResponseSchema,
   SyncDeckCardsResponseSchema,
+  StartLearningSessionRequest,
+  StartLearningSessionResponse,
+  StartLearningSessionResponseSchema,
+  GetDeckDailyStatsRequest,
+  GetDeckDailyStatsResponse,
+  GetDeckDailyStatsResponseSchema,
 } from "@/types/schemas/api/deck";
 import {
   CheckUsernameAvailabilityRequest,
@@ -346,36 +349,6 @@ export const cloudFunctions = {
     return validatedData.data;
   },
 
-  // Get due cards (server-side filter)
-  getDueDeckCards: async (deckId: string, limit: number = 100) => {
-    const fn = httpsCallable<
-      GetUserDueDeckCardsRequest,
-      GetDueDeckCardsResponse
-    >(functions, "getDueDeckCards");
-    const result = await fn({ deckId, limit });
-    const validatedData = GetDueDeckCardsResponseSchema.safeParse(result.data);
-    if (!validatedData.success) {
-      console.error(validatedData.error);
-      throw new Error("Invalid data returned from getDueDeckCards");
-    }
-    return validatedData.data;
-  },
-
-  // Get new intro candidates (server-side filter)
-  getNewDeckCards: async (deckId: string, limit: number = 50) => {
-    const fn = httpsCallable<
-      GetUserNewDeckCardsRequest,
-      GetNewDeckCardsResponse
-    >(functions, "getNewDeckCards");
-    const result = await fn({ deckId, limit });
-    const validatedData = GetNewDeckCardsResponseSchema.safeParse(result.data);
-    if (!validatedData.success) {
-      console.error(validatedData.error);
-      throw new Error("Invalid data returned from getNewDeckCards");
-    }
-    return validatedData.data;
-  },
-
   // Get user decks with cards
   getUserDecks: async (userId: string) => {
     const getUserDecksFunction = httpsCallable<
@@ -396,7 +369,8 @@ export const cloudFunctions = {
     userId: string,
     deckId: string,
     card: Card,
-    scheduledTime: number
+    scheduledTime: number,
+    dailyStats?: DailyStats
   ) => {
     const updateCardProgressFunction = httpsCallable<
       UpdateCardProgressRequest,
@@ -407,6 +381,7 @@ export const cloudFunctions = {
       deckId,
       card,
       scheduledTime,
+      dailyStats,
     });
     const validatedData = SuccessResponseSchema.safeParse(result.data);
     if (!validatedData.success) {
@@ -659,12 +634,12 @@ export const cloudFunctions = {
     }
     return validatedData.data;
   },
-  getUserDueDeckCards: async (deckId: string, limit: number = 100) => {
+  getUserDueDeckCards: async (deckId: string) => {
     const fn = httpsCallable<
       GetUserDueDeckCardsRequest,
       GetUserDueDeckCardsResponse
     >(functions, "getUserDueDeckCards");
-    const result = await fn({ deckId, limit });
+    const result = await fn({ deckId });
     const validatedData = GetUserDueDeckCardsResponseSchema.safeParse(
       result.data
     );
@@ -674,18 +649,50 @@ export const cloudFunctions = {
     }
     return validatedData.data;
   },
-  getUserNewDeckCards: async (deckId: string, limit: number = 50) => {
+  getUserNewDeckCards: async (deckId: string) => {
     const fn = httpsCallable<
       GetUserNewDeckCardsRequest,
       GetUserNewDeckCardsResponse
     >(functions, "getUserNewDeckCards");
-    const result = await fn({ deckId, limit });
+    const result = await fn({ deckId });
     const validatedData = GetUserNewDeckCardsResponseSchema.safeParse(
       result.data
     );
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from getUserNewDeckCards");
+    }
+    return validatedData.data;
+  },
+
+  startLearningSession: async (deckId: string) => {
+    const fn = httpsCallable<
+      StartLearningSessionRequest,
+      StartLearningSessionResponse
+    >(functions, "startLearningSession");
+    const result = await fn({ deckId });
+    const validatedData = StartLearningSessionResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from startLearningSession");
+    }
+    return validatedData.data;
+  },
+
+  getDeckDailyStats: async (deckId: string) => {
+    const fn = httpsCallable<
+      GetDeckDailyStatsRequest,
+      GetDeckDailyStatsResponse
+    >(functions, "getDeckDailyStats");
+    const result = await fn({ deckId });
+    const validatedData = GetDeckDailyStatsResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getDeckDailyStats");
     }
     return validatedData.data;
   },
@@ -994,12 +1001,12 @@ export const cloudFunctions = {
   },
 
   // Import Anki deck (.apkg file)
-  importAnkiDeck: async (apkgBase64: string) => {
+  importAnkiDeck: async (storagePath: string, title?: string) => {
     const fn = httpsCallable<ImportAnkiDeckRequest, ImportAnkiDeckResponse>(
       functions,
       "importAnkiDeck"
     );
-    const result = await fn({ apkgBase64 });
+    const result = await fn({ storagePath, title });
     const validatedData = ImportAnkiDeckResponseSchema.safeParse(result.data);
     if (!validatedData.success) {
       console.error(validatedData.error);

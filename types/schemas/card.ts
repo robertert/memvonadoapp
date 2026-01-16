@@ -74,7 +74,7 @@ export type CardAlgo = z.infer<typeof CardAlgoSchema>;
  */
 export const FirstLearnSchema = z
   .object({
-    isNew: z.boolean(), // Card never seen
+    isNew: z.boolean().default(true), // Card never seen
     isFirst: z.boolean().optional(), // Card is in first learning phase
     due: TimestampSchema.optional(),
     consecutiveGood: z.number().min(0).optional(), // Number of consecutive good answers

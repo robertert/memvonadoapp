@@ -108,7 +108,16 @@ export declare const getUserDeckDetails: import("firebase-functions/v2/https").C
         icon?: string | null | undefined;
         isPublic?: boolean | null | undefined;
         lastReviewDate?: Date | undefined;
+        dailyStats?: {
+            newCardsRemaining: number;
+            dueCardsRemaining: number;
+            inProgressDueCards: number;
+            inProgressNewCards: number;
+            completedToday: number;
+            lastUpdatedStats: Date;
+        } | null | undefined;
     } | null;
+    createdDeck: boolean;
 }>, unknown>;
 export declare const getUserDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     cards: {
@@ -174,6 +183,16 @@ export declare const getUserDueDeckCards: import("firebase-functions/v2/https").
         hasChanges?: boolean | undefined;
     }[];
 }>, unknown>;
+export declare const getDeckDailyStats: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    dailyStats: {
+        newCardsRemaining: number;
+        dueCardsRemaining: number;
+        inProgressDueCards: number;
+        inProgressNewCards: number;
+        completedToday: number;
+        lastUpdatedStats: Date;
+    };
+}>, unknown>;
 export declare const getUserNewDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     cards: {
         createdAt: Date;
@@ -204,6 +223,70 @@ export declare const getUserNewDeckCards: import("firebase-functions/v2/https").
         grade?: import("memvocado-types/schemas/card").CardGrade | undefined;
         hasChanges?: boolean | undefined;
     }[];
+}>, unknown>;
+export declare const startLearningSession: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    cards: {
+        createdAt: Date;
+        id: string;
+        cardData: {
+            front: string;
+            back: string;
+        };
+        tags: string[];
+        firstLearn: {
+            isNew: boolean;
+            due?: Date | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        };
+        updatedAt?: Date | undefined;
+        cardAlgo?: {
+            difficulty: number;
+            scheduled_days: number;
+            due: Date;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            last_review?: Date | undefined;
+        } | undefined;
+        grade?: import("memvocado-types/schemas/card").CardGrade | undefined;
+        hasChanges?: boolean | undefined;
+    }[];
+    dailyStats: {
+        newCardsRemaining: number;
+        dueCardsRemaining: number;
+        inProgressDueCards: number;
+        inProgressNewCards: number;
+        completedToday: number;
+        lastUpdatedStats: Date;
+    };
+    deck: {
+        settings: {
+            zenMode: boolean;
+            shuffleNewCards: boolean;
+            dueCardsNumPerDay?: number | undefined;
+            newCardsNumPerDay?: number | undefined;
+        };
+        updatedAt: Date;
+        id: string;
+        title: string;
+        cardsNum: number;
+        tags?: string[] | null | undefined;
+        category?: string | null | undefined;
+        icon?: string | null | undefined;
+        isPublic?: boolean | null | undefined;
+        lastReviewDate?: Date | undefined;
+        dailyStats?: {
+            newCardsRemaining: number;
+            dueCardsRemaining: number;
+            inProgressDueCards: number;
+            inProgressNewCards: number;
+            completedToday: number;
+            lastUpdatedStats: Date;
+        } | null | undefined;
+    };
 }>, unknown>;
 /**
  * Update user stats when deck is modified
@@ -263,6 +346,14 @@ export declare const startLearningDeck: import("firebase-functions/v2/https").Ca
         icon?: string | null | undefined;
         isPublic?: boolean | null | undefined;
         lastReviewDate?: Date | undefined;
+        dailyStats?: {
+            newCardsRemaining: number;
+            dueCardsRemaining: number;
+            inProgressDueCards: number;
+            inProgressNewCards: number;
+            completedToday: number;
+            lastUpdatedStats: Date;
+        } | null | undefined;
     };
 }>, unknown>;
 /**
@@ -315,34 +406,6 @@ export declare const updateDeck: import("firebase-functions/v2/https").CallableF
  * Import Anki deck (.apkg file) and convert to Memvocado cards
  */
 export declare const importAnkiDeck: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    cards: {
-        createdAt: Date;
-        id: string;
-        cardData: {
-            front: string;
-            back: string;
-        };
-        tags: string[];
-        firstLearn: {
-            isNew: boolean;
-            due?: Date | undefined;
-            isFirst?: boolean | undefined;
-            consecutiveGood?: number | undefined;
-        };
-        updatedAt?: Date | undefined;
-        cardAlgo?: {
-            difficulty: number;
-            scheduled_days: number;
-            due: Date;
-            reps: number;
-            state: number;
-            stability: number;
-            elapsed_days: number;
-            lapses: number;
-            last_review?: Date | undefined;
-        } | undefined;
-        grade?: import("memvocado-types/schemas/card").CardGrade | undefined;
-        hasChanges?: boolean | undefined;
-    }[];
+    deckId: string;
     count: number;
 }>, unknown>;

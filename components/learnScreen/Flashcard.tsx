@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     marginLeft: "-35%",
   },
   cardFace: {
-    backfaceVisibility: "hidden", // KLUCZOWE: Ukrywa stronę, gdy jest odwrócona tyłem
+    backfaceVisibility: "hidden",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: ANIMATION_CONSTANTS.BORDER_WIDTH,

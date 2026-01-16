@@ -1,4 +1,4 @@
-import type { Card, DeckLearningData } from "@/types";
+import type { Card, DeckLearningData, DailyStats } from "@/types";
 import { SharedValue, useAnimatedStyle } from "react-native-reanimated";
 
 export interface ProgressState {
@@ -31,6 +31,7 @@ export interface CardLogicState {
   index: number;
   deck: DeckLearningData | undefined;
   progress: ProgressState;
+  dailyStats: DailyStats | null;
 }
 
 export interface AnimationValues {

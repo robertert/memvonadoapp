@@ -5,6 +5,7 @@ import {
   UserSchema,
   CardSchema,
   LeagueGroupMemberSchema,
+  DeckLearningDataSchema,
 } from "@/types/schemas";
 import type {
   Deck,
@@ -12,6 +13,7 @@ import type {
   User,
   Card,
   LeagueGroupMember,
+  DeckLearningData,
 } from "@/types";
 
 // Walidacja i eksport danych placeholder użytkownika zgodnych z UserSchema
@@ -85,6 +87,26 @@ const _placeholderDecks = [
 export const placeholderDecks: Deck[] = _placeholderDecks.map((deck) =>
   DeckSchema.parse(deck)
 );
+
+export const placeholderDecksLearningData: DeckLearningData[] =
+  _placeholderDecks.map((deck) =>
+    DeckLearningDataSchema.parse({
+      id: deck.id,
+      title: deck.title,
+      category: deck.category,
+      icon: deck.icon,
+      tags: deck.tags,
+      isPublic: deck.isPublic,
+      cardsNum: deck.cardsNum,
+      updatedAt: deck.updatedAt,
+      settings: {
+        dueCardsNumPerDay: 10,
+        newCardsNumPerDay: 10,
+        zenMode: false,
+        shuffleNewCards: false,
+      },
+    })
+  );
 
 // Walidacja i eksport danych placeholder kart zgodnych z CardSchema
 const _placeholderCards = [

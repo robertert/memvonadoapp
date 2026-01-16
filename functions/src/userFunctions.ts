@@ -2,8 +2,6 @@ import { HttpsError, onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import {
-  Deck,
-  DeckSchema,
   StudySessionCreateSchema,
   UserSettingsSchema,
   UserStatsSchema,
@@ -21,6 +19,7 @@ import {
   Card,
   SuccessResponseSchema,
   GetUserDecksResponseSchema,
+  DeckLearningDataSchema,
 } from "./types/common";
 import { z } from "zod";
 import {
@@ -46,6 +45,8 @@ import {
   ServerNowSchema,
   GetCurrentSeasonResponseSchema,
   WeeklyRollOverResponseSchema as ApiWeeklyRollOverResponseSchema,
+  DeckLearningData,
+  DailyStatsSchema,
 } from "memvocado-types";
 import { serializeTimestamps } from "./utils/serialization";
 
@@ -417,16 +418,19 @@ export const getUserDecks = onCall(async (request) => {
   try {
     // Get decks created by user (from main decks collection)
     const decksSnapshot = await db
+      .collection("users")
+      .doc(userId)
       .collection("decks")
-      .where("createdBy", "==", userId)
       .get();
 
-    const decks: Deck[] = decksSnapshot.docs.map((deckDoc) => ({
+    const decks: DeckLearningData[] = decksSnapshot.docs.map((deckDoc) => ({
       id: deckDoc.id,
       ...deckDoc.data(),
-    })) as Deck[];
+    })) as DeckLearningData[];
 
-    const validatedDecks: Deck[] = decks.map((deck) => DeckSchema.parse(deck));
+    const validatedDecks: DeckLearningData[] = decks.map((deck) =>
+      DeckLearningDataSchema.parse(deck)
+    );
 
     const rawResponse = { decks: validatedDecks };
     const validatedResponse = GetUserDecksResponseSchema.parse(rawResponse);
@@ -457,7 +461,8 @@ export const updateCardProgress = onCall(async (request) => {
     });
   }
 
-  const { userId, deckId, card, scheduledTime } = parsedRequest.data;
+  const { userId, deckId, card, scheduledTime, dailyStats } =
+    parsedRequest.data;
 
   const validatedCard = CardSchema.parse(card);
 
@@ -465,7 +470,8 @@ export const updateCardProgress = onCall(async (request) => {
     const cardRef = db.doc(
       `users/${userId}/decks/${deckId}/cards/${validatedCard.id}`
     );
-    const now = new Date().getTime();
+
+    const now = Date.now();
 
     let cardUpdateData: Card;
     if (validatedCard.firstLearn?.isFirst) {
@@ -501,6 +507,21 @@ export const updateCardProgress = onCall(async (request) => {
 
     // Log study session
     await db.collection(`users/${userId}/studySessions`).add(studySession);
+
+    // Aktualizacja statystyk dziennych
+    try {
+      const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
+
+      if (dailyStats) {
+        const validatedDailyStats = DailyStatsSchema.parse(dailyStats);
+        await deckRef.update({
+          dailyStats: validatedDailyStats,
+        });
+      }
+    } catch (statsErr) {
+      logger.warn("updateCardProgress: daily stats update failed", statsErr);
+      // Nie przerywaj głównej operacji – to tylko best-effort
+    }
 
     // Po zapisaniu sesji: sprawdź wspólną logiką, czy dzienny próg (10 kart) został osiągnięty
     try {

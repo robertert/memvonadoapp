@@ -32,22 +32,29 @@ export declare const updateUserStreakIfQualified: import("firebase-functions/v2/
  */
 export declare const getUserDecks: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     decks: {
-        createdAt: Date;
+        settings: {
+            zenMode: boolean;
+            shuffleNewCards: boolean;
+            dueCardsNumPerDay?: number | undefined;
+            newCardsNumPerDay?: number | undefined;
+        };
         updatedAt: Date;
         id: string;
-        tags: string[];
         title: string;
-        icon: string;
-        isPublic: boolean;
-        views: number;
-        likes: number;
         cardsNum: number;
-        createdBy: string;
-        is_deleted: boolean;
+        tags?: string[] | null | undefined;
         category?: string | null | undefined;
-        frontLanguage?: string | null | undefined;
-        backLanguage?: string | null | undefined;
-        deletedAt?: Date | undefined;
+        icon?: string | null | undefined;
+        isPublic?: boolean | null | undefined;
+        lastReviewDate?: Date | undefined;
+        dailyStats?: {
+            newCardsRemaining: number;
+            dueCardsRemaining: number;
+            inProgressDueCards: number;
+            inProgressNewCards: number;
+            completedToday: number;
+            lastUpdatedStats: Date;
+        } | null | undefined;
     }[];
 }>, unknown>;
 /**

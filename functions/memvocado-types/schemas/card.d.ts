@@ -104,7 +104,7 @@ export type CardAlgo = z.infer<typeof CardAlgoSchema>;
  * First Learning - dane dla pierwszej nauki karty
  */
 export declare const FirstLearnSchema: z.ZodObject<{
-    isNew: z.ZodBoolean;
+    isNew: z.ZodDefault<z.ZodBoolean>;
     isFirst: z.ZodOptional<z.ZodBoolean>;
     due: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
     consecutiveGood: z.ZodOptional<z.ZodNumber>;
@@ -114,8 +114,8 @@ export declare const FirstLearnSchema: z.ZodObject<{
     isFirst?: boolean | undefined;
     consecutiveGood?: number | undefined;
 }, {
-    isNew: boolean;
     due?: unknown;
+    isNew?: boolean | undefined;
     isFirst?: boolean | undefined;
     consecutiveGood?: number | undefined;
 }>;
@@ -167,7 +167,7 @@ export declare const CardLearningSchema: z.ZodObject<{
         last_review?: unknown;
     }>>;
     firstLearn: z.ZodObject<{
-        isNew: z.ZodBoolean;
+        isNew: z.ZodDefault<z.ZodBoolean>;
         isFirst: z.ZodOptional<z.ZodBoolean>;
         due: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         consecutiveGood: z.ZodOptional<z.ZodNumber>;
@@ -177,8 +177,8 @@ export declare const CardLearningSchema: z.ZodObject<{
         isFirst?: boolean | undefined;
         consecutiveGood?: number | undefined;
     }, {
-        isNew: boolean;
         due?: unknown;
+        isNew?: boolean | undefined;
         isFirst?: boolean | undefined;
         consecutiveGood?: number | undefined;
     }>;
@@ -204,8 +204,8 @@ export declare const CardLearningSchema: z.ZodObject<{
     grade?: CardGrade | undefined;
 }, {
     firstLearn: {
-        isNew: boolean;
         due?: unknown;
+        isNew?: boolean | undefined;
         isFirst?: boolean | undefined;
         consecutiveGood?: number | undefined;
     };
@@ -288,7 +288,7 @@ export declare const CardSchema: z.ZodObject<{
         last_review?: unknown;
     }>>;
     firstLearn: z.ZodObject<{
-        isNew: z.ZodBoolean;
+        isNew: z.ZodDefault<z.ZodBoolean>;
         isFirst: z.ZodOptional<z.ZodBoolean>;
         due: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         consecutiveGood: z.ZodOptional<z.ZodNumber>;
@@ -298,8 +298,8 @@ export declare const CardSchema: z.ZodObject<{
         isFirst?: boolean | undefined;
         consecutiveGood?: number | undefined;
     }, {
-        isNew: boolean;
         due?: unknown;
+        isNew?: boolean | undefined;
         isFirst?: boolean | undefined;
         consecutiveGood?: number | undefined;
     }>;
@@ -345,8 +345,8 @@ export declare const CardSchema: z.ZodObject<{
         back: string;
     };
     firstLearn: {
-        isNew: boolean;
         due?: unknown;
+        isNew?: boolean | undefined;
         isFirst?: boolean | undefined;
         consecutiveGood?: number | undefined;
     };
@@ -450,7 +450,7 @@ export type CardAlgoUpdate = z.infer<typeof CardAlgoUpdateSchema>;
  * Częściowa aktualizacja firstLearn
  */
 export declare const FirstLearnUpdateSchema: z.ZodObject<{
-    isNew: z.ZodOptional<z.ZodBoolean>;
+    isNew: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
     isFirst: z.ZodOptional<z.ZodOptional<z.ZodBoolean>>;
     due: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>>;
     consecutiveGood: z.ZodOptional<z.ZodOptional<z.ZodNumber>>;
@@ -502,7 +502,7 @@ export declare const CardLearningUpdateSchema: z.ZodObject<{
         last_review?: unknown;
     }>>>;
     firstLearn: z.ZodOptional<z.ZodObject<{
-        isNew: z.ZodBoolean;
+        isNew: z.ZodDefault<z.ZodBoolean>;
         isFirst: z.ZodOptional<z.ZodBoolean>;
         due: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         consecutiveGood: z.ZodOptional<z.ZodNumber>;
@@ -512,8 +512,8 @@ export declare const CardLearningUpdateSchema: z.ZodObject<{
         isFirst?: boolean | undefined;
         consecutiveGood?: number | undefined;
     }, {
-        isNew: boolean;
         due?: unknown;
+        isNew?: boolean | undefined;
         isFirst?: boolean | undefined;
         consecutiveGood?: number | undefined;
     }>>;
@@ -550,8 +550,8 @@ export declare const CardLearningUpdateSchema: z.ZodObject<{
         last_review?: unknown;
     } | undefined;
     firstLearn?: {
-        isNew: boolean;
         due?: unknown;
+        isNew?: boolean | undefined;
         isFirst?: boolean | undefined;
         consecutiveGood?: number | undefined;
     } | undefined;
@@ -607,7 +607,7 @@ export declare const CardUpdateSchema: z.ZodObject<{
         last_review?: unknown;
     }>>>;
     firstLearn: z.ZodOptional<z.ZodObject<{
-        isNew: z.ZodBoolean;
+        isNew: z.ZodDefault<z.ZodBoolean>;
         isFirst: z.ZodOptional<z.ZodBoolean>;
         due: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         consecutiveGood: z.ZodOptional<z.ZodNumber>;
@@ -617,8 +617,8 @@ export declare const CardUpdateSchema: z.ZodObject<{
         isFirst?: boolean | undefined;
         consecutiveGood?: number | undefined;
     }, {
-        isNew: boolean;
         due?: unknown;
+        isNew?: boolean | undefined;
         isFirst?: boolean | undefined;
         consecutiveGood?: number | undefined;
     }>>;
@@ -665,8 +665,8 @@ export declare const CardUpdateSchema: z.ZodObject<{
         last_review?: unknown;
     } | undefined;
     firstLearn?: {
-        isNew: boolean;
         due?: unknown;
+        isNew?: boolean | undefined;
         isFirst?: boolean | undefined;
         consecutiveGood?: number | undefined;
     } | undefined;

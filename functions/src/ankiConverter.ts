@@ -4,7 +4,7 @@ import * as os from "os";
 import Database from "better-sqlite3";
 import AdmZip from "adm-zip";
 import { z } from "zod";
-import { Card, CardAlgo, CardGrade, CardSchema } from "./types/common";
+import { Card, CardAlgo, CardGrade } from "./types/common";
 
 /**
  * Interfejs dla danych z tabeli notes w Anki
@@ -174,7 +174,7 @@ function convertToCard(
   note: AnkiNote,
   fieldNames: string[],
   collectionCrt: number
-): Card {
+): Omit<Card, "id"> {
   // Podziel pola po znaku \x1f
   const fields = note.fields.split("\x1f");
 
@@ -195,9 +195,6 @@ function convertToCard(
   // Utwórz datę utworzenia (użyj crt z kolekcji lub aktualnej daty)
   const createdAt =
     collectionCrt > 0 ? new Date(collectionCrt * 1000) : new Date();
-
-  // Generuj unikalne ID karty (użyj card_id z Anki jako string)
-  const cardId = note.card_id.toString();
 
   let cardAlgo: CardAlgo | undefined = undefined;
 
@@ -224,8 +221,7 @@ function convertToCard(
     }
   }
 
-  const card: Card = {
-    id: cardId,
+  const card: Omit<Card, "id"> = {
     cardData: {
       front,
       back,
@@ -424,12 +420,12 @@ function readAnkiDatabase(dbPath: string): {
  * Główna funkcja konwersji pliku Anki (.apkg) na karty Memvocado
  *
  * @param {Buffer | string} apkgBuffer - Buffer z zawartością pliku .apkg lub base64 string
- * @return {Promise<Card[]>} Tablica kart w formacie Memvocado
+ * @return {Promise<Omit<Card, "id">[]>} Tablica kart w formacie Memvocado
  * @throws {Error} Jeśli wystąpi błąd podczas konwersji
  */
 export async function convertAnkiApkg(
   apkgBuffer: Buffer | string
-): Promise<Card[]> {
+): Promise<Omit<Card, "id">[]> {
   let buffer: Buffer;
   let dbPath: string | null = null;
   const tempFiles: string[] = [];
@@ -467,7 +463,7 @@ export async function convertAnkiApkg(
     const { notes, collection } = readAnkiDatabase(dbPath);
 
     // Konwertuj notatki na karty
-    const cards: Card[] = [];
+    const cards: Omit<Card, "id">[] = [];
 
     for (const note of notes) {
       // Pobierz nazwy pól z modelu
@@ -485,8 +481,7 @@ export async function convertAnkiApkg(
 
       // Waliduj kartę przez schema
       try {
-        const validatedCard = CardSchema.parse(card);
-        cards.push(validatedCard);
+        cards.push(card);
       } catch (error) {
         // Loguj błąd walidacji ale kontynuuj przetwarzanie innych kart
         console.error(

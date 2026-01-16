@@ -80,7 +80,7 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
             last_review?: unknown;
         }>>;
         firstLearn: z.ZodObject<{
-            isNew: z.ZodBoolean;
+            isNew: z.ZodDefault<z.ZodBoolean>;
             isFirst: z.ZodOptional<z.ZodBoolean>;
             due: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
             consecutiveGood: z.ZodOptional<z.ZodNumber>;
@@ -90,8 +90,8 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
             isFirst?: boolean | undefined;
             consecutiveGood?: number | undefined;
         }, {
-            isNew: boolean;
             due?: unknown;
+            isNew?: boolean | undefined;
             isFirst?: boolean | undefined;
             consecutiveGood?: number | undefined;
         }>;
@@ -137,8 +137,8 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
             back: string;
         };
         firstLearn: {
-            isNew: boolean;
             due?: unknown;
+            isNew?: boolean | undefined;
             isFirst?: boolean | undefined;
             consecutiveGood?: number | undefined;
         };
@@ -160,6 +160,28 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
         hasChanges?: boolean | undefined;
     }>;
     scheduledTime: z.ZodNumber;
+    dailyStats: z.ZodOptional<z.ZodObject<{
+        newCardsRemaining: z.ZodNumber;
+        dueCardsRemaining: z.ZodNumber;
+        inProgressDueCards: z.ZodNumber;
+        inProgressNewCards: z.ZodNumber;
+        completedToday: z.ZodNumber;
+        lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
+    }, "strict", z.ZodTypeAny, {
+        newCardsRemaining: number;
+        dueCardsRemaining: number;
+        inProgressDueCards: number;
+        inProgressNewCards: number;
+        completedToday: number;
+        lastUpdatedStats: Date;
+    }, {
+        newCardsRemaining: number;
+        dueCardsRemaining: number;
+        inProgressDueCards: number;
+        inProgressNewCards: number;
+        completedToday: number;
+        lastUpdatedStats?: unknown;
+    }>>;
 }, "strict", z.ZodTypeAny, {
     userId: string;
     deckId: string;
@@ -193,6 +215,14 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
         hasChanges?: boolean | undefined;
     };
     scheduledTime: number;
+    dailyStats?: {
+        newCardsRemaining: number;
+        dueCardsRemaining: number;
+        inProgressDueCards: number;
+        inProgressNewCards: number;
+        completedToday: number;
+        lastUpdatedStats: Date;
+    } | undefined;
 }, {
     userId: string;
     deckId: string;
@@ -203,8 +233,8 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
             back: string;
         };
         firstLearn: {
-            isNew: boolean;
             due?: unknown;
+            isNew?: boolean | undefined;
             isFirst?: boolean | undefined;
             consecutiveGood?: number | undefined;
         };
@@ -226,6 +256,14 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
         hasChanges?: boolean | undefined;
     };
     scheduledTime: number;
+    dailyStats?: {
+        newCardsRemaining: number;
+        dueCardsRemaining: number;
+        inProgressDueCards: number;
+        inProgressNewCards: number;
+        completedToday: number;
+        lastUpdatedStats?: unknown;
+    } | undefined;
 }>;
 export type UpdateCardProgressRequest = z.infer<typeof UpdateCardProgressRequestSchema>;
 export declare const GetUserProgressRequestSchema: z.ZodObject<{

@@ -7,6 +7,7 @@ import {
   DeckCoreSchema,
   CardChangeWithTypeSchema,
   DeckSettingsUpdateSchema,
+  DailyStatsSchema,
 } from "../index";
 
 // ===========================
@@ -65,9 +66,6 @@ export type GetUserDeckCardsRequest = z.infer<
 export const GetUserDueDeckCardsRequestSchema = z
   .object({
     deckId: z.string(),
-    limit: z
-      .union([z.number().int().min(1).max(1000), z.literal(-1)])
-      .optional(),
   })
   .strict();
 export type GetUserDueDeckCardsRequest = z.infer<
@@ -77,7 +75,6 @@ export type GetUserDueDeckCardsRequest = z.infer<
 export const GetUserNewDeckCardsRequestSchema = z
   .object({
     deckId: z.string(),
-    limit: z.number().int().min(1).max(1000).optional(),
   })
   .strict();
 export type GetUserNewDeckCardsRequest = z.infer<
@@ -180,6 +177,24 @@ export const UpdateDeckRequestSchema = z
   .strict();
 export type UpdateDeckRequest = z.infer<typeof UpdateDeckRequestSchema>;
 
+export const StartLearningSessionRequestSchema = z
+  .object({
+    deckId: z.string(),
+  })
+  .strict();
+export type StartLearningSessionRequest = z.infer<
+  typeof StartLearningSessionRequestSchema
+>;
+
+export const GetDeckDailyStatsRequestSchema = z
+  .object({
+    deckId: z.string(),
+  })
+  .strict();
+export type GetDeckDailyStatsRequest = z.infer<
+  typeof GetDeckDailyStatsRequestSchema
+>;
+
 // ===========================
 // Deck response schemas
 // ===========================
@@ -199,22 +214,8 @@ export const GetDeckCardsResponseSchema = z.object({
 });
 export type GetDeckCardsResponse = z.infer<typeof GetDeckCardsResponseSchema>;
 
-export const GetDueDeckCardsResponseSchema = z.object({
-  cards: z.array(CardSchema),
-});
-export type GetDueDeckCardsResponse = z.infer<
-  typeof GetDueDeckCardsResponseSchema
->;
-
-export const GetNewDeckCardsResponseSchema = z.object({
-  cards: z.array(CardSchema),
-});
-export type GetNewDeckCardsResponse = z.infer<
-  typeof GetNewDeckCardsResponseSchema
->;
-
 export const GetUserDecksResponseSchema = z.object({
-  decks: z.array(DeckSchema),
+  decks: z.array(DeckLearningDataSchema),
 });
 export type GetUserDecksResponse = z.infer<typeof GetUserDecksResponseSchema>;
 
@@ -248,6 +249,7 @@ export type DeleteDeckResponse = z.infer<typeof DeleteDeckResponseSchema>;
 
 export const GetUserDeckDetailsResponseSchema = z.object({
   deck: DeckLearningDataSchema.nullable(),
+  createdDeck: z.boolean(),
 });
 export type GetUserDeckDetailsResponse = z.infer<
   typeof GetUserDeckDetailsResponseSchema
@@ -306,15 +308,32 @@ export type UpdateDeckResponse = z.infer<typeof UpdateDeckResponseSchema>;
 
 export const ImportAnkiDeckRequestSchema = z
   .object({
-    apkgBase64: z.string().min(1), // base64 encoded .apkg file
+    storagePath: z.string().min(1), // Path to .apkg file in Firebase Storage
+    title: z.string().optional(), // Optional title, defaults to "Imported from Anki"
   })
   .strict();
 export type ImportAnkiDeckRequest = z.infer<typeof ImportAnkiDeckRequestSchema>;
 
 export const ImportAnkiDeckResponseSchema = z.object({
-  cards: z.array(CardSchema),
+  deckId: z.string(),
   count: z.number(),
 });
 export type ImportAnkiDeckResponse = z.infer<
   typeof ImportAnkiDeckResponseSchema
+>;
+
+export const StartLearningSessionResponseSchema = z.object({
+  cards: z.array(CardSchema),
+  dailyStats: DailyStatsSchema,
+  deck: DeckLearningDataSchema,
+});
+export type StartLearningSessionResponse = z.infer<
+  typeof StartLearningSessionResponseSchema
+>;
+
+export const GetDeckDailyStatsResponseSchema = z.object({
+  dailyStats: DailyStatsSchema,
+});
+export type GetDeckDailyStatsResponse = z.infer<
+  typeof GetDeckDailyStatsResponseSchema
 >;

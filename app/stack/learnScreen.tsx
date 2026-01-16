@@ -69,7 +69,8 @@ export default function learnScreen(): React.JSX.Element {
     safeArea,
   });
 
-  const { cards, isLoading, isBack, tooltip, progress } = cardLogicState;
+  const { cards, isLoading, isBack, tooltip, progress, dailyStats } =
+    cardLogicState;
 
   // State for confetti trigger - only for streak achievement
   const [showConfetti, setShowConfetti] = useState(false);
@@ -254,8 +255,24 @@ export default function learnScreen(): React.JSX.Element {
     insideDisplayStyles,
   } = animatedStyles;
 
-  const tabBarValue = ((progress.all - progress.todo) * 100) / progress.all;
-  const progressText = cards
+  // Użyj dailyStats do obliczenia progressu jeśli dostępne, w przeciwnym razie użyj progress z sesji
+  const tabBarValue = dailyStats
+    ? (dailyStats.completedToday * 100) /
+      (dailyStats.newCardsRemaining +
+        dailyStats.dueCardsRemaining +
+        dailyStats.inProgressDueCards +
+        dailyStats.inProgressNewCards +
+        dailyStats.completedToday || 1)
+    : ((progress.all - progress.todo) * 100) / progress.all;
+  const progressText = dailyStats
+    ? `${dailyStats.completedToday} / ${
+        dailyStats.newCardsRemaining +
+        dailyStats.dueCardsRemaining +
+        dailyStats.inProgressDueCards +
+        dailyStats.inProgressNewCards +
+        dailyStats.completedToday
+      }`
+    : cards
     ? cards.length > 0
       ? `${progress.all - progress.todo + 1} / ${progress.all}`
       : "0 / 0"
@@ -428,6 +445,7 @@ export default function learnScreen(): React.JSX.Element {
           bottomStyle={bottomStyle}
           insideDisplayStyles={insideDisplayStyles}
           safeArea={safeArea}
+          dailyStats={dailyStats}
         />
         <Confetti
           trigger={showConfetti}

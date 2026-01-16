@@ -119,8 +119,6 @@ export {
   SearchDecksResponseSchema,
   GetDeckDetailsResponseSchema,
   GetDeckCardsResponseSchema,
-  GetDueDeckCardsResponseSchema,
-  GetNewDeckCardsResponseSchema,
   GetUserDecksResponseSchema,
   CreateDeckWithCardsResponseSchema,
   GetPopularDecksResponseSchema,

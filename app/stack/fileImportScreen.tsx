@@ -46,7 +46,6 @@ type ImportMode = "file" | "paste";
 export default function createScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
 
-  const [cards, setCards] = useState<any[]>([]);
   const [seperator, setSeperator] = useState<string>("Wybierz separator");
   const [open, setOpen] = useState<boolean>(false);
   const [listPosition, setListPosition] = useState<ListPosition>({

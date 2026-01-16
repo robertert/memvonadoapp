@@ -2,6 +2,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 import { getFirestore, FieldValue, WriteBatch } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import { z } from "zod";
 import {
   Card,
@@ -56,8 +57,18 @@ import {
   CheckCardChangesResponseSchema,
   ImportAnkiDeckRequestSchema,
   ImportAnkiDeckResponseSchema,
+  StartLearningSessionResponseSchema,
+  StartLearningSessionRequestSchema,
+  GetDeckDailyStatsRequestSchema,
+  GetDeckDailyStatsResponseSchema,
 } from "memvocado-types/schemas/api/deck";
 import { convertAnkiApkg } from "./ankiConverter";
+import {
+  DailyStats,
+  DailyStatsSchema,
+  DeckLearningDataUpdateSchema,
+  User,
+} from "memvocado-types";
 
 const db = getFirestore();
 
@@ -95,7 +106,8 @@ export const createDeckWithCards = onCall(async (request) => {
   const validatedCards = cards;
 
   try {
-    const batch = db.batch();
+    // Firestore batch limit is 500 operations
+    const BATCH_LIMIT = 500;
 
     // Create deck document
     const deckRef = db.collection("decks").doc();
@@ -114,7 +126,14 @@ export const createDeckWithCards = onCall(async (request) => {
 
     const validatedDeck = DeckSchema.parse(deck);
 
-    batch.set(deckRef, validatedDeck);
+    // Use batches to handle any number of cards (works for both small and large decks)
+    const batches: WriteBatch[] = [];
+    let currentBatch = db.batch();
+    let batchCount = 0;
+
+    // Add deck to first batch
+    currentBatch.set(deckRef, validatedDeck);
+    batchCount++;
 
     validatedCards.forEach((validatedCardCore) => {
       const cardData = {
@@ -131,10 +150,24 @@ export const createDeckWithCards = onCall(async (request) => {
         ...cardData,
         id: cardRef.id,
       });
-      batch.set(cardRef, validatedCard);
+      currentBatch.set(cardRef, validatedCard);
+      batchCount++;
+
+      // Firestore batch limit is 500 operations
+      if (batchCount >= BATCH_LIMIT) {
+        batches.push(currentBatch);
+        currentBatch = db.batch();
+        batchCount = 0;
+      }
     });
 
-    await batch.commit();
+    // Add the last batch if it has operations
+    if (batchCount > 0) {
+      batches.push(currentBatch);
+    }
+
+    // Commit all batches
+    await Promise.all(batches.map((batch) => batch.commit()));
 
     logger.info("Deck created successfully", {
       deckId: deckRef.id,
@@ -366,14 +399,21 @@ export const getUserDeckDetails = onCall(async (request) => {
     const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
     const deckSnap = await deckRef.get();
     if (!deckSnap.exists) {
-      return serializeTimestamps({ deck: null });
+      const userDeck = await copyUserDeck(userId, deckId);
+      const response = { deck: userDeck, createdDeck: true };
+      const validatedResponse =
+        GetUserDeckDetailsResponseSchema.parse(response);
+      return serializeTimestamps(validatedResponse);
     }
     const deckData = {
       ...deckSnap.data(),
       id: deckSnap.id,
     };
     const validatedDeck = DeckLearningDataSchema.parse(deckData);
-    const response = { deck: validatedDeck as DeckLearningData };
+    const response = {
+      deck: validatedDeck as DeckLearningData,
+      createdDeck: false,
+    };
     const validatedResponse = GetUserDeckDetailsResponseSchema.parse(response);
     return serializeTimestamps(validatedResponse);
   } catch (error) {
@@ -570,6 +610,57 @@ async function joinCardsWithProgress(
   return result;
 }
 
+/**
+ * @param {string} userId
+ * @param {string} deckId
+ * @return {Promise<Card[]>}
+ */
+async function getUserDueDeckCardsLocal(
+  userId: string,
+  deckId: string
+): Promise<Card[]> {
+  const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
+  const deckSnap = await deckRef.get();
+  if (!deckSnap.exists) {
+    throw new HttpsError("not-found", "Deck not found");
+  }
+  const now = Date.now();
+  const nowEnd = new Date(now);
+  nowEnd.setHours(23, 59, 59, 999);
+
+  const cardsSnapFirst = await deckRef
+    .collection("cards")
+    .where("firstLearn.isNew", "==", false)
+    .where("firstLearn.isFirst", "==", true)
+    .get();
+
+  const cardsSnapDue = await deckRef
+    .collection("cards")
+    .where("cardAlgo.due", "<=", nowEnd)
+    .get();
+
+  const validatedRaw: Card[] = [
+    ...cardsSnapFirst.docs,
+    ...cardsSnapDue.docs,
+  ].map((doc) => {
+    return CardSchema.parse({
+      id: doc.id,
+      ...doc.data(),
+    });
+  });
+
+  const dueFirst: Card[] = validatedRaw.filter(
+    (c) => c.firstLearn?.isFirst && !c.firstLearn?.isNew
+  );
+  const dueFSRS: Card[] = validatedRaw.filter(
+    (c) => c.cardAlgo?.due && c.cardAlgo.due.getTime() <= now
+  );
+
+  const validatedCards: Card[] = [...dueFirst, ...dueFSRS];
+
+  return validatedCards;
+}
+
 export const getUserDueDeckCards = onCall(async (request) => {
   const validationResult = GetUserDueDeckCardsRequestSchema.safeParse(
     request.data || {}
@@ -580,7 +671,7 @@ export const getUserDueDeckCards = onCall(async (request) => {
     });
   }
 
-  const { deckId, limit = 100 } = validationResult.data;
+  const { deckId } = validationResult.data;
   const auth = request.auth;
 
   if (!auth) {
@@ -592,42 +683,8 @@ export const getUserDueDeckCards = onCall(async (request) => {
   if (!deckId || typeof deckId !== "string") {
     throw new HttpsError("invalid-argument", "deckId is required");
   }
-  if (
-    limit !== -1 &&
-    (typeof limit !== "number" || limit < 1 || limit > 1000)
-  ) {
-    throw new HttpsError(
-      "invalid-argument",
-      "limit must be a number between 1 and 1000, or -1 for unlimited"
-    );
-  }
   try {
-    const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
-    const deckSnap = await deckRef.get();
-    if (!deckSnap.exists) {
-      throw new HttpsError("not-found", "Deck not found");
-    }
-
-    const cardsSnap = await deckRef.collection("cards").get();
-    const now = Date.now();
-    const validatedRaw: Card[] = cardsSnap.docs.map((doc) => {
-      return CardSchema.parse({
-        id: doc.id,
-        ...doc.data(),
-      });
-    });
-
-    const dueFirst: Card[] = validatedRaw.filter(
-      (c) => c.firstLearn?.isFirst && !c.firstLearn?.isNew
-    );
-    const dueFSRS: Card[] = validatedRaw.filter(
-      (c) => c.cardAlgo?.due && c.cardAlgo.due.getTime() <= now
-    );
-
-    const validatedCards: Card[] = [...dueFirst, ...dueFSRS];
-
-    const cards =
-      limit === -1 ? validatedCards : validatedCards.slice(0, limit);
+    const cards = await getUserDueDeckCardsLocal(userId, deckId);
     const response = { cards: cards as Card[] };
     const validatedResponse = GetUserDueDeckCardsResponseSchema.parse(response);
     return serializeTimestamps(validatedResponse);
@@ -641,6 +698,175 @@ export const getUserDueDeckCards = onCall(async (request) => {
   }
 });
 
+/**
+ * Pomocniczo: formatuje datę na łańcuch w formacie YYYY-MM-DD w zadanej strefie czasowej.
+ * @param {Date} date Data wejściowa
+ * @param {string} timeZone Strefa czasowa IANA
+ * @return {string} Data w formacie YYYY-MM-DD
+ */
+function formatYmdInTimeZone(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+/**
+ * @param {string} userId - User ID
+ * @param {string} deckId - Deck ID
+ * @return {Promise<Card[]>} New cards
+ */
+async function getUserNewDeckCardsLocal(
+  userId: string,
+  deckId: string
+): Promise<Card[]> {
+  const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
+  const userDeckSnap = await userDeckRef.get();
+  if (!userDeckSnap.exists) {
+    throw new HttpsError("not-found", "Deck not found");
+  }
+
+  // Get deck settings to check shuffleNewCards
+  const userDeckData = userDeckSnap.data() as DeckLearningData;
+  const shuffleNewCards =
+    (userDeckData.settings as DeckSettings)?.shuffleNewCards ?? false;
+
+  // Pobierz ustawienia użytkownika dla timeZone
+  const userRef = db.doc(`users/${userId}`);
+  const userSnap = await userRef.get();
+  const userData = userSnap.exists
+    ? UserSchema.parse({
+        id: userSnap.id,
+        ...userSnap.data(),
+      })
+    : null;
+  const timeZone = userData?.settings?.timeZone || "UTC";
+
+  // Sprawdź dailyStats i użyj newCardsRemaining jeśli istnieje i jest z dzisiaj
+  let effectiveLimit = userDeckData.settings.newCardsNumPerDay
+    ? userDeckData.settings.newCardsNumPerDay
+    : userData?.settings?.dailyNew
+    ? userData?.settings?.dailyNew
+    : 50;
+
+  const currentStats = userDeckData.dailyStats;
+  if (currentStats && currentStats.lastUpdatedStats) {
+    const nowDate = new Date();
+    const todayYmd = formatYmdInTimeZone(nowDate, timeZone);
+    const statsYmd = formatYmdInTimeZone(
+      currentStats.lastUpdatedStats,
+      timeZone
+    );
+
+    // Jeśli statystyki są z dzisiaj, użyj newCardsRemaining
+    if (
+      statsYmd === todayYmd &&
+      currentStats.newCardsRemaining < effectiveLimit
+    ) {
+      effectiveLimit = Math.min(currentStats.newCardsRemaining, effectiveLimit);
+    }
+  }
+
+  // Get new cards directly from user's collection (all cards are already copied)
+  const userCardsRef = userDeckRef.collection("cards");
+  let userCardsSnap;
+
+  if (shuffleNewCards) {
+    // Shuffle włączony: obecne zachowanie - limit bez sortowania
+    userCardsSnap = await userCardsRef
+      .where("firstLearn.isNew", "==", true)
+      .limit(effectiveLimit)
+      .get();
+  } else {
+    // Shuffle wyłączony: sortuj po createdAt ASC (najstarsze najpierw)
+    userCardsSnap = await userCardsRef
+      .where("firstLearn.isNew", "==", true)
+      .orderBy("createdAt", "asc")
+      .limit(effectiveLimit)
+      .get();
+  }
+
+  const cards = userCardsSnap.docs.map((doc) => {
+    return {
+      id: doc.id,
+      ...doc.data(),
+    } as Card;
+  });
+
+  const validatedCards: Card[] = cards.map((c) => CardSchema.parse(c));
+
+  return validatedCards;
+}
+
+export const getDeckDailyStats = onCall(async (request) => {
+  const validationResult = GetDeckDailyStatsRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckId } = validationResult.data;
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  try {
+    const dailyStats = await getDailyStats(userId, deckId);
+    const response = { dailyStats: dailyStats };
+    const validatedResponse = GetDeckDailyStatsResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
+  } catch (error) {
+    logger.error("Error getting deck daily stats", error);
+    handleZodError(error, "getDeckDailyStats");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get deck daily stats");
+  }
+});
+
+/**
+ * @param {string} userId - User ID
+ * @return {Promise<User | null>} User data
+ */
+async function getUserData(userId: string): Promise<User | null> {
+  const userRef = db.doc(`users/${userId}`);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) {
+    return null;
+  }
+  return UserSchema.parse(userSnap.data());
+}
+
+/**
+ * @param {string} userId - User ID
+ * @param {string} deckId - Deck ID
+ * @return {Promise<DailyStats | null>} Daily stats
+ */
+async function getDailyStats(
+  userId: string,
+  deckId: string
+): Promise<DailyStats | null> {
+  const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
+  const userDeckSnap = await userDeckRef.get();
+  if (!userDeckSnap.exists) {
+    throw new HttpsError("not-found", "Deck not found");
+  }
+  const dailyStats = userDeckSnap.data()?.dailyStats;
+  if (!dailyStats) {
+    return null;
+  }
+  return DailyStatsSchema.parse(dailyStats);
+}
 export const getUserNewDeckCards = onCall(async (request) => {
   const validationResult = GetUserNewDeckCardsRequestSchema.safeParse(
     request.data || {}
@@ -651,7 +877,7 @@ export const getUserNewDeckCards = onCall(async (request) => {
     });
   }
 
-  const { deckId, limit = 50 } = validationResult.data;
+  const { deckId } = validationResult.data;
   const auth = request.auth;
 
   if (!auth) {
@@ -663,54 +889,10 @@ export const getUserNewDeckCards = onCall(async (request) => {
   if (!deckId || typeof deckId !== "string") {
     throw new HttpsError("invalid-argument", "deckId is required");
   }
-  if (limit && (typeof limit !== "number" || limit < 1 || limit > 1000)) {
-    throw new HttpsError(
-      "invalid-argument",
-      "limit must be a number between 1 and 1000"
-    );
-  }
   try {
     // Verify user deck exists
-    const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
-    const userDeckSnap = await userDeckRef.get();
-    if (!userDeckSnap.exists) {
-      throw new HttpsError("not-found", "Deck not found");
-    }
-
-    // Get deck settings to check shuffleNewCards
-    const userDeckData = userDeckSnap.data() as DeckLearningData;
-    const shuffleNewCards =
-      (userDeckData.settings as DeckSettings)?.shuffleNewCards ?? false;
-
-    // Get new cards directly from user's collection (all cards are already copied)
-    const userCardsRef = userDeckRef.collection("cards");
-    let userCardsSnap;
-
-    if (shuffleNewCards) {
-      // Shuffle włączony: obecne zachowanie - limit bez sortowania
-      userCardsSnap = await userCardsRef
-        .where("firstLearn.isNew", "==", true)
-        .limit(limit)
-        .get();
-    } else {
-      // Shuffle wyłączony: sortuj po createdAt ASC (najstarsze najpierw)
-      userCardsSnap = await userCardsRef
-        .where("firstLearn.isNew", "==", true)
-        .orderBy("createdAt", "asc")
-        .limit(limit)
-        .get();
-    }
-
-    const cards = userCardsSnap.docs.map((doc) => {
-      return {
-        id: doc.id,
-        ...doc.data(),
-      } as Card;
-    });
-
-    const validatedCards: Card[] = cards.map((c) => CardSchema.parse(c));
-
-    const response = { cards: validatedCards };
+    const cards = await getUserNewDeckCardsLocal(userId, deckId);
+    const response = { cards: cards };
     const validatedResponse = GetUserNewDeckCardsResponseSchema.parse(response);
     return serializeTimestamps(validatedResponse);
   } catch (error) {
@@ -720,6 +902,108 @@ export const getUserNewDeckCards = onCall(async (request) => {
       throw error;
     }
     throw new HttpsError("internal", "Failed to get user new deck cards");
+  }
+});
+
+/**
+ * @param {string} userId - User ID
+ * @param {string} deckId - Deck ID
+ * @return {Promise<DeckLearningData | null>} Deck
+ */
+async function getUserDeckLocal(
+  userId: string,
+  deckId: string
+): Promise<DeckLearningData | null> {
+  const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
+  const userDeckSnap = await userDeckRef.get();
+  if (!userDeckSnap.exists) {
+    return null;
+  }
+  return DeckLearningDataSchema.parse(userDeckSnap.data());
+}
+
+export const startLearningSession = onCall(async (request) => {
+  const validationResult = StartLearningSessionRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckId } = validationResult.data;
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  try {
+    let deck = await getUserDeckLocal(userId, deckId);
+    if (!deck) {
+      const newDeck = await copyUserDeck(userId, deckId);
+      deck = newDeck;
+    }
+    const [dueCards, newCards] = await Promise.all([
+      getUserDueDeckCardsLocal(userId, deckId),
+      getUserNewDeckCardsLocal(userId, deckId),
+    ]);
+
+    const dailyStats = {
+      newCardsRemaining: newCards.length,
+      dueCardsRemaining: dueCards.length,
+      inProgressDueCards: 0,
+      inProgressNewCards: 0,
+      completedToday: 0,
+      lastUpdatedStats: new Date(),
+    };
+
+    const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
+
+    let currentStats = await getDailyStats(userId, deckId);
+    const userData = await getUserData(userId);
+    const timeZone = userData?.settings?.timeZone || "UTC";
+
+    if (currentStats && currentStats.lastUpdatedStats) {
+      const nowDate = new Date();
+      const todayYmd = formatYmdInTimeZone(nowDate, timeZone);
+      const statsYmd = formatYmdInTimeZone(
+        new Date(currentStats.lastUpdatedStats.getTime()),
+        timeZone
+      );
+      if (statsYmd !== todayYmd) {
+        const validatedDailyStats = DailyStatsSchema.parse(dailyStats);
+        await userDeckRef.update({
+          dailyStats: validatedDailyStats,
+        });
+        currentStats = validatedDailyStats;
+      }
+    } else {
+      const validatedDailyStats = DailyStatsSchema.parse(dailyStats);
+      await userDeckRef.update({
+        dailyStats: validatedDailyStats,
+      });
+      currentStats = validatedDailyStats;
+    }
+
+    const response = {
+      cards: [...dueCards, ...newCards],
+      dailyStats: currentStats,
+      deck: deck,
+    };
+    const validatedResponse =
+      StartLearningSessionResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
+  } catch (error) {
+    logger.error("Error starting learning session", error);
+    handleZodError(error, "startLearningSession");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to start learning session");
   }
 });
 /**
@@ -1074,6 +1358,14 @@ export const resetDeck = onCall(async (request) => {
     let batchCount = 0;
     let cardsReset = 0;
 
+    currentBatch.update(
+      deckRef,
+      DeckLearningDataUpdateSchema.parse({
+        dailyStats: null,
+      })
+    );
+
+    batchCount++;
     cardsSnapshot.forEach((doc) => {
       const cardRef = cardsRef.doc(doc.id);
       currentBatch.update(cardRef, {
@@ -1312,6 +1604,130 @@ export const updateUserDeckSettings = onCall(async (request) => {
 });
 
 /**
+ * @param {string} userId - User ID
+ * @param {string} deckId - Deck ID
+ * @return {Promise<DeckLearningData>} Deck Learning Data
+ */
+async function copyUserDeck(
+  userId: string,
+  deckId: string
+): Promise<DeckLearningData> {
+  // Verify source deck exists
+  const srcDeckRef = db.collection("decks").doc(deckId);
+  const srcDeckSnap = await srcDeckRef.get();
+  if (!srcDeckSnap.exists) {
+    throw new HttpsError("not-found", "Deck not found");
+  }
+
+  const srcDeckRaw = srcDeckSnap.data();
+  if (!srcDeckRaw) {
+    throw new HttpsError("not-found", "Deck data is empty");
+  }
+
+  // Validate deck data structure
+  const srcDeck = DeckSchema.parse({
+    id: deckId,
+    ...srcDeckRaw,
+  });
+
+  // Check if deck is deleted
+  if (srcDeck.is_deleted === true) {
+    throw new HttpsError("not-found", "Deck has been deleted");
+  }
+
+  // Create target user deck document (use same deckId for easier mapping)
+  const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
+  const userDeckSnap = await userDeckRef.get();
+  let userDeck: DeckLearningData | null = null;
+
+  // If already exists, do not duplicate; return ok
+  if (!userDeckSnap.exists) {
+    const userDeckData: DeckLearningData = {
+      id: deckId,
+      title: srcDeck.title,
+      cardsNum: srcDeck.cardsNum,
+      settings: { zenMode: false, shuffleNewCards: false } as DeckSettings,
+      updatedAt: srcDeck.updatedAt,
+      category: srcDeck.category,
+      icon: srcDeck.icon,
+      tags: srcDeck.tags,
+    };
+    // Validate before saving
+    const validatedData = DeckLearningDataSchema.parse(userDeckData);
+    await userDeckRef.set(validatedData);
+    userDeck = validatedData;
+    // Copy all cards from source deck to user's collection (full copy)
+    const sourceCardsRef = srcDeckRef.collection("cards");
+    const sourceCardsSnap = await sourceCardsRef.get();
+
+    if (!sourceCardsSnap.empty) {
+      const userCardsRef = userDeckRef.collection("cards");
+      const batches: WriteBatch[] = [];
+      let currentBatch = db.batch();
+      let batchCount = 0;
+
+      for (const sourceCardDoc of sourceCardsSnap.docs) {
+        const sourceCardData = sourceCardDoc.data() as Card;
+
+        const card: Omit<Card, "id"> = {
+          cardData: {
+            front: sourceCardData.cardData.front || "",
+            back: sourceCardData.cardData.back || "",
+          },
+          tags: sourceCardData.tags || [],
+          createdAt: sourceCardData.createdAt || new Date(),
+          firstLearn: {
+            isNew: true,
+            due: new Date(),
+          },
+        };
+
+        const validatedCard = CardSchema.parse({
+          id: sourceCardDoc.id,
+          ...card,
+        });
+        const userCardRef = userCardsRef.doc(sourceCardDoc.id);
+        currentBatch.set(userCardRef, validatedCard, { merge: true });
+
+        batchCount++;
+
+        // Firestore batch limit is 500 operations
+        if (batchCount >= 500) {
+          batches.push(currentBatch);
+          currentBatch = db.batch();
+          batchCount = 0;
+        }
+      }
+
+      // Add the last batch if it has operations
+      if (batchCount > 0) {
+        batches.push(currentBatch);
+      }
+
+      // Commit all batches
+      await Promise.all(batches.map((batch) => batch.commit()));
+
+      logger.info("All cards copied to user space", {
+        userId,
+        deckId,
+        cardsCount: sourceCardsSnap.size,
+      });
+    }
+  } else {
+    // Deck already exists, get it
+    const existingDeck = userDeckSnap.data() as DeckLearningData;
+    userDeck = DeckLearningDataSchema.parse({ ...existingDeck, id: deckId });
+  }
+
+  logger.info("Deck copied to user space", { userId, deckId });
+  if (!userDeck) {
+    throw new HttpsError("internal", "Failed to create user deck");
+  }
+
+  return userDeck;
+}
+
+/**
  * Copy a public deck into user's personal space to track individual progress
  * Source: decks/{deckId}
  * Target: users/{userId}/decks/{deckId} + cards
@@ -1340,117 +1756,7 @@ export const startLearningDeck = onCall(async (request) => {
   }
 
   try {
-    // Verify source deck exists
-    const srcDeckRef = db.collection("decks").doc(deckId);
-    const srcDeckSnap = await srcDeckRef.get();
-    if (!srcDeckSnap.exists) {
-      throw new HttpsError("not-found", "Deck not found");
-    }
-
-    const srcDeckRaw = srcDeckSnap.data();
-    if (!srcDeckRaw) {
-      throw new HttpsError("not-found", "Deck data is empty");
-    }
-
-    // Validate deck data structure
-    const srcDeck = DeckSchema.parse({
-      id: deckId,
-      ...srcDeckRaw,
-    });
-
-    // Check if deck is deleted
-    if (srcDeck.is_deleted === true) {
-      throw new HttpsError("not-found", "Deck has been deleted");
-    }
-
-    // Create target user deck document (use same deckId for easier mapping)
-    const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
-    const userDeckSnap = await userDeckRef.get();
-    let userDeck: DeckLearningData | null = null;
-
-    // If already exists, do not duplicate; return ok
-    if (!userDeckSnap.exists) {
-      const userDeckData: DeckLearningData = {
-        id: deckId,
-        title: srcDeck.title,
-        cardsNum: srcDeck.cardsNum,
-        settings: { zenMode: false, shuffleNewCards: false } as DeckSettings,
-        updatedAt: srcDeck.updatedAt,
-        category: srcDeck.category,
-        icon: srcDeck.icon,
-        tags: srcDeck.tags,
-      };
-      // Validate before saving
-      const validatedData = DeckLearningDataSchema.parse(userDeckData);
-      await userDeckRef.set(validatedData);
-      userDeck = validatedData;
-      // Copy all cards from source deck to user's collection (full copy)
-      const sourceCardsRef = srcDeckRef.collection("cards");
-      const sourceCardsSnap = await sourceCardsRef.get();
-
-      if (!sourceCardsSnap.empty) {
-        const userCardsRef = userDeckRef.collection("cards");
-        const batches: WriteBatch[] = [];
-        let currentBatch = db.batch();
-        let batchCount = 0;
-
-        for (const sourceCardDoc of sourceCardsSnap.docs) {
-          const sourceCardData = sourceCardDoc.data() as Card;
-
-          const card: Omit<Card, "id"> = {
-            cardData: {
-              front: sourceCardData.cardData.front || "",
-              back: sourceCardData.cardData.back || "",
-            },
-            tags: sourceCardData.tags || [],
-            createdAt: sourceCardData.createdAt || new Date(),
-            firstLearn: {
-              isNew: true,
-              due: new Date(),
-            },
-          };
-
-          const validatedCard = CardSchema.parse({
-            id: sourceCardDoc.id,
-            ...card,
-          });
-          const userCardRef = userCardsRef.doc(sourceCardDoc.id);
-          currentBatch.set(userCardRef, validatedCard, { merge: true });
-
-          batchCount++;
-
-          // Firestore batch limit is 500 operations
-          if (batchCount >= 500) {
-            batches.push(currentBatch);
-            currentBatch = db.batch();
-            batchCount = 0;
-          }
-        }
-
-        // Add the last batch if it has operations
-        if (batchCount > 0) {
-          batches.push(currentBatch);
-        }
-
-        // Commit all batches
-        await Promise.all(batches.map((batch) => batch.commit()));
-
-        logger.info("All cards copied to user space", {
-          userId,
-          deckId,
-          cardsCount: sourceCardsSnap.size,
-        });
-      }
-    } else {
-      // Deck already exists, get it
-      const existingDeck = userDeckSnap.data() as DeckLearningData;
-      userDeck = DeckLearningDataSchema.parse({ ...existingDeck, id: deckId });
-    }
-
-    logger.info("Deck copied to user space", { userId, deckId });
-    if (!userDeck) {
-      throw new HttpsError("internal", "Failed to create user deck");
-    }
+    const userDeck = await copyUserDeck(userId, deckId);
     const response = { success: true, deck: userDeck };
     const validatedResponse = StartLearningDeckResponseSchema.parse(response);
     return serializeTimestamps(validatedResponse);
@@ -2265,20 +2571,145 @@ export const importAnkiDeck = onCall(async (request) => {
     });
   }
 
-  const { apkgBase64 } = validationResult.data;
+  const { storagePath, title } = validationResult.data;
 
   try {
-    // Konwersja Anki → Cards
-    const cards = await convertAnkiApkg(apkgBase64);
+    const userId = auth.uid;
+
+    const bucket = getStorage().bucket();
+    const [fileBuffer] = await bucket.file(storagePath).download();
+
+    const cards = await convertAnkiApkg(fileBuffer);
 
     logger.info("Anki deck imported successfully", {
-      userId: auth.uid,
+      userId,
       cardCount: cards.length,
     });
 
+    // Firestore batch limit is 500 operations
+    const BATCH_LIMIT = 500;
+
+    // Create deck document with default data
+    const deckRef = db.collection("decks").doc();
+    const deck = {
+      id: deckRef.id,
+      title: title || "Imported from Anki",
+      category: null,
+      icon: "cards",
+      cardsNum: cards.length,
+      createdBy: userId,
+      createdAt: new Date(),
+      isPublic: false,
+      is_deleted: false,
+      updatedAt: new Date(),
+    } as Deck;
+
+    const validatedDeck = DeckSchema.parse(deck);
+
+    const userDeckRef = db
+      .collection("users")
+      .doc(userId)
+      .collection("decks")
+      .doc(deckRef.id);
+
+    const userDeck = {
+      id: userDeckRef.id,
+      title: title,
+      category: null,
+      icon: "cards",
+      cardsNum: cards.length,
+      settings: {
+        zenMode: false,
+        shuffleNewCards: false,
+      } as DeckSettings,
+      updatedAt: new Date(),
+    };
+
+    const validatedUserDeck = DeckLearningDataSchema.parse(userDeck);
+
+    // Use batches to handle any number of cards (works for both small and large decks)
+    const batches: WriteBatch[] = [];
+    let currentBatch = db.batch();
+    let batchCount = 0;
+
+    // Add deck to first batch
+    currentBatch.set(deckRef, validatedDeck);
+    batchCount++;
+    currentBatch.set(userDeckRef, validatedUserDeck);
+    batchCount++;
+
+    cards.forEach((card) => {
+      const cardRef = deckRef.collection("cards").doc();
+      const cardUserRef = db
+        .collection("users")
+        .doc(userId)
+        .collection("decks")
+        .doc(deckRef.id)
+        .collection("cards")
+        .doc(cardRef.id);
+
+      const mainCard = {
+        id: cardRef.id,
+        cardData: {
+          front: card.cardData.front,
+          back: card.cardData.back,
+        },
+        tags: card.tags || [],
+        firstLearn: {
+          isNew: true,
+        } as FirstLearn,
+        createdAt: card.createdAt || new Date(),
+        updatedAt: card.updatedAt || new Date(),
+      } as Card;
+
+      const validatedCardMain = CardSchema.parse(mainCard);
+
+      currentBatch.set(cardRef, validatedCardMain);
+      const validatedCard = CardSchema.parse({
+        ...card,
+        id: cardRef.id,
+      });
+      currentBatch.set(cardUserRef, validatedCard);
+      batchCount++;
+
+      // Firestore batch limit is 500 operations
+      if (batchCount >= BATCH_LIMIT) {
+        batches.push(currentBatch);
+        currentBatch = db.batch();
+        batchCount = 0;
+      }
+    });
+
+    // Add the last batch if it has operations
+    if (batchCount > 0) {
+      batches.push(currentBatch);
+    }
+
+    // Commit all batches
+    await Promise.all(batches.map((batch) => batch.commit()));
+
+    logger.info("Deck created from Anki import", {
+      deckId: deckRef.id,
+      cardCount: cards.length,
+      userId,
+    });
+
+    try {
+      await bucket.file(storagePath).delete();
+      logger.info("Temporary import file deleted", { storagePath });
+    } catch (cleanupError) {
+      logger.warn("Failed to cleanup temporary import file", {
+        storagePath,
+        error:
+          cleanupError instanceof Error
+            ? cleanupError.message
+            : String(cleanupError),
+      });
+    }
+
     // Walidacja i zwrócenie odpowiedzi
     const response = {
-      cards,
+      deckId: deckRef.id,
       count: cards.length,
     };
 

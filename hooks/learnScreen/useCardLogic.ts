@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { router } from "expo-router";
-import { fsrs, Rating, Grades } from "ts-fsrs";
+import { fsrs, Rating } from "ts-fsrs";
 import { UserContext } from "../../store/user-context";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { FSRS_PARAMS } from "../../app/stack/learnScreen.constants";
@@ -16,14 +16,12 @@ import {
 } from "../../app/stack/learnScreen.types";
 import {
   Card,
-  Deck,
   FirstLearn,
   CardGrade,
   CardAlgo,
   DeckLearningData,
+  DailyStats,
 } from "@/types/schemas";
-import { db } from "../../firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
 
 const DEFAULT_CARD_ALGO: CardAlgo = {
   difficulty: 2.5,
@@ -47,9 +45,10 @@ const now = new Date();
 export function useCardLogic(id: string) {
   const userCtx = useContext(UserContext);
 
-  const [cards, setCards] = useState<Card[]>();
+  const [cards, setCards] = useState<(Card & { seenInSession?: boolean })[]>();
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isBack, setIsBack] = useState<boolean>(false);
+  const [dailyStats, setDailyStats] = useState<DailyStats | null>(null);
   const [tooltip, setTooltip] = useState<TooltipState>({ shown: false });
   const [time, setTime] = useState<NodeJS.Timeout | number | undefined>(
     undefined
@@ -82,6 +81,7 @@ export function useCardLogic(id: string) {
     index,
     deck,
     progress,
+    dailyStats,
   };
 
   function compDueDate(a: any, b: any): number {
@@ -118,7 +118,8 @@ export function useCardLogic(id: string) {
 
   async function updateCardsEvery(
     card: Card & { seenInSession?: boolean },
-    scheduledTime: number
+    scheduledTime: number,
+    dailyStatsLocal: DailyStats | null
   ): Promise<void> {
     try {
       if (userCtx.id && card.id) {
@@ -127,7 +128,8 @@ export function useCardLogic(id: string) {
           userCtx.id,
           id, // deck id
           card,
-          scheduledTime
+          scheduledTime,
+          dailyStatsLocal ?? undefined
         );
       }
     } catch (e) {
@@ -175,7 +177,8 @@ export function useCardLogic(id: string) {
             newCardAlgo = newCrd[Rating.Hard].card;
             break;
           case CardGrade.Good:
-            newCardAlgo = newCrd[Rating.Good].card;
+            newCardAlgo = f.repeat(newCrd[Rating.Good].card, now)[Rating.Good]
+              .card;
             break;
           case CardGrade.Easy:
             newCardAlgo = newCrd[Rating.Easy].card;
@@ -197,47 +200,70 @@ export function useCardLogic(id: string) {
           seenInSession: true,
           grade: type,
           cardAlgo: newCardAlgo,
-        } as any;
+        } as Card;
 
         // Wrong answer: set due to 10 minutes from now
         // Hard/Good/Easy: remove card from current session
 
+        let dailyStatsLocal = dailyStats;
+
+        if (dailyStatsLocal) {
+          if (cards[0].firstLearn?.isNew) {
+            dailyStatsLocal.newCardsRemaining = Math.max(
+              0,
+              dailyStatsLocal.newCardsRemaining - 1
+            );
+            dailyStatsLocal.completedToday += 1;
+          } else if (
+            !cards[0].firstLearn?.isNew &&
+            cards[0].firstLearn?.isFirst
+          ) {
+            dailyStatsLocal.inProgressNewCards = Math.max(
+              0,
+              dailyStatsLocal.inProgressNewCards - 1
+            );
+            dailyStatsLocal.completedToday += 1;
+          } else if (
+            !cards[0].firstLearn?.isFirst &&
+            type !== CardGrade.Wrong
+          ) {
+            dailyStatsLocal.inProgressDueCards = Math.max(
+              0,
+              dailyStatsLocal.inProgressDueCards - 1
+            );
+            dailyStatsLocal.completedToday += 1;
+          } else if (!cards[0].firstLearn?.isFirst && !cards[0].seenInSession) {
+            dailyStatsLocal.dueCardsRemaining = Math.max(
+              0,
+              dailyStatsLocal.dueCardsRemaining - 1
+            );
+            dailyStatsLocal.inProgressDueCards += 1;
+          }
+        }
+
         let nextCards;
         if (type === CardGrade.Wrong) {
-          updatedCard.cardAlgo.due = new Date(now.getTime() + 1000 * 60 * 10);
+          updatedCard.cardAlgo!.due = new Date(now.getTime() + 1000 * 60 * 10);
           nextCards = [updatedCard, ...cards.slice(1)];
         } else {
           nextCards = cards.slice(1);
         }
 
+        setDailyStats(dailyStatsLocal);
+
         nextCards = nextCards.sort(compDueDate); // Sort cards by due date
         setCards(nextCards);
         updateCardsEvery(
           updatedCard,
-          newCardAlgo.due.getTime() - now.getTime()
+          newCardAlgo.due.getTime() - now.getTime(),
+          dailyStatsLocal
         );
-
-        setProgress((prev) => {
-          const prevAns = currentCard.grade;
-          const newVal = { ...prev };
-          if (prevAns != type && prevAns) {
-            newVal[type] += 1;
-            newVal[prevAns] = Math.max(newVal[prevAns] - 1, 0);
-          }
-          if (!prevAns) {
-            newVal[type] += 1;
-          }
-          // Only decrease todo when card is actually done (not wrong)
-          if (type !== CardGrade.Wrong) {
-            newVal.todo -= 1;
-          }
-          return newVal;
-        });
+        setDailyStats(dailyStatsLocal);
 
         if (nextCards.length === 0) {
           router.replace({
             pathname: "./victoryScreen",
-            params: { ...progress, empty: "false" },
+            params: { ...dailyStats, empty: "false" },
           });
         }
       } else {
@@ -287,20 +313,26 @@ export function useCardLogic(id: string) {
         let nextCards = [updatedCard, ...cards.slice(1)];
         nextCards = nextCards.sort(compDueDate);
 
+        let dailyStatsLocal = dailyStats;
+
+        if (dailyStatsLocal) {
+          if (currentCard.firstLearn?.isNew == true) {
+            dailyStatsLocal.newCardsRemaining = Math.max(
+              0,
+              dailyStatsLocal.newCardsRemaining - 1
+            );
+            dailyStatsLocal.inProgressNewCards += 1;
+          }
+        }
+
+        setDailyStats(dailyStatsLocal);
         setCards(nextCards);
-        updateCardsEvery(updatedCard, newDue.getTime() - now.getTime());
-        setProgress((prev) => {
-          const prevAns = currentCard.grade;
-          const newVal = { ...prev };
-          if (prevAns != type && prevAns) {
-            newVal[type] += 1;
-            newVal[prevAns] = Math.max(newVal[prevAns] - 1, 0);
-          }
-          if (!prevAns) {
-            newVal[type] += 1;
-          }
-          return newVal;
-        });
+        updateCardsEvery(
+          updatedCard,
+          newDue.getTime() - now.getTime(),
+          dailyStatsLocal
+        );
+
         if (nextCards.length === 0) {
           setIsFinished(true);
         }
@@ -357,60 +389,35 @@ export function useCardLogic(id: string) {
         return;
       }
 
-      // Ensure user personal copy exists; if not, create it
-      if (!userCtx.id) throw new Error("No userCtx");
-      let { deck: userDeck } = await cloudFunctions.getUserDeckDetails(id);
-      if (!userDeck) {
-        await cloudFunctions.startLearningDeck(id);
-        const { deck: newUserDeck } = await cloudFunctions.getUserDeckDetails(
-          id
-        );
-        userDeck = newUserDeck;
-      }
+      const { cards, dailyStats, deck } =
+        await cloudFunctions.startLearningSession(id);
 
-      // Get user deck details
-      const { settings } = await cloudFunctions.getUserSettings(userCtx.id!);
+      setDeck(deck);
+      setDailyStats(dailyStats);
 
-      const dailyGoal = -1; // liczba dziennych powtórek (FSRS) - nie używamy tego w tej wersji
-      const dailyNew = settings.dailyNew ?? 20; // liczba nowych kart do wprowadzenia
-
-      if (userDeck) {
-        setDeck(userDeck);
-
-        // Server-side: fetch due FSRS + due firstLearn + new candidates from user deck
-        const [dueRes, newRes] = await Promise.all([
-          cloudFunctions.getUserDueDeckCards(id, dailyGoal),
-          cloudFunctions.getUserNewDeckCards(id, dailyNew),
-        ]);
-
-        console.log("newRes", JSON.stringify(newRes.cards, null, 2));
-
-        const sessionCards = [...dueRes.cards, ...newRes.cards] as Card[];
-
-        if (sessionCards.length === 0) {
-          router.replace({
-            pathname: "./victoryScreen",
-            params: { empty: "true" },
-          });
-          return;
-        }
-
-        // Sort and set
-        const sortedSessionCards = sessionCards.sort(compDueDate);
-        setCards(sortedSessionCards as Card[]);
-        setProgress({
-          easy: 0,
-          hard: 0,
-          good: 0,
-          wrong: 0,
-          todo: sortedSessionCards.length,
-          all: sortedSessionCards.length,
+      if (cards.length === 0) {
+        router.replace({
+          pathname: "./victoryScreen",
+          params: { empty: "true" },
         });
-        // Reset streak when starting new session
-        setCurrentStreak(0);
-        setStreakAchieved(false);
-        setStreakLost(false);
+        return;
       }
+
+      // Sort and set
+      const sortedSessionCards = cards.sort(compDueDate);
+      setCards(sortedSessionCards as Card[]);
+      setProgress({
+        easy: 0,
+        hard: 0,
+        good: 0,
+        wrong: 0,
+        todo: sortedSessionCards.length,
+        all: sortedSessionCards.length,
+      });
+      // Reset streak when starting new session
+      setCurrentStreak(0);
+      setStreakAchieved(false);
+      setStreakLost(false);
     } catch (e) {
       console.log("Error fetching cards:", e);
       setError("Failed to fetch cards");
@@ -452,7 +459,7 @@ export function useCardLogic(id: string) {
     if (isFinished) {
       router.replace({
         pathname: "./victoryScreen",
-        params: { ...progress, empty: "false" },
+        params: { ...dailyStats, empty: "false" },
       });
     }
   }, [isFinished]);

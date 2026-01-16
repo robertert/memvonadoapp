@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-import { UserProgressSchema, UserSettingsSchema, UserSchema } from "../index";
+import {
+  UserProgressSchema,
+  UserSettingsSchema,
+  UserSchema,
+  DailyStatsSchema,
+} from "../index";
 import { TimestampSchema } from "../base";
 import { CardSchema } from "../card";
 
@@ -46,6 +51,7 @@ export const UpdateCardProgressRequestSchema = z
     card: CardSchema,
     // scheduledTime w ms (client time, offset od „teraz”)
     scheduledTime: z.number().int(),
+    dailyStats: DailyStatsSchema.optional(),
   })
   .strict();
 

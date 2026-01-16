@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DeckLearningDataUpdateSchema = exports.DeckUpdateSchema = exports.DeckSettingsUpdateSchema = exports.DeckCoreUpdateSchema = exports.DeckLearningDataSchema = exports.DeckLearningMetaSchema = exports.DeckLearningTimestampSchema = exports.DeckLearningCoreSchema = exports.DeckSettingsSchema = exports.DeckSchema = exports.DeckMetaSchema = exports.DeckTimestampSchema = exports.DeckCoreSchema = void 0;
+exports.DeckLearningDataUpdateSchema = exports.DeckUpdateSchema = exports.DeckSettingsUpdateSchema = exports.DeckCoreUpdateSchema = exports.DeckLearningDataSchema = exports.DeckLearningMetaSchema = exports.DeckLearningTimestampSchema = exports.DeckLearningCoreSchema = exports.DailyStatsSchema = exports.DeckSettingsSchema = exports.DeckSchema = exports.DeckMetaSchema = exports.DeckTimestampSchema = exports.DeckCoreSchema = void 0;
 const zod_1 = require("zod");
 const base_1 = require("./base");
 /**
@@ -61,6 +61,19 @@ exports.DeckSettingsSchema = zod_1.z
 })
     .strict();
 /**
+ * Statystyki dzienne dla talii
+ */
+exports.DailyStatsSchema = zod_1.z
+    .object({
+    newCardsRemaining: zod_1.z.number().min(0),
+    dueCardsRemaining: zod_1.z.number().min(0),
+    inProgressDueCards: zod_1.z.number().min(0),
+    inProgressNewCards: zod_1.z.number().min(0),
+    completedToday: zod_1.z.number().min(0),
+    lastUpdatedStats: base_1.TimestampSchema,
+})
+    .strict();
+/**
  * Talia do nauki (users/{userId}/decks/{deckId})
  */
 exports.DeckLearningCoreSchema = zod_1.z
@@ -87,6 +100,9 @@ exports.DeckLearningMetaSchema = zod_1.z
     .strict();
 exports.DeckLearningDataSchema = exports.DeckLearningMetaSchema.merge(exports.DeckLearningCoreSchema)
     .merge(exports.DeckLearningTimestampSchema)
+    .extend({
+    dailyStats: exports.DailyStatsSchema.optional().nullable(),
+})
     .strict();
 ////////////////////////////////////////////////////////////
 // Partial schematy dla update'ów (częściowe aktualizacje)
@@ -113,5 +129,6 @@ exports.DeckUpdateSchema = exports.DeckCoreUpdateSchema.extend({
 exports.DeckLearningDataUpdateSchema = exports.DeckLearningCoreSchema.partial()
     .extend({
     lastReviewDate: base_1.TimestampSchema.optional(),
+    dailyStats: exports.DailyStatsSchema.optional().nullable(),
 })
     .strict();

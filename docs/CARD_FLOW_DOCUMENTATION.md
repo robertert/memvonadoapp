@@ -230,10 +230,6 @@ if (card.firstLearn.isNew) {
 ### Card Selection Logic
 
 ```typescript
-// 1. Fetch due cards from backend
-const dueCards = await getDueDeckCards(deckId); // FSRS + firstLearn due
-const newCards = await getNewDeckCards(deckId); // New candidates
-
 // 2. Partition cards
 const fsrsDue = cards.filter(
   (c) => !c.firstLearn.isNew && c.cardAlgo.due <= now

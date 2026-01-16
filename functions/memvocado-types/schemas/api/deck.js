@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ImportAnkiDeckResponseSchema = exports.ImportAnkiDeckRequestSchema = exports.UpdateDeckResponseSchema = exports.UpdateCardContentResponseSchema = exports.SyncDeckCardsResponseSchema = exports.CheckCardChangesResponseSchema = exports.GetUserNewDeckCardsResponseSchema = exports.GetUserDueDeckCardsResponseSchema = exports.GetUserDeckCardsResponseSchema = exports.GetUserDeckDetailsResponseSchema = exports.DeleteDeckResponseSchema = exports.StartLearningDeckResponseSchema = exports.GetPopularDecksResponseSchema = exports.CreateDeckWithCardsResponseSchema = exports.GetUserDecksResponseSchema = exports.GetNewDeckCardsResponseSchema = exports.GetDueDeckCardsResponseSchema = exports.GetDeckCardsResponseSchema = exports.GetDeckDetailsResponseSchema = exports.UpdateDeckRequestSchema = exports.UpdateCardContentRequestSchema = exports.SyncDeckCardsRequestSchema = exports.CheckCardChangesRequestSchema = exports.DeleteDeckRequestSchema = exports.StartLearningDeckRequestSchema = exports.UpdateUserDeckSettingsRequestSchema = exports.UpdateDeckSettingsRequestSchema = exports.ResetDeckRequestSchema = exports.GetUserNewDeckCardsRequestSchema = exports.GetUserDueDeckCardsRequestSchema = exports.GetUserDeckCardsRequestSchema = exports.GetUserDeckDetailsRequestSchema = exports.GetPopularDecksRequestSchema = exports.GetDeckCardsRequestSchema = exports.GetDeckDetailsRequestSchema = exports.CreateDeckWithCardsRequestSchema = void 0;
+exports.GetDeckDailyStatsResponseSchema = exports.StartLearningSessionResponseSchema = exports.ImportAnkiDeckResponseSchema = exports.ImportAnkiDeckRequestSchema = exports.UpdateDeckResponseSchema = exports.UpdateCardContentResponseSchema = exports.SyncDeckCardsResponseSchema = exports.CheckCardChangesResponseSchema = exports.GetUserNewDeckCardsResponseSchema = exports.GetUserDueDeckCardsResponseSchema = exports.GetUserDeckCardsResponseSchema = exports.GetUserDeckDetailsResponseSchema = exports.DeleteDeckResponseSchema = exports.StartLearningDeckResponseSchema = exports.GetPopularDecksResponseSchema = exports.CreateDeckWithCardsResponseSchema = exports.GetUserDecksResponseSchema = exports.GetDeckCardsResponseSchema = exports.GetDeckDetailsResponseSchema = exports.GetDeckDailyStatsRequestSchema = exports.StartLearningSessionRequestSchema = exports.UpdateDeckRequestSchema = exports.UpdateCardContentRequestSchema = exports.SyncDeckCardsRequestSchema = exports.CheckCardChangesRequestSchema = exports.DeleteDeckRequestSchema = exports.StartLearningDeckRequestSchema = exports.UpdateUserDeckSettingsRequestSchema = exports.UpdateDeckSettingsRequestSchema = exports.ResetDeckRequestSchema = exports.GetUserNewDeckCardsRequestSchema = exports.GetUserDueDeckCardsRequestSchema = exports.GetUserDeckCardsRequestSchema = exports.GetUserDeckDetailsRequestSchema = exports.GetPopularDecksRequestSchema = exports.GetDeckCardsRequestSchema = exports.GetDeckDetailsRequestSchema = exports.CreateDeckWithCardsRequestSchema = void 0;
 const zod_1 = require("zod");
 const index_1 = require("../index");
 // ===========================
@@ -38,15 +38,11 @@ exports.GetUserDeckCardsRequestSchema = exports.GetDeckCardsRequestSchema;
 exports.GetUserDueDeckCardsRequestSchema = zod_1.z
     .object({
     deckId: zod_1.z.string(),
-    limit: zod_1.z
-        .union([zod_1.z.number().int().min(1).max(1000), zod_1.z.literal(-1)])
-        .optional(),
 })
     .strict();
 exports.GetUserNewDeckCardsRequestSchema = zod_1.z
     .object({
     deckId: zod_1.z.string(),
-    limit: zod_1.z.number().int().min(1).max(1000).optional(),
 })
     .strict();
 exports.ResetDeckRequestSchema = zod_1.z
@@ -116,6 +112,16 @@ exports.UpdateDeckRequestSchema = zod_1.z
         .strict(),
 })
     .strict();
+exports.StartLearningSessionRequestSchema = zod_1.z
+    .object({
+    deckId: zod_1.z.string(),
+})
+    .strict();
+exports.GetDeckDailyStatsRequestSchema = zod_1.z
+    .object({
+    deckId: zod_1.z.string(),
+})
+    .strict();
 // ===========================
 // Deck response schemas
 // ===========================
@@ -128,14 +134,8 @@ exports.GetDeckCardsResponseSchema = zod_1.z.object({
     hasMore: zod_1.z.boolean(),
     lastDocId: zod_1.z.string().nullable(),
 });
-exports.GetDueDeckCardsResponseSchema = zod_1.z.object({
-    cards: zod_1.z.array(index_1.CardSchema),
-});
-exports.GetNewDeckCardsResponseSchema = zod_1.z.object({
-    cards: zod_1.z.array(index_1.CardSchema),
-});
 exports.GetUserDecksResponseSchema = zod_1.z.object({
-    decks: zod_1.z.array(index_1.DeckSchema),
+    decks: zod_1.z.array(index_1.DeckLearningDataSchema),
 });
 exports.CreateDeckWithCardsResponseSchema = zod_1.z.object({
     deckId: zod_1.z.string(),
@@ -153,6 +153,7 @@ exports.DeleteDeckResponseSchema = zod_1.z.object({
 });
 exports.GetUserDeckDetailsResponseSchema = zod_1.z.object({
     deck: index_1.DeckLearningDataSchema.nullable(),
+    createdDeck: zod_1.z.boolean(),
 });
 exports.GetUserDeckCardsResponseSchema = zod_1.z.object({
     cards: zod_1.z.array(index_1.CardSchema),
@@ -183,10 +184,19 @@ exports.UpdateDeckResponseSchema = zod_1.z.object({
 });
 exports.ImportAnkiDeckRequestSchema = zod_1.z
     .object({
-    apkgBase64: zod_1.z.string().min(1), // base64 encoded .apkg file
+    storagePath: zod_1.z.string().min(1), // Path to .apkg file in Firebase Storage
+    title: zod_1.z.string().optional(), // Optional title, defaults to "Imported from Anki"
 })
     .strict();
 exports.ImportAnkiDeckResponseSchema = zod_1.z.object({
-    cards: zod_1.z.array(index_1.CardSchema),
+    deckId: zod_1.z.string(),
     count: zod_1.z.number(),
+});
+exports.StartLearningSessionResponseSchema = zod_1.z.object({
+    cards: zod_1.z.array(index_1.CardSchema),
+    dailyStats: index_1.DailyStatsSchema,
+    deck: index_1.DeckLearningDataSchema,
+});
+exports.GetDeckDailyStatsResponseSchema = zod_1.z.object({
+    dailyStats: index_1.DailyStatsSchema,
 });
