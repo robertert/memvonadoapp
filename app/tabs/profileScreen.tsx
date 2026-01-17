@@ -268,6 +268,9 @@ export default function profileScreen(): React.JSX.Element {
               </View>
             </>
           )}
+
+          {/* Awards */}
+          {/*
           <View style={styles.sectionContainer}>
             <Text style={styles.subTitle}>Your awards</Text>
             <ScrollView
@@ -290,6 +293,7 @@ export default function profileScreen(): React.JSX.Element {
               )}
             </ScrollView>
           </View>
+          */}
           <View style={styles.sectionContainer}>
             <Text style={styles.subTitle}>Aktywność nauki</Text>
             {isLoading ? (

@@ -10,6 +10,7 @@ import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
 import { placeholderRanking } from "../../constants/placeholderData";
+import { WrenchScrewdriverIcon } from "react-native-heroicons/solid";
 
 interface RankingUser {
   userId: string;
@@ -36,7 +37,7 @@ export default function rankingsScreen(): React.JSX.Element {
 
   useEffect(() => {
     if (userCtx.id) {
-      fetchRankings();
+      //fetchRankings();
     }
   }, [userCtx.id, activeTab]);
 
@@ -85,8 +86,7 @@ export default function rankingsScreen(): React.JSX.Element {
         console.log("Time sync error", e);
       }
     }
-    console.log("Initializing server time");
-    initServerTime();
+    //initServerTime();
     return () => {
       if (interval) clearInterval(interval);
     };
@@ -310,6 +310,26 @@ export default function rankingsScreen(): React.JSX.Element {
         <SkeletonUserItem key={item} />
       ))}
     </>
+  );
+
+  return (
+    <View style={styles.container}>
+      <View style={[styles.headerContainer, { paddingTop: safeArea.top + 8 }]}>
+        <Text style={styles.headerTitle}>Leaderboard</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text
+          style={[
+            styles.sectionTitle,
+            { textAlign: "center", marginBottom: 20, fontSize: 24 },
+          ]}
+        >
+          Work in progress...
+        </Text>
+        <WrenchScrewdriverIcon size={80} color={Colors.primary_700} />
+      </View>
+    </View>
   );
 
   return (
