@@ -71,6 +71,12 @@ export function useCardLogic(id: string) {
   const [streakAchieved, setStreakAchieved] = useState<boolean>(false);
   const [streakLost, setStreakLost] = useState<boolean>(false);
   const [isFinished, setIsFinished] = useState<boolean>(false);
+  const [history, setHistory] = useState<
+    {
+      card: Card & { seenInSession?: boolean };
+      dailyStats: DailyStats | null;
+    }[]
+  >([]);
 
   const cardLogicState: CardLogicState = {
     cards,
@@ -134,6 +140,30 @@ export function useCardLogic(id: string) {
       }
     } catch (e) {
       console.log("Error updating card progress:", e);
+    }
+  }
+  async function goBackInHistory(): Promise<void> {
+    if (history.length > 0) {
+      const newDailyStats = history[history.length - 1].dailyStats;
+      setCards((prev) => {
+        const newCards = [...(prev ?? [])];
+        newCards.unshift(history[history.length - 1].card);
+        return newCards;
+      });
+      setHistory(history.slice(0, history.length - 1));
+      setDailyStats(newDailyStats);
+      try {
+        if (!newDailyStats) {
+          throw new Error("Daily stats are not defined");
+        }
+        await cloudFunctions.undoCard(
+          id,
+          history[history.length - 1].card,
+          newDailyStats
+        );
+      } catch (error) {
+        console.error("Error undoing card:", error);
+      }
     }
   }
 
@@ -206,6 +236,7 @@ export function useCardLogic(id: string) {
         // Hard/Good/Easy: remove card from current session
 
         let dailyStatsLocal = dailyStats;
+        const historyStats = { ...dailyStatsLocal } as DailyStats; // Deep copy of daily stats
 
         if (dailyStatsLocal) {
           if (cards[0].firstLearn?.isNew) {
@@ -260,8 +291,7 @@ export function useCardLogic(id: string) {
           nextCards = cards.slice(1);
         }
 
-        setDailyStats(dailyStatsLocal);
-
+        setHistory([...history, { card: cards[0], dailyStats: historyStats }]);
         nextCards = nextCards.sort(compDueDate); // Sort cards by due date
         setCards(nextCards);
         updateCardsEvery(
@@ -329,6 +359,7 @@ export function useCardLogic(id: string) {
         nextCards = nextCards.sort(compDueDate);
 
         let dailyStatsLocal = dailyStats;
+        const historyStats = { ...dailyStatsLocal } as DailyStats; // Deep copy of daily stats
 
         if (dailyStatsLocal) {
           if (currentCard.firstLearn?.isNew == true) {
@@ -340,6 +371,7 @@ export function useCardLogic(id: string) {
           }
         }
 
+        setHistory([...history, { card: cards[0], dailyStats: historyStats }]);
         setDailyStats(dailyStatsLocal);
         setCards(nextCards);
         updateCardsEvery(
@@ -525,6 +557,8 @@ export function useCardLogic(id: string) {
   return {
     cardLogicState,
     error,
+    goBackInHistory,
+    history,
     setCards,
     setIsBack,
     setTooltip,

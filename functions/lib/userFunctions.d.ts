@@ -58,6 +58,9 @@ export declare const getUserDecks: import("firebase-functions/v2/https").Callabl
         lastReviewDate?: Date | undefined;
     }[];
 }>, unknown>;
+export declare const undoCard: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+}>, unknown>;
 /**
  * Update card progress after review
  */

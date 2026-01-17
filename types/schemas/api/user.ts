@@ -69,6 +69,15 @@ export type GetUserProgressRequest = z.infer<
   typeof GetUserProgressRequestSchema
 >;
 
+export const UndoCardRequestSchema = z
+  .object({
+    deckId: z.string(),
+    card: CardSchema,
+    dailyStats: DailyStatsSchema,
+  })
+  .strict();
+export type UndoCardRequest = z.infer<typeof UndoCardRequestSchema>;
+
 export const GetUserSettingsRequestSchema = z
   .object({
     userId: z.string(),
@@ -236,3 +245,8 @@ export const WeeklyRollOverResponseSchema = z.object({
 export type WeeklyRollOverResponse = z.infer<
   typeof WeeklyRollOverResponseSchema
 >;
+
+export const UndoCardResponseSchema = z.object({
+  success: z.boolean(),
+});
+export type UndoCardResponse = z.infer<typeof UndoCardResponseSchema>;

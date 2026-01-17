@@ -31,6 +31,7 @@ export {
   updateUserStreakOnLogin,
   updateUserStreakIfQualified,
   updateUserSettings,
+  undoCard,
   getUserProfile,
   getUserActivityHeatmap,
   getUserAwards,

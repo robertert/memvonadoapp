@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WeeklyRollOverResponseSchema = exports.SubmitPointsResponseSchema = exports.GetCurrentSeasonResponseSchema = exports.ServerNowSchema = exports.GetUserAwardsResponseSchema = exports.GetUserActivityHeatmapResponseSchema = exports.GetUserProfileResponseSchema = exports.GetUserSettingsResponseSchema = exports.GetUserProgressResponseSchema = exports.UpdateUserStreakOnLoginResponseSchema = exports.UpdateUserStreakIfQualifiedResponseSchema = exports.UpdateUserSettingsRequestSchema = exports.SubmitPointsRequestSchema = exports.GetUserAwardsRequestSchema = exports.GetUserActivityHeatmapRequestSchema = exports.GetUserProfileRequestSchema = exports.GetUserSettingsRequestSchema = exports.GetUserProgressRequestSchema = exports.UpdateCardProgressRequestSchema = exports.GetUserDecksRequestSchema = exports.UpdateUserStreakOnLoginRequestSchema = exports.UpdateUserStreakIfQualifiedRequestSchema = void 0;
+exports.UndoCardResponseSchema = exports.WeeklyRollOverResponseSchema = exports.SubmitPointsResponseSchema = exports.GetCurrentSeasonResponseSchema = exports.ServerNowSchema = exports.GetUserAwardsResponseSchema = exports.GetUserActivityHeatmapResponseSchema = exports.GetUserProfileResponseSchema = exports.GetUserSettingsResponseSchema = exports.GetUserProgressResponseSchema = exports.UpdateUserStreakOnLoginResponseSchema = exports.UpdateUserStreakIfQualifiedResponseSchema = exports.UpdateUserSettingsRequestSchema = exports.SubmitPointsRequestSchema = exports.GetUserAwardsRequestSchema = exports.GetUserActivityHeatmapRequestSchema = exports.GetUserProfileRequestSchema = exports.GetUserSettingsRequestSchema = exports.UndoCardRequestSchema = exports.GetUserProgressRequestSchema = exports.UpdateCardProgressRequestSchema = exports.GetUserDecksRequestSchema = exports.UpdateUserStreakOnLoginRequestSchema = exports.UpdateUserStreakIfQualifiedRequestSchema = void 0;
 const zod_1 = require("zod");
 const index_1 = require("../index");
 const base_1 = require("../base");
@@ -39,6 +39,13 @@ exports.UpdateCardProgressRequestSchema = zod_1.z
 exports.GetUserProgressRequestSchema = zod_1.z
     .object({
     userId: zod_1.z.string(),
+})
+    .strict();
+exports.UndoCardRequestSchema = zod_1.z
+    .object({
+    deckId: zod_1.z.string(),
+    card: card_1.CardSchema,
+    dailyStats: index_1.DailyStatsSchema,
 })
     .strict();
 exports.GetUserSettingsRequestSchema = zod_1.z
@@ -130,4 +137,7 @@ exports.SubmitPointsResponseSchema = zod_1.z.object({
 exports.WeeklyRollOverResponseSchema = zod_1.z.object({
     success: zod_1.z.boolean(),
     nextSeasonId: zod_1.z.string(),
+});
+exports.UndoCardResponseSchema = zod_1.z.object({
+    success: zod_1.z.boolean(),
 });

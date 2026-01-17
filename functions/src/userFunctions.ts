@@ -47,6 +47,9 @@ import {
   WeeklyRollOverResponseSchema as ApiWeeklyRollOverResponseSchema,
   DeckLearningData,
   DailyStatsSchema,
+  DailyStats,
+  UndoCardRequestSchema,
+  UndoCardResponseSchema,
 } from "memvocado-types";
 import { serializeTimestamps } from "./utils/serialization";
 
@@ -445,6 +448,111 @@ export const getUserDecks = onCall(async (request) => {
   }
 });
 
+export const undoCard = onCall(async (request) => {
+  const parsedRequest = UndoCardRequestSchema.safeParse(request.data || {});
+  if (!parsedRequest.success) {
+    logger.error("undoCard: invalid request", {
+      issues: parsedRequest.error.issues,
+    });
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
+  }
+  const auth = request.auth;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+  const userId = auth.uid;
+
+  try {
+    const { deckId, card, dailyStats } = parsedRequest.data;
+
+    const validatedCard = CardSchema.parse(card);
+
+    const cardRef = db.doc(
+      `users/${userId}/decks/${deckId}/cards/${validatedCard.id}`
+    );
+    await cardRef.set(validatedCard);
+
+    // Update daily stats
+    await updateDailyStats(userId, deckId, dailyStats);
+
+    // Delete study session
+    const studySessionRef = await db
+      .collection(`users/${userId}/studySessions`)
+      .where("cardId", "==", validatedCard.id)
+      .limit(1)
+      .get();
+    if (studySessionRef.docs.length > 0) {
+      await studySessionRef.docs[0].ref.delete();
+    }
+
+    const successResponse = UndoCardResponseSchema.parse({ success: true });
+    return serializeTimestamps(successResponse);
+  } catch (error) {
+    logger.error("Error undoing card", error);
+    handleZodError(error, "undoCard");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to undo card");
+  }
+});
+
+/**
+ * Update daily stats
+ * @param {string} userId - User ID
+ * @param {string} deckId - Deck ID
+ * @param {DailyStats | undefined} dailyStats - Daily stats
+ * @return {Promise<void>}
+ */
+async function updateDailyStats(
+  userId: string,
+  deckId: string,
+  dailyStats: DailyStats | undefined
+) {
+  try {
+    const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
+
+    const userRef = db.doc(`users/${userId}`);
+
+    if (dailyStats) {
+      const deckData = await deckRef.get();
+
+      const dailyStatsBefore = deckData.data()?.dailyStats;
+
+      const validatedDailyStatsBefore =
+        DailyStatsSchema.parse(dailyStatsBefore);
+
+      const validatedDailyStats = DailyStatsSchema.parse(dailyStats);
+
+      const completedNewDiff =
+        validatedDailyStats.completedNewToday -
+        validatedDailyStatsBefore.completedNewToday;
+      const completedDueDiff =
+        validatedDailyStats.completedDueToday -
+        validatedDailyStatsBefore.completedDueToday;
+
+      const batch = db.batch();
+      batch.update(deckRef, {
+        dailyStats: {
+          ...validatedDailyStats,
+          lastUpdatedStats: new Date(),
+        },
+      });
+      batch.update(userRef, {
+        "dailyStats.completedNewToday": FieldValue.increment(completedNewDiff),
+        "dailyStats.completedDueToday": FieldValue.increment(completedDueDiff),
+        "dailyStats.lastUpdatedStats": new Date(),
+      });
+      await batch.commit();
+    }
+  } catch (statsErr) {
+    logger.warn("updateCardProgress: daily stats update failed", statsErr);
+    // Nie przerywaj głównej operacji – to tylko best-effort
+  }
+}
+
 /**
  * Update card progress after review
  */
@@ -509,48 +617,7 @@ export const updateCardProgress = onCall(async (request) => {
     await db.collection(`users/${userId}/studySessions`).add(studySession);
 
     // Aktualizacja statystyk dziennych
-    try {
-      const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
-
-      const userRef = db.doc(`users/${userId}`);
-
-      if (dailyStats) {
-        const deckData = await deckRef.get();
-
-        const dailyStatsBefore = deckData.data()?.dailyStats;
-
-        const validatedDailyStatsBefore =
-          DailyStatsSchema.parse(dailyStatsBefore);
-
-        const validatedDailyStats = DailyStatsSchema.parse(dailyStats);
-
-        const completedNewDiff =
-          validatedDailyStats.completedNewToday -
-          validatedDailyStatsBefore.completedNewToday;
-        const completedDueDiff =
-          validatedDailyStats.completedDueToday -
-          validatedDailyStatsBefore.completedDueToday;
-
-        const batch = db.batch();
-        batch.update(deckRef, {
-          dailyStats: {
-            ...validatedDailyStats,
-            lastUpdatedStats: new Date(),
-          },
-        });
-        batch.update(userRef, {
-          "dailyStats.completedNewToday":
-            FieldValue.increment(completedNewDiff),
-          "dailyStats.completedDueToday":
-            FieldValue.increment(completedDueDiff),
-          "dailyStats.lastUpdatedStats": new Date(),
-        });
-        await batch.commit();
-      }
-    } catch (statsErr) {
-      logger.warn("updateCardProgress: daily stats update failed", statsErr);
-      // Nie przerywaj głównej operacji – to tylko best-effort
-    }
+    await updateDailyStats(userId, deckId, dailyStats);
 
     // Po zapisaniu sesji: sprawdź wspólną logiką, czy dzienny próg (10 kart) został osiągnięty
     try {

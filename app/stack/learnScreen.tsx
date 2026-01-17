@@ -31,7 +31,7 @@ import BottomSheet from "../../components/learnScreen/BottomSheet";
 import Confetti from "../../components/learnScreen/Confetti";
 import { learnScreenStyles } from "./learnScreen.styles";
 import { Colors } from "../../constants/colors";
-import { BoltIcon } from "react-native-heroicons/solid";
+import { BoltIcon, ArrowUturnLeftIcon } from "react-native-heroicons/solid";
 import { Card } from "@/types";
 import { calculateDailyStatsProgress } from "@/constants/dailyStats";
 
@@ -51,6 +51,8 @@ export default function learnScreen(): React.JSX.Element {
     cardLogicState,
     error,
     setIsBack,
+    goBackInHistory,
+    history,
     setTooltip,
     newCard,
     clearError,
@@ -442,6 +444,14 @@ export default function learnScreen(): React.JSX.Element {
           trigger={showConfetti}
           onComplete={() => setShowConfetti(false)}
         />
+        {history.length > 0 && (
+          <Pressable
+            onPress={goBackInHistory}
+            style={{ position: "absolute", top: safeArea.top + 110, left: 20 }}
+          >
+            <ArrowUturnLeftIcon size={24} color={Colors.primary_700} />
+          </Pressable>
+        )}
 
         <Pressable
           onPress={() => {
@@ -458,6 +468,7 @@ export default function learnScreen(): React.JSX.Element {
         >
           <Ionicons name="pencil" size={24} color={Colors.primary_700} />
         </Pressable>
+
         {/* Flying fire icon that appears in center and flies out */}
         {/* Native size 96px (4x) for better quality when scaled down */}
         <Animated.View style={flyingFireIconAnimatedStyle} pointerEvents="none">

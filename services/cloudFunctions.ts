@@ -61,6 +61,9 @@ import {
   GetCurrentSeasonResponseSchema,
   WeeklyRollOverResponse,
   WeeklyRollOverResponseSchema,
+  UndoCardRequest,
+  UndoCardResponse,
+  UndoCardResponseSchema,
 } from "@/types/schemas/api/user";
 import {
   GetFriendsStreaksRequest,
@@ -363,6 +366,21 @@ export const cloudFunctions = {
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from getUserDecks");
+    }
+    return validatedData.data;
+  },
+
+  // Undo card
+  undoCard: async (deckId: string, card: Card, dailyStats: DailyStats) => {
+    const undoCardFunction = httpsCallable<UndoCardRequest, UndoCardResponse>(
+      functions,
+      "undoCard"
+    );
+    const result = await undoCardFunction({ deckId, card, dailyStats });
+    const validatedData = UndoCardResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from undoCard");
     }
     return validatedData.data;
   },
