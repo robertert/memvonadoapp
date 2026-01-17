@@ -25,6 +25,7 @@ import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
 import type { DeckLearningData } from "@/types";
 import { CATEGORY_OPTIONS } from "../../constants/settings";
+import { calculateDailyStatsProgress } from "@/constants/dailyStats";
 
 export default function MyLibraryScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
@@ -115,33 +116,16 @@ export default function MyLibraryScreen(): React.JSX.Element {
         <View style={styles.progressContainer}>
           <Text style={styles.progressText}>
             Dzisiejszy postęp:{" "}
-            {Math.round(
-              item.dailyStats?.completedToday
-                ? (item.dailyStats?.completedToday * 100) /
-                    (item.dailyStats?.completedToday +
-                      item.dailyStats?.inProgressDueCards +
-                      item.dailyStats?.inProgressNewCards +
-                      item.dailyStats?.dueCardsRemaining +
-                      item.dailyStats?.newCardsRemaining)
-                : 0
-            )}
-            %{" "}
+            {calculateDailyStatsProgress(item.dailyStats || null)}%{" "}
           </Text>
           <View style={styles.progressBar}>
             <View
               style={[
                 styles.progressFill,
                 {
-                  width: `${
-                    item.dailyStats?.completedToday
-                      ? (item.dailyStats?.completedToday * 100) /
-                        (item.dailyStats?.dueCardsRemaining +
-                          item.dailyStats?.inProgressDueCards +
-                          item.dailyStats?.inProgressNewCards +
-                          item.dailyStats?.newCardsRemaining +
-                          item.dailyStats?.completedToday || 1)
-                      : 0
-                  }%`,
+                  width: `${calculateDailyStatsProgress(
+                    item.dailyStats || null
+                  )}%`,
                 },
               ]}
             />

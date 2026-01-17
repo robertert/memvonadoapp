@@ -98,7 +98,8 @@ export default function BottomSheet({
                   fontWeight: "bold",
                 }}
               >
-                {dailyStats?.completedToday}
+                {(dailyStats?.completedNewToday ?? 0) +
+                  (dailyStats?.completedDueToday ?? 0)}
               </Text>
               <Text
                 style={{
@@ -111,7 +112,8 @@ export default function BottomSheet({
                   (dailyStats?.dueCardsRemaining ?? 0) +
                   (dailyStats?.inProgressDueCards ?? 0) +
                   (dailyStats?.inProgressNewCards ?? 0) +
-                  (dailyStats?.completedToday ?? 0)}
+                  (dailyStats?.completedNewToday ?? 0) +
+                  (dailyStats?.completedDueToday ?? 0)}
               </Text>
             </View>
           </Animated.View>
@@ -249,7 +251,8 @@ export default function BottomSheet({
                     </View>
                     <View style={{ alignItems: "center" }}>
                       <Text style={{ color: "#ffffff", fontSize: 30 }}>
-                        {dailyStats.completedToday}
+                        {(dailyStats.completedNewToday ?? 0) +
+                          (dailyStats.completedDueToday ?? 0)}
                       </Text>
                       <Text style={{ color: "#ffffff", fontSize: 20 }}>
                         Zrobione

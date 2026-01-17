@@ -24,7 +24,14 @@ import {
   placeholderDecks,
   placeholderDecksLearningData,
 } from "../../constants/placeholderData";
-import { DeckSchema, UserProgress, Deck, DeckLearningData } from "@/types";
+import {
+  DeckSchema,
+  UserProgress,
+  Deck,
+  DeckLearningData,
+  UserDailyStats,
+} from "@/types";
+import { calculateDailyStatsProgress } from "@/constants/dailyStats";
 
 export default function decksScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
@@ -33,7 +40,9 @@ export default function decksScreen(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isRefresh, setIsRefresh] = useState<boolean>(false);
   const [userProgress, setUserProgress] = useState<UserProgress>();
-
+  const [dailyUserStats, setDailyUserStats] = useState<UserDailyStats | null>(
+    null
+  );
   const userCtx = useContext(UserContext);
 
   useEffect(() => {
@@ -48,12 +57,15 @@ export default function decksScreen(): React.JSX.Element {
         setDecks(placeholderDecksLearningData);
       } else if (userCtx.id) {
         // Get user progress and statistics from Cloud Function
-        const [userProgress, userDecks] = await Promise.all([
-          cloudFunctions.getUserProgress(userCtx.id),
-          cloudFunctions.getUserDecks(userCtx.id),
-        ]);
-        setUserProgress(userProgress);
-        setDecks(userDecks.decks);
+        const [fetchedUserProgress, fetchedUserDecks, fetchedDailyUserStats] =
+          await Promise.all([
+            cloudFunctions.getUserProgress(userCtx.id),
+            cloudFunctions.getUserDecks(userCtx.id),
+            cloudFunctions.getDailyUserStats(),
+          ]);
+        setUserProgress(fetchedUserProgress);
+        setDecks(fetchedUserDecks.decks);
+        setDailyUserStats(fetchedDailyUserStats);
       }
 
       setIsLoading(false);
@@ -144,7 +156,9 @@ export default function decksScreen(): React.JSX.Element {
             </View>
             <View style={styles.dailyGoalSectionContainer}>
               <Text style={styles.dailyGoalText}>
-                {userProgress?.todaySessionsCount} / {userProgress?.dailyGoal}
+                {(dailyUserStats?.completedNewToday ?? 0) +
+                  (dailyUserStats?.completedDueToday ?? 0)}{" "}
+                / {userProgress?.dailyGoal}{" "}
               </Text>
               <MaterialCommunityIcons
                 name="cards"
@@ -169,15 +183,8 @@ export default function decksScreen(): React.JSX.Element {
                     </Text>
                     <View style={styles.chartContainer}>
                       <PieChart
-                        percentage={Math.round(
-                          deck.dailyStats?.completedToday
-                            ? (deck.dailyStats?.completedToday * 100) /
-                                (deck.dailyStats?.completedToday +
-                                  deck.dailyStats?.inProgressDueCards +
-                                  deck.dailyStats?.inProgressNewCards +
-                                  deck.dailyStats?.dueCardsRemaining +
-                                  deck.dailyStats?.newCardsRemaining)
-                            : 0
+                        percentage={calculateDailyStatsProgress(
+                          deck.dailyStats || null
                         )}
                         radius={35}
                       />

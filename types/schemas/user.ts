@@ -56,6 +56,14 @@ export const UserTimestampSchema = z.object({
 
 export type UserTimestamp = z.infer<typeof UserTimestampSchema>;
 
+export const UserDailyStatsSchema = z.object({
+  completedNewToday: z.number().min(0),
+  completedDueToday: z.number().min(0),
+  lastUpdatedStats: TimestampSchema,
+});
+
+export type UserDailyStats = z.infer<typeof UserDailyStatsSchema>;
+
 export const UserMetaSchema = z
   .object({
     id: z.string(),
@@ -64,6 +72,7 @@ export const UserMetaSchema = z
     experiencePoints: z.number().min(0).default(0),
     currencyCount: z.number().min(0).default(0),
     stats: UserStatsSchema,
+    dailyStats: UserDailyStatsSchema.optional().nullable(),
     followingCount: z.number().min(0).default(0),
     followersCount: z.number().min(0).default(0),
     profileCompleted: z.boolean().default(false).optional(),

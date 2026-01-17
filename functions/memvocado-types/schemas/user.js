@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.FollowersArraySchema = exports.FollowersSchema = exports.FollowingArraySchema = exports.FollowingSchema = exports.UserSchema = exports.UserMetaSchema = exports.UserTimestampSchema = exports.UserCoreSchema = exports.UserSettingsSchema = exports.UserStatsSchema = void 0;
+exports.FollowersArraySchema = exports.FollowersSchema = exports.FollowingArraySchema = exports.FollowingSchema = exports.UserSchema = exports.UserMetaSchema = exports.UserDailyStatsSchema = exports.UserTimestampSchema = exports.UserCoreSchema = exports.UserSettingsSchema = exports.UserStatsSchema = void 0;
 const zod_1 = require("zod");
 const base_1 = require("./base");
 /**
@@ -45,6 +45,11 @@ exports.UserTimestampSchema = zod_1.z.object({
     createdAt: base_1.TimestampSchema,
     updatedAt: base_1.TimestampSchema,
 });
+exports.UserDailyStatsSchema = zod_1.z.object({
+    completedNewToday: zod_1.z.number().min(0),
+    completedDueToday: zod_1.z.number().min(0),
+    lastUpdatedStats: base_1.TimestampSchema,
+});
 exports.UserMetaSchema = zod_1.z
     .object({
     id: zod_1.z.string(),
@@ -53,6 +58,7 @@ exports.UserMetaSchema = zod_1.z
     experiencePoints: zod_1.z.number().min(0).default(0),
     currencyCount: zod_1.z.number().min(0).default(0),
     stats: exports.UserStatsSchema,
+    dailyStats: exports.UserDailyStatsSchema.optional().nullable(),
     followingCount: zod_1.z.number().min(0).default(0),
     followersCount: zod_1.z.number().min(0).default(0),
     profileCompleted: zod_1.z.boolean().default(false).optional(),

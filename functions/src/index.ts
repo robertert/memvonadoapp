@@ -50,6 +50,7 @@ export {
   getUserDeckCards,
   startLearningSession,
   getUserDueDeckCards,
+  getDailyUserStats,
   getDeckDailyStats,
   getUserNewDeckCards,
   deleteDeck,

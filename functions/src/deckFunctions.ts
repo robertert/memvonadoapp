@@ -61,6 +61,8 @@ import {
   StartLearningSessionRequestSchema,
   GetDeckDailyStatsRequestSchema,
   GetDeckDailyStatsResponseSchema,
+  GetDailyUserStatsResponseSchema,
+  GetDailyUserStatsRequestSchema,
 } from "memvocado-types/schemas/api/deck";
 import { convertAnkiApkg } from "./ankiConverter";
 import {
@@ -68,6 +70,7 @@ import {
   DailyStatsSchema,
   DeckLearningDataUpdateSchema,
   User,
+  UserDailyStats,
 } from "memvocado-types";
 
 const db = getFirestore();
@@ -742,32 +745,13 @@ async function getUserNewDeckCardsLocal(
         ...userSnap.data(),
       })
     : null;
-  const timeZone = userData?.settings?.timeZone || "UTC";
 
   // Sprawdź dailyStats i użyj newCardsRemaining jeśli istnieje i jest z dzisiaj
-  let effectiveLimit = userDeckData.settings.newCardsNumPerDay
+  const effectiveLimit = userDeckData.settings.newCardsNumPerDay
     ? userDeckData.settings.newCardsNumPerDay
     : userData?.settings?.dailyNew
     ? userData?.settings?.dailyNew
     : 50;
-
-  const currentStats = userDeckData.dailyStats;
-  if (currentStats && currentStats.lastUpdatedStats) {
-    const nowDate = new Date();
-    const todayYmd = formatYmdInTimeZone(nowDate, timeZone);
-    const statsYmd = formatYmdInTimeZone(
-      currentStats.lastUpdatedStats,
-      timeZone
-    );
-
-    // Jeśli statystyki są z dzisiaj, użyj newCardsRemaining
-    if (
-      statsYmd === todayYmd &&
-      currentStats.newCardsRemaining < effectiveLimit
-    ) {
-      effectiveLimit = Math.min(currentStats.newCardsRemaining, effectiveLimit);
-    }
-  }
 
   // Get new cards directly from user's collection (all cards are already copied)
   const userCardsRef = userDeckRef.collection("cards");
@@ -820,7 +804,12 @@ export const getDeckDailyStats = onCall(async (request) => {
   const userId = auth.uid;
 
   try {
-    const dailyStats = await getDailyStats(userId, deckId);
+    const dailyStats = await getDailyStatsToday(userId, deckId);
+    if (!dailyStats) {
+      return serializeTimestamps(
+        GetDeckDailyStatsResponseSchema.parse({ dailyStats: null })
+      );
+    }
     const response = { dailyStats: dailyStats };
     const validatedResponse = GetDeckDailyStatsResponseSchema.parse(response);
     return serializeTimestamps(validatedResponse);
@@ -867,6 +856,31 @@ async function getDailyStats(
   }
   return DailyStatsSchema.parse(dailyStats);
 }
+
+/**
+ * @param {string} userId - User ID
+ * @param {string} deckId - Deck ID
+ * @return {Promise<DailyStats | null>} Daily stats
+ */
+async function getDailyStatsToday(
+  userId: string,
+  deckId: string
+): Promise<DailyStats | null> {
+  const dailyStats = await getDailyStats(userId, deckId);
+  const userData = await getUserData(userId);
+  const timeZone = userData?.settings?.timeZone || "UTC";
+
+  if (dailyStats && dailyStats.lastUpdatedStats) {
+    const nowDate = new Date();
+    const todayYmd = formatYmdInTimeZone(nowDate, timeZone);
+    const statsYmd = formatYmdInTimeZone(dailyStats.lastUpdatedStats, timeZone);
+    if (statsYmd != todayYmd) {
+      return null;
+    }
+  }
+  return dailyStats;
+}
+
 export const getUserNewDeckCards = onCall(async (request) => {
   const validationResult = GetUserNewDeckCardsRequestSchema.safeParse(
     request.data || {}
@@ -952,45 +966,55 @@ export const startLearningSession = onCall(async (request) => {
       getUserNewDeckCardsLocal(userId, deckId),
     ]);
 
-    const dailyStats = {
-      newCardsRemaining: newCards.length,
-      dueCardsRemaining: dueCards.length,
-      inProgressDueCards: 0,
-      inProgressNewCards: 0,
-      completedToday: 0,
-      lastUpdatedStats: new Date(),
-    };
-
+    let currentStats;
     const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
 
-    let currentStats = await getDailyStats(userId, deckId);
-    const userData = await getUserData(userId);
-    const timeZone = userData?.settings?.timeZone || "UTC";
+    const dailyStatsToday = await getDailyStatsToday(userId, deckId);
 
-    if (currentStats && currentStats.lastUpdatedStats) {
-      const nowDate = new Date();
-      const todayYmd = formatYmdInTimeZone(nowDate, timeZone);
-      const statsYmd = formatYmdInTimeZone(
-        new Date(currentStats.lastUpdatedStats.getTime()),
-        timeZone
-      );
-      if (statsYmd !== todayYmd) {
-        const validatedDailyStats = DailyStatsSchema.parse(dailyStats);
-        await userDeckRef.update({
-          dailyStats: validatedDailyStats,
-        });
-        currentStats = validatedDailyStats;
-      }
+    if (dailyStatsToday) {
+      currentStats = dailyStatsToday;
     } else {
-      const validatedDailyStats = DailyStatsSchema.parse(dailyStats);
-      await userDeckRef.update({
-        dailyStats: validatedDailyStats,
-      });
-      currentStats = validatedDailyStats;
+      currentStats = {
+        newCardsRemaining: newCards.length,
+        dueCardsRemaining: dueCards.length,
+        inProgressDueCards: 0,
+        inProgressNewCards: 0,
+        completedNewToday: 0,
+        completedDueToday: 0,
+        lastUpdatedStats: new Date(),
+      };
     }
 
+    const userData = await getUserData(userId);
+
+    // Strip new cards if limit is exceeded
+
+    const settingsNewLimit = deck.settings.newCardsNumPerDay
+      ? deck.settings.newCardsNumPerDay
+      : userData?.settings?.dailyNew
+      ? userData?.settings?.dailyNew
+      : 50;
+
+    const newCardsTotal =
+      (currentStats?.inProgressNewCards ?? 0) +
+      (currentStats?.completedNewToday ?? 0) +
+      newCards.length;
+
+    const newCardsStripped =
+      newCardsTotal > settingsNewLimit
+        ? newCards.slice(
+            0,
+            newCards.length - (newCardsTotal - settingsNewLimit)
+          )
+        : newCards;
+
+    currentStats.newCardsRemaining = newCardsStripped.length;
+    userDeckRef.update({
+      dailyStats: currentStats,
+    });
+
     const response = {
-      cards: [...dueCards, ...newCards],
+      cards: [...dueCards, ...newCardsStripped],
       dailyStats: currentStats,
       deck: deck,
     };
@@ -1071,6 +1095,69 @@ export const updateUserStats = onDocumentWritten(
     }
   }
 );
+
+/**
+ * Return daily user stats and updated when new day starts
+ * @param {string} userId - User ID
+ * @return {Promise<UserDailyStats | null>} Daily stats
+ */
+async function getDailyUserStatsLocal(
+  userId: string
+): Promise<UserDailyStats | null> {
+  const userData = await getUserData(userId);
+  if (!userData || !userData.dailyStats) {
+    return null;
+  }
+  const dailyStats = userData.dailyStats;
+  const timeZone = userData.settings.timeZone || "UTC";
+  const nowDate = new Date();
+  if (dailyStats && dailyStats.lastUpdatedStats) {
+    const todayYmd = formatYmdInTimeZone(nowDate, timeZone);
+    const statsYmd = formatYmdInTimeZone(dailyStats.lastUpdatedStats, timeZone);
+    if (statsYmd != todayYmd) {
+      return null;
+    }
+  }
+
+  return userData.dailyStats;
+}
+
+export const getDailyUserStats = onCall(async (request) => {
+  const validationResult = GetDailyUserStatsRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  try {
+    const dailyStats = await getDailyUserStatsLocal(userId);
+    const response = { dailyStats: dailyStats };
+    const validatedResponse = GetDailyUserStatsResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
+  } catch (error) {
+    logger.error("Error getting daily user stats", error);
+    handleZodError(error, "getDailyUserStats");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get daily user stats");
+  }
+});
+
+/**
+ * Update user stats when card is reviewed
+ */
 
 /**
  * Sync denormalized fields (category, icon, tags) to all user copies when source deck is updated

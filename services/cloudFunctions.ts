@@ -171,6 +171,9 @@ import {
   GetDeckDailyStatsRequest,
   GetDeckDailyStatsResponse,
   GetDeckDailyStatsResponseSchema,
+  GetDailyUserStatsRequest,
+  GetDailyUserStatsResponse,
+  GetDailyUserStatsResponseSchema,
 } from "@/types/schemas/api/deck";
 import {
   CheckUsernameAvailabilityRequest,
@@ -364,6 +367,22 @@ export const cloudFunctions = {
     return validatedData.data;
   },
 
+  // Get daily user stats
+  getDailyUserStats: async () => {
+    const getDailyUserStatsFunction = httpsCallable<
+      GetDailyUserStatsRequest,
+      GetDailyUserStatsResponse
+    >(functions, "getDailyUserStats");
+    const result = await getDailyUserStatsFunction({});
+    const validatedData = GetDailyUserStatsResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getDailyUserStats");
+    }
+    return validatedData.data.dailyStats;
+  },
   // Update card progress after review
   updateCardProgress: async (
     userId: string,

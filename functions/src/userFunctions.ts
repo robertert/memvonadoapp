@@ -512,11 +512,40 @@ export const updateCardProgress = onCall(async (request) => {
     try {
       const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
 
+      const userRef = db.doc(`users/${userId}`);
+
       if (dailyStats) {
+        const deckData = await deckRef.get();
+
+        const dailyStatsBefore = deckData.data()?.dailyStats;
+
+        const validatedDailyStatsBefore =
+          DailyStatsSchema.parse(dailyStatsBefore);
+
         const validatedDailyStats = DailyStatsSchema.parse(dailyStats);
-        await deckRef.update({
-          dailyStats: validatedDailyStats,
+
+        const completedNewDiff =
+          validatedDailyStats.completedNewToday -
+          validatedDailyStatsBefore.completedNewToday;
+        const completedDueDiff =
+          validatedDailyStats.completedDueToday -
+          validatedDailyStatsBefore.completedDueToday;
+
+        const batch = db.batch();
+        batch.update(deckRef, {
+          dailyStats: {
+            ...validatedDailyStats,
+            lastUpdatedStats: new Date(),
+          },
         });
+        batch.update(userRef, {
+          "dailyStats.completedNewToday":
+            FieldValue.increment(completedNewDiff),
+          "dailyStats.completedDueToday":
+            FieldValue.increment(completedDueDiff),
+          "dailyStats.lastUpdatedStats": new Date(),
+        });
+        await batch.commit();
       }
     } catch (statsErr) {
       logger.warn("updateCardProgress: daily stats update failed", statsErr);
@@ -579,15 +608,6 @@ export const getUserProgress = onCall(async (request) => {
     }
     const userData = UserSchema.parse(userDoc.data());
 
-    const now = new Date();
-
-    const todaySessionsCount = await db
-      .collection(`users/${userId}/studySessions`)
-      .where("reviewTime", ">=", now)
-      .where("reviewTime", "<", new Date(now.setDate(now.getDate() + 1)))
-      .count()
-      .get();
-
     // Get recent study sessions
     const recentSessions = await db
       .collection(`users/${userId}/studySessions`)
@@ -604,7 +624,6 @@ export const getUserProgress = onCall(async (request) => {
       stats: userData.stats || {},
       recentSessions: sessions,
       dailyGoal: userData.settings?.dailyGoal ?? undefined,
-      todaySessionsCount: todaySessionsCount.data().count,
     });
     const rawResponse = { userProgress };
     const validatedResponse = GetUserProgressResponseSchema.parse(rawResponse);

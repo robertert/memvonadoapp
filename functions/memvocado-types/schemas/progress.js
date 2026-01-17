@@ -11,6 +11,5 @@ exports.UserProgressSchema = zod_1.z
     stats: user_1.UserStatsSchema,
     dailyGoal: zod_1.z.number().min(0).default(120),
     recentSessions: zod_1.z.array(zod_1.z.any()).default([]),
-    todaySessionsCount: zod_1.z.number().min(0).default(0),
 })
     .strict();

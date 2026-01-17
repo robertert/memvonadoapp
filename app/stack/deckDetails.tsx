@@ -487,7 +487,8 @@ export default function deckDetails(): React.JSX.Element {
                 </View>
                 <View style={styles.progressItem}>
                   <Text style={styles.progressNumber}>
-                    {userDeck.dailyStats.completedToday}
+                    {userDeck.dailyStats.completedNewToday +
+                      userDeck.dailyStats.completedDueToday}
                   </Text>
                   <Text style={styles.progressLabel}>Done</Text>
                 </View>

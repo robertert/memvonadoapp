@@ -33,7 +33,6 @@ export declare const UserProgressSchema: z.ZodObject<{
     }>;
     dailyGoal: z.ZodDefault<z.ZodNumber>;
     recentSessions: z.ZodDefault<z.ZodArray<z.ZodAny, "many">>;
-    todaySessionsCount: z.ZodDefault<z.ZodNumber>;
 }, "strict", z.ZodTypeAny, {
     dailyGoal: number;
     stats: {
@@ -47,7 +46,6 @@ export declare const UserProgressSchema: z.ZodObject<{
         lastStudyDate?: Date | undefined;
     };
     recentSessions: any[];
-    todaySessionsCount: number;
 }, {
     stats: {
         totalCards?: number | undefined;
@@ -61,6 +59,5 @@ export declare const UserProgressSchema: z.ZodObject<{
     };
     dailyGoal?: number | undefined;
     recentSessions?: any[] | undefined;
-    todaySessionsCount?: number | undefined;
 }>;
 export type UserProgress = z.infer<typeof UserProgressSchema>;

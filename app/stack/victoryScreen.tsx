@@ -11,14 +11,11 @@ import { Colors, Fonts } from "../../constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
+import { TrophyIcon } from "react-native-heroicons/solid";
 
 interface ProgressParams {
-  newCardsRemaining?: number;
-  dueCardsRemaining?: number;
-  inProgressDueCards?: number;
-  inProgressNewCards?: number;
-  completedToday?: number;
-  lastUpdatedStats?: Date;
+  completedNewToday?: number;
+  completedDueToday?: number;
   empty?: string;
 }
 
@@ -123,12 +120,11 @@ export default function victoryScreen(): React.JSX.Element {
                   },
                 ]}
               >
-                <Text style={styles.trophyEmoji}>🏆</Text>
+                <TrophyIcon size={48} color={Colors.primary_700} />
               </Animated.View>
               <Text style={styles.title}>Świetna robota!</Text>
               <Text style={styles.subtitle}>
-                Zrobiłeś dzisiaj solidną robotę z fiszkami. Tak wyglądają Twoje
-                odpowiedzi:
+                Zrobiłeś dzisiaj solidną robotę z fiszkami.
               </Text>
             </Animated.View>
 
@@ -143,43 +139,33 @@ export default function victoryScreen(): React.JSX.Element {
             >
               <View style={styles.insideRow}>
                 <View style={styles.insideSection}>
-                  <Text style={[styles.num, { color: Colors.blue }]}>
-                    {progress.newCardsRemaining}
-                  </Text>
-                  <Text style={styles.desc}>Easy</Text>
-                </View>
-                <View style={styles.insideSection}>
-                  <Text style={[styles.num, { color: Colors.green }]}>
-                    {progress.inProgressDueCards}
-                  </Text>
-                  <Text style={styles.desc}>Good</Text>
-                </View>
-                <View style={styles.insideSection}>
-                  <Text style={[styles.num, { color: Colors.yellow }]}>
-                    {progress.inProgressNewCards}
-                  </Text>
-                  <Text style={styles.desc}>Hard</Text>
-                </View>
-              </View>
-
-              <View style={styles.insideRow}>
-                <View style={styles.insideSection}>
                   <Text style={[styles.num, { color: Colors.accent_500 }]}>
-                    {progress.completedToday}
+                    {(progress.completedNewToday ?? 0) +
+                      (progress.completedDueToday ?? 0)}
                   </Text>
                   <Text style={styles.desc}>Razem dzisiaj</Text>
                 </View>
+              </View>
+              <View style={styles.insideRow}>
                 <View style={styles.insideSection}>
                   <Text style={[styles.num, { color: Colors.accent_500 }]}>
-                    {progress.dueCardsRemaining}
+                    {progress.completedNewToday ?? 0}
                   </Text>
-                  <Text style={styles.desc}>Zostało na później</Text>
+                  <Text style={styles.desc}>New</Text>
+                </View>
+              </View>
+              <View style={styles.insideRow}>
+                <View style={styles.insideSection}>
+                  <Text style={[styles.num, { color: Colors.accent_500 }]}>
+                    {progress.completedDueToday ?? 0}
+                  </Text>
+                  <Text style={styles.desc}>Due</Text>
                 </View>
               </View>
 
               <Text style={styles.summaryText}>
                 Każda dobra odpowiedź to krok bliżej do trwałej pamięci. Wróć
-                jutro, żeby utrwalić materiał jeszcze mocniej. 💪
+                jutro, żeby utrwalić materiał jeszcze mocniej.
               </Text>
             </Animated.View>
 

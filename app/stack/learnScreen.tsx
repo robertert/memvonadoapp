@@ -31,8 +31,9 @@ import BottomSheet from "../../components/learnScreen/BottomSheet";
 import Confetti from "../../components/learnScreen/Confetti";
 import { learnScreenStyles } from "./learnScreen.styles";
 import { Colors } from "../../constants/colors";
-import { FireIcon } from "react-native-heroicons/solid";
+import { BoltIcon } from "react-native-heroicons/solid";
 import { Card } from "@/types";
+import { calculateDailyStatsProgress } from "@/constants/dailyStats";
 
 /**
  * Main learning screen component for flashcard learning with gesture-based interactions
@@ -256,26 +257,16 @@ export default function learnScreen(): React.JSX.Element {
   } = animatedStyles;
 
   // Użyj dailyStats do obliczenia progressu jeśli dostępne, w przeciwnym razie użyj progress z sesji
-  const tabBarValue = dailyStats
-    ? (dailyStats.completedToday * 100) /
-      (dailyStats.newCardsRemaining +
-        dailyStats.dueCardsRemaining +
-        dailyStats.inProgressDueCards +
-        dailyStats.inProgressNewCards +
-        dailyStats.completedToday || 1)
-    : ((progress.all - progress.todo) * 100) / progress.all;
+  const tabBarValue = calculateDailyStatsProgress(dailyStats || null);
   const progressText = dailyStats
-    ? `${dailyStats.completedToday} / ${
+    ? `${dailyStats.completedNewToday + dailyStats.completedDueToday} / ${
         dailyStats.newCardsRemaining +
         dailyStats.dueCardsRemaining +
         dailyStats.inProgressDueCards +
         dailyStats.inProgressNewCards +
-        dailyStats.completedToday
+        dailyStats.completedNewToday +
+        dailyStats.completedDueToday
       }`
-    : cards
-    ? cards.length > 0
-      ? `${progress.all - progress.todo + 1} / ${progress.all}`
-      : "0 / 0"
     : "0 / 0";
 
   /**
@@ -429,7 +420,7 @@ export default function learnScreen(): React.JSX.Element {
             </Text>
             {/* Static fire icon in header */}
             <Animated.View style={staticFireIconAnimatedStyle}>
-              <FireIcon size={24} color={Colors.red} />
+              <BoltIcon size={24} color={Colors.red} />
             </Animated.View>
           </View>
         </View>
@@ -470,7 +461,7 @@ export default function learnScreen(): React.JSX.Element {
         {/* Flying fire icon that appears in center and flies out */}
         {/* Native size 96px (4x) for better quality when scaled down */}
         <Animated.View style={flyingFireIconAnimatedStyle} pointerEvents="none">
-          <FireIcon size={96} color={Colors.red} />
+          <BoltIcon size={96} color={Colors.red} />
         </Animated.View>
       </GestureHandlerRootView>
     </LinearGradient>

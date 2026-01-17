@@ -8,6 +8,7 @@ import {
   CardChangeWithTypeSchema,
   DeckSettingsUpdateSchema,
   DailyStatsSchema,
+  UserDailyStatsSchema,
 } from "../index";
 
 // ===========================
@@ -195,6 +196,11 @@ export type GetDeckDailyStatsRequest = z.infer<
   typeof GetDeckDailyStatsRequestSchema
 >;
 
+export const GetDailyUserStatsRequestSchema = z.object({}).strict();
+
+export type GetDailyUserStatsRequest = z.infer<
+  typeof GetDailyUserStatsRequestSchema
+>;
 // ===========================
 // Deck response schemas
 // ===========================
@@ -332,8 +338,15 @@ export type StartLearningSessionResponse = z.infer<
 >;
 
 export const GetDeckDailyStatsResponseSchema = z.object({
-  dailyStats: DailyStatsSchema,
+  dailyStats: DailyStatsSchema.nullable(),
 });
 export type GetDeckDailyStatsResponse = z.infer<
   typeof GetDeckDailyStatsResponseSchema
+>;
+
+export const GetDailyUserStatsResponseSchema = z.object({
+  dailyStats: UserDailyStatsSchema.nullable(),
+});
+export type GetDailyUserStatsResponse = z.infer<
+  typeof GetDailyUserStatsResponseSchema
 >;

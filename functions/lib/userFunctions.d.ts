@@ -42,19 +42,20 @@ export declare const getUserDecks: import("firebase-functions/v2/https").Callabl
         id: string;
         title: string;
         cardsNum: number;
+        dailyStats?: {
+            completedNewToday: number;
+            completedDueToday: number;
+            lastUpdatedStats: Date;
+            newCardsRemaining: number;
+            dueCardsRemaining: number;
+            inProgressDueCards: number;
+            inProgressNewCards: number;
+        } | null | undefined;
         tags?: string[] | null | undefined;
         category?: string | null | undefined;
         icon?: string | null | undefined;
         isPublic?: boolean | null | undefined;
         lastReviewDate?: Date | undefined;
-        dailyStats?: {
-            newCardsRemaining: number;
-            dueCardsRemaining: number;
-            inProgressDueCards: number;
-            inProgressNewCards: number;
-            completedToday: number;
-            lastUpdatedStats: Date;
-        } | null | undefined;
     }[];
 }>, unknown>;
 /**
@@ -81,7 +82,6 @@ export declare const getUserProgress: import("firebase-functions/v2/https").Call
             lastStudyDate?: Date | undefined;
         };
         recentSessions: any[];
-        todaySessionsCount: number;
     };
 }>, unknown>;
 /**
@@ -163,6 +163,11 @@ export declare const getUserProfile: import("firebase-functions/v2/https").Calla
     followingCount: number;
     followersCount: number;
     interests: string[];
+    dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
+    } | null | undefined;
     profileCompleted?: boolean | undefined;
 }>, unknown>;
 /**

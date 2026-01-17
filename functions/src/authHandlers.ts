@@ -21,7 +21,7 @@ const db = getFirestore();
 const DEFAULT_SETTINGS = {
   theme: "light" as const,
   notificationsEnabled: true,
-  dailyGoal: 50,
+  dailyGoal: 120,
   dailyNew: 20,
   language: "en",
   timeZone: "UTC",

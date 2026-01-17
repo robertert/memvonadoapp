@@ -84,7 +84,8 @@ export const DailyStatsSchema = z
     dueCardsRemaining: z.number().min(0),
     inProgressDueCards: z.number().min(0),
     inProgressNewCards: z.number().min(0),
-    completedToday: z.number().min(0),
+    completedNewToday: z.number().min(0),
+    completedDueToday: z.number().min(0),
     lastUpdatedStats: TimestampSchema,
   })
   .strict();

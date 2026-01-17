@@ -69,7 +69,8 @@ exports.DailyStatsSchema = zod_1.z
     dueCardsRemaining: zod_1.z.number().min(0),
     inProgressDueCards: zod_1.z.number().min(0),
     inProgressNewCards: zod_1.z.number().min(0),
-    completedToday: zod_1.z.number().min(0),
+    completedNewToday: zod_1.z.number().min(0),
+    completedDueToday: zod_1.z.number().min(0),
     lastUpdatedStats: base_1.TimestampSchema,
 })
     .strict();

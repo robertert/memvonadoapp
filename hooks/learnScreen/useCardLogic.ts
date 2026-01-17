@@ -213,7 +213,7 @@ export function useCardLogic(id: string) {
               0,
               dailyStatsLocal.newCardsRemaining - 1
             );
-            dailyStatsLocal.completedToday += 1;
+            dailyStatsLocal.completedNewToday += 1;
           } else if (
             !cards[0].firstLearn?.isNew &&
             cards[0].firstLearn?.isFirst
@@ -222,16 +222,27 @@ export function useCardLogic(id: string) {
               0,
               dailyStatsLocal.inProgressNewCards - 1
             );
-            dailyStatsLocal.completedToday += 1;
+            dailyStatsLocal.completedNewToday += 1;
           } else if (
             !cards[0].firstLearn?.isFirst &&
-            type !== CardGrade.Wrong
+            type !== CardGrade.Wrong &&
+            cards[0].seenInSession
           ) {
             dailyStatsLocal.inProgressDueCards = Math.max(
               0,
               dailyStatsLocal.inProgressDueCards - 1
             );
-            dailyStatsLocal.completedToday += 1;
+            dailyStatsLocal.completedDueToday += 1;
+          } else if (
+            !cards[0].firstLearn?.isFirst &&
+            type !== CardGrade.Wrong &&
+            !cards[0].seenInSession
+          ) {
+            dailyStatsLocal.dueCardsRemaining = Math.max(
+              0,
+              dailyStatsLocal.dueCardsRemaining - 1
+            );
+            dailyStatsLocal.completedDueToday += 1;
           } else if (!cards[0].firstLearn?.isFirst && !cards[0].seenInSession) {
             dailyStatsLocal.dueCardsRemaining = Math.max(
               0,
@@ -263,7 +274,11 @@ export function useCardLogic(id: string) {
         if (nextCards.length === 0) {
           router.replace({
             pathname: "./victoryScreen",
-            params: { ...dailyStats, empty: "false" },
+            params: {
+              completedNewToday: dailyStatsLocal?.completedNewToday,
+              completedDueToday: dailyStatsLocal?.completedDueToday,
+              empty: "false",
+            },
           });
         }
       } else {
@@ -459,7 +474,11 @@ export function useCardLogic(id: string) {
     if (isFinished) {
       router.replace({
         pathname: "./victoryScreen",
-        params: { ...dailyStats, empty: "false" },
+        params: {
+          completedNewToday: dailyStats?.completedNewToday,
+          completedDueToday: dailyStats?.completedDueToday,
+          empty: "false",
+        },
       });
     }
   }, [isFinished]);

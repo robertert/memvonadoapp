@@ -120,6 +120,20 @@ export declare const UserTimestampSchema: z.ZodObject<{
     updatedAt?: unknown;
 }>;
 export type UserTimestamp = z.infer<typeof UserTimestampSchema>;
+export declare const UserDailyStatsSchema: z.ZodObject<{
+    completedNewToday: z.ZodNumber;
+    completedDueToday: z.ZodNumber;
+    lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
+}, "strip", z.ZodTypeAny, {
+    completedNewToday: number;
+    completedDueToday: number;
+    lastUpdatedStats: Date;
+}, {
+    completedNewToday: number;
+    completedDueToday: number;
+    lastUpdatedStats?: unknown;
+}>;
+export type UserDailyStats = z.infer<typeof UserDailyStatsSchema>;
 export declare const UserMetaSchema: z.ZodObject<{
     id: z.ZodString;
     league: z.ZodDefault<z.ZodNumber>;
@@ -154,6 +168,19 @@ export declare const UserMetaSchema: z.ZodObject<{
         lastStreakDate?: unknown;
         lastStudyDate?: unknown;
     }>;
+    dailyStats: z.ZodNullable<z.ZodOptional<z.ZodObject<{
+        completedNewToday: z.ZodNumber;
+        completedDueToday: z.ZodNumber;
+        lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
+    }, "strip", z.ZodTypeAny, {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
+    }, {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats?: unknown;
+    }>>>;
     followingCount: z.ZodDefault<z.ZodNumber>;
     followersCount: z.ZodDefault<z.ZodNumber>;
     profileCompleted: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
@@ -177,6 +204,11 @@ export declare const UserMetaSchema: z.ZodObject<{
     followingCount: number;
     followersCount: number;
     interests: string[];
+    dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
+    } | null | undefined;
     profileCompleted?: boolean | undefined;
 }, {
     id: string;
@@ -194,6 +226,11 @@ export declare const UserMetaSchema: z.ZodObject<{
     league?: number | undefined;
     experiencePoints?: number | undefined;
     currencyCount?: number | undefined;
+    dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats?: unknown;
+    } | null | undefined;
     followingCount?: number | undefined;
     followersCount?: number | undefined;
     profileCompleted?: boolean | undefined;
@@ -259,6 +296,19 @@ export declare const UserSchema: z.ZodObject<{
         lastStreakDate?: unknown;
         lastStudyDate?: unknown;
     }>;
+    dailyStats: z.ZodNullable<z.ZodOptional<z.ZodObject<{
+        completedNewToday: z.ZodNumber;
+        completedDueToday: z.ZodNumber;
+        lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
+    }, "strip", z.ZodTypeAny, {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
+    }, {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats?: unknown;
+    }>>>;
     followingCount: z.ZodDefault<z.ZodNumber>;
     followersCount: z.ZodDefault<z.ZodNumber>;
     profileCompleted: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
@@ -297,6 +347,11 @@ export declare const UserSchema: z.ZodObject<{
     followingCount: number;
     followersCount: number;
     interests: string[];
+    dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
+    } | null | undefined;
     profileCompleted?: boolean | undefined;
 }, {
     username: string;
@@ -326,6 +381,11 @@ export declare const UserSchema: z.ZodObject<{
     league?: number | undefined;
     experiencePoints?: number | undefined;
     currencyCount?: number | undefined;
+    dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats?: unknown;
+    } | null | undefined;
     followingCount?: number | undefined;
     followersCount?: number | undefined;
     profileCompleted?: boolean | undefined;

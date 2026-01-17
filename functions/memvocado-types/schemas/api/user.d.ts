@@ -165,21 +165,24 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
         dueCardsRemaining: z.ZodNumber;
         inProgressDueCards: z.ZodNumber;
         inProgressNewCards: z.ZodNumber;
-        completedToday: z.ZodNumber;
+        completedNewToday: z.ZodNumber;
+        completedDueToday: z.ZodNumber;
         lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strict", z.ZodTypeAny, {
-        newCardsRemaining: number;
-        dueCardsRemaining: number;
-        inProgressDueCards: number;
-        inProgressNewCards: number;
-        completedToday: number;
+        completedNewToday: number;
+        completedDueToday: number;
         lastUpdatedStats: Date;
-    }, {
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
-        completedToday: number;
+    }, {
+        completedNewToday: number;
+        completedDueToday: number;
+        newCardsRemaining: number;
+        dueCardsRemaining: number;
+        inProgressDueCards: number;
+        inProgressNewCards: number;
         lastUpdatedStats?: unknown;
     }>>;
 }, "strict", z.ZodTypeAny, {
@@ -216,12 +219,13 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
     };
     scheduledTime: number;
     dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
-        completedToday: number;
-        lastUpdatedStats: Date;
     } | undefined;
 }, {
     userId: string;
@@ -257,11 +261,12 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
     };
     scheduledTime: number;
     dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
-        completedToday: number;
         lastUpdatedStats?: unknown;
     } | undefined;
 }>;
@@ -441,7 +446,6 @@ export declare const GetUserProgressResponseSchema: z.ZodObject<{
         }>;
         dailyGoal: z.ZodDefault<z.ZodNumber>;
         recentSessions: z.ZodDefault<z.ZodArray<z.ZodAny, "many">>;
-        todaySessionsCount: z.ZodDefault<z.ZodNumber>;
     }, "strict", z.ZodTypeAny, {
         dailyGoal: number;
         stats: {
@@ -455,7 +459,6 @@ export declare const GetUserProgressResponseSchema: z.ZodObject<{
             lastStudyDate?: Date | undefined;
         };
         recentSessions: any[];
-        todaySessionsCount: number;
     }, {
         stats: {
             totalCards?: number | undefined;
@@ -469,7 +472,6 @@ export declare const GetUserProgressResponseSchema: z.ZodObject<{
         };
         dailyGoal?: number | undefined;
         recentSessions?: any[] | undefined;
-        todaySessionsCount?: number | undefined;
     }>;
 }, "strip", z.ZodTypeAny, {
     userProgress: {
@@ -485,7 +487,6 @@ export declare const GetUserProgressResponseSchema: z.ZodObject<{
             lastStudyDate?: Date | undefined;
         };
         recentSessions: any[];
-        todaySessionsCount: number;
     };
 }, {
     userProgress: {
@@ -501,7 +502,6 @@ export declare const GetUserProgressResponseSchema: z.ZodObject<{
         };
         dailyGoal?: number | undefined;
         recentSessions?: any[] | undefined;
-        todaySessionsCount?: number | undefined;
     };
 }>;
 export type GetUserProgressResponse = z.infer<typeof GetUserProgressResponseSchema>;
@@ -607,6 +607,19 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
         lastStreakDate?: unknown;
         lastStudyDate?: unknown;
     }>;
+    dailyStats: z.ZodNullable<z.ZodOptional<z.ZodObject<{
+        completedNewToday: z.ZodNumber;
+        completedDueToday: z.ZodNumber;
+        lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
+    }, "strip", z.ZodTypeAny, {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
+    }, {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats?: unknown;
+    }>>>;
     followingCount: z.ZodDefault<z.ZodNumber>;
     followersCount: z.ZodDefault<z.ZodNumber>;
     profileCompleted: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
@@ -645,6 +658,11 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
     followingCount: number;
     followersCount: number;
     interests: string[];
+    dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
+    } | null | undefined;
     profileCompleted?: boolean | undefined;
 }, {
     username: string;
@@ -674,6 +692,11 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
     league?: number | undefined;
     experiencePoints?: number | undefined;
     currencyCount?: number | undefined;
+    dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats?: unknown;
+    } | null | undefined;
     followingCount?: number | undefined;
     followersCount?: number | undefined;
     profileCompleted?: boolean | undefined;
