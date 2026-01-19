@@ -23,6 +23,7 @@ export {
   submitPoints,
   weeklyRollOver,
 } from "./userFunctions";
+export { scanDocument } from "./scanningFunctions";
 export {
   getUserDecks,
   updateCardProgress,

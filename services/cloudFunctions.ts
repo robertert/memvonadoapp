@@ -189,6 +189,11 @@ import {
   CompleteOnboardingResponse,
   CompleteOnboardingResponseSchema,
 } from "@/types/schemas/api/auth";
+import {
+  ScanDocumentRequest,
+  ScanDocumentResponse,
+  ScanDocumentResponseSchema,
+} from "@/types/schemas/api/scanning";
 
 // Cloud Functions calls
 export const cloudFunctions = {
@@ -366,6 +371,21 @@ export const cloudFunctions = {
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from getUserDecks");
+    }
+    return validatedData.data;
+  },
+
+  scanDocument: async (storagePath: string, mimeType: string) => {
+    const scanDocumentFunction = httpsCallable<
+      ScanDocumentRequest,
+      ScanDocumentResponse
+    >(functions, "scanDocument");
+    const result = await scanDocumentFunction({ storagePath, mimeType });
+    const validatedData = ScanDocumentResponseSchema.safeParse(result.data);
+
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from scanDocument");
     }
     return validatedData.data;
   },

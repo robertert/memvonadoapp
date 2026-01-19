@@ -13,6 +13,7 @@ export default function MainStack(): React.JSX.Element {
       <Stack.Screen name="createSelfScreen" />
       <Stack.Screen name="fileImportScreen" />
       <Stack.Screen name="ankiImportScreen" />
+      <Stack.Screen name="scanDocumentScreen" />
       <Stack.Screen name="deckDetails" />
       <Stack.Screen name="deckSettings" />
       <Stack.Screen name="myLibraryScreen" />

@@ -44,8 +44,7 @@ export default function createScreen(): React.JSX.Element {
 
   const handleScanDocument = () => {
     setShowModal(false);
-    // TODO: Implement scan document functionality
-    console.log("Scan Document clicked");
+    router.push("../stack/scanDocumentScreen");
   };
 
   const handleImportAnki = () => {
