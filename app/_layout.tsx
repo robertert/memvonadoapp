@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   DarkTheme,
   DefaultTheme,
@@ -9,10 +9,8 @@ import { router, Stack, useSegments } from "expo-router";
 
 import { View, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-
-import Header from "../components/Header";
 import * as SplashScreen from "expo-splash-screen";
-import { useFonts, loadAsync } from "expo-font";
+import { useFonts } from "expo-font";
 import UserContextProvider from "../store/user-context";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, connectEmulatorsIfNeeded, db } from "../firebase";
@@ -20,6 +18,8 @@ import { doc, getDoc } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { PLACEHOLDER_MODE, PLACEHOLDER_SEEDED_KEY } from "../constants/flags";
 import { cloudFunctions } from "../services/cloudFunctions";
+
+const STREAK_RESET_KEY = "streak_reset_pending";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,6 +36,7 @@ export default function RootLayout(): React.JSX.Element | null {
   const segments = useSegments();
   const navigationHandledRef = useRef(false);
   const lastRouteRef = useRef<string | null>(null);
+  const streakCheckedRef = useRef<string | null>(null); // Zapobiega wielokrotnemu sprawdzaniu dla tego samego usera
 
   useEffect(() => {
     let isMounted = true;
@@ -116,7 +117,36 @@ export default function RootLayout(): React.JSX.Element | null {
                 }, 1000);
               }
             } else {
-              // Profil uzupełniony - przejdź do głównej aplikacji tylko jeśli nie jesteśmy już w tabs
+              // Profil uzupełniony - sprawdź streak przy logowaniu
+              // Sprawdzamy tylko raz dla danego użytkownika (zapobiega wielokrotnym wywołaniom)
+              if (
+                isMounted &&
+                streakCheckedRef.current !== user.uid &&
+                !currentPath.includes("onboarding")
+              ) {
+                streakCheckedRef.current = user.uid;
+                
+                // Sprawdź streak przy logowaniu
+                try {
+                  const streakResult = await cloudFunctions.updateUserStreakOnLogin();
+
+                  // Jeśli streak został przerwany, zapisz do AsyncStorage (tabsy sprawdzą to przy mount)
+                  if (streakResult.status === "streak_reset" && streakResult.updated) {
+                    await AsyncStorage.setItem(
+                      STREAK_RESET_KEY,
+                      JSON.stringify({
+                        previousStreak: streakResult.previousStreak,
+                        timestamp: Date.now(),
+                      })
+                    );
+                  }
+                } catch (error) {
+                  console.error("Error checking streak on login:", error);
+                  // Nie blokuj logowania jeśli sprawdzenie streak się nie powiodło
+                }
+              }
+
+              // Przejdź do głównej aplikacji tylko jeśli nie jesteśmy już w tabs
               if (
                 isMounted &&
                 !currentPath.includes("tabs") &&
@@ -152,7 +182,9 @@ export default function RootLayout(): React.JSX.Element | null {
             }
           }
         } else {
-          // Użytkownik nie jest zalogowany - przekieruj do ekranu logowania tylko jeśli nie jesteśmy już tam
+          // Użytkownik nie jest zalogowany - resetuj streak check
+          streakCheckedRef.current = null;
+          // Przekieruj do ekranu logowania tylko jeśli nie jesteśmy już tam
           if (
             isMounted &&
             !currentPath.includes("login") &&

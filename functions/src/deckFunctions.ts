@@ -1042,53 +1042,30 @@ export const updateUserStats = onDocumentWritten(
       const decksSnapshot = await db.collection(`users/${userId}/decks`).get();
 
       let totalCards = 0;
-      let totalReviews = 0;
-      let totalDifficulty = 0;
-      let reviewCount = 0;
-
       // Calculate totals from all user decks
       for (const deckDoc of decksSnapshot.docs) {
-        const cardsSnapshot = await deckDoc.ref.collection("cards").get();
-        totalCards += cardsSnapshot.size;
-
-        cardsSnapshot.forEach((cardDoc) => {
-          const rawCardData = cardDoc.data();
-          const validatedCardData = CardSchema.parse({
-            id: cardDoc.id,
-            ...rawCardData,
-          });
-          if (validatedCardData.grade !== undefined) {
-            totalReviews++;
-            totalDifficulty += validatedCardData.cardAlgo?.difficulty || 2.5;
-            reviewCount++;
-          }
-        });
+        const validatedDeck = DeckSchema.parse(deckDoc.data());
+        totalCards += validatedDeck.cardsNum ?? 0;
       }
 
-      const averageDifficulty =
-        reviewCount > 0 ? totalDifficulty / reviewCount : 0;
-
-      const userStats: UserStats = {
+      const userStats: Partial<UserStats> = {
         totalCards: totalCards,
         totalDecks: decksSnapshot.size,
-        totalReviews: totalReviews,
-        averageDifficulty: averageDifficulty,
         lastStudyDate: new Date(),
-        currentStreak: 0,
-        longestStreak: 0,
       };
 
       const validatedUserStats = UserStatsSchema.parse(userStats);
-      // Update user statistics
+
       await db.doc(`users/${userId}`).update({
-        stats: validatedUserStats,
+        "stats.totalCards": FieldValue.increment(validatedUserStats.totalCards),
+        "stats.totalDecks": FieldValue.increment(validatedUserStats.totalDecks),
+        "stats.lastStudyDate": validatedUserStats.lastStudyDate,
       });
 
       logger.info("User stats updated succssfully", {
         userId,
         totalCards,
         totalDecks: decksSnapshot.size,
-        totalReviews,
       });
     } catch (error) {
       logger.error("Error updating user stats", error);

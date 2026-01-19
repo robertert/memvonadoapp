@@ -5,18 +5,16 @@ import { TimestampSchema } from "./base";
 /**
  * Statystyki użytkownika
  */
-export const UserStatsSchema = z
-  .object({
-    totalCards: z.number().min(0).default(0),
-    totalDecks: z.number().min(0).default(0),
-    totalReviews: z.number().min(0).default(0),
-    averageDifficulty: z.number().min(0).max(5).optional(),
-    currentStreak: z.number().min(0).default(0),
-    longestStreak: z.number().min(0).default(0),
-    lastStreakDate: TimestampSchema.optional(),
-    lastStudyDate: TimestampSchema.optional(),
-  })
-  .strict();
+export const UserStatsSchema = z.object({
+  totalCards: z.number().min(0).default(0),
+  totalDecks: z.number().min(0).default(0),
+  totalReviews: z.number().min(0).default(0),
+  averageDifficulty: z.number().min(0).max(5).optional(),
+  currentStreak: z.number().min(0).default(0),
+  longestStreak: z.number().min(0).default(0),
+  lastStreakDate: TimestampSchema.optional(),
+  lastStudyDate: TimestampSchema.optional(),
+});
 
 export type UserStats = z.infer<typeof UserStatsSchema>;
 

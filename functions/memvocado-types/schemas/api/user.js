@@ -8,18 +8,9 @@ const card_1 = require("../card");
 // ============================================================================
 // User – request schemas
 // ============================================================================
-exports.UpdateUserStreakIfQualifiedRequestSchema = zod_1.z
-    .object({
-    userId: zod_1.z.string(),
-    timeZone: zod_1.z.string().optional(),
-    threshold: zod_1.z.number().int().positive().optional(),
-})
-    .strict();
+exports.UpdateUserStreakIfQualifiedRequestSchema = zod_1.z.object({}).strict();
 exports.UpdateUserStreakOnLoginRequestSchema = zod_1.z
-    .object({
-    userId: zod_1.z.string(),
-    timeZone: zod_1.z.string().optional(),
-})
+    .object({})
     .strict();
 exports.GetUserDecksRequestSchema = zod_1.z
     .object({
@@ -90,14 +81,16 @@ exports.UpdateUserStreakIfQualifiedResponseSchema = zod_1.z.object({
     longestStreak: zod_1.z.number(),
     lastStreakDate: zod_1.z.string().nullable(),
     threshold: zod_1.z.number(),
-    todayCount: zod_1.z.number().optional(),
+    todayCount: zod_1.z.number().nullish(),
     updated: zod_1.z.boolean(),
 });
 exports.UpdateUserStreakOnLoginResponseSchema = zod_1.z.object({
     currentStreak: zod_1.z.number(),
     longestStreak: zod_1.z.number(),
+    previousStreak: zod_1.z.number(),
     lastStreakDate: zod_1.z.string(),
     updated: zod_1.z.boolean(),
+    status: zod_1.z.enum(["streak_safe", "streak_reset"]),
 });
 exports.GetUserProgressResponseSchema = zod_1.z.object({
     userProgress: index_1.UserProgressSchema,

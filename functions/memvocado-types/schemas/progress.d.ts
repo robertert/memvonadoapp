@@ -12,7 +12,7 @@ export declare const UserProgressSchema: z.ZodObject<{
         longestStreak: z.ZodDefault<z.ZodNumber>;
         lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-    }, "strict", z.ZodTypeAny, {
+    }, "strip", z.ZodTypeAny, {
         totalCards: number;
         totalDecks: number;
         totalReviews: number;

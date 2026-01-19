@@ -13,23 +13,14 @@ import { CardSchema } from "../card";
 // User – request schemas
 // ============================================================================
 
-export const UpdateUserStreakIfQualifiedRequestSchema = z
-  .object({
-    userId: z.string(),
-    timeZone: z.string().optional(),
-    threshold: z.number().int().positive().optional(),
-  })
-  .strict();
+export const UpdateUserStreakIfQualifiedRequestSchema = z.object({}).strict();
 
 export type UpdateUserStreakIfQualifiedRequest = z.infer<
   typeof UpdateUserStreakIfQualifiedRequestSchema
 >;
 
 export const UpdateUserStreakOnLoginRequestSchema = z
-  .object({
-    userId: z.string(),
-    timeZone: z.string().optional(),
-  })
+  .object({})
   .strict();
 
 export type UpdateUserStreakOnLoginRequest = z.infer<
@@ -145,7 +136,7 @@ export const UpdateUserStreakIfQualifiedResponseSchema = z.object({
   longestStreak: z.number(),
   lastStreakDate: z.string().nullable(),
   threshold: z.number(),
-  todayCount: z.number().optional(),
+  todayCount: z.number().nullish(),
   updated: z.boolean(),
 });
 
@@ -156,8 +147,10 @@ export type UpdateUserStreakIfQualifiedResponse = z.infer<
 export const UpdateUserStreakOnLoginResponseSchema = z.object({
   currentStreak: z.number(),
   longestStreak: z.number(),
+  previousStreak: z.number(),
   lastStreakDate: z.string(),
   updated: z.boolean(),
+  status: z.enum(["streak_safe", "streak_reset"]),
 });
 
 export type UpdateUserStreakOnLoginResponse = z.infer<

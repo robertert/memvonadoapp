@@ -1,28 +1,7 @@
 import { z } from "zod";
-export declare const UpdateUserStreakIfQualifiedRequestSchema: z.ZodObject<{
-    userId: z.ZodString;
-    timeZone: z.ZodOptional<z.ZodString>;
-    threshold: z.ZodOptional<z.ZodNumber>;
-}, "strict", z.ZodTypeAny, {
-    userId: string;
-    timeZone?: string | undefined;
-    threshold?: number | undefined;
-}, {
-    userId: string;
-    timeZone?: string | undefined;
-    threshold?: number | undefined;
-}>;
+export declare const UpdateUserStreakIfQualifiedRequestSchema: z.ZodObject<{}, "strict", z.ZodTypeAny, {}, {}>;
 export type UpdateUserStreakIfQualifiedRequest = z.infer<typeof UpdateUserStreakIfQualifiedRequestSchema>;
-export declare const UpdateUserStreakOnLoginRequestSchema: z.ZodObject<{
-    userId: z.ZodString;
-    timeZone: z.ZodOptional<z.ZodString>;
-}, "strict", z.ZodTypeAny, {
-    userId: string;
-    timeZone?: string | undefined;
-}, {
-    userId: string;
-    timeZone?: string | undefined;
-}>;
+export declare const UpdateUserStreakOnLoginRequestSchema: z.ZodObject<{}, "strict", z.ZodTypeAny, {}, {}>;
 export type UpdateUserStreakOnLoginRequest = z.infer<typeof UpdateUserStreakOnLoginRequestSchema>;
 export declare const GetUserDecksRequestSchema: z.ZodObject<{
     userId: z.ZodString;
@@ -610,41 +589,47 @@ export declare const UpdateUserStreakIfQualifiedResponseSchema: z.ZodObject<{
     longestStreak: z.ZodNumber;
     lastStreakDate: z.ZodNullable<z.ZodString>;
     threshold: z.ZodNumber;
-    todayCount: z.ZodOptional<z.ZodNumber>;
+    todayCount: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
     updated: z.ZodBoolean;
 }, "strip", z.ZodTypeAny, {
     currentStreak: number;
     longestStreak: number;
     lastStreakDate: string | null;
     updated: boolean;
-    threshold: number;
     qualified: boolean;
-    todayCount?: number | undefined;
+    threshold: number;
+    todayCount?: number | null | undefined;
 }, {
     currentStreak: number;
     longestStreak: number;
     lastStreakDate: string | null;
     updated: boolean;
-    threshold: number;
     qualified: boolean;
-    todayCount?: number | undefined;
+    threshold: number;
+    todayCount?: number | null | undefined;
 }>;
 export type UpdateUserStreakIfQualifiedResponse = z.infer<typeof UpdateUserStreakIfQualifiedResponseSchema>;
 export declare const UpdateUserStreakOnLoginResponseSchema: z.ZodObject<{
     currentStreak: z.ZodNumber;
     longestStreak: z.ZodNumber;
+    previousStreak: z.ZodNumber;
     lastStreakDate: z.ZodString;
     updated: z.ZodBoolean;
+    status: z.ZodEnum<["streak_safe", "streak_reset"]>;
 }, "strip", z.ZodTypeAny, {
+    status: "streak_safe" | "streak_reset";
     currentStreak: number;
     longestStreak: number;
     lastStreakDate: string;
     updated: boolean;
+    previousStreak: number;
 }, {
+    status: "streak_safe" | "streak_reset";
     currentStreak: number;
     longestStreak: number;
     lastStreakDate: string;
     updated: boolean;
+    previousStreak: number;
 }>;
 export type UpdateUserStreakOnLoginResponse = z.infer<typeof UpdateUserStreakOnLoginResponseSchema>;
 export declare const GetUserProgressResponseSchema: z.ZodObject<{
@@ -658,7 +643,7 @@ export declare const GetUserProgressResponseSchema: z.ZodObject<{
             longestStreak: z.ZodDefault<z.ZodNumber>;
             lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
             lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-        }, "strict", z.ZodTypeAny, {
+        }, "strip", z.ZodTypeAny, {
             totalCards: number;
             totalDecks: number;
             totalReviews: number;
@@ -821,7 +806,7 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
         longestStreak: z.ZodDefault<z.ZodNumber>;
         lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-    }, "strict", z.ZodTypeAny, {
+    }, "strip", z.ZodTypeAny, {
         totalCards: number;
         totalDecks: number;
         totalReviews: number;

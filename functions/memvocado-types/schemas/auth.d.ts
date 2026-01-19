@@ -73,7 +73,7 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
         longestStreak: z.ZodDefault<z.ZodNumber>;
         lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-    }, "strict", z.ZodTypeAny, {
+    }, "strip", z.ZodTypeAny, {
         totalCards: number;
         totalDecks: number;
         totalReviews: number;
@@ -135,7 +135,7 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
         longestStreak: z.ZodDefault<z.ZodNumber>;
         lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-    }, "strict", z.ZodTypeAny, {
+    }, "strip", z.ZodTypeAny, {
         totalCards: number;
         totalDecks: number;
         totalReviews: number;
@@ -197,7 +197,7 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
         longestStreak: z.ZodDefault<z.ZodNumber>;
         lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-    }, "strict", z.ZodTypeAny, {
+    }, "strip", z.ZodTypeAny, {
         totalCards: number;
         totalDecks: number;
         totalReviews: number;
@@ -264,7 +264,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             longestStreak: z.ZodDefault<z.ZodNumber>;
             lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
             lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-        }, "strict", z.ZodTypeAny, {
+        }, "strip", z.ZodTypeAny, {
             totalCards: number;
             totalDecks: number;
             totalReviews: number;
@@ -326,7 +326,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             longestStreak: z.ZodDefault<z.ZodNumber>;
             lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
             lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-        }, "strict", z.ZodTypeAny, {
+        }, "strip", z.ZodTypeAny, {
             totalCards: number;
             totalDecks: number;
             totalReviews: number;
@@ -388,7 +388,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             longestStreak: z.ZodDefault<z.ZodNumber>;
             lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
             lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-        }, "strict", z.ZodTypeAny, {
+        }, "strip", z.ZodTypeAny, {
             totalCards: number;
             totalDecks: number;
             totalReviews: number;
@@ -531,7 +531,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             longestStreak: z.ZodDefault<z.ZodNumber>;
             lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
             lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-        }, "strict", z.ZodTypeAny, {
+        }, "strip", z.ZodTypeAny, {
             totalCards: number;
             totalDecks: number;
             totalReviews: number;
@@ -593,7 +593,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             longestStreak: z.ZodDefault<z.ZodNumber>;
             lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
             lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-        }, "strict", z.ZodTypeAny, {
+        }, "strip", z.ZodTypeAny, {
             totalCards: number;
             totalDecks: number;
             totalReviews: number;
@@ -655,7 +655,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             longestStreak: z.ZodDefault<z.ZodNumber>;
             lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
             lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-        }, "strict", z.ZodTypeAny, {
+        }, "strip", z.ZodTypeAny, {
             totalCards: number;
             totalDecks: number;
             totalReviews: number;
@@ -721,7 +721,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             longestStreak: z.ZodDefault<z.ZodNumber>;
             lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
             lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-        }, "strict", z.ZodTypeAny, {
+        }, "strip", z.ZodTypeAny, {
             totalCards: number;
             totalDecks: number;
             totalReviews: number;
@@ -790,7 +790,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             longestStreak: z.ZodDefault<z.ZodNumber>;
             lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
             lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
-        }, "strict", z.ZodTypeAny, {
+        }, "strip", z.ZodTypeAny, {
             totalCards: number;
             totalDecks: number;
             totalReviews: number;

@@ -50,6 +50,7 @@ import {
   DailyStats,
   UndoCardRequestSchema,
   UndoCardResponseSchema,
+  UserDailyStatsSchema,
 } from "memvocado-types";
 import { serializeTimestamps } from "./utils/serialization";
 
@@ -119,7 +120,6 @@ function formatYmdInTimeZone(date: Date, timeZone: string): string {
  */
 async function updateStreakForTodayIfQualified(params: {
   userId: string;
-  timeZone?: string;
   threshold?: number;
 }): Promise<{
   qualified: boolean;
@@ -130,7 +130,7 @@ async function updateStreakForTodayIfQualified(params: {
   threshold: number;
   todayCount: number | undefined;
 }> {
-  const { userId, timeZone, threshold } = params;
+  const { userId, threshold } = params;
   const dailyThreshold: number =
     typeof threshold === "number" && threshold > 0 ? threshold : 10;
 
@@ -143,12 +143,16 @@ async function updateStreakForTodayIfQualified(params: {
   const rawUser = userSnap.data() || {};
   const rawSettings = (rawUser as { settings?: unknown }).settings ?? {};
   const rawStats = (rawUser as { stats?: unknown }).stats ?? {};
+  const rawUserDailyStats =
+    (rawUser as { dailyStats?: unknown }).dailyStats ?? {};
 
   // Logika streaka wymaga poprawnych ustawień/timeZone oraz pól streaka.
+  const userDailyStats =
+    UserDailyStatsSchema.partial().parse(rawUserDailyStats);
   const settings = UserSettingsSchema.partial().parse(rawSettings);
   const stats = UserStatsSchema.partial().parse(rawStats);
 
-  const tz: string = timeZone || settings.timeZone || "UTC";
+  const tz: string = settings.timeZone || "UTC";
   const nowLocal = new Date();
   const todayYmd = formatYmdInTimeZone(nowLocal, tz);
 
@@ -158,38 +162,22 @@ async function updateStreakForTodayIfQualified(params: {
       ? formatYmdInTimeZone(lastStreakDate, tz)
       : null;
 
+  const todayCount =
+    (userDailyStats.completedNewToday ?? 0) +
+    (userDailyStats.completedDueToday ?? 0);
+
   // Idempotencja – jeśli już zaliczony dzień, nic nie rób
   if (lastStreakYmd === todayYmd) {
     return {
-      qualified: false,
+      qualified: true,
       updated: false,
       currentStreak: Number(stats.currentStreak || 0),
       longestStreak: Number(stats.longestStreak || 0),
       lastStreakDate: lastStreakYmd,
       threshold: dailyThreshold,
-      todayCount: undefined,
+      todayCount: todayCount,
     };
   }
-
-  // Zlicz dzisiejsze sesje (wyciągamy ~36h i filtrujemy po YYYY-MM-DD w strefie)
-  const thirtySixHoursAgo = new Date(nowLocal.getTime() - 36 * 60 * 60 * 1000);
-  const todaySessionsSnap = await db
-    .collection(`users/${userId}/studySessions`)
-    .where("reviewTime", ">=", thirtySixHoursAgo)
-    .orderBy("reviewTime", "desc")
-    .get();
-
-  let todayCount = 0;
-  todaySessionsSnap.docs.forEach((doc) => {
-    const data = doc.data() as { reviewTime?: FirebaseFirestore.Timestamp };
-    const ts = data.reviewTime;
-    if (ts) {
-      const ymd = formatYmdInTimeZone(ts.toDate(), tz);
-      if (ymd === todayYmd) {
-        todayCount += 1;
-      }
-    }
-  });
 
   const qualified = todayCount >= dailyThreshold;
   if (!qualified) {
@@ -212,16 +200,10 @@ async function updateStreakForTodayIfQualified(params: {
   // Przechowujemy w bazie Date, a na wyjściu zwracamy string YYYY-MM-DD.
   const streakDateForStore = new Date(nowLocal);
 
-  const safeStatsUpdate = UserStatsStreakUpdateSchema.parse({
-    currentStreak: nextCurrent,
-    longestStreak: nextLongest,
-    lastStreakDate: streakDateForStore,
-  });
-
   await userRef.update({
-    "stats.currentStreak": safeStatsUpdate.currentStreak,
-    "stats.longestStreak": safeStatsUpdate.longestStreak,
-    "stats.lastStreakDate": safeStatsUpdate.lastStreakDate,
+    "stats.currentStreak": FieldValue.increment(1),
+    "stats.longestStreak": nextLongest,
+    "stats.lastStreakDate": streakDateForStore,
   });
 
   return {
@@ -253,94 +235,77 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
     });
   }
 
-  try {
-    const { userId, timeZone } = parsedRequest.data;
+  const auth = request.auth;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+  const userId = auth.uid;
 
+  try {
     const userRef = db.doc(`users/${userId}`);
     const userSnap = await userRef.get();
+
     if (!userSnap.exists) {
       throw new HttpsError("not-found", "User not found");
     }
-    const userData = UserSchema.parse({
-      id: userSnap.id,
-      ...userSnap.data(),
-    });
 
-    const tz: string = timeZone || userData.settings.timeZone || "UTC";
+    const userData = userSnap.data() || {};
+    const stats = userData.stats || {};
 
-    // YYYY-MM-DD dla wczoraj w strefie użytkownika
+    // Pobieramy strefę czasową
+    const tz = userData.settings?.timeZone || "UTC";
+
+    // Obliczamy daty "dzisiaj" i "wczoraj" w strefie użytkownika
     const now = new Date();
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayYmd = formatYmdInTimeZone(yesterday, tz);
+    const todayYmd = formatYmdInTimeZone(now, tz);
 
-    // Jeżeli już zaktualizowane dla wczoraj, nic nie rób (idempotencja)
-    const lastStreakDate = userData.stats.lastStreakDate;
-    const lastStreakYmd =
-      lastStreakDate instanceof Date
-        ? formatYmdInTimeZone(lastStreakDate, tz)
-        : null;
+    const yesterdayDate = new Date(now);
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterdayYmd = formatYmdInTimeZone(yesterdayDate, tz);
 
-    if (lastStreakYmd === yesterdayYmd) {
-      return serializeTimestamps({
-        currentStreak: Number(userData.stats.currentStreak || 0),
-        longestStreak: Number(userData.stats.longestStreak || 0),
-        lastStreakDate: lastStreakYmd || formatYmdInTimeZone(new Date(), tz),
+    // Sprawdzamy, kiedy ostatnio streak był aktualizowany
+    const lastStreakDate = stats.lastStreakDate;
+
+    const lastStreakYmd = lastStreakDate
+      ? formatYmdInTimeZone(lastStreakDate, tz)
+      : null;
+
+    // LOGIKA RESETU:
+
+    // 1. Jeśli streak był aktualizowany dzisiaj lub wczoraj, jest bezpieczny.
+    if (lastStreakYmd === todayYmd || lastStreakYmd === yesterdayYmd) {
+      return {
         updated: false,
-      });
+        currentStreak: stats.currentStreak || 0,
+        status: "streak_safe",
+      };
+    }
+    if ( stats.currentStreak === 0 ) { // Jeśli streak jest 0, nie resetujemy
+      return {
+        updated: false,
+        currentStreak: stats.currentStreak || 0,
+        status: "streak_safe",
+      };
     }
 
-    // Pobierz sesje z ostatnich 48h i sprawdź, czy którakolwiek ma reviewTime przypadający na wczoraj w danej strefie
-    const twoDaysAgo = new Date(now);
-    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-
-    const sessionsSnap = await db
-      .collection(`users/${userId}/studySessions`)
-      .where("reviewTime", ">=", twoDaysAgo)
-      .orderBy("reviewTime", "desc")
-      .get();
-
-    let hadStudyYesterday = false;
-    sessionsSnap.docs.some((doc) => {
-      const data = doc.data() as { reviewTime?: FirebaseFirestore.Timestamp };
-      const ts = data.reviewTime;
-      if (ts) {
-        const ymd = formatYmdInTimeZone(ts.toDate(), tz);
-        if (ymd === yesterdayYmd) {
-          hadStudyYesterday = true;
-          return true;
-        }
-      }
-      return false;
-    });
-
-    const current = Number(userData.stats.currentStreak || 0);
-    const longest = Number(userData.stats.longestStreak || 0);
-
-    const nextCurrent = hadStudyYesterday ? current + 1 : 0;
-    const nextLongest = hadStudyYesterday
-      ? Math.max(longest, nextCurrent)
-      : longest;
+    // 2. W każdym innym przypadku (brak daty, data przedwczoraj) -> RESET.
+    // Użytkownik nie uczył się wczoraj (bo gdyby się uczył, lastStreakYmd byłby == yesterdayYmd).
 
     const safeStatsUpdate = UserStatsStreakUpdateSchema.parse({
-      currentStreak: nextCurrent,
-      longestStreak: nextLongest,
-      lastStreakDate: yesterday,
+      currentStreak: 0,
     });
-
     await userRef.update({
       "stats.currentStreak": safeStatsUpdate.currentStreak,
-      "stats.longestStreak": safeStatsUpdate.longestStreak,
-      "stats.lastStreakDate": safeStatsUpdate.lastStreakDate,
     });
 
     const rawResponse = {
-      currentStreak: nextCurrent,
-      longestStreak: nextLongest,
-      lastStreakDate: yesterdayYmd,
       updated: true,
+      currentStreak: 0,
+      previousStreak: stats.currentStreak || 0,
+      longestStreak: stats.longestStreak || 0,
+      lastStreakDate: lastStreakYmd,
+      status: "streak_reset",
     };
-
     const validatedResponse =
       UpdateUserStreakOnLoginResponseSchema.parse(rawResponse);
     return serializeTimestamps(validatedResponse);
@@ -378,12 +343,23 @@ export const updateUserStreakIfQualified = onCall(async (request) => {
       issues: parsedRequest.error.issues,
     });
   }
+
+  const auth = request.auth;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+  const userId = auth.uid;
   try {
-    const { userId, timeZone, threshold } = parsedRequest.data;
+    const adminSettingsRef = db.doc(`admin/settings`);
+    const adminSettingsSnap = await adminSettingsRef.get();
+    if (!adminSettingsSnap.exists) {
+      throw new HttpsError("not-found", "Admin settings not found");
+    }
+    const adminSettings = adminSettingsSnap.data() || {};
+    const threshold = adminSettings.streakThreshold || 50;
 
     const streakResult = await updateStreakForTodayIfQualified({
       userId,
-      timeZone,
       threshold,
     });
     const validatedResponse =
@@ -552,6 +528,20 @@ async function updateDailyStats(
     // Nie przerywaj głównej operacji – to tylko best-effort
   }
 }
+/**
+ * @param {string} userId - User ID
+ * @return {Promise<void>}
+ */
+async function updateUserStats(userId: string) {
+  try {
+    const userRef = db.doc(`users/${userId}`);
+    await userRef.update({
+      "stats.totalReviews": FieldValue.increment(1),
+    });
+  } catch (error) {
+    logger.error("Error updating user stats", error);
+  }
+}
 
 /**
  * Update card progress after review
@@ -618,6 +608,7 @@ export const updateCardProgress = onCall(async (request) => {
 
     // Aktualizacja statystyk dziennych
     await updateDailyStats(userId, deckId, dailyStats);
+    await updateUserStats(userId);
 
     // Po zapisaniu sesji: sprawdź wspólną logiką, czy dzienny próg (10 kart) został osiągnięty
     try {

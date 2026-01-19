@@ -6,8 +6,7 @@ const base_1 = require("./base");
 /**
  * Statystyki użytkownika
  */
-exports.UserStatsSchema = zod_1.z
-    .object({
+exports.UserStatsSchema = zod_1.z.object({
     totalCards: zod_1.z.number().min(0).default(0),
     totalDecks: zod_1.z.number().min(0).default(0),
     totalReviews: zod_1.z.number().min(0).default(0),
@@ -16,8 +15,7 @@ exports.UserStatsSchema = zod_1.z
     longestStreak: zod_1.z.number().min(0).default(0),
     lastStreakDate: base_1.TimestampSchema.optional(),
     lastStudyDate: base_1.TimestampSchema.optional(),
-})
-    .strict();
+});
 /**
  * Ustawienia użytkownika
  */

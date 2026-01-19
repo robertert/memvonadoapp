@@ -4,10 +4,16 @@
  * Idempotentne dzięki polu stats.lastStreakDate (YYYY-MM-DD).
  */
 export declare const updateUserStreakOnLogin: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    status: "streak_safe" | "streak_reset";
     currentStreak: number;
     longestStreak: number;
     lastStreakDate: string;
     updated: boolean;
+    previousStreak: number;
+} | {
+    updated: boolean;
+    currentStreak: any;
+    status: string;
 }>, unknown>;
 /**
  * Aktualizuje streak natychmiast po spełnieniu progu dziennego
@@ -23,9 +29,9 @@ export declare const updateUserStreakIfQualified: import("firebase-functions/v2/
     longestStreak: number;
     lastStreakDate: string | null;
     updated: boolean;
-    threshold: number;
     qualified: boolean;
-    todayCount?: number | undefined;
+    threshold: number;
+    todayCount?: number | null | undefined;
 }>, unknown>;
 /**
  * Get user decks with cards
