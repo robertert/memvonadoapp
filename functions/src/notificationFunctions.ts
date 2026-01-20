@@ -56,6 +56,7 @@ export const getNotifications = onCall(async (request) => {
     const notificationsRef = db
       .collection(`users/${userId}/notifications`)
       .orderBy("createdAt", "desc")
+      .where("read", "==", false)
       .limit(limit);
 
     const notificationsSnapshot = await notificationsRef.get();

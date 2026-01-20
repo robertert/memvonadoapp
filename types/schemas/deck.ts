@@ -179,3 +179,30 @@ export const DeckLearningDataUpdateSchema = DeckLearningCoreSchema.partial()
 export type DeckLearningDataUpdate = z.infer<
   typeof DeckLearningDataUpdateSchema
 >;
+
+////////////////////////////////////////////////////////////
+// Views and Likes
+////////////////////////////////////////////////////////////
+
+/**
+ * Viewer document (decks/{deckId}/viewers/{userId})
+ */
+export const DeckViewerSchema = z
+  .object({
+    viewedAt: TimestampSchema,
+  })
+  .strict();
+
+export type DeckViewer = z.infer<typeof DeckViewerSchema>;
+
+/**
+ * Liked deck document (users/{userId}/likedDecks/{deckId})
+ */
+export const LikedDeckSchema = z
+  .object({
+    likedAt: TimestampSchema,
+    deckId: z.string(),
+  })
+  .strict();
+
+export type LikedDeck = z.infer<typeof LikedDeckSchema>;

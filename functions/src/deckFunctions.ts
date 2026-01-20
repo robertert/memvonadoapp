@@ -63,12 +63,19 @@ import {
   GetDeckDailyStatsResponseSchema,
   GetDailyUserStatsResponseSchema,
   GetDailyUserStatsRequestSchema,
+  RecordDeckViewRequestSchema,
+  RecordDeckViewResponseSchema,
+  ToggleDeckLikeRequestSchema,
+  ToggleDeckLikeResponseSchema,
+  CheckIfLikedRequestSchema,
+  CheckIfLikedResponseSchema,
 } from "memvocado-types/schemas/api/deck";
 import { convertAnkiApkg } from "./ankiConverter";
 import {
   DailyStats,
   DailyStatsSchema,
   DeckLearningDataUpdateSchema,
+  NotificationSchema,
   User,
   UserDailyStats,
 } from "memvocado-types";
@@ -2789,5 +2796,251 @@ export const importAnkiDeck = onCall(async (request) => {
         error instanceof Error ? error.message : String(error)
       }`
     );
+  }
+});
+
+/**
+ * Record a view for a deck (called when user starts learning)
+ * Each user can only count as one view per deck
+ */
+export const recordDeckView = onCall(async (request) => {
+  const validationResult = RecordDeckViewRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckId } = validationResult.data;
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  try {
+    const viewerRef = db.doc(`decks/${deckId}/viewers/${userId}`);
+
+    // Use transaction to atomically add viewer and increment count
+    await db.runTransaction(async (transaction) => {
+      const deckRef = db.doc(`decks/${deckId}`);
+      const deckSnap = await transaction.get(deckRef);
+
+      if (!deckSnap.exists) {
+        throw new HttpsError("not-found", "Deck not found");
+      }
+
+      // Add viewer document
+      transaction.set(viewerRef, {
+        viewedAt: FieldValue.serverTimestamp(),
+      });
+
+      // Increment view count
+      transaction.update(deckRef, {
+        views: FieldValue.increment(1),
+      });
+    });
+
+    logger.info("Deck view recorded", { deckId, userId });
+
+    const response = { success: true, isNewView: true };
+    return serializeTimestamps(RecordDeckViewResponseSchema.parse(response));
+  } catch (error) {
+    logger.error("Error recording deck view", error);
+    handleZodError(error, "recordDeckView");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to record deck view");
+  }
+});
+
+/**
+ * Toggle like on a deck
+ * Creates notification for deck creator when liked
+ */
+export const toggleDeckLike = onCall(async (request) => {
+  const validationResult = ToggleDeckLikeRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckId } = validationResult.data;
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  try {
+    const likedDeckRef = db.doc(`users/${userId}/likedDecks/${deckId}`);
+    const likedDeckSnap = await likedDeckRef.get();
+    const isCurrentlyLiked = likedDeckSnap.exists;
+
+    let newLikeCount = 0;
+
+    if (isCurrentlyLiked) {
+      // Unlike: remove from likedDecks and decrement count
+      await db.runTransaction(async (transaction) => {
+        const deckRef = db.doc(`decks/${deckId}`);
+        const deckSnap = await transaction.get(deckRef);
+
+        if (!deckSnap.exists) {
+          throw new HttpsError("not-found", "Deck not found");
+        }
+
+        const currentLikes = deckSnap.data()?.likes || 0;
+        newLikeCount = Math.max(0, currentLikes - 1);
+
+        transaction.delete(likedDeckRef);
+        transaction.update(deckRef, {
+          likes: FieldValue.increment(-1),
+        });
+      });
+
+      logger.info("Deck unliked", { deckId, userId });
+
+      const response = { success: true, liked: false, newLikeCount };
+      return serializeTimestamps(ToggleDeckLikeResponseSchema.parse(response));
+    } else {
+      // Like: add to likedDecks and increment count
+      let deckCreatorId: string | null = null;
+      let deckTitle: string | null = null;
+
+      await db.runTransaction(async (transaction) => {
+        const deckRef = db.doc(`decks/${deckId}`);
+        const deckSnap = await transaction.get(deckRef);
+
+        if (!deckSnap.exists) {
+          throw new HttpsError("not-found", "Deck not found");
+        }
+
+        const deckData = deckSnap.data();
+        const currentLikes = deckData?.likes || 0;
+        newLikeCount = currentLikes + 1;
+        deckCreatorId = deckData?.createdBy || null;
+        deckTitle = deckData?.title || null;
+
+        transaction.set(likedDeckRef, {
+          likedAt: FieldValue.serverTimestamp(),
+          deckId: deckId,
+        });
+
+        transaction.update(deckRef, {
+          likes: FieldValue.increment(1),
+        });
+      });
+
+      logger.info("Deck liked", { deckId, userId });
+
+      // Create notification for deck creator (if not liking own deck and not already notified)
+      if (deckCreatorId && deckCreatorId !== userId && deckTitle) {
+        try {
+          // Check if this user has already triggered a notification for this deck
+          const notifiedLikerRef = db.doc(
+            `decks/${deckId}/notifiedLikers/${userId}`
+          );
+          const notifiedLikerSnap = await notifiedLikerRef.get();
+
+          if (!notifiedLikerSnap.exists) {
+            // First time liking - send notification and mark as notified
+            const likerDoc = await db.doc(`users/${userId}`).get();
+            const likerData = likerDoc.data();
+            const likerUsername = likerData?.username || "Someone";
+
+            const notificationRef = db.collection(
+              `users/${deckCreatorId}/notifications`
+            );
+            const notification = {
+              title: "New like!",
+              body: `${likerUsername} liked your deck "${deckTitle}"`,
+              type: "success",
+              linkTo: `/deck/${deckId}`,
+              read: false,
+              createdAt: new Date(),
+            };
+            const validatedNotification = NotificationSchema.omit({ id: true }).parse(notification);
+            await notificationRef.add(validatedNotification);
+
+            // Mark this user as having been notified for this deck
+            await notifiedLikerRef.set({
+              notifiedAt: FieldValue.serverTimestamp(),
+            });
+
+            logger.info("Like notification created", {
+              deckId,
+              deckCreatorId,
+              likerId: userId,
+            });
+          } else {
+            logger.info("Skipping notification - user already notified before", {
+              deckId,
+              likerId: userId,
+            });
+          }
+        } catch (notifError) {
+          // Don't fail the like operation if notification fails
+          logger.error("Failed to create like notification", notifError);
+        }
+      }
+
+      const response = { success: true, liked: true, newLikeCount };
+      return serializeTimestamps(ToggleDeckLikeResponseSchema.parse(response));
+    }
+  } catch (error) {
+    logger.error("Error toggling deck like", error);
+    handleZodError(error, "toggleDeckLike");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to toggle deck like");
+  }
+});
+
+/**
+ * Check if user has liked a deck
+ */
+export const checkIfLiked = onCall(async (request) => {
+  const validationResult = CheckIfLikedRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckId } = validationResult.data;
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  try {
+    const likedDeckRef = db.doc(`users/${userId}/likedDecks/${deckId}`);
+    const likedDeckSnap = await likedDeckRef.get();
+
+    const response = { isLiked: likedDeckSnap.exists };
+    return serializeTimestamps(CheckIfLikedResponseSchema.parse(response));
+  } catch (error) {
+    logger.error("Error checking if deck is liked", error);
+    handleZodError(error, "checkIfLiked");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to check if deck is liked");
   }
 });

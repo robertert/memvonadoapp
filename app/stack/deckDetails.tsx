@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useContext } from "react";
+import React, { useEffect, useState, useRef, useContext, useCallback } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -28,11 +28,18 @@ import {
 import {
   ArrowLeftIcon,
   EyeIcon,
-  HeartIcon,
   RectangleStackIcon,
   UserIcon,
   Cog6ToothIcon,
 } from "react-native-heroicons/solid";
+import { HeartIcon as HeartIconOutline } from "react-native-heroicons/outline";
+import { HeartIcon as HeartIconSolid } from "react-native-heroicons/solid";
+import * as Haptics from "expo-haptics";
+import {
+  isLikedLocally,
+  addLikedDeckId,
+  removeLikedDeckId,
+} from "@/utils/likedDecksCache";
 
 import {
   CardSchema,
@@ -69,9 +76,120 @@ export default function deckDetails(): React.JSX.Element {
   const [dateAgo, setDateAgo] = useState<string>("2 weeks ago");
   const [username, setUsername] = useState<string>("");
 
+  // Like functionality state
+  const [isLiked, setIsLiked] = useState<boolean>(false);
+  const [likeCount, setLikeCount] = useState<number>(0);
+  const [isLikeLoading, setIsLikeLoading] = useState<boolean>(false);
+  const likeScale = useRef(new Animated.Value(1)).current;
+  const lastLikeTime = useRef<number>(0);
+  const DEBOUNCE_MS = 500;
+
   useEffect(() => {
     fetchDeck();
   }, []);
+
+  // Check like status when deck loads
+  useEffect(() => {
+    async function checkLikeStatus() {
+      if (!typedParams.deckId || PLACEHOLDER_MODE) return;
+
+      // First check local cache for instant display
+      const localLiked = await isLikedLocally(typedParams.deckId);
+      setIsLiked(localLiked);
+
+      // Then verify with server
+      try {
+        const result = await cloudFunctions.checkIfLiked(typedParams.deckId);
+        setIsLiked(result.isLiked);
+        // Update local cache if different
+        if (result.isLiked !== localLiked) {
+          if (result.isLiked) {
+            await addLikedDeckId(typedParams.deckId);
+          } else {
+            await removeLikedDeckId(typedParams.deckId);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking like status:", error);
+      }
+    }
+
+    checkLikeStatus();
+  }, [typedParams.deckId]);
+
+  // Update likeCount when deck changes
+  useEffect(() => {
+    if (deck?.likes !== undefined) {
+      setLikeCount(deck.likes);
+    }
+  }, [deck?.likes]);
+
+  // Like button handler with debounce
+  const handleLikePress = useCallback(async () => {
+    if (!typedParams.deckId || isLikeLoading || PLACEHOLDER_MODE) return;
+
+    // Debounce check
+    const now = Date.now();
+    if (now - lastLikeTime.current < DEBOUNCE_MS) return;
+    lastLikeTime.current = now;
+
+    // Optimistic update
+    const previousIsLiked = isLiked;
+    const previousLikeCount = likeCount;
+    setIsLiked(!isLiked);
+    setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
+
+    // Haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // Heart animation
+    Animated.sequence([
+      Animated.timing(likeScale, {
+        toValue: 1.3,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(likeScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Update local cache immediately
+    if (!isLiked) {
+      await addLikedDeckId(typedParams.deckId);
+    } else {
+      await removeLikedDeckId(typedParams.deckId);
+    }
+
+    // Server call
+    setIsLikeLoading(true);
+    try {
+      const result = await cloudFunctions.toggleDeckLike(typedParams.deckId);
+      setIsLiked(result.liked);
+      setLikeCount(result.newLikeCount);
+      // Update cache based on server response
+      if (result.liked) {
+        await addLikedDeckId(typedParams.deckId);
+      } else {
+        await removeLikedDeckId(typedParams.deckId);
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      // Rollback on error
+      setIsLiked(previousIsLiked);
+      setLikeCount(previousLikeCount);
+      // Rollback cache
+      if (previousIsLiked) {
+        await addLikedDeckId(typedParams.deckId);
+      } else {
+        await removeLikedDeckId(typedParams.deckId);
+      }
+    } finally {
+      setIsLikeLoading(false);
+    }
+  }, [typedParams.deckId, isLiked, likeCount, isLikeLoading, likeScale]);
 
   async function checkForChanges(): Promise<void> {
     if (!userCtx.id || !typedParams.deckId || isCheckingChanges) return;
@@ -190,6 +308,14 @@ export default function deckDetails(): React.JSX.Element {
 
   async function startLearningDeckHandler(): Promise<void> {
     if (!deck?.id) return;
+
+    // Record view silently (fire-and-forget)
+    if (!PLACEHOLDER_MODE) {
+      cloudFunctions.recordDeckView(deck.id).catch((error) => {
+        console.error("Error recording deck view:", error);
+      });
+    }
+
     router.push({
       pathname: "./learnScreen",
       params: { deckId: deck?.id },
@@ -448,11 +574,21 @@ export default function deckDetails(): React.JSX.Element {
             <Text style={styles.statNumber}>{deck?.cardsNum}</Text>
             <Text style={styles.statLabel}>Cards</Text>
           </View>
-          <View style={styles.statItem}>
-            <HeartIcon size={24} color={Colors.primary_700} />
-            <Text style={styles.statNumber}>{deck?.likes}</Text>
+          <Pressable
+            onPress={handleLikePress}
+            style={styles.statItem}
+            disabled={isLikeLoading}
+          >
+            <Animated.View style={{ transform: [{ scale: likeScale }] }}>
+              {isLiked ? (
+                <HeartIconSolid size={24} color="#ef4444" />
+              ) : (
+                <HeartIconOutline size={24} color={Colors.primary_700} />
+              )}
+            </Animated.View>
+            <Text style={styles.statNumber}>{likeCount}</Text>
             <Text style={styles.statLabel}>Likes</Text>
-          </View>
+          </Pressable>
         </View>
         <View style={styles.userContainer}>
           <View style={styles.userInfo}>

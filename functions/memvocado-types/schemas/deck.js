@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DeckLearningDataUpdateSchema = exports.DeckUpdateSchema = exports.DeckSettingsUpdateSchema = exports.DeckCoreUpdateSchema = exports.DeckLearningDataSchema = exports.DeckLearningMetaSchema = exports.DeckLearningTimestampSchema = exports.DeckLearningCoreSchema = exports.DailyStatsSchema = exports.DeckSettingsSchema = exports.DeckSchema = exports.DeckMetaSchema = exports.DeckTimestampSchema = exports.DeckCoreSchema = void 0;
+exports.LikedDeckSchema = exports.DeckViewerSchema = exports.DeckLearningDataUpdateSchema = exports.DeckUpdateSchema = exports.DeckSettingsUpdateSchema = exports.DeckCoreUpdateSchema = exports.DeckLearningDataSchema = exports.DeckLearningMetaSchema = exports.DeckLearningTimestampSchema = exports.DeckLearningCoreSchema = exports.DailyStatsSchema = exports.DeckSettingsSchema = exports.DeckSchema = exports.DeckMetaSchema = exports.DeckTimestampSchema = exports.DeckCoreSchema = void 0;
 const zod_1 = require("zod");
 const base_1 = require("./base");
 /**
@@ -131,5 +131,25 @@ exports.DeckLearningDataUpdateSchema = exports.DeckLearningCoreSchema.partial()
     .extend({
     lastReviewDate: base_1.TimestampSchema.optional(),
     dailyStats: exports.DailyStatsSchema.optional().nullable(),
+})
+    .strict();
+////////////////////////////////////////////////////////////
+// Views and Likes
+////////////////////////////////////////////////////////////
+/**
+ * Viewer document (decks/{deckId}/viewers/{userId})
+ */
+exports.DeckViewerSchema = zod_1.z
+    .object({
+    viewedAt: base_1.TimestampSchema,
+})
+    .strict();
+/**
+ * Liked deck document (users/{userId}/likedDecks/{deckId})
+ */
+exports.LikedDeckSchema = zod_1.z
+    .object({
+    likedAt: base_1.TimestampSchema,
+    deckId: zod_1.z.string(),
 })
     .strict();

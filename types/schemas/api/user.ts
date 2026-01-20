@@ -146,9 +146,9 @@ export type UpdateUserStreakIfQualifiedResponse = z.infer<
 
 export const UpdateUserStreakOnLoginResponseSchema = z.object({
   currentStreak: z.number(),
-  longestStreak: z.number(),
-  previousStreak: z.number(),
-  lastStreakDate: z.string(),
+  longestStreak: z.number().optional(),
+  previousStreak: z.number().optional(),
+  lastStreakDate: z.string().optional(),
   updated: z.boolean(),
   status: z.enum(["streak_safe", "streak_reset"]),
 });

@@ -350,3 +350,50 @@ export const GetDailyUserStatsResponseSchema = z.object({
 export type GetDailyUserStatsResponse = z.infer<
   typeof GetDailyUserStatsResponseSchema
 >;
+
+// ===========================
+// Views and Likes schemas
+// ===========================
+
+export const RecordDeckViewRequestSchema = z
+  .object({
+    deckId: z.string(),
+  })
+  .strict();
+export type RecordDeckViewRequest = z.infer<typeof RecordDeckViewRequestSchema>;
+
+export const RecordDeckViewResponseSchema = z.object({
+  success: z.boolean(),
+  isNewView: z.boolean(),
+});
+export type RecordDeckViewResponse = z.infer<
+  typeof RecordDeckViewResponseSchema
+>;
+
+export const ToggleDeckLikeRequestSchema = z
+  .object({
+    deckId: z.string(),
+  })
+  .strict();
+export type ToggleDeckLikeRequest = z.infer<typeof ToggleDeckLikeRequestSchema>;
+
+export const ToggleDeckLikeResponseSchema = z.object({
+  success: z.boolean(),
+  liked: z.boolean(),
+  newLikeCount: z.number(),
+});
+export type ToggleDeckLikeResponse = z.infer<
+  typeof ToggleDeckLikeResponseSchema
+>;
+
+export const CheckIfLikedRequestSchema = z
+  .object({
+    deckId: z.string(),
+  })
+  .strict();
+export type CheckIfLikedRequest = z.infer<typeof CheckIfLikedRequestSchema>;
+
+export const CheckIfLikedResponseSchema = z.object({
+  isLiked: z.boolean(),
+});
+export type CheckIfLikedResponse = z.infer<typeof CheckIfLikedResponseSchema>;

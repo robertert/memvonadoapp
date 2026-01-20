@@ -2627,3 +2627,60 @@ export declare const GetDailyUserStatsResponseSchema: z.ZodObject<{
     } | null;
 }>;
 export type GetDailyUserStatsResponse = z.infer<typeof GetDailyUserStatsResponseSchema>;
+export declare const RecordDeckViewRequestSchema: z.ZodObject<{
+    deckId: z.ZodString;
+}, "strict", z.ZodTypeAny, {
+    deckId: string;
+}, {
+    deckId: string;
+}>;
+export type RecordDeckViewRequest = z.infer<typeof RecordDeckViewRequestSchema>;
+export declare const RecordDeckViewResponseSchema: z.ZodObject<{
+    success: z.ZodBoolean;
+    isNewView: z.ZodBoolean;
+}, "strip", z.ZodTypeAny, {
+    success: boolean;
+    isNewView: boolean;
+}, {
+    success: boolean;
+    isNewView: boolean;
+}>;
+export type RecordDeckViewResponse = z.infer<typeof RecordDeckViewResponseSchema>;
+export declare const ToggleDeckLikeRequestSchema: z.ZodObject<{
+    deckId: z.ZodString;
+}, "strict", z.ZodTypeAny, {
+    deckId: string;
+}, {
+    deckId: string;
+}>;
+export type ToggleDeckLikeRequest = z.infer<typeof ToggleDeckLikeRequestSchema>;
+export declare const ToggleDeckLikeResponseSchema: z.ZodObject<{
+    success: z.ZodBoolean;
+    liked: z.ZodBoolean;
+    newLikeCount: z.ZodNumber;
+}, "strip", z.ZodTypeAny, {
+    success: boolean;
+    liked: boolean;
+    newLikeCount: number;
+}, {
+    success: boolean;
+    liked: boolean;
+    newLikeCount: number;
+}>;
+export type ToggleDeckLikeResponse = z.infer<typeof ToggleDeckLikeResponseSchema>;
+export declare const CheckIfLikedRequestSchema: z.ZodObject<{
+    deckId: z.ZodString;
+}, "strict", z.ZodTypeAny, {
+    deckId: string;
+}, {
+    deckId: string;
+}>;
+export type CheckIfLikedRequest = z.infer<typeof CheckIfLikedRequestSchema>;
+export declare const CheckIfLikedResponseSchema: z.ZodObject<{
+    isLiked: z.ZodBoolean;
+}, "strip", z.ZodTypeAny, {
+    isLiked: boolean;
+}, {
+    isLiked: boolean;
+}>;
+export type CheckIfLikedResponse = z.infer<typeof CheckIfLikedResponseSchema>;

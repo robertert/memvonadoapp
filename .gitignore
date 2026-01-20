@@ -30,7 +30,10 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 
+*.apk
 *.ipa
+
+prd.md
 
 unpack_anki/
 

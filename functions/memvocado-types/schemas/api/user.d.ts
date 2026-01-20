@@ -611,25 +611,25 @@ export declare const UpdateUserStreakIfQualifiedResponseSchema: z.ZodObject<{
 export type UpdateUserStreakIfQualifiedResponse = z.infer<typeof UpdateUserStreakIfQualifiedResponseSchema>;
 export declare const UpdateUserStreakOnLoginResponseSchema: z.ZodObject<{
     currentStreak: z.ZodNumber;
-    longestStreak: z.ZodNumber;
-    previousStreak: z.ZodNumber;
-    lastStreakDate: z.ZodString;
+    longestStreak: z.ZodOptional<z.ZodNumber>;
+    previousStreak: z.ZodOptional<z.ZodNumber>;
+    lastStreakDate: z.ZodOptional<z.ZodString>;
     updated: z.ZodBoolean;
     status: z.ZodEnum<["streak_safe", "streak_reset"]>;
 }, "strip", z.ZodTypeAny, {
     status: "streak_safe" | "streak_reset";
     currentStreak: number;
-    longestStreak: number;
-    lastStreakDate: string;
     updated: boolean;
-    previousStreak: number;
+    longestStreak?: number | undefined;
+    lastStreakDate?: string | undefined;
+    previousStreak?: number | undefined;
 }, {
     status: "streak_safe" | "streak_reset";
     currentStreak: number;
-    longestStreak: number;
-    lastStreakDate: string;
     updated: boolean;
-    previousStreak: number;
+    longestStreak?: number | undefined;
+    lastStreakDate?: string | undefined;
+    previousStreak?: number | undefined;
 }>;
 export type UpdateUserStreakOnLoginResponse = z.infer<typeof UpdateUserStreakOnLoginResponseSchema>;
 export declare const GetUserProgressResponseSchema: z.ZodObject<{

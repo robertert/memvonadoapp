@@ -527,3 +527,28 @@ export declare const DeckLearningDataUpdateSchema: z.ZodObject<{
     lastReviewDate?: unknown;
 }>;
 export type DeckLearningDataUpdate = z.infer<typeof DeckLearningDataUpdateSchema>;
+/**
+ * Viewer document (decks/{deckId}/viewers/{userId})
+ */
+export declare const DeckViewerSchema: z.ZodObject<{
+    viewedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
+}, "strict", z.ZodTypeAny, {
+    viewedAt: Date;
+}, {
+    viewedAt?: unknown;
+}>;
+export type DeckViewer = z.infer<typeof DeckViewerSchema>;
+/**
+ * Liked deck document (users/{userId}/likedDecks/{deckId})
+ */
+export declare const LikedDeckSchema: z.ZodObject<{
+    likedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
+    deckId: z.ZodString;
+}, "strict", z.ZodTypeAny, {
+    likedAt: Date;
+    deckId: string;
+}, {
+    deckId: string;
+    likedAt?: unknown;
+}>;
+export type LikedDeck = z.infer<typeof LikedDeckSchema>;

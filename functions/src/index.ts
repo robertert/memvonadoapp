@@ -61,6 +61,9 @@ export {
   updateCardContent,
   updateDeck,
   importAnkiDeck,
+  recordDeckView,
+  toggleDeckLike,
+  checkIfLiked,
 } from "./deckFunctions";
 export {
   getLeaderboard,

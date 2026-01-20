@@ -86,9 +86,9 @@ exports.UpdateUserStreakIfQualifiedResponseSchema = zod_1.z.object({
 });
 exports.UpdateUserStreakOnLoginResponseSchema = zod_1.z.object({
     currentStreak: zod_1.z.number(),
-    longestStreak: zod_1.z.number(),
-    previousStreak: zod_1.z.number(),
-    lastStreakDate: zod_1.z.string(),
+    longestStreak: zod_1.z.number().optional(),
+    previousStreak: zod_1.z.number().optional(),
+    lastStreakDate: zod_1.z.string().optional(),
     updated: zod_1.z.boolean(),
     status: zod_1.z.enum(["streak_safe", "streak_reset"]),
 });

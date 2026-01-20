@@ -252,6 +252,15 @@ import {
   GetDailyUserStatsRequest,
   GetDailyUserStatsResponse,
   GetDailyUserStatsResponseSchema,
+  RecordDeckViewRequest,
+  RecordDeckViewResponse,
+  RecordDeckViewResponseSchema,
+  ToggleDeckLikeRequest,
+  ToggleDeckLikeResponse,
+  ToggleDeckLikeResponseSchema,
+  CheckIfLikedRequest,
+  CheckIfLikedResponse,
+  CheckIfLikedResponseSchema,
 } from "@/types/schemas/api/deck";
 import {
   CheckUsernameAvailabilityRequest,
@@ -1139,6 +1148,51 @@ export const cloudFunctions = {
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from importAnkiDeck");
+    }
+    return validatedData.data;
+  },
+
+  // Record a deck view (called when user starts learning)
+  recordDeckView: async (deckId: string) => {
+    const fn = httpsCallable<RecordDeckViewRequest, RecordDeckViewResponse>(
+      functions,
+      "recordDeckView"
+    );
+    const result = await fn({ deckId });
+    const validatedData = RecordDeckViewResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from recordDeckView");
+    }
+    return validatedData.data;
+  },
+
+  // Toggle like on a deck
+  toggleDeckLike: async (deckId: string) => {
+    const fn = httpsCallable<ToggleDeckLikeRequest, ToggleDeckLikeResponse>(
+      functions,
+      "toggleDeckLike"
+    );
+    const result = await fn({ deckId });
+    const validatedData = ToggleDeckLikeResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from toggleDeckLike");
+    }
+    return validatedData.data;
+  },
+
+  // Check if user has liked a deck
+  checkIfLiked: async (deckId: string) => {
+    const fn = httpsCallable<CheckIfLikedRequest, CheckIfLikedResponse>(
+      functions,
+      "checkIfLiked"
+    );
+    const result = await fn({ deckId });
+    const validatedData = CheckIfLikedResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from checkIfLiked");
     }
     return validatedData.data;
   },

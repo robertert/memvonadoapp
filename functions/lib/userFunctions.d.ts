@@ -6,10 +6,10 @@
 export declare const updateUserStreakOnLogin: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     status: "streak_safe" | "streak_reset";
     currentStreak: number;
-    longestStreak: number;
-    lastStreakDate: string;
     updated: boolean;
-    previousStreak: number;
+    longestStreak?: number | undefined;
+    lastStreakDate?: string | undefined;
+    previousStreak?: number | undefined;
 } | {
     updated: boolean;
     currentStreak: any;

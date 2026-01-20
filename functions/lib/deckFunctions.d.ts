@@ -424,3 +424,26 @@ export declare const importAnkiDeck: import("firebase-functions/v2/https").Calla
     deckId: string;
     count: number;
 }>, unknown>;
+/**
+ * Record a view for a deck (called when user starts learning)
+ * Each user can only count as one view per deck
+ */
+export declare const recordDeckView: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+    isNewView: boolean;
+}>, unknown>;
+/**
+ * Toggle like on a deck
+ * Creates notification for deck creator when liked
+ */
+export declare const toggleDeckLike: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+    liked: boolean;
+    newLikeCount: number;
+}>, unknown>;
+/**
+ * Check if user has liked a deck
+ */
+export declare const checkIfLiked: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    isLiked: boolean;
+}>, unknown>;

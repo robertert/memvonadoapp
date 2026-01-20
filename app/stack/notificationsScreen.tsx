@@ -21,7 +21,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   runOnJS,
-  Layout,
+  LinearTransition,
 } from "react-native-reanimated";
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -29,6 +29,7 @@ import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
 import { placeholderNotifications } from "../../constants/placeholderData";
+import { calculateTimeAgo } from "@/utils/date";
 
 interface NotificationItem {
   id: string;
@@ -75,14 +76,6 @@ function getIcon(type: string) {
   }
 }
 
-function formatDate(date: string) {
-  const dt = new Date(date);
-  return dt.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 const SWIPE_THRESHOLD = 120;
 
@@ -109,15 +102,15 @@ function NotificationSwipeCard({
     })
     .onEnd(() => {
       "worklet";
-      if (transX.value < -200) {
+      if (transX.value < -150) {
+        runOnJS(() => {
+          setTimeout(() => {
+            onDismiss();            
+          }, 0);
+        })();
         opacity.value = withTiming(0);
         scale.value = withTiming(0.8);
         transX.value = withTiming(-400);
-        runOnJS(() => {
-          setTimeout(() => {
-            onDismiss();
-          }, 400);
-        })();
       } else {
         transX.value = withTiming(0);
       }
@@ -135,7 +128,7 @@ function NotificationSwipeCard({
         <View style={styles.cardContent}>
           <Text style={styles.cardTitle}>{notification.title}</Text>
           <Text style={styles.cardBody}>{notification.body}</Text>
-          <Text style={styles.cardDate}>{formatDate(notification.date)}</Text>
+          <Text style={styles.cardDate}>{notification.date}</Text>
         </View>
       </Animated.View>
     </GestureDetector>
@@ -182,19 +175,9 @@ export default function notificationsScreen(): React.JSX.Element {
 
       // Transform to NotificationItem format
       const transformedNotifications: NotificationItem[] =
-        result.notifications.map((n: any) => {
-          // Handle date formatting
-          let dateStr = "";
-          if (n.createdAt?.toDate) {
-            dateStr = n.createdAt.toDate().toISOString();
-          } else if (n.createdAt?._seconds) {
-            dateStr = new Date(n.createdAt._seconds * 1000).toISOString();
-          } else if (typeof n.createdAt === "string") {
-            dateStr = n.createdAt;
-          } else {
-            dateStr = new Date().toISOString();
-          }
-
+        result.notifications.map((n) => {
+          // Handle date formatting          
+          const dateStr = calculateTimeAgo(new Date(n.createdAt));
           return {
             id: n.id,
             title: n.title || "Notification",
@@ -231,10 +214,8 @@ export default function notificationsScreen(): React.JSX.Element {
 
     try {
       // Mark as read when dismissed
-      await cloudFunctions.markNotificationRead(userCtx.id, notificationId);
-
-      // Remove from local state
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+      await cloudFunctions.markNotificationRead(userCtx.id, notificationId);
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -264,7 +245,7 @@ export default function notificationsScreen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
         >
           {notifications.map((n) => (
-            <Animated.View key={n.id} layout={Layout.springify()}>
+              <Animated.View key={n.id} layout={LinearTransition.springify()}>
               <NotificationSwipeCard
                 notification={n}
                 onDismiss={() => handleNotificationDismiss(n.id)}
@@ -357,7 +338,7 @@ const styles = StyleSheet.create({
   },
   cardDate: {
     fontSize: 12,
-    color: Colors.accent_500,
+    color: Colors.primary_700,
     fontFamily: Fonts.primary,
     opacity: 0.7,
     marginTop: 6,
