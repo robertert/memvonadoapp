@@ -83,12 +83,12 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
         updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
     }, "strict", z.ZodTypeAny, {
         id: string;
+        tags: string[];
         createdAt: Date;
         cardData: {
             front: string;
             back: string;
         };
-        tags: string[];
         firstLearn: {
             isNew: boolean;
             due?: Date | undefined;
@@ -121,9 +121,9 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
             isFirst?: boolean | undefined;
             consecutiveGood?: number | undefined;
         };
+        tags?: string[] | undefined;
         createdAt?: unknown;
         updatedAt?: unknown;
-        tags?: string[] | undefined;
         cardAlgo?: {
             difficulty: number;
             scheduled_days: number;
@@ -148,33 +148,33 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
         completedDueToday: z.ZodNumber;
         lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strict", z.ZodTypeAny, {
+        newCardsRemaining: number;
+        dueCardsRemaining: number;
+        inProgressDueCards: number;
+        inProgressNewCards: number;
         completedNewToday: number;
         completedDueToday: number;
         lastUpdatedStats: Date;
+    }, {
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
-    }, {
         completedNewToday: number;
         completedDueToday: number;
-        newCardsRemaining: number;
-        dueCardsRemaining: number;
-        inProgressDueCards: number;
-        inProgressNewCards: number;
         lastUpdatedStats?: unknown;
     }>>;
 }, "strict", z.ZodTypeAny, {
-    userId: string;
     deckId: string;
+    userId: string;
     card: {
         id: string;
+        tags: string[];
         createdAt: Date;
         cardData: {
             front: string;
             back: string;
         };
-        tags: string[];
         firstLearn: {
             isNew: boolean;
             due?: Date | undefined;
@@ -198,17 +198,17 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
     };
     scheduledTime: number;
     dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
-        lastUpdatedStats: Date;
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
     } | undefined;
 }, {
-    userId: string;
     deckId: string;
+    userId: string;
     card: {
         id: string;
         cardData: {
@@ -221,9 +221,9 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
             isFirst?: boolean | undefined;
             consecutiveGood?: number | undefined;
         };
+        tags?: string[] | undefined;
         createdAt?: unknown;
         updatedAt?: unknown;
-        tags?: string[] | undefined;
         cardAlgo?: {
             difficulty: number;
             scheduled_days: number;
@@ -240,12 +240,12 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
     };
     scheduledTime: number;
     dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
+        completedNewToday: number;
+        completedDueToday: number;
         lastUpdatedStats?: unknown;
     } | undefined;
 }>;
@@ -329,12 +329,12 @@ export declare const UndoCardRequestSchema: z.ZodObject<{
         updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
     }, "strict", z.ZodTypeAny, {
         id: string;
+        tags: string[];
         createdAt: Date;
         cardData: {
             front: string;
             back: string;
         };
-        tags: string[];
         firstLearn: {
             isNew: boolean;
             due?: Date | undefined;
@@ -367,9 +367,9 @@ export declare const UndoCardRequestSchema: z.ZodObject<{
             isFirst?: boolean | undefined;
             consecutiveGood?: number | undefined;
         };
+        tags?: string[] | undefined;
         createdAt?: unknown;
         updatedAt?: unknown;
-        tags?: string[] | undefined;
         cardAlgo?: {
             difficulty: number;
             scheduled_days: number;
@@ -393,41 +393,41 @@ export declare const UndoCardRequestSchema: z.ZodObject<{
         completedDueToday: z.ZodNumber;
         lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strict", z.ZodTypeAny, {
+        newCardsRemaining: number;
+        dueCardsRemaining: number;
+        inProgressDueCards: number;
+        inProgressNewCards: number;
         completedNewToday: number;
         completedDueToday: number;
         lastUpdatedStats: Date;
+    }, {
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
-    }, {
         completedNewToday: number;
         completedDueToday: number;
-        newCardsRemaining: number;
-        dueCardsRemaining: number;
-        inProgressDueCards: number;
-        inProgressNewCards: number;
         lastUpdatedStats?: unknown;
     }>;
 }, "strict", z.ZodTypeAny, {
     dailyStats: {
-        completedNewToday: number;
-        completedDueToday: number;
-        lastUpdatedStats: Date;
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
     };
     deckId: string;
     card: {
         id: string;
+        tags: string[];
         createdAt: Date;
         cardData: {
             front: string;
             back: string;
         };
-        tags: string[];
         firstLearn: {
             isNew: boolean;
             due?: Date | undefined;
@@ -451,12 +451,12 @@ export declare const UndoCardRequestSchema: z.ZodObject<{
     };
 }, {
     dailyStats: {
-        completedNewToday: number;
-        completedDueToday: number;
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
+        completedNewToday: number;
+        completedDueToday: number;
         lastUpdatedStats?: unknown;
     };
     deckId: string;
@@ -472,9 +472,9 @@ export declare const UndoCardRequestSchema: z.ZodObject<{
             isFirst?: boolean | undefined;
             consecutiveGood?: number | undefined;
         };
+        tags?: string[] | undefined;
         createdAt?: unknown;
         updatedAt?: unknown;
-        tags?: string[] | undefined;
         cardAlgo?: {
             difficulty: number;
             scheduled_days: number;
@@ -546,6 +546,7 @@ export declare const UpdateUserSettingsRequestSchema: z.ZodObject<{
         dailyNew: z.ZodOptional<z.ZodNumber>;
         language: z.ZodDefault<z.ZodString>;
         timeZone: z.ZodDefault<z.ZodString>;
+        defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
     }, "strict", z.ZodTypeAny, {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
@@ -553,6 +554,7 @@ export declare const UpdateUserSettingsRequestSchema: z.ZodObject<{
         language: string;
         timeZone: string;
         dailyNew?: number | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }, {
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
@@ -560,6 +562,7 @@ export declare const UpdateUserSettingsRequestSchema: z.ZodObject<{
         dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }>;
 }, "strict", z.ZodTypeAny, {
     settings: {
@@ -569,6 +572,7 @@ export declare const UpdateUserSettingsRequestSchema: z.ZodObject<{
         language: string;
         timeZone: string;
         dailyNew?: number | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     };
     userId: string;
 }, {
@@ -579,6 +583,7 @@ export declare const UpdateUserSettingsRequestSchema: z.ZodObject<{
         dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     };
     userId: string;
 }>;
@@ -746,6 +751,7 @@ export declare const GetUserSettingsResponseSchema: z.ZodObject<{
         dailyNew: z.ZodOptional<z.ZodNumber>;
         language: z.ZodDefault<z.ZodString>;
         timeZone: z.ZodDefault<z.ZodString>;
+        defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
     }, "strict", z.ZodTypeAny, {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
@@ -753,6 +759,7 @@ export declare const GetUserSettingsResponseSchema: z.ZodObject<{
         language: string;
         timeZone: string;
         dailyNew?: number | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }, {
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
@@ -760,6 +767,7 @@ export declare const GetUserSettingsResponseSchema: z.ZodObject<{
         dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }>;
 }, "strip", z.ZodTypeAny, {
     settings: {
@@ -769,6 +777,7 @@ export declare const GetUserSettingsResponseSchema: z.ZodObject<{
         language: string;
         timeZone: string;
         dailyNew?: number | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     };
 }, {
     settings: {
@@ -778,6 +787,7 @@ export declare const GetUserSettingsResponseSchema: z.ZodObject<{
         dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     };
 }>;
 export type GetUserSettingsResponse = z.infer<typeof GetUserSettingsResponseSchema>;
@@ -791,6 +801,7 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
         dailyNew: z.ZodOptional<z.ZodNumber>;
         language: z.ZodDefault<z.ZodString>;
         timeZone: z.ZodDefault<z.ZodString>;
+        defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
     }, "strict", z.ZodTypeAny, {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
@@ -798,6 +809,7 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
         language: string;
         timeZone: string;
         dailyNew?: number | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }, {
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
@@ -805,6 +817,7 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
         dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }>;
 } & {
     id: z.ZodString;
@@ -924,8 +937,8 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
 }, "strict", z.ZodTypeAny, {
     id: string;
-    username: string;
-    email: string;
+    createdAt: Date;
+    updatedAt: Date;
     settings: {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
@@ -933,9 +946,10 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
         language: string;
         timeZone: string;
         dailyNew?: number | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     };
-    createdAt: Date;
-    updatedAt: Date;
+    username: string;
+    email: string;
     league: number;
     currentGroupId: string | null;
     experiencePoints: number;
@@ -953,6 +967,11 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
     followingCount: number;
     followersCount: number;
     interests: string[];
+    dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
+    } | null | undefined;
     avocadoGrowth?: {
         currentPhase: number;
         consecutiveDays: number;
@@ -969,16 +988,9 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
         }[];
         lastGrowthDate?: Date | null | undefined;
     } | null | undefined;
-    dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
-        lastUpdatedStats: Date;
-    } | null | undefined;
     profileCompleted?: boolean | undefined;
 }, {
     id: string;
-    username: string;
-    email: string;
     settings: {
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
@@ -986,7 +998,10 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
         dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     };
+    username: string;
+    email: string;
     currentGroupId: string | null;
     stats: {
         totalCards?: number | undefined;
@@ -1000,6 +1015,11 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
     };
     createdAt?: unknown;
     updatedAt?: unknown;
+    dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats?: unknown;
+    } | null | undefined;
     league?: number | undefined;
     experiencePoints?: number | undefined;
     currencyCount?: number | undefined;
@@ -1018,11 +1038,6 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
             skinId: string;
             harvestedAt?: unknown;
         }[] | undefined;
-    } | null | undefined;
-    dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
-        lastUpdatedStats?: unknown;
     } | null | undefined;
     followingCount?: number | undefined;
     followersCount?: number | undefined;

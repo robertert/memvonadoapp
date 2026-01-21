@@ -43,6 +43,7 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
         dailyNew: z.ZodOptional<z.ZodNumber>;
         language: z.ZodDefault<z.ZodString>;
         timeZone: z.ZodDefault<z.ZodString>;
+        defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
     }, "strict", z.ZodTypeAny, {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
@@ -50,6 +51,7 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
         language: string;
         timeZone: string;
         dailyNew?: number | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }, {
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
@@ -57,6 +59,7 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
         dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }>;
     createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -105,6 +108,7 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
         dailyNew: z.ZodOptional<z.ZodNumber>;
         language: z.ZodDefault<z.ZodString>;
         timeZone: z.ZodDefault<z.ZodString>;
+        defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
     }, "strict", z.ZodTypeAny, {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
@@ -112,6 +116,7 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
         language: string;
         timeZone: string;
         dailyNew?: number | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }, {
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
@@ -119,6 +124,7 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
         dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }>;
     createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -167,6 +173,7 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
         dailyNew: z.ZodOptional<z.ZodNumber>;
         language: z.ZodDefault<z.ZodString>;
         timeZone: z.ZodDefault<z.ZodString>;
+        defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
     }, "strict", z.ZodTypeAny, {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
@@ -174,6 +181,7 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
         language: string;
         timeZone: string;
         dailyNew?: number | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }, {
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
@@ -181,6 +189,7 @@ export declare const AuthUserSnapshotSchema: z.ZodObject<{
         dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }>;
     createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -234,6 +243,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             dailyNew: z.ZodOptional<z.ZodNumber>;
             language: z.ZodDefault<z.ZodString>;
             timeZone: z.ZodDefault<z.ZodString>;
+            defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
@@ -241,6 +251,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             language: string;
             timeZone: string;
             dailyNew?: number | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }, {
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
@@ -248,6 +259,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             dailyNew?: number | undefined;
             language?: string | undefined;
             timeZone?: string | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -296,6 +308,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             dailyNew: z.ZodOptional<z.ZodNumber>;
             language: z.ZodDefault<z.ZodString>;
             timeZone: z.ZodDefault<z.ZodString>;
+            defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
@@ -303,6 +316,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             language: string;
             timeZone: string;
             dailyNew?: number | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }, {
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
@@ -310,6 +324,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             dailyNew?: number | undefined;
             language?: string | undefined;
             timeZone?: string | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -358,6 +373,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             dailyNew: z.ZodOptional<z.ZodNumber>;
             language: z.ZodDefault<z.ZodString>;
             timeZone: z.ZodDefault<z.ZodString>;
+            defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
@@ -365,6 +381,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             language: string;
             timeZone: string;
             dailyNew?: number | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }, {
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
@@ -372,6 +389,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             dailyNew?: number | undefined;
             language?: string | undefined;
             timeZone?: string | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -415,8 +433,8 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
     customToken: string;
     user: {
         id: string;
-        username: string;
-        email: string;
+        createdAt: Date;
+        updatedAt: Date;
         settings: {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
@@ -424,9 +442,10 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             language: string;
             timeZone: string;
             dailyNew?: number | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         };
-        createdAt: Date;
-        updatedAt: Date;
+        username: string;
+        email: string;
         league: number;
         currentGroupId: string | null;
         experiencePoints: number;
@@ -451,8 +470,6 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
     customToken: string;
     user: {
         id: string;
-        username: string;
-        email: string;
         settings: {
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
@@ -460,7 +477,10 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             dailyNew?: number | undefined;
             language?: string | undefined;
             timeZone?: string | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         };
+        username: string;
+        email: string;
         currentGroupId: string | null;
         stats: {
             totalCards?: number | undefined;
@@ -501,6 +521,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             dailyNew: z.ZodOptional<z.ZodNumber>;
             language: z.ZodDefault<z.ZodString>;
             timeZone: z.ZodDefault<z.ZodString>;
+            defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
@@ -508,6 +529,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             language: string;
             timeZone: string;
             dailyNew?: number | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }, {
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
@@ -515,6 +537,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             dailyNew?: number | undefined;
             language?: string | undefined;
             timeZone?: string | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -563,6 +586,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             dailyNew: z.ZodOptional<z.ZodNumber>;
             language: z.ZodDefault<z.ZodString>;
             timeZone: z.ZodDefault<z.ZodString>;
+            defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
@@ -570,6 +594,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             language: string;
             timeZone: string;
             dailyNew?: number | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }, {
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
@@ -577,6 +602,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             dailyNew?: number | undefined;
             language?: string | undefined;
             timeZone?: string | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -625,6 +651,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             dailyNew: z.ZodOptional<z.ZodNumber>;
             language: z.ZodDefault<z.ZodString>;
             timeZone: z.ZodDefault<z.ZodString>;
+            defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
@@ -632,6 +659,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             language: string;
             timeZone: string;
             dailyNew?: number | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }, {
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
@@ -639,6 +667,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             dailyNew?: number | undefined;
             language?: string | undefined;
             timeZone?: string | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -691,6 +720,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             dailyNew: z.ZodOptional<z.ZodNumber>;
             language: z.ZodDefault<z.ZodString>;
             timeZone: z.ZodDefault<z.ZodString>;
+            defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
@@ -698,6 +728,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             language: string;
             timeZone: string;
             dailyNew?: number | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }, {
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
@@ -705,6 +736,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             dailyNew?: number | undefined;
             language?: string | undefined;
             timeZone?: string | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -760,6 +792,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             dailyNew: z.ZodOptional<z.ZodNumber>;
             language: z.ZodDefault<z.ZodString>;
             timeZone: z.ZodDefault<z.ZodString>;
+            defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
         }, "strict", z.ZodTypeAny, {
             theme: "light" | "dark";
             notificationsEnabled: boolean;
@@ -767,6 +800,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             language: string;
             timeZone: string;
             dailyNew?: number | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }, {
             theme?: "light" | "dark" | undefined;
             notificationsEnabled?: boolean | undefined;
@@ -774,6 +808,7 @@ export declare const AuthLoginResponseSchema: z.ZodObject<{
             dailyNew?: number | undefined;
             language?: string | undefined;
             timeZone?: string | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
         }>;
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;

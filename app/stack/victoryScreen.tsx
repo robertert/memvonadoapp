@@ -23,6 +23,11 @@ interface ProgressParams {
   completedNewToday?: string;
   completedDueToday?: string;
   empty?: string;
+  // All in One mode params
+  mode?: string;
+  totalCards?: string;
+  wrongAttempts?: string;
+  sessionTimeMs?: string;
 }
 
 export default function VictoryScreen(): React.JSX.Element {
@@ -34,6 +39,20 @@ export default function VictoryScreen(): React.JSX.Element {
   const dueCards = parseInt(params.completedDueToday || "0", 10);
   const totalCards = newCards + dueCards;
   const isEmpty = params.empty === "true";
+
+  // All in One mode params
+  const isAllInOneMode = params.mode === "all_in_one";
+  const allInOneTotalCards = parseInt(params.totalCards || "0", 10);
+  const allInOneWrongAttempts = parseInt(params.wrongAttempts || "0", 10);
+  const allInOneSessionTimeMs = parseInt(params.sessionTimeMs || "0", 10);
+
+  // Format session time as mm:ss
+  const formatTime = (ms: number): string => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
 
   // --- STANY ---
   const [loading, setLoading] = useState(true);
@@ -511,6 +530,83 @@ export default function VictoryScreen(): React.JSX.Element {
       );
     }
 
+    // All in One mode specific stats
+    if (isAllInOneMode) {
+      return (
+        <>
+          <Animated.View
+            style={[styles.headerContainer, { opacity: headerOpacity }]}
+          >
+            <Animated.View
+              style={[
+                styles.trophyCircle,
+                { transform: [{ scale: trophyScale }] },
+              ]}
+            >
+              <TrophyIcon size={48} color={Colors.primary_700} />
+            </Animated.View>
+            <Text style={styles.title}>Sesja zakończona!</Text>
+            <Text style={styles.subtitle}>
+              Wszystkie karty zaliczone.
+            </Text>
+          </Animated.View>
+
+          <Animated.View
+            style={[
+              styles.statsContainer,
+              {
+                opacity: statsOpacity,
+                transform: [{ translateY: contentTranslateY }],
+              },
+            ]}
+          >
+            <View style={styles.insideRow}>
+              <View style={styles.insideSection}>
+                <Text style={[styles.num, { color: Colors.accent_500 }]}>
+                  {allInOneTotalCards}
+                </Text>
+                <Text style={styles.desc}>Karty zaliczone</Text>
+              </View>
+            </View>
+            <View style={styles.insideRow}>
+              <View style={styles.insideSection}>
+                <Text style={[styles.num, { color: Colors.accent_500 }]}>
+                  {allInOneWrongAttempts}
+                </Text>
+                <Text style={styles.desc}>Błędne próby</Text>
+              </View>
+            </View>
+            <View style={styles.insideRow}>
+              <View style={styles.insideSection}>
+                <Text style={[styles.num, { color: Colors.accent_500 }]}>
+                  {formatTime(allInOneSessionTimeMs)}
+                </Text>
+                <Text style={styles.desc}>Czas sesji</Text>
+              </View>
+            </View>
+
+            <Text style={styles.summaryText}>
+              Świetna robota! Przećwiczone wszystkie karty w jednej sesji.
+            </Text>
+          </Animated.View>
+
+          <Animated.View
+            style={[
+              styles.buttonWrapper,
+              { transform: [{ scale: buttonScale }] },
+            ]}
+          >
+            <Pressable onPress={restartHandler}>
+              <View style={styles.restartButton}>
+                <Text style={styles.restartText}>Poucz się innej talii</Text>
+              </View>
+            </Pressable>
+          </Animated.View>
+        </>
+      );
+    }
+
+    // SRS mode stats (original)
     return (
       <>
         <Animated.View

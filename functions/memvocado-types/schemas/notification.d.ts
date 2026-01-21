@@ -12,8 +12,8 @@ export declare const NotificationCreateSchema: z.ZodObject<{
     readAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
 }, "strict", z.ZodTypeAny, {
     type: "success" | "info" | "warning" | "error";
-    createdAt: Date;
     title: string;
+    createdAt: Date;
     body: string;
     read: boolean;
     linkTo?: string | null | undefined;
@@ -41,8 +41,8 @@ export declare const NotificationSchema: z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     type: "success" | "info" | "warning" | "error";
     id: string;
-    createdAt: Date;
     title: string;
+    createdAt: Date;
     body: string;
     read: boolean;
     linkTo?: string | null | undefined;

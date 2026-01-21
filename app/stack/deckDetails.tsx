@@ -48,9 +48,11 @@ import {
   type Card,
   type Deck,
   type DeckLearningData,
+  type LearningMode,
 } from "@/types";
 
 import { calculateDateAgo } from "@/utils/date";
+import LearningModeModal from "../../components/learnScreen/LearningModeModal";
 
 interface DeckParams {
   deckId: string;
@@ -83,6 +85,9 @@ export default function deckDetails(): React.JSX.Element {
   const likeScale = useRef(new Animated.Value(1)).current;
   const lastLikeTime = useRef<number>(0);
   const DEBOUNCE_MS = 500;
+
+  // Learning mode modal state
+  const [showModeModal, setShowModeModal] = useState<boolean>(false);
 
   useEffect(() => {
     fetchDeck();
@@ -306,7 +311,7 @@ export default function deckDetails(): React.JSX.Element {
     }
   }
 
-  async function startLearningDeckHandler(): Promise<void> {
+  function navigateToLearn(): void {
     if (!deck?.id) return;
 
     // Record view silently (fire-and-forget)
@@ -320,6 +325,89 @@ export default function deckDetails(): React.JSX.Element {
       pathname: "./learnScreen",
       params: { deckId: deck?.id },
     });
+  }
+
+  async function startLearningDeckHandler(): Promise<void> {
+    if (!deck?.id) return;
+
+    // Check if mode already selected for this deck
+    if (userDeck?.settings?.learningMode) {
+      navigateToLearn();
+      return;
+    }
+
+    // Check if user has default preference
+    if (userCtx?.id) {
+      try {
+        const userSettings = await cloudFunctions.getUserSettings(userCtx.id);
+        if (userSettings?.settings?.defaultLearningMode) {
+          // Auto-apply default, navigate immediately
+          await cloudFunctions.updateUserDeckSettings(deck.id, {
+            ...userDeck?.settings,
+            learningMode: userSettings.settings.defaultLearningMode,
+          });
+          setUserDeck((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  settings: {
+                    ...prev.settings,
+                    learningMode: userSettings.settings.defaultLearningMode,
+                  },
+                }
+              : prev
+          );
+          navigateToLearn();
+          return;
+        }
+      } catch (error) {
+        console.error("Error fetching user settings:", error);
+      }
+    }
+
+    // No mode set, no default → show modal
+    setShowModeModal(true);
+  }
+
+  async function handleModeSelect(
+    mode: LearningMode,
+    remember: boolean
+  ): Promise<void> {
+    if (!deck?.id) return;
+
+    setShowModeModal(false);
+
+    try {
+      // Update deck settings with selected mode
+      await cloudFunctions.updateUserDeckSettings(deck.id, {
+        ...userDeck?.settings,
+        learningMode: mode,
+      });
+
+      setUserDeck((prev) =>
+        prev
+          ? {
+              ...prev,
+              settings: { ...prev.settings, learningMode: mode },
+            }
+          : prev
+      );
+
+      // If remember is checked, also update user's default preference
+      if (remember && userCtx?.id) {
+        const currentSettings = await cloudFunctions.getUserSettings(userCtx.id);
+        await cloudFunctions.updateUserSettings(userCtx.id, {
+          ...currentSettings.settings,
+          defaultLearningMode: mode,
+        });
+      }
+
+      navigateToLearn();
+    } catch (error) {
+      console.error("Error setting learning mode:", error);
+      // Navigate anyway with default SRS mode
+      navigateToLearn();
+    }
   }
 
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -645,6 +733,13 @@ export default function deckDetails(): React.JSX.Element {
           </View>
         </Pressable>
       </View>
+
+      {/* Learning Mode Modal */}
+      <LearningModeModal
+        visible={showModeModal}
+        onSelectMode={handleModeSelect}
+        onClose={() => setShowModeModal(false)}
+      />
 
       {/* Sync Modal */}
       <Modal

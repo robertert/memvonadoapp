@@ -44,29 +44,30 @@ export declare const updateUserStreakIfQualified: import("firebase-functions/v2/
 export declare const getUserDecks: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     decks: {
         id: string;
+        title: string;
+        updatedAt: Date;
+        cardsNum: number;
         settings: {
             zenMode: boolean;
             shuffleNewCards: boolean;
             dueCardsNumPerDay?: number | undefined;
             newCardsNumPerDay?: number | undefined;
+            learningMode?: "srs" | "all_in_one" | undefined;
         };
-        updatedAt: Date;
-        title: string;
-        cardsNum: number;
+        category?: string | null | undefined;
+        icon?: string | null | undefined;
+        tags?: string[] | null | undefined;
+        isPublic?: boolean | null | undefined;
+        lastReviewDate?: Date | undefined;
         dailyStats?: {
-            completedNewToday: number;
-            completedDueToday: number;
-            lastUpdatedStats: Date;
             newCardsRemaining: number;
             dueCardsRemaining: number;
             inProgressDueCards: number;
             inProgressNewCards: number;
+            completedNewToday: number;
+            completedDueToday: number;
+            lastUpdatedStats: Date;
         } | null | undefined;
-        tags?: string[] | null | undefined;
-        category?: string | null | undefined;
-        icon?: string | null | undefined;
-        isPublic?: boolean | null | undefined;
-        lastReviewDate?: Date | undefined;
     }[];
 }>, unknown>;
 export declare const undoCard: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
@@ -148,8 +149,8 @@ export declare const updateUserSettings: import("firebase-functions/v2/https").C
  */
 export declare const getUserProfile: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     id: string;
-    username: string;
-    email: string;
+    createdAt: Date;
+    updatedAt: Date;
     settings: {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
@@ -157,9 +158,10 @@ export declare const getUserProfile: import("firebase-functions/v2/https").Calla
         language: string;
         timeZone: string;
         dailyNew?: number | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     };
-    createdAt: Date;
-    updatedAt: Date;
+    username: string;
+    email: string;
     league: number;
     currentGroupId: string | null;
     experiencePoints: number;
@@ -177,6 +179,11 @@ export declare const getUserProfile: import("firebase-functions/v2/https").Calla
     followingCount: number;
     followersCount: number;
     interests: string[];
+    dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
+    } | null | undefined;
     avocadoGrowth?: {
         currentPhase: number;
         consecutiveDays: number;
@@ -192,11 +199,6 @@ export declare const getUserProfile: import("firebase-functions/v2/https").Calla
             harvestedAt: Date;
         }[];
         lastGrowthDate?: Date | null | undefined;
-    } | null | undefined;
-    dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
-        lastUpdatedStats: Date;
     } | null | undefined;
     profileCompleted?: boolean | undefined;
 }>, unknown>;

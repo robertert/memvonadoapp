@@ -7,12 +7,12 @@ export declare const SearchFiltersSchema: z.ZodObject<{
     author: z.ZodOptional<z.ZodString>;
     tags: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
 }, "strict", z.ZodTypeAny, {
-    tags?: string[] | undefined;
     category?: string | undefined;
+    tags?: string[] | undefined;
     author?: string | undefined;
 }, {
-    tags?: string[] | undefined;
     category?: string | undefined;
+    tags?: string[] | undefined;
     author?: string | undefined;
 }>;
 export type SearchFilters = z.infer<typeof SearchFiltersSchema>;
@@ -28,12 +28,12 @@ export declare const SearchLogSchema: z.ZodObject<{
         author: z.ZodOptional<z.ZodString>;
         tags: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     }, "strict", z.ZodTypeAny, {
-        tags?: string[] | undefined;
         category?: string | undefined;
+        tags?: string[] | undefined;
         author?: string | undefined;
     }, {
-        tags?: string[] | undefined;
         category?: string | undefined;
+        tags?: string[] | undefined;
         author?: string | undefined;
     }>;
     resultsCount: z.ZodNumber;
@@ -42,8 +42,8 @@ export declare const SearchLogSchema: z.ZodObject<{
     id: string;
     searchText: string;
     filters: {
-        tags?: string[] | undefined;
         category?: string | undefined;
+        tags?: string[] | undefined;
         author?: string | undefined;
     };
     resultsCount: number;
@@ -53,8 +53,8 @@ export declare const SearchLogSchema: z.ZodObject<{
     id: string;
     searchText: string;
     filters: {
-        tags?: string[] | undefined;
         category?: string | undefined;
+        tags?: string[] | undefined;
         author?: string | undefined;
     };
     resultsCount: number;

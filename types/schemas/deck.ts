@@ -62,6 +62,12 @@ export type Deck = z.infer<typeof DeckSchema>;
 ////////////////////////////////////////////////////////////
 
 /**
+ * Learning mode for a deck
+ */
+export const LearningModeSchema = z.enum(["srs", "all_in_one"]);
+export type LearningMode = z.infer<typeof LearningModeSchema>;
+
+/**
  * Ustawienia talii kart
  */
 export const DeckSettingsSchema = z
@@ -70,6 +76,7 @@ export const DeckSettingsSchema = z
     newCardsNumPerDay: z.number().min(0).optional(),
     zenMode: z.boolean().default(false),
     shuffleNewCards: z.boolean().default(false),
+    learningMode: LearningModeSchema.optional(), // undefined = never selected
   })
   .strict();
 

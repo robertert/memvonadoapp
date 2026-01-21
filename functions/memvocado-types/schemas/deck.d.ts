@@ -11,9 +11,9 @@ export declare const DeckCoreSchema: z.ZodObject<{
     frontLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     backLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
 }, "strict", z.ZodTypeAny, {
-    tags: string[];
     title: string;
     icon: string;
+    tags: string[];
     isPublic: boolean;
     category?: string | null | undefined;
     frontLanguage?: string | null | undefined;
@@ -21,9 +21,9 @@ export declare const DeckCoreSchema: z.ZodObject<{
 }, {
     title: string;
     isPublic: boolean;
-    tags?: string[] | undefined;
     category?: string | null | undefined;
     icon?: string | undefined;
+    tags?: string[] | undefined;
     frontLanguage?: string | null | undefined;
     backLanguage?: string | null | undefined;
 }>;
@@ -95,12 +95,12 @@ export declare const DeckSchema: z.ZodObject<{
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
 }, "strict", z.ZodTypeAny, {
     id: string;
-    createdAt: Date;
-    updatedAt: Date;
-    tags: string[];
     title: string;
     icon: string;
+    tags: string[];
     isPublic: boolean;
+    createdAt: Date;
+    updatedAt: Date;
     views: number;
     likes: number;
     cardsNum: number;
@@ -116,19 +116,24 @@ export declare const DeckSchema: z.ZodObject<{
     isPublic: boolean;
     cardsNum: number;
     createdBy: string;
-    createdAt?: unknown;
-    updatedAt?: unknown;
-    tags?: string[] | undefined;
     category?: string | null | undefined;
     icon?: string | undefined;
+    tags?: string[] | undefined;
     frontLanguage?: string | null | undefined;
     backLanguage?: string | null | undefined;
+    createdAt?: unknown;
+    updatedAt?: unknown;
     views?: number | undefined;
     likes?: number | undefined;
     is_deleted?: boolean | undefined;
     deletedAt?: unknown;
 }>;
 export type Deck = z.infer<typeof DeckSchema>;
+/**
+ * Learning mode for a deck
+ */
+export declare const LearningModeSchema: z.ZodEnum<["srs", "all_in_one"]>;
+export type LearningMode = z.infer<typeof LearningModeSchema>;
 /**
  * Ustawienia talii kart
  */
@@ -137,16 +142,19 @@ export declare const DeckSettingsSchema: z.ZodObject<{
     newCardsNumPerDay: z.ZodOptional<z.ZodNumber>;
     zenMode: z.ZodDefault<z.ZodBoolean>;
     shuffleNewCards: z.ZodDefault<z.ZodBoolean>;
+    learningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
 }, "strict", z.ZodTypeAny, {
     zenMode: boolean;
     shuffleNewCards: boolean;
     dueCardsNumPerDay?: number | undefined;
     newCardsNumPerDay?: number | undefined;
+    learningMode?: "srs" | "all_in_one" | undefined;
 }, {
     dueCardsNumPerDay?: number | undefined;
     newCardsNumPerDay?: number | undefined;
     zenMode?: boolean | undefined;
     shuffleNewCards?: boolean | undefined;
+    learningMode?: "srs" | "all_in_one" | undefined;
 }>;
 export type DeckSettings = z.infer<typeof DeckSettingsSchema>;
 /**
@@ -161,20 +169,20 @@ export declare const DailyStatsSchema: z.ZodObject<{
     completedDueToday: z.ZodNumber;
     lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
 }, "strict", z.ZodTypeAny, {
+    newCardsRemaining: number;
+    dueCardsRemaining: number;
+    inProgressDueCards: number;
+    inProgressNewCards: number;
     completedNewToday: number;
     completedDueToday: number;
     lastUpdatedStats: Date;
+}, {
     newCardsRemaining: number;
     dueCardsRemaining: number;
     inProgressDueCards: number;
     inProgressNewCards: number;
-}, {
     completedNewToday: number;
     completedDueToday: number;
-    newCardsRemaining: number;
-    dueCardsRemaining: number;
-    inProgressDueCards: number;
-    inProgressNewCards: number;
     lastUpdatedStats?: unknown;
 }>;
 export type DailyStats = z.infer<typeof DailyStatsSchema>;
@@ -188,33 +196,38 @@ export declare const DeckLearningCoreSchema: z.ZodObject<{
         newCardsNumPerDay: z.ZodOptional<z.ZodNumber>;
         zenMode: z.ZodDefault<z.ZodBoolean>;
         shuffleNewCards: z.ZodDefault<z.ZodBoolean>;
+        learningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
     }, "strict", z.ZodTypeAny, {
         zenMode: boolean;
         shuffleNewCards: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
+        learningMode?: "srs" | "all_in_one" | undefined;
     }, {
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         zenMode?: boolean | undefined;
         shuffleNewCards?: boolean | undefined;
+        learningMode?: "srs" | "all_in_one" | undefined;
     }>;
 }, "strict", z.ZodTypeAny, {
+    title: string;
     settings: {
         zenMode: boolean;
         shuffleNewCards: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
+        learningMode?: "srs" | "all_in_one" | undefined;
     };
-    title: string;
 }, {
+    title: string;
     settings: {
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         zenMode?: boolean | undefined;
         shuffleNewCards?: boolean | undefined;
+        learningMode?: "srs" | "all_in_one" | undefined;
     };
-    title: string;
 }>;
 export type DeckLearningCore = z.infer<typeof DeckLearningCoreSchema>;
 export declare const DeckLearningTimestampSchema: z.ZodObject<{
@@ -238,16 +251,16 @@ export declare const DeckLearningMetaSchema: z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     id: string;
     cardsNum: number;
-    tags?: string[] | null | undefined;
     category?: string | null | undefined;
     icon?: string | null | undefined;
+    tags?: string[] | null | undefined;
     isPublic?: boolean | null | undefined;
 }, {
     id: string;
     cardsNum: number;
-    tags?: string[] | null | undefined;
     category?: string | null | undefined;
     icon?: string | null | undefined;
+    tags?: string[] | null | undefined;
     isPublic?: boolean | null | undefined;
 }>;
 export type DeckLearningMeta = z.infer<typeof DeckLearningMetaSchema>;
@@ -265,16 +278,19 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
         newCardsNumPerDay: z.ZodOptional<z.ZodNumber>;
         zenMode: z.ZodDefault<z.ZodBoolean>;
         shuffleNewCards: z.ZodDefault<z.ZodBoolean>;
+        learningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
     }, "strict", z.ZodTypeAny, {
         zenMode: boolean;
         shuffleNewCards: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
+        learningMode?: "srs" | "all_in_one" | undefined;
     }, {
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         zenMode?: boolean | undefined;
         shuffleNewCards?: boolean | undefined;
+        learningMode?: "srs" | "all_in_one" | undefined;
     }>;
 } & {
     lastReviewDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
@@ -289,72 +305,74 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
         completedDueToday: z.ZodNumber;
         lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strict", z.ZodTypeAny, {
+        newCardsRemaining: number;
+        dueCardsRemaining: number;
+        inProgressDueCards: number;
+        inProgressNewCards: number;
         completedNewToday: number;
         completedDueToday: number;
         lastUpdatedStats: Date;
+    }, {
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
-    }, {
         completedNewToday: number;
         completedDueToday: number;
-        newCardsRemaining: number;
-        dueCardsRemaining: number;
-        inProgressDueCards: number;
-        inProgressNewCards: number;
         lastUpdatedStats?: unknown;
     }>>>;
 }, "strict", z.ZodTypeAny, {
     id: string;
+    title: string;
+    updatedAt: Date;
+    cardsNum: number;
     settings: {
         zenMode: boolean;
         shuffleNewCards: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
+        learningMode?: "srs" | "all_in_one" | undefined;
     };
-    updatedAt: Date;
-    title: string;
-    cardsNum: number;
+    category?: string | null | undefined;
+    icon?: string | null | undefined;
+    tags?: string[] | null | undefined;
+    isPublic?: boolean | null | undefined;
+    lastReviewDate?: Date | undefined;
     dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
-        lastUpdatedStats: Date;
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
     } | null | undefined;
-    tags?: string[] | null | undefined;
-    category?: string | null | undefined;
-    icon?: string | null | undefined;
-    isPublic?: boolean | null | undefined;
-    lastReviewDate?: Date | undefined;
 }, {
     id: string;
+    title: string;
+    cardsNum: number;
     settings: {
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         zenMode?: boolean | undefined;
         shuffleNewCards?: boolean | undefined;
+        learningMode?: "srs" | "all_in_one" | undefined;
     };
-    title: string;
-    cardsNum: number;
+    category?: string | null | undefined;
+    icon?: string | null | undefined;
+    tags?: string[] | null | undefined;
+    isPublic?: boolean | null | undefined;
     updatedAt?: unknown;
+    lastReviewDate?: unknown;
     dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
+        completedNewToday: number;
+        completedDueToday: number;
         lastUpdatedStats?: unknown;
     } | null | undefined;
-    tags?: string[] | null | undefined;
-    category?: string | null | undefined;
-    icon?: string | null | undefined;
-    isPublic?: boolean | null | undefined;
-    lastReviewDate?: unknown;
 }>;
 export type DeckLearningData = z.infer<typeof DeckLearningDataSchema>;
 /**
@@ -370,18 +388,18 @@ export declare const DeckCoreUpdateSchema: z.ZodObject<{
     frontLanguage: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
     backLanguage: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
 }, "strict", z.ZodTypeAny, {
-    tags?: string[] | undefined;
     title?: string | undefined;
     category?: string | null | undefined;
     icon?: string | undefined;
+    tags?: string[] | undefined;
     isPublic?: boolean | undefined;
     frontLanguage?: string | null | undefined;
     backLanguage?: string | null | undefined;
 }, {
-    tags?: string[] | undefined;
     title?: string | undefined;
     category?: string | null | undefined;
     icon?: string | undefined;
+    tags?: string[] | undefined;
     isPublic?: boolean | undefined;
     frontLanguage?: string | null | undefined;
     backLanguage?: string | null | undefined;
@@ -395,16 +413,19 @@ export declare const DeckSettingsUpdateSchema: z.ZodObject<{
     newCardsNumPerDay: z.ZodOptional<z.ZodOptional<z.ZodNumber>>;
     zenMode: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
     shuffleNewCards: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
+    learningMode: z.ZodOptional<z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>>;
 }, "strict", z.ZodTypeAny, {
     dueCardsNumPerDay?: number | undefined;
     newCardsNumPerDay?: number | undefined;
     zenMode?: boolean | undefined;
     shuffleNewCards?: boolean | undefined;
+    learningMode?: "srs" | "all_in_one" | undefined;
 }, {
     dueCardsNumPerDay?: number | undefined;
     newCardsNumPerDay?: number | undefined;
     zenMode?: boolean | undefined;
     shuffleNewCards?: boolean | undefined;
+    learningMode?: "srs" | "all_in_one" | undefined;
 }>;
 export type DeckSettingsUpdate = z.infer<typeof DeckSettingsUpdateSchema>;
 /**
@@ -422,23 +443,23 @@ export declare const DeckUpdateSchema: z.ZodObject<{
 } & {
     updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
 }, "strict", z.ZodTypeAny, {
+    title?: string | undefined;
+    category?: string | null | undefined;
+    icon?: string | undefined;
+    tags?: string[] | undefined;
+    isPublic?: boolean | undefined;
+    frontLanguage?: string | null | undefined;
+    backLanguage?: string | null | undefined;
     updatedAt?: Date | undefined;
-    tags?: string[] | undefined;
-    title?: string | undefined;
-    category?: string | null | undefined;
-    icon?: string | undefined;
-    isPublic?: boolean | undefined;
-    frontLanguage?: string | null | undefined;
-    backLanguage?: string | null | undefined;
 }, {
-    updatedAt?: unknown;
-    tags?: string[] | undefined;
     title?: string | undefined;
     category?: string | null | undefined;
     icon?: string | undefined;
+    tags?: string[] | undefined;
     isPublic?: boolean | undefined;
     frontLanguage?: string | null | undefined;
     backLanguage?: string | null | undefined;
+    updatedAt?: unknown;
 }>;
 export type DeckUpdate = z.infer<typeof DeckUpdateSchema>;
 /**
@@ -451,16 +472,19 @@ export declare const DeckLearningDataUpdateSchema: z.ZodObject<{
         newCardsNumPerDay: z.ZodOptional<z.ZodNumber>;
         zenMode: z.ZodDefault<z.ZodBoolean>;
         shuffleNewCards: z.ZodDefault<z.ZodBoolean>;
+        learningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
     }, "strict", z.ZodTypeAny, {
         zenMode: boolean;
         shuffleNewCards: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
+        learningMode?: "srs" | "all_in_one" | undefined;
     }, {
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         zenMode?: boolean | undefined;
         shuffleNewCards?: boolean | undefined;
+        learningMode?: "srs" | "all_in_one" | undefined;
     }>>;
 } & {
     lastReviewDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
@@ -473,58 +497,60 @@ export declare const DeckLearningDataUpdateSchema: z.ZodObject<{
         completedDueToday: z.ZodNumber;
         lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strict", z.ZodTypeAny, {
+        newCardsRemaining: number;
+        dueCardsRemaining: number;
+        inProgressDueCards: number;
+        inProgressNewCards: number;
         completedNewToday: number;
         completedDueToday: number;
         lastUpdatedStats: Date;
+    }, {
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
-    }, {
         completedNewToday: number;
         completedDueToday: number;
-        newCardsRemaining: number;
-        dueCardsRemaining: number;
-        inProgressDueCards: number;
-        inProgressNewCards: number;
         lastUpdatedStats?: unknown;
     }>>>;
 }, "strict", z.ZodTypeAny, {
+    title?: string | undefined;
     settings?: {
         zenMode: boolean;
         shuffleNewCards: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
+        learningMode?: "srs" | "all_in_one" | undefined;
     } | undefined;
+    lastReviewDate?: Date | undefined;
     dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
-        lastUpdatedStats: Date;
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
     } | null | undefined;
-    title?: string | undefined;
-    lastReviewDate?: Date | undefined;
 }, {
+    title?: string | undefined;
     settings?: {
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         zenMode?: boolean | undefined;
         shuffleNewCards?: boolean | undefined;
+        learningMode?: "srs" | "all_in_one" | undefined;
     } | undefined;
+    lastReviewDate?: unknown;
     dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
+        completedNewToday: number;
+        completedDueToday: number;
         lastUpdatedStats?: unknown;
     } | null | undefined;
-    title?: string | undefined;
-    lastReviewDate?: unknown;
 }>;
 export type DeckLearningDataUpdate = z.infer<typeof DeckLearningDataUpdateSchema>;
 /**

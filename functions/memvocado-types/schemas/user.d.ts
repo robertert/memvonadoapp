@@ -41,6 +41,7 @@ export declare const UserSettingsSchema: z.ZodObject<{
     dailyNew: z.ZodOptional<z.ZodNumber>;
     language: z.ZodDefault<z.ZodString>;
     timeZone: z.ZodDefault<z.ZodString>;
+    defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
 }, "strict", z.ZodTypeAny, {
     theme: "light" | "dark";
     notificationsEnabled: boolean;
@@ -48,6 +49,7 @@ export declare const UserSettingsSchema: z.ZodObject<{
     language: string;
     timeZone: string;
     dailyNew?: number | undefined;
+    defaultLearningMode?: "srs" | "all_in_one" | undefined;
 }, {
     theme?: "light" | "dark" | undefined;
     notificationsEnabled?: boolean | undefined;
@@ -55,6 +57,7 @@ export declare const UserSettingsSchema: z.ZodObject<{
     dailyNew?: number | undefined;
     language?: string | undefined;
     timeZone?: string | undefined;
+    defaultLearningMode?: "srs" | "all_in_one" | undefined;
 }>;
 export type UserSettings = z.infer<typeof UserSettingsSchema>;
 /**
@@ -70,6 +73,7 @@ export declare const UserCoreSchema: z.ZodObject<{
         dailyNew: z.ZodOptional<z.ZodNumber>;
         language: z.ZodDefault<z.ZodString>;
         timeZone: z.ZodDefault<z.ZodString>;
+        defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
     }, "strict", z.ZodTypeAny, {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
@@ -77,6 +81,7 @@ export declare const UserCoreSchema: z.ZodObject<{
         language: string;
         timeZone: string;
         dailyNew?: number | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }, {
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
@@ -84,10 +89,9 @@ export declare const UserCoreSchema: z.ZodObject<{
         dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }>;
 }, "strict", z.ZodTypeAny, {
-    username: string;
-    email: string;
     settings: {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
@@ -95,10 +99,11 @@ export declare const UserCoreSchema: z.ZodObject<{
         language: string;
         timeZone: string;
         dailyNew?: number | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     };
-}, {
     username: string;
     email: string;
+}, {
     settings: {
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
@@ -106,7 +111,10 @@ export declare const UserCoreSchema: z.ZodObject<{
         dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     };
+    username: string;
+    email: string;
 }>;
 export type UserCore = z.infer<typeof UserCoreSchema>;
 export declare const UserTimestampSchema: z.ZodObject<{
@@ -266,6 +274,11 @@ export declare const UserMetaSchema: z.ZodObject<{
     followingCount: number;
     followersCount: number;
     interests: string[];
+    dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
+    } | null | undefined;
     avocadoGrowth?: {
         currentPhase: number;
         consecutiveDays: number;
@@ -282,11 +295,6 @@ export declare const UserMetaSchema: z.ZodObject<{
         }[];
         lastGrowthDate?: Date | null | undefined;
     } | null | undefined;
-    dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
-        lastUpdatedStats: Date;
-    } | null | undefined;
     profileCompleted?: boolean | undefined;
 }, {
     id: string;
@@ -301,6 +309,11 @@ export declare const UserMetaSchema: z.ZodObject<{
         lastStreakDate?: unknown;
         lastStudyDate?: unknown;
     };
+    dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats?: unknown;
+    } | null | undefined;
     league?: number | undefined;
     experiencePoints?: number | undefined;
     currencyCount?: number | undefined;
@@ -320,11 +333,6 @@ export declare const UserMetaSchema: z.ZodObject<{
             harvestedAt?: unknown;
         }[] | undefined;
     } | null | undefined;
-    dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
-        lastUpdatedStats?: unknown;
-    } | null | undefined;
     followingCount?: number | undefined;
     followersCount?: number | undefined;
     profileCompleted?: boolean | undefined;
@@ -341,6 +349,7 @@ export declare const UserSchema: z.ZodObject<{
         dailyNew: z.ZodOptional<z.ZodNumber>;
         language: z.ZodDefault<z.ZodString>;
         timeZone: z.ZodDefault<z.ZodString>;
+        defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
     }, "strict", z.ZodTypeAny, {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
@@ -348,6 +357,7 @@ export declare const UserSchema: z.ZodObject<{
         language: string;
         timeZone: string;
         dailyNew?: number | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }, {
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
@@ -355,6 +365,7 @@ export declare const UserSchema: z.ZodObject<{
         dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     }>;
 } & {
     id: z.ZodString;
@@ -474,8 +485,8 @@ export declare const UserSchema: z.ZodObject<{
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
 }, "strict", z.ZodTypeAny, {
     id: string;
-    username: string;
-    email: string;
+    createdAt: Date;
+    updatedAt: Date;
     settings: {
         theme: "light" | "dark";
         notificationsEnabled: boolean;
@@ -483,9 +494,10 @@ export declare const UserSchema: z.ZodObject<{
         language: string;
         timeZone: string;
         dailyNew?: number | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     };
-    createdAt: Date;
-    updatedAt: Date;
+    username: string;
+    email: string;
     league: number;
     currentGroupId: string | null;
     experiencePoints: number;
@@ -503,6 +515,11 @@ export declare const UserSchema: z.ZodObject<{
     followingCount: number;
     followersCount: number;
     interests: string[];
+    dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
+    } | null | undefined;
     avocadoGrowth?: {
         currentPhase: number;
         consecutiveDays: number;
@@ -519,16 +536,9 @@ export declare const UserSchema: z.ZodObject<{
         }[];
         lastGrowthDate?: Date | null | undefined;
     } | null | undefined;
-    dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
-        lastUpdatedStats: Date;
-    } | null | undefined;
     profileCompleted?: boolean | undefined;
 }, {
     id: string;
-    username: string;
-    email: string;
     settings: {
         theme?: "light" | "dark" | undefined;
         notificationsEnabled?: boolean | undefined;
@@ -536,7 +546,10 @@ export declare const UserSchema: z.ZodObject<{
         dailyNew?: number | undefined;
         language?: string | undefined;
         timeZone?: string | undefined;
+        defaultLearningMode?: "srs" | "all_in_one" | undefined;
     };
+    username: string;
+    email: string;
     currentGroupId: string | null;
     stats: {
         totalCards?: number | undefined;
@@ -550,6 +563,11 @@ export declare const UserSchema: z.ZodObject<{
     };
     createdAt?: unknown;
     updatedAt?: unknown;
+    dailyStats?: {
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats?: unknown;
+    } | null | undefined;
     league?: number | undefined;
     experiencePoints?: number | undefined;
     currencyCount?: number | undefined;
@@ -568,11 +586,6 @@ export declare const UserSchema: z.ZodObject<{
             skinId: string;
             harvestedAt?: unknown;
         }[] | undefined;
-    } | null | undefined;
-    dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
-        lastUpdatedStats?: unknown;
     } | null | undefined;
     followingCount?: number | undefined;
     followersCount?: number | undefined;

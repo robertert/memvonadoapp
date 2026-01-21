@@ -12,12 +12,12 @@ export declare const getDeckDetails: import("firebase-functions/v2/https").Calla
     username: string;
     deck: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        tags: string[];
         title: string;
         icon: string;
+        tags: string[];
         isPublic: boolean;
+        createdAt: Date;
+        updatedAt: Date;
         views: number;
         likes: number;
         cardsNum: number;
@@ -35,12 +35,12 @@ export declare const getDeckDetails: import("firebase-functions/v2/https").Calla
 export declare const getDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     cards: {
         id: string;
+        tags: string[];
         createdAt: Date;
         cardData: {
             front: string;
             back: string;
         };
-        tags: string[];
         firstLearn: {
             isNew: boolean;
             due?: Date | undefined;
@@ -71,12 +71,12 @@ export declare const getDeckCards: import("firebase-functions/v2/https").Callabl
 export declare const getPopularDecks: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     decks: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        tags: string[];
         title: string;
         icon: string;
+        tags: string[];
         isPublic: boolean;
+        createdAt: Date;
+        updatedAt: Date;
         views: number;
         likes: number;
         cardsNum: number;
@@ -94,41 +94,42 @@ export declare const getPopularDecks: import("firebase-functions/v2/https").Call
 export declare const getUserDeckDetails: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     deck: {
         id: string;
+        title: string;
+        updatedAt: Date;
+        cardsNum: number;
         settings: {
             zenMode: boolean;
             shuffleNewCards: boolean;
             dueCardsNumPerDay?: number | undefined;
             newCardsNumPerDay?: number | undefined;
+            learningMode?: "srs" | "all_in_one" | undefined;
         };
-        updatedAt: Date;
-        title: string;
-        cardsNum: number;
+        category?: string | null | undefined;
+        icon?: string | null | undefined;
+        tags?: string[] | null | undefined;
+        isPublic?: boolean | null | undefined;
+        lastReviewDate?: Date | undefined;
         dailyStats?: {
-            completedNewToday: number;
-            completedDueToday: number;
-            lastUpdatedStats: Date;
             newCardsRemaining: number;
             dueCardsRemaining: number;
             inProgressDueCards: number;
             inProgressNewCards: number;
+            completedNewToday: number;
+            completedDueToday: number;
+            lastUpdatedStats: Date;
         } | null | undefined;
-        tags?: string[] | null | undefined;
-        category?: string | null | undefined;
-        icon?: string | null | undefined;
-        isPublic?: boolean | null | undefined;
-        lastReviewDate?: Date | undefined;
     } | null;
     createdDeck: boolean;
 }>, unknown>;
 export declare const getUserDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     cards: {
         id: string;
+        tags: string[];
         createdAt: Date;
         cardData: {
             front: string;
             back: string;
         };
-        tags: string[];
         firstLearn: {
             isNew: boolean;
             due?: Date | undefined;
@@ -156,12 +157,12 @@ export declare const getUserDeckCards: import("firebase-functions/v2/https").Cal
 export declare const getUserDueDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     cards: {
         id: string;
+        tags: string[];
         createdAt: Date;
         cardData: {
             front: string;
             back: string;
         };
-        tags: string[];
         firstLearn: {
             isNew: boolean;
             due?: Date | undefined;
@@ -186,24 +187,24 @@ export declare const getUserDueDeckCards: import("firebase-functions/v2/https").
 }>, unknown>;
 export declare const getDeckDailyStats: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     dailyStats: {
-        completedNewToday: number;
-        completedDueToday: number;
-        lastUpdatedStats: Date;
         newCardsRemaining: number;
         dueCardsRemaining: number;
         inProgressDueCards: number;
         inProgressNewCards: number;
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
     } | null;
 }>, unknown>;
 export declare const getUserNewDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     cards: {
         id: string;
+        tags: string[];
         createdAt: Date;
         cardData: {
             front: string;
             back: string;
         };
-        tags: string[];
         firstLearn: {
             isNew: boolean;
             due?: Date | undefined;
@@ -227,23 +228,14 @@ export declare const getUserNewDeckCards: import("firebase-functions/v2/https").
     }[];
 }>, unknown>;
 export declare const startLearningSession: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    dailyStats: {
-        completedNewToday: number;
-        completedDueToday: number;
-        lastUpdatedStats: Date;
-        newCardsRemaining: number;
-        dueCardsRemaining: number;
-        inProgressDueCards: number;
-        inProgressNewCards: number;
-    };
     cards: {
         id: string;
+        tags: string[];
         createdAt: Date;
         cardData: {
             front: string;
             back: string;
         };
-        tags: string[];
         firstLearn: {
             isNew: boolean;
             due?: Date | undefined;
@@ -265,31 +257,41 @@ export declare const startLearningSession: import("firebase-functions/v2/https")
         grade?: import("memvocado-types/schemas/card").CardGrade | undefined;
         hasChanges?: boolean | undefined;
     }[];
+    dailyStats: {
+        newCardsRemaining: number;
+        dueCardsRemaining: number;
+        inProgressDueCards: number;
+        inProgressNewCards: number;
+        completedNewToday: number;
+        completedDueToday: number;
+        lastUpdatedStats: Date;
+    };
     deck: {
         id: string;
+        title: string;
+        updatedAt: Date;
+        cardsNum: number;
         settings: {
             zenMode: boolean;
             shuffleNewCards: boolean;
             dueCardsNumPerDay?: number | undefined;
             newCardsNumPerDay?: number | undefined;
+            learningMode?: "srs" | "all_in_one" | undefined;
         };
-        updatedAt: Date;
-        title: string;
-        cardsNum: number;
+        category?: string | null | undefined;
+        icon?: string | null | undefined;
+        tags?: string[] | null | undefined;
+        isPublic?: boolean | null | undefined;
+        lastReviewDate?: Date | undefined;
         dailyStats?: {
-            completedNewToday: number;
-            completedDueToday: number;
-            lastUpdatedStats: Date;
             newCardsRemaining: number;
             dueCardsRemaining: number;
             inProgressDueCards: number;
             inProgressNewCards: number;
+            completedNewToday: number;
+            completedDueToday: number;
+            lastUpdatedStats: Date;
         } | null | undefined;
-        tags?: string[] | null | undefined;
-        category?: string | null | undefined;
-        icon?: string | null | undefined;
-        isPublic?: boolean | null | undefined;
-        lastReviewDate?: Date | undefined;
     };
 }>, unknown>;
 /**
@@ -346,29 +348,30 @@ export declare const startLearningDeck: import("firebase-functions/v2/https").Ca
     success: boolean;
     deck: {
         id: string;
+        title: string;
+        updatedAt: Date;
+        cardsNum: number;
         settings: {
             zenMode: boolean;
             shuffleNewCards: boolean;
             dueCardsNumPerDay?: number | undefined;
             newCardsNumPerDay?: number | undefined;
+            learningMode?: "srs" | "all_in_one" | undefined;
         };
-        updatedAt: Date;
-        title: string;
-        cardsNum: number;
+        category?: string | null | undefined;
+        icon?: string | null | undefined;
+        tags?: string[] | null | undefined;
+        isPublic?: boolean | null | undefined;
+        lastReviewDate?: Date | undefined;
         dailyStats?: {
-            completedNewToday: number;
-            completedDueToday: number;
-            lastUpdatedStats: Date;
             newCardsRemaining: number;
             dueCardsRemaining: number;
             inProgressDueCards: number;
             inProgressNewCards: number;
+            completedNewToday: number;
+            completedDueToday: number;
+            lastUpdatedStats: Date;
         } | null | undefined;
-        tags?: string[] | null | undefined;
-        category?: string | null | undefined;
-        icon?: string | null | undefined;
-        isPublic?: boolean | null | undefined;
-        lastReviewDate?: Date | undefined;
     };
 }>, unknown>;
 /**

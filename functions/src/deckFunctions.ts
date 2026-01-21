@@ -473,10 +473,9 @@ export const getUserDeckCards = onCall(async (request) => {
     }
 
     // Get source deck cards with pagination
-    const sourceDeckRef = db.collection("decks").doc(deckId);
-    let query = sourceDeckRef.collection("cards").limit(limit);
+    let query = userDeckRef.collection("cards").limit(limit);
     if (startAfter && typeof startAfter === "string") {
-      const startAfterDoc = await sourceDeckRef
+      const startAfterDoc = await userDeckRef
         .collection("cards")
         .doc(startAfter)
         .get();
@@ -486,22 +485,25 @@ export const getUserDeckCards = onCall(async (request) => {
     }
     const cardsSnap = await query.get();
 
-    // Join with progress
-    const cards = await joinCardsWithProgress(userId, deckId, cardsSnap.docs);
-
     // Check if there are more cards
     let hasMore = false;
     if (cardsSnap.docs.length === limit) {
       const lastDoc = cardsSnap.docs[cardsSnap.docs.length - 1];
-      const nextQuery = sourceDeckRef
+      const nextQuery = userDeckRef
         .collection("cards")
         .startAfter(lastDoc)
         .limit(1);
       const nextSnap = await nextQuery.get();
       hasMore = nextSnap.docs.length > 0;
     }
+    const validatedCards = cardsSnap.docs.map((doc) =>
+      CardSchema.parse({
+        id: doc.id,
+        ...doc.data(),
+      })
+    );
     const response = {
-      cards,
+      cards: validatedCards as Card[],
       hasMore,
       lastDocId:
         cardsSnap.docs.length > 0
@@ -519,106 +521,6 @@ export const getUserDeckCards = onCall(async (request) => {
     throw new HttpsError("internal", "Failed to get user deck cards");
   }
 });
-
-/**
- * Helper: Join card content from source deck with user progress (lazy)
- * Also includes cards that exist only in user's local copy (deleted from source)
- * @param {string} userId - User ID
- * @param {string} deckId - Deck ID
- * @param {FirebaseFirestore.QueryDocumentSnapshot[]} sourceCards - Source card documents
- * @return {Promise<any[]>} Joined cards with progress
- */
-async function joinCardsWithProgress(
-  userId: string,
-  deckId: string,
-  sourceCards: FirebaseFirestore.QueryDocumentSnapshot[]
-): Promise<Card[]> {
-  const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
-  const userCardsRef = userDeckRef.collection("cards");
-
-  // Get all user's local cards (for deep copy and deleted cards)
-  const userCardsSnap = await userCardsRef.get();
-  const userCardsMap = new Map(
-    userCardsSnap.docs.map((doc) => {
-      const rawData = doc.data();
-      const validatedData = CardSchema.parse({
-        id: doc.id,
-        ...rawData,
-      });
-      return [doc.id, validatedData];
-    })
-  );
-
-  // Create map of source card IDs for quick lookup
-  const sourceCardIds = new Set(sourceCards.map((doc) => doc.id));
-
-  const result: Card[] = [];
-
-  // Process source cards (use source content, user's progress)
-  for (const cardDoc of sourceCards) {
-    const rawCardData = cardDoc.data();
-    const validatedCardData = CardSchema.parse({
-      id: cardDoc.id,
-      ...rawCardData,
-    });
-    const userCardData = userCardsMap.get(cardDoc.id);
-    const progress = userCardData || null;
-
-    // Default progress for new cards (lazy - not created yet)
-    const defaultFirstLearn = {
-      isNew: true,
-    } as FirstLearn;
-
-    const card: Card = {
-      id: cardDoc.id,
-      cardData: {
-        front: validatedCardData.cardData.front || "",
-        back: validatedCardData.cardData.back || "",
-      },
-      createdAt: validatedCardData.createdAt || new Date(),
-      tags: validatedCardData.tags || [],
-      cardAlgo: progress?.cardAlgo || undefined,
-      firstLearn: progress?.firstLearn || defaultFirstLearn,
-      // Flag to indicate if content differs from local copy
-      hasChanges: progress
-        ? progress.cardData.front !== validatedCardData.cardData.front ||
-          progress.cardData.back !== validatedCardData.cardData.back ||
-          JSON.stringify(progress.tags || []) !==
-            JSON.stringify(validatedCardData.tags || [])
-        : false,
-    };
-
-    const validatedCard = CardSchema.parse(card);
-    result.push(validatedCard);
-  }
-
-  // Add cards that exist only in user's local copy (deleted from source)
-  for (const [cardId, userCardData] of userCardsMap.entries()) {
-    if (!sourceCardIds.has(cardId)) {
-      // Card was deleted from source, use local copy
-
-      const card: Card = {
-        id: cardId,
-        cardData: {
-          front: userCardData.cardData.front || "",
-          back: userCardData.cardData.back || "",
-        },
-        tags: Array.isArray(userCardData.tags) ? userCardData.tags : [],
-        cardAlgo: userCardData.cardAlgo || undefined,
-        firstLearn: userCardData.firstLearn || {
-          isNew: true,
-        },
-        createdAt: userCardData.createdAt || new Date(),
-        hasChanges: true, // Flag indicating this card is from local copy only
-      };
-
-      const validatedCard = CardSchema.parse(card);
-      result.push(validatedCard);
-    }
-  }
-
-  return result;
-}
 
 /**
  * @param {string} userId

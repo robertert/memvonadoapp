@@ -6,12 +6,12 @@ export declare const SearchDecksRequestSchema: z.ZodObject<{
         author: z.ZodOptional<z.ZodString>;
         tags: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     }, "strict", z.ZodTypeAny, {
-        tags?: string[] | undefined;
         category?: string | undefined;
+        tags?: string[] | undefined;
         author?: string | undefined;
     }, {
-        tags?: string[] | undefined;
         category?: string | undefined;
+        tags?: string[] | undefined;
         author?: string | undefined;
     }>>;
     userId: z.ZodOptional<z.ZodString>;
@@ -20,8 +20,8 @@ export declare const SearchDecksRequestSchema: z.ZodObject<{
     userId?: string | undefined;
     searchText?: string | undefined;
     filters?: {
-        tags?: string[] | undefined;
         category?: string | undefined;
+        tags?: string[] | undefined;
         author?: string | undefined;
     } | undefined;
     limit?: number | undefined;
@@ -29,8 +29,8 @@ export declare const SearchDecksRequestSchema: z.ZodObject<{
     userId?: string | undefined;
     searchText?: string | undefined;
     filters?: {
-        tags?: string[] | undefined;
         category?: string | undefined;
+        tags?: string[] | undefined;
         author?: string | undefined;
     } | undefined;
     limit?: number | undefined;
@@ -66,12 +66,12 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strict", z.ZodTypeAny, {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        tags: string[];
         title: string;
         icon: string;
+        tags: string[];
         isPublic: boolean;
+        createdAt: Date;
+        updatedAt: Date;
         views: number;
         likes: number;
         cardsNum: number;
@@ -87,13 +87,13 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
         isPublic: boolean;
         cardsNum: number;
         createdBy: string;
-        createdAt?: unknown;
-        updatedAt?: unknown;
-        tags?: string[] | undefined;
         category?: string | null | undefined;
         icon?: string | undefined;
+        tags?: string[] | undefined;
         frontLanguage?: string | null | undefined;
         backLanguage?: string | null | undefined;
+        createdAt?: unknown;
+        updatedAt?: unknown;
         views?: number | undefined;
         likes?: number | undefined;
         is_deleted?: boolean | undefined;
@@ -103,12 +103,12 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     results: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        tags: string[];
         title: string;
         icon: string;
+        tags: string[];
         isPublic: boolean;
+        createdAt: Date;
+        updatedAt: Date;
         views: number;
         likes: number;
         cardsNum: number;
@@ -127,13 +127,13 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
         isPublic: boolean;
         cardsNum: number;
         createdBy: string;
-        createdAt?: unknown;
-        updatedAt?: unknown;
-        tags?: string[] | undefined;
         category?: string | null | undefined;
         icon?: string | undefined;
+        tags?: string[] | undefined;
         frontLanguage?: string | null | undefined;
         backLanguage?: string | null | undefined;
+        createdAt?: unknown;
+        updatedAt?: unknown;
         views?: number | undefined;
         likes?: number | undefined;
         is_deleted?: boolean | undefined;
@@ -151,12 +151,12 @@ export declare const GetSearchLogsResponseSchema: z.ZodObject<{
             author: z.ZodOptional<z.ZodString>;
             tags: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         }, "strict", z.ZodTypeAny, {
-            tags?: string[] | undefined;
             category?: string | undefined;
+            tags?: string[] | undefined;
             author?: string | undefined;
         }, {
-            tags?: string[] | undefined;
             category?: string | undefined;
+            tags?: string[] | undefined;
             author?: string | undefined;
         }>;
         resultsCount: z.ZodNumber;
@@ -167,8 +167,8 @@ export declare const GetSearchLogsResponseSchema: z.ZodObject<{
         id: string;
         searchText: string;
         filters: {
-            tags?: string[] | undefined;
             category?: string | undefined;
+            tags?: string[] | undefined;
             author?: string | undefined;
         };
         resultsCount: number;
@@ -178,8 +178,8 @@ export declare const GetSearchLogsResponseSchema: z.ZodObject<{
         id: string;
         searchText: string;
         filters: {
-            tags?: string[] | undefined;
             category?: string | undefined;
+            tags?: string[] | undefined;
             author?: string | undefined;
         };
         resultsCount: number;
@@ -191,8 +191,8 @@ export declare const GetSearchLogsResponseSchema: z.ZodObject<{
         id: string;
         searchText: string;
         filters: {
-            tags?: string[] | undefined;
             category?: string | undefined;
+            tags?: string[] | undefined;
             author?: string | undefined;
         };
         resultsCount: number;
@@ -204,8 +204,8 @@ export declare const GetSearchLogsResponseSchema: z.ZodObject<{
         id: string;
         searchText: string;
         filters: {
-            tags?: string[] | undefined;
             category?: string | undefined;
+            tags?: string[] | undefined;
             author?: string | undefined;
         };
         resultsCount: number;

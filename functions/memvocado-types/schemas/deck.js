@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LikedDeckSchema = exports.DeckViewerSchema = exports.DeckLearningDataUpdateSchema = exports.DeckUpdateSchema = exports.DeckSettingsUpdateSchema = exports.DeckCoreUpdateSchema = exports.DeckLearningDataSchema = exports.DeckLearningMetaSchema = exports.DeckLearningTimestampSchema = exports.DeckLearningCoreSchema = exports.DailyStatsSchema = exports.DeckSettingsSchema = exports.DeckSchema = exports.DeckMetaSchema = exports.DeckTimestampSchema = exports.DeckCoreSchema = void 0;
+exports.LikedDeckSchema = exports.DeckViewerSchema = exports.DeckLearningDataUpdateSchema = exports.DeckUpdateSchema = exports.DeckSettingsUpdateSchema = exports.DeckCoreUpdateSchema = exports.DeckLearningDataSchema = exports.DeckLearningMetaSchema = exports.DeckLearningTimestampSchema = exports.DeckLearningCoreSchema = exports.DailyStatsSchema = exports.DeckSettingsSchema = exports.LearningModeSchema = exports.DeckSchema = exports.DeckMetaSchema = exports.DeckTimestampSchema = exports.DeckCoreSchema = void 0;
 const zod_1 = require("zod");
 const base_1 = require("./base");
 /**
@@ -50,6 +50,10 @@ exports.DeckSchema = exports.DeckCoreSchema.merge(exports.DeckMetaSchema)
 // Deck Learning Data
 ////////////////////////////////////////////////////////////
 /**
+ * Learning mode for a deck
+ */
+exports.LearningModeSchema = zod_1.z.enum(["srs", "all_in_one"]);
+/**
  * Ustawienia talii kart
  */
 exports.DeckSettingsSchema = zod_1.z
@@ -58,6 +62,7 @@ exports.DeckSettingsSchema = zod_1.z
     newCardsNumPerDay: zod_1.z.number().min(0).optional(),
     zenMode: zod_1.z.boolean().default(false),
     shuffleNewCards: zod_1.z.boolean().default(false),
+    learningMode: exports.LearningModeSchema.optional(), // undefined = never selected
 })
     .strict();
 /**

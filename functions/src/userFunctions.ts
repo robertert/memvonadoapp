@@ -282,11 +282,12 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
     const yesterdayYmd = formatYmdInTimeZone(yesterdayDate, tz);
 
     // Sprawdzamy, kiedy ostatnio streak był aktualizowany
-    const lastStreakDate = stats.lastStreakDate;
+    const lastStreakDate = stats.lastStreakDate.seconds ? new Date(stats.lastStreakDate.seconds * 1000) : null;
 
     const lastStreakYmd = lastStreakDate
       ? formatYmdInTimeZone(lastStreakDate, tz)
       : null;
+
 
     // LOGIKA RESETU:
 

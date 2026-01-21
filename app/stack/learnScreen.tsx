@@ -1,5 +1,5 @@
 // React and React Native imports
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Pressable, Text, View, ActivityIndicator } from "react-native";
 
 // Third-party library imports
@@ -29,11 +29,13 @@ import SwipeIndicators from "../../components/learnScreen/SwipeIndicators";
 import ProgressBar from "../../components/learnScreen/ProgressBar";
 import BottomSheet from "../../components/learnScreen/BottomSheet";
 import Confetti from "../../components/learnScreen/Confetti";
+import AllInOneLearnScreen from "../../components/learnScreen/AllInOneLearnScreen";
 import { learnScreenStyles } from "./learnScreen.styles";
 import { Colors } from "../../constants/colors";
 import { BoltIcon, ArrowUturnLeftIcon } from "react-native-heroicons/solid";
-import { Card } from "@/types";
+import { Card, LearningMode } from "@/types";
 import { calculateDailyStatsProgress } from "@/constants/dailyStats";
+import { cloudFunctions } from "../../services/cloudFunctions";
 
 /**
  * Main learning screen component for flashcard learning with gesture-based interactions
@@ -43,6 +45,72 @@ export default function learnScreen(): React.JSX.Element {
   const params = useLocalSearchParams();
   const typedParams = params as unknown as LearnScreenParams;
   const id = typedParams.deckId;
+  const safeArea = useSafeAreaInsets();
+  const screenDimensions = Dimensions.get("window");
+
+  // Learning mode state
+  const [learningMode, setLearningMode] = useState<LearningMode | null>(null);
+  const [isLoadingMode, setIsLoadingMode] = useState<boolean>(true);
+
+  // Fetch learning mode on mount
+  useEffect(() => {
+    async function fetchLearningMode() {
+      try {
+        const { deck } = await cloudFunctions.getUserDeckDetails(id);
+        setLearningMode(deck?.settings?.learningMode ?? "srs");
+      } catch (error) {
+        console.error("Error fetching learning mode:", error);
+        setLearningMode("srs"); // Default to SRS on error
+      } finally {
+        setIsLoadingMode(false);
+      }
+    }
+    fetchLearningMode();
+  }, [id]);
+
+  // If still loading mode, show loading screen
+  if (isLoadingMode) {
+    return (
+      <LinearGradient
+        start={{ x: 0, y: 0 }}
+        style={learnScreenStyles.background}
+        colors={[Colors.primary_100, Colors.primary_100]}
+      >
+        <GestureHandlerRootView
+          style={[
+            learnScreenStyles.container,
+            { paddingTop: safeArea.top + 8 },
+          ]}
+        >
+          <View
+            style={{
+              flex: 1,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: Colors.primary_100,
+            }}
+          >
+            <ActivityIndicator size={"large"} color={Colors.primary_700} />
+          </View>
+        </GestureHandlerRootView>
+      </LinearGradient>
+    );
+  }
+
+  // If All in One mode, render the dedicated component
+  if (learningMode === "all_in_one") {
+    return <AllInOneLearnScreen deckId={id} />;
+  }
+
+  // Otherwise render SRS mode (existing implementation)
+  return <SRSLearnScreen deckId={id} />;
+}
+
+/**
+ * SRS Learning Screen Component - the original implementation
+ */
+function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
+  const id = deckId;
   const safeArea = useSafeAreaInsets();
   const screenDimensions = Dimensions.get("window");
 

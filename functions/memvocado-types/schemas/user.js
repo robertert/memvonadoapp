@@ -4,6 +4,7 @@ exports.FollowersArraySchema = exports.FollowersSchema = exports.FollowingArrayS
 const zod_1 = require("zod");
 const base_1 = require("./base");
 const avocado_1 = require("./avocado");
+const deck_1 = require("./deck");
 /**
  * Statystyki użytkownika
  */
@@ -28,6 +29,7 @@ exports.UserSettingsSchema = zod_1.z
     dailyNew: zod_1.z.number().min(0).optional(),
     language: zod_1.z.string().default("en"),
     timeZone: zod_1.z.string().default("UTC"),
+    defaultLearningMode: deck_1.LearningModeSchema.optional(), // user's preferred default
 })
     .strict();
 /**

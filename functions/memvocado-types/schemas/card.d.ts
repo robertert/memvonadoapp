@@ -52,11 +52,11 @@ export declare const CardCoreSchema: z.ZodObject<{
     }>;
     tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
 }, "strict", z.ZodTypeAny, {
+    tags: string[];
     cardData: {
         front: string;
         back: string;
     };
-    tags: string[];
 }, {
     cardData: {
         front: string;
@@ -312,12 +312,12 @@ export declare const CardSchema: z.ZodObject<{
     updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
 }, "strict", z.ZodTypeAny, {
     id: string;
+    tags: string[];
     createdAt: Date;
     cardData: {
         front: string;
         back: string;
     };
-    tags: string[];
     firstLearn: {
         isNew: boolean;
         due?: Date | undefined;
@@ -350,9 +350,9 @@ export declare const CardSchema: z.ZodObject<{
         isFirst?: boolean | undefined;
         consecutiveGood?: number | undefined;
     };
+    tags?: string[] | undefined;
     createdAt?: unknown;
     updatedAt?: unknown;
-    tags?: string[] | undefined;
     cardAlgo?: {
         difficulty: number;
         scheduled_days: number;
@@ -398,17 +398,17 @@ export declare const CardCoreUpdateSchema: z.ZodObject<{
     }>>;
     tags: z.ZodOptional<z.ZodDefault<z.ZodArray<z.ZodString, "many">>>;
 }, "strict", z.ZodTypeAny, {
+    tags?: string[] | undefined;
     cardData?: {
         front: string;
         back: string;
     } | undefined;
-    tags?: string[] | undefined;
 }, {
+    tags?: string[] | undefined;
     cardData?: {
         front: string;
         back: string;
     } | undefined;
-    tags?: string[] | undefined;
 }>;
 export type CardCoreUpdate = z.infer<typeof CardCoreUpdateSchema>;
 /**
@@ -624,11 +624,11 @@ export declare const CardUpdateSchema: z.ZodObject<{
     }>>;
     grade: z.ZodOptional<z.ZodOptional<z.ZodNativeEnum<typeof CardGrade>>>;
 }, "strict", z.ZodTypeAny, {
+    tags?: string[] | undefined;
     cardData?: {
         front: string;
         back: string;
     } | undefined;
-    tags?: string[] | undefined;
     cardAlgo?: {
         difficulty: number;
         scheduled_days: number;
@@ -648,11 +648,11 @@ export declare const CardUpdateSchema: z.ZodObject<{
     } | undefined;
     grade?: CardGrade | undefined;
 }, {
+    tags?: string[] | undefined;
     cardData?: {
         front: string;
         back: string;
     } | undefined;
-    tags?: string[] | undefined;
     cardAlgo?: {
         difficulty: number;
         scheduled_days: number;

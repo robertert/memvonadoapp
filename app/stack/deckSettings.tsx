@@ -19,7 +19,9 @@ import { ArrowLeftIcon } from "react-native-heroicons/solid";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "@/store/user-context";
-import type { Deck, DeckLearningData } from "@/types";
+import type { Deck, DeckLearningData, LearningMode } from "@/types";
+import { clearSession } from "@/utils/allInOneProgress";
+import { CalendarDaysIcon, BoltIcon } from "react-native-heroicons/solid";
 
 import {
   CATEGORY_OPTIONS,
@@ -129,6 +131,68 @@ export default function deckSettings(): React.JSX.Element {
     } finally {
       setIsResetting(false);
     }
+  }
+
+  async function handleModeChange(newMode: LearningMode): Promise<void> {
+    if (!deck) return;
+    if (newMode === deck.settings.learningMode) return;
+
+    if (newMode === "srs" && deck.settings.learningMode === "all_in_one") {
+      Alert.alert(
+        "Zmiana trybu",
+        "Twoja sesja All in One zostanie wyczyszczona. Postęp SRS pozostanie nienaruszony.",
+        [
+          { text: "Anuluj", style: "cancel" },
+          { text: "Kontynuuj", onPress: () => applyModeChange(newMode) },
+        ]
+      );
+    } else {
+      applyModeChange(newMode);
+    }
+  }
+
+  async function applyModeChange(newMode: LearningMode): Promise<void> {
+    if (!deck) return;
+    try {
+      // Clear any existing All in One session
+      await clearSession(typedParams.deckId);
+      // Update deck settings in Firestore
+      await cloudFunctions.updateUserDeckSettings(typedParams.deckId, {
+        ...deck.settings,
+        learningMode: newMode,
+      });
+      // Update local state
+      setDeck({
+        ...deck,
+        settings: { ...deck.settings, learningMode: newMode },
+      });
+    } catch (error) {
+      console.error("Error changing learning mode:", error);
+      Alert.alert("Błąd", "Nie udało się zmienić trybu nauki.");
+    }
+  }
+
+  async function handleRestartAllInOne(): Promise<void> {
+    Alert.alert(
+      "Restart sesji",
+      "Czy na pewno chcesz zacząć sesję All in One od nowa? Obecny postęp zostanie utracony.",
+      [
+        { text: "Anuluj", style: "cancel" },
+        {
+          text: "Resetuj",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await clearSession(typedParams.deckId);
+              Alert.alert("Sukces", "Sesja All in One została zresetowana.");
+            } catch (error) {
+              console.error("Error restarting All in One session:", error);
+              Alert.alert("Błąd", "Nie udało się zresetować sesji.");
+            }
+          },
+        },
+      ]
+    );
   }
 
   if (isLoading) {
@@ -316,6 +380,96 @@ export default function deckSettings(): React.JSX.Element {
               />
             </View>
           </View>
+
+          {/* Tryb nauki */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Tryb nauki</Text>
+            <View style={styles.modeOptionsContainer}>
+              <Pressable
+                onPress={() => handleModeChange("srs")}
+                style={[
+                  styles.modeOption,
+                  deck?.settings.learningMode === "srs" ||
+                  !deck?.settings.learningMode
+                    ? styles.modeOptionActive
+                    : null,
+                ]}
+              >
+                <CalendarDaysIcon
+                  size={24}
+                  color={
+                    deck?.settings.learningMode === "srs" ||
+                    !deck?.settings.learningMode
+                      ? Colors.primary_100
+                      : Colors.primary_700
+                  }
+                />
+                <Text
+                  style={[
+                    styles.modeOptionLabel,
+                    deck?.settings.learningMode === "srs" ||
+                    !deck?.settings.learningMode
+                      ? styles.modeOptionLabelActive
+                      : null,
+                  ]}
+                >
+                  SRS
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => handleModeChange("all_in_one")}
+                style={[
+                  styles.modeOption,
+                  deck?.settings.learningMode === "all_in_one"
+                    ? styles.modeOptionActive
+                    : null,
+                ]}
+              >
+                <BoltIcon
+                  size={24}
+                  color={
+                    deck?.settings.learningMode === "all_in_one"
+                      ? Colors.primary_100
+                      : Colors.primary_700
+                  }
+                />
+                <Text
+                  style={[
+                    styles.modeOptionLabel,
+                    deck?.settings.learningMode === "all_in_one"
+                      ? styles.modeOptionLabelActive
+                      : null,
+                  ]}
+                >
+                  All in One
+                </Text>
+              </Pressable>
+            </View>
+            <Text style={styles.modeInfoText}>
+              Zmiana trybu nie usuwa postepu SRS
+            </Text>
+          </View>
+
+          {/* Restart All in One - only visible when mode is all_in_one */}
+          {deck?.settings.learningMode === "all_in_one" && (
+            <View style={styles.section}>
+              <Pressable
+                onPress={handleRestartAllInOne}
+                style={[styles.settingRow, styles.restartAllInOneButton]}
+              >
+                <BoltIcon size={24} color={Colors.accent_500} />
+                <Text style={styles.restartAllInOneText}>
+                  Restart sesji All in One
+                </Text>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={24}
+                  color={Colors.accent_500}
+                />
+              </Pressable>
+            </View>
+          )}
+
           {/* Ikonka decku */}
           {typedParams.isOwner === "true" && (
             <>
@@ -821,6 +975,59 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#FF4444",
+    fontFamily: Fonts.primary,
+  },
+  modeOptionsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  modeOption: {
+    flex: 1,
+    backgroundColor: Colors.primary_100,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: Colors.primary_700,
+    flexDirection: "row",
+    gap: 8,
+  },
+  modeOptionActive: {
+    backgroundColor: Colors.primary_700,
+    borderColor: Colors.accent_500,
+  },
+  modeOptionLabel: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: Colors.primary_700,
+    fontFamily: Fonts.primary,
+  },
+  modeOptionLabelActive: {
+    color: Colors.primary_100,
+  },
+  modeInfoText: {
+    fontSize: 12,
+    color: Colors.primary_700,
+    fontFamily: Fonts.primary,
+    textAlign: "center",
+    marginTop: 12,
+    opacity: 0.7,
+  },
+  restartAllInOneButton: {
+    backgroundColor: Colors.primary_500,
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+    borderWidth: 2,
+    borderColor: Colors.accent_500,
+  },
+  restartAllInOneText: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: "bold",
+    color: Colors.accent_500,
     fontFamily: Fonts.primary,
   },
 });

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { TimestampSchema } from "./base";
 import { AvocadoGrowthSchema } from "./avocado";
+import { LearningModeSchema } from "./deck";
 
 /**
  * Statystyki użytkownika
@@ -30,6 +31,7 @@ export const UserSettingsSchema = z
     dailyNew: z.number().min(0).optional(),
     language: z.string().default("en"),
     timeZone: z.string().default("UTC"),
+    defaultLearningMode: LearningModeSchema.optional(), // user's preferred default
   })
   .strict();
 

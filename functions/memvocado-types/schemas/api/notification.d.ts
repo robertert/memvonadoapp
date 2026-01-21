@@ -105,8 +105,8 @@ export declare const GetNotificationsResponseSchema: z.ZodObject<{
     }, "strict", z.ZodTypeAny, {
         type: "success" | "info" | "warning" | "error";
         id: string;
-        createdAt: Date;
         title: string;
+        createdAt: Date;
         body: string;
         read: boolean;
         linkTo?: string | null | undefined;
@@ -125,8 +125,8 @@ export declare const GetNotificationsResponseSchema: z.ZodObject<{
     notifications: {
         type: "success" | "info" | "warning" | "error";
         id: string;
-        createdAt: Date;
         title: string;
+        createdAt: Date;
         body: string;
         read: boolean;
         linkTo?: string | null | undefined;
