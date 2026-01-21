@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Tabs } from "expo-router";
+import { Tabs, useLocalSearchParams } from "expo-router";
 import { Colors } from "../../constants/colors";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, View } from "react-native";
@@ -12,6 +12,16 @@ import {
 } from "react-native-heroicons/solid";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import StreakLostModal from "@/components/StreakLostModal";
+import HarvestModal from "@/components/avocado/HarvestModal";
+import AvocadoResetModal from "@/components/avocado/AvocadoResetModal";
+import { cloudFunctions } from "@/services/cloudFunctions";
+import type { AvocadoSkin } from "@/types/schemas/avocado";
+import {
+  AVOCADO_HARVEST_PENDING_KEY,
+  AVOCADO_RESET_PENDING_KEY,
+  AVOCADO_REFRESH_DASHBOARD_KEY,
+} from "@/constants/avocado";
+import { router } from "expo-router";
 
 const STREAK_RESET_KEY = "streak_reset_pending";
 
@@ -23,32 +33,100 @@ interface TabBarIconProps {
 
 export default function TabsLayout(): React.JSX.Element {
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ triggerHarvest?: string }>();
+
+  // Streak modal state
   const [showStreakResetModal, setShowStreakResetModal] = useState(false);
   const [previousStreak, setPreviousStreak] = useState(0);
 
+  // Avocado harvest modal state
+  const [showHarvestModal, setShowHarvestModal] = useState(false);
+  const [harvestLoading, setHarvestLoading] = useState(false);
+  const [harvestError, setHarvestError] = useState<string | null>(null);
+  const [awardedSkin, setAwardedSkin] = useState<AvocadoSkin | null>(null);
+  const [isNewSkin, setIsNewSkin] = useState(false);
+
+  // Avocado reset modal state
+  const [showAvocadoResetModal, setShowAvocadoResetModal] = useState(false);
+  const [avocadoPreviousDays, setAvocadoPreviousDays] = useState(0);
+
+  // Handle harvest trigger from dashboard
+  useEffect(() => {
+    if (params.triggerHarvest === "true") {
+      handleHarvest();
+    }
+  }, [params.triggerHarvest]);
+
+  // Harvest handler
+  const handleHarvest = async () => {
+    setHarvestError(null);
+    setHarvestLoading(true);
+    setShowHarvestModal(true);
+
+    try {
+      const result = await cloudFunctions.harvestAvocado();
+      setAwardedSkin(result.awardedSkin);
+      setIsNewSkin(result.isNewSkin);
+    } catch (err) {
+      console.error("Harvest error:", err);
+      setHarvestError("Nie udalo sie zebrac awokado. Sprobuj ponownie.");
+    } finally {
+      setHarvestLoading(false);
+    }
+  };
+
+  const handleHarvestRetry = () => {
+    handleHarvest();
+  };
+
+  const handleHarvestClose = async () => {
+    setShowHarvestModal(false);
+    setAwardedSkin(null);
+    setIsNewSkin(false);
+    setHarvestError(null);
+
+    // Ustaw flagę do odświeżenia dashboardu
+    await AsyncStorage.setItem(AVOCADO_REFRESH_DASHBOARD_KEY, "true");
+
+    // Wyczyść parametry i odśwież dashboard
+    router.replace("/tabs/dashboardScreen");
+  };
+
   // Sprawdź czy jest pending streak reset przy mount tabsów
   useEffect(() => {
-    const checkStreakReset = async () => {
+    const checkPendingModals = async () => {
       try {
+        // Check streak reset
         const streakResetData = await AsyncStorage.getItem(STREAK_RESET_KEY);
         if (streakResetData) {
           const parsed = JSON.parse(streakResetData);
           setPreviousStreak(parsed.previousStreak || 0);
-          
-          // Pokaż modal po krótkim opóźnieniu (żeby tabsy się załadowały)
+
           setTimeout(() => {
             setShowStreakResetModal(true);
           }, 500);
-          
-          // Usuń dane z AsyncStorage po pokazaniu modala
+
           await AsyncStorage.removeItem(STREAK_RESET_KEY);
         }
+
+        // Check avocado reset
+        const avocadoResetData = await AsyncStorage.getItem(AVOCADO_RESET_PENDING_KEY);
+        if (avocadoResetData) {
+          const parsed = JSON.parse(avocadoResetData);
+          setAvocadoPreviousDays(parsed.previousDays || 0);
+
+          setTimeout(() => {
+            setShowAvocadoResetModal(true);
+          }, showStreakResetModal ? 1500 : 500);
+
+          await AsyncStorage.removeItem(AVOCADO_RESET_PENDING_KEY);
+        }
       } catch (error) {
-        console.error("Error checking streak reset:", error);
+        console.error("Error checking pending modals:", error);
       }
     };
 
-    checkStreakReset();
+    checkPendingModals();
   }, []);
 
   const sizeC = 32;
@@ -157,6 +235,22 @@ export default function TabsLayout(): React.JSX.Element {
       visible={showStreakResetModal}
       onClose={() => setShowStreakResetModal(false)}
       previousStreak={previousStreak}
+    />
+
+    <HarvestModal
+      visible={showHarvestModal}
+      onClose={handleHarvestClose}
+      awardedSkin={awardedSkin}
+      isNewSkin={isNewSkin}
+      isLoading={harvestLoading}
+      error={harvestError}
+      onRetry={handleHarvestRetry}
+    />
+
+    <AvocadoResetModal
+      visible={showAvocadoResetModal}
+      onClose={() => setShowAvocadoResetModal(false)}
+      previousDays={avocadoPreviousDays}
     />
     </>
   );

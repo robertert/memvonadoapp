@@ -1,4 +1,6 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useCallback } from "react";
+import { useFocusEffect } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Pressable,
   StyleSheet,
@@ -32,6 +34,9 @@ import {
   UserDailyStats,
 } from "@/types";
 import { calculateDailyStatsProgress } from "@/constants/dailyStats";
+import AvocadoGrowthWidget from "@/components/avocado/AvocadoGrowthWidget";
+import type { GetAvocadoStatusResponse } from "@/types/schemas/avocado";
+import { AVOCADO_REFRESH_DASHBOARD_KEY } from "@/constants/avocado";
 
 export default function decksScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
@@ -43,11 +48,51 @@ export default function decksScreen(): React.JSX.Element {
   const [dailyUserStats, setDailyUserStats] = useState<UserDailyStats | null>(
     null
   );
+  const [avocadoStatus, setAvocadoStatus] = useState<GetAvocadoStatusResponse | null>(null);
+  const [avocadoLoading, setAvocadoLoading] = useState<boolean>(false);
   const userCtx = useContext(UserContext);
 
   useEffect(() => {
     fetchDecks();
   }, []);
+
+  // Sprawdź czy trzeba odświeżyć po zbiorze awokado
+  useFocusEffect(
+    useCallback(() => {
+      const checkRefreshFlag = async () => {
+        try {
+          const shouldRefresh = await AsyncStorage.getItem(AVOCADO_REFRESH_DASHBOARD_KEY);
+          if (shouldRefresh === "true") {
+            await AsyncStorage.removeItem(AVOCADO_REFRESH_DASHBOARD_KEY);
+            // Lokalnie resetuj status awokado (faza 1, 0 dni)
+            setAvocadoStatus((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    currentPhase: 1,
+                    consecutiveDays: 0,
+                    canHarvest: false,
+                    totalHarvests: prev.totalHarvests + 1,
+                  }
+                : null
+            );
+            // Odśwież dane z serwera w tle
+            if (userCtx.id) {
+              try {
+                const avocadoStatus = await cloudFunctions.getAvocadoStatus();
+                setAvocadoStatus(avocadoStatus);
+              } catch (avocadoErr) {
+                console.log("Failed to fetch avocado status:", avocadoErr);
+              }
+            }
+          }
+        } catch (err) {
+          console.log("Error checking refresh flag:", err);
+        }
+      };
+      checkRefreshFlag();
+    }, [userCtx.id])
+  );
 
   async function fetchDecks(): Promise<void> {
     try {
@@ -66,6 +111,17 @@ export default function decksScreen(): React.JSX.Element {
         setUserProgress(fetchedUserProgress);
         setDecks(fetchedUserDecks.decks);
         setDailyUserStats(fetchedDailyUserStats);
+
+        // Fetch avocado status separately (non-blocking)
+        try {
+          setAvocadoLoading(true);
+          const avocadoData = await cloudFunctions.getAvocadoStatus();
+          setAvocadoStatus(avocadoData);
+        } catch (avocadoErr) {
+          console.log("Failed to fetch avocado status:", avocadoErr);
+        } finally {
+          setAvocadoLoading(false);
+        }
       }
 
       setIsLoading(false);
@@ -116,6 +172,14 @@ export default function decksScreen(): React.JSX.Element {
         },
       });
     }
+  }
+
+  function handleAvocadoHarvest(): void {
+    // Navigate to tabs layout which handles the harvest modal
+    router.push({
+      pathname: "/tabs",
+      params: { triggerHarvest: "true" },
+    });
   }
 
   return (
@@ -172,6 +236,12 @@ export default function decksScreen(): React.JSX.Element {
               <Text style={styles.learnButtonText}>Learn</Text>
             </View>
           </Pressable>
+          {/* Avocado Growth Widget */}
+          <AvocadoGrowthWidget
+            status={avocadoStatus}
+            onHarvest={handleAvocadoHarvest}
+            isLoading={avocadoLoading}
+          />
           <Text style={styles.subtitle}>Your decks</Text>
           <View style={styles.decksList}>
             {decks?.slice(0, 2).map((deck) => {

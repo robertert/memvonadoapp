@@ -168,6 +168,68 @@ export declare const UserMetaSchema: z.ZodObject<{
         lastStreakDate?: unknown;
         lastStudyDate?: unknown;
     }>;
+    avocadoGrowth: z.ZodNullable<z.ZodOptional<z.ZodObject<{
+        currentPhase: z.ZodDefault<z.ZodNumber>;
+        consecutiveDays: z.ZodDefault<z.ZodNumber>;
+        lastGrowthDate: z.ZodNullable<z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>>;
+        totalHarvests: z.ZodDefault<z.ZodNumber>;
+        collectedSkins: z.ZodDefault<z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            name: z.ZodString;
+            rarity: z.ZodEnum<["common", "rare", "epic"]>;
+            obtainedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
+        }, "strip", z.ZodTypeAny, {
+            id: string;
+            name: string;
+            rarity: "common" | "rare" | "epic";
+            obtainedAt: Date;
+        }, {
+            id: string;
+            name: string;
+            rarity: "common" | "rare" | "epic";
+            obtainedAt?: unknown;
+        }>, "many">>;
+        harvestHistory: z.ZodDefault<z.ZodArray<z.ZodObject<{
+            skinId: z.ZodString;
+            harvestedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
+        }, "strip", z.ZodTypeAny, {
+            skinId: string;
+            harvestedAt: Date;
+        }, {
+            skinId: string;
+            harvestedAt?: unknown;
+        }>, "many">>;
+    }, "strip", z.ZodTypeAny, {
+        currentPhase: number;
+        consecutiveDays: number;
+        totalHarvests: number;
+        collectedSkins: {
+            id: string;
+            name: string;
+            rarity: "common" | "rare" | "epic";
+            obtainedAt: Date;
+        }[];
+        harvestHistory: {
+            skinId: string;
+            harvestedAt: Date;
+        }[];
+        lastGrowthDate?: Date | null | undefined;
+    }, {
+        currentPhase?: number | undefined;
+        consecutiveDays?: number | undefined;
+        lastGrowthDate?: unknown;
+        totalHarvests?: number | undefined;
+        collectedSkins?: {
+            id: string;
+            name: string;
+            rarity: "common" | "rare" | "epic";
+            obtainedAt?: unknown;
+        }[] | undefined;
+        harvestHistory?: {
+            skinId: string;
+            harvestedAt?: unknown;
+        }[] | undefined;
+    }>>>;
     dailyStats: z.ZodNullable<z.ZodOptional<z.ZodObject<{
         completedNewToday: z.ZodNumber;
         completedDueToday: z.ZodNumber;
@@ -204,6 +266,22 @@ export declare const UserMetaSchema: z.ZodObject<{
     followingCount: number;
     followersCount: number;
     interests: string[];
+    avocadoGrowth?: {
+        currentPhase: number;
+        consecutiveDays: number;
+        totalHarvests: number;
+        collectedSkins: {
+            id: string;
+            name: string;
+            rarity: "common" | "rare" | "epic";
+            obtainedAt: Date;
+        }[];
+        harvestHistory: {
+            skinId: string;
+            harvestedAt: Date;
+        }[];
+        lastGrowthDate?: Date | null | undefined;
+    } | null | undefined;
     dailyStats?: {
         completedNewToday: number;
         completedDueToday: number;
@@ -226,6 +304,22 @@ export declare const UserMetaSchema: z.ZodObject<{
     league?: number | undefined;
     experiencePoints?: number | undefined;
     currencyCount?: number | undefined;
+    avocadoGrowth?: {
+        currentPhase?: number | undefined;
+        consecutiveDays?: number | undefined;
+        lastGrowthDate?: unknown;
+        totalHarvests?: number | undefined;
+        collectedSkins?: {
+            id: string;
+            name: string;
+            rarity: "common" | "rare" | "epic";
+            obtainedAt?: unknown;
+        }[] | undefined;
+        harvestHistory?: {
+            skinId: string;
+            harvestedAt?: unknown;
+        }[] | undefined;
+    } | null | undefined;
     dailyStats?: {
         completedNewToday: number;
         completedDueToday: number;
@@ -296,6 +390,68 @@ export declare const UserSchema: z.ZodObject<{
         lastStreakDate?: unknown;
         lastStudyDate?: unknown;
     }>;
+    avocadoGrowth: z.ZodNullable<z.ZodOptional<z.ZodObject<{
+        currentPhase: z.ZodDefault<z.ZodNumber>;
+        consecutiveDays: z.ZodDefault<z.ZodNumber>;
+        lastGrowthDate: z.ZodNullable<z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>>;
+        totalHarvests: z.ZodDefault<z.ZodNumber>;
+        collectedSkins: z.ZodDefault<z.ZodArray<z.ZodObject<{
+            id: z.ZodString;
+            name: z.ZodString;
+            rarity: z.ZodEnum<["common", "rare", "epic"]>;
+            obtainedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
+        }, "strip", z.ZodTypeAny, {
+            id: string;
+            name: string;
+            rarity: "common" | "rare" | "epic";
+            obtainedAt: Date;
+        }, {
+            id: string;
+            name: string;
+            rarity: "common" | "rare" | "epic";
+            obtainedAt?: unknown;
+        }>, "many">>;
+        harvestHistory: z.ZodDefault<z.ZodArray<z.ZodObject<{
+            skinId: z.ZodString;
+            harvestedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
+        }, "strip", z.ZodTypeAny, {
+            skinId: string;
+            harvestedAt: Date;
+        }, {
+            skinId: string;
+            harvestedAt?: unknown;
+        }>, "many">>;
+    }, "strip", z.ZodTypeAny, {
+        currentPhase: number;
+        consecutiveDays: number;
+        totalHarvests: number;
+        collectedSkins: {
+            id: string;
+            name: string;
+            rarity: "common" | "rare" | "epic";
+            obtainedAt: Date;
+        }[];
+        harvestHistory: {
+            skinId: string;
+            harvestedAt: Date;
+        }[];
+        lastGrowthDate?: Date | null | undefined;
+    }, {
+        currentPhase?: number | undefined;
+        consecutiveDays?: number | undefined;
+        lastGrowthDate?: unknown;
+        totalHarvests?: number | undefined;
+        collectedSkins?: {
+            id: string;
+            name: string;
+            rarity: "common" | "rare" | "epic";
+            obtainedAt?: unknown;
+        }[] | undefined;
+        harvestHistory?: {
+            skinId: string;
+            harvestedAt?: unknown;
+        }[] | undefined;
+    }>>>;
     dailyStats: z.ZodNullable<z.ZodOptional<z.ZodObject<{
         completedNewToday: z.ZodNumber;
         completedDueToday: z.ZodNumber;
@@ -317,6 +473,7 @@ export declare const UserSchema: z.ZodObject<{
     createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
 }, "strict", z.ZodTypeAny, {
+    id: string;
     username: string;
     email: string;
     settings: {
@@ -329,7 +486,6 @@ export declare const UserSchema: z.ZodObject<{
     };
     createdAt: Date;
     updatedAt: Date;
-    id: string;
     league: number;
     currentGroupId: string | null;
     experiencePoints: number;
@@ -347,6 +503,22 @@ export declare const UserSchema: z.ZodObject<{
     followingCount: number;
     followersCount: number;
     interests: string[];
+    avocadoGrowth?: {
+        currentPhase: number;
+        consecutiveDays: number;
+        totalHarvests: number;
+        collectedSkins: {
+            id: string;
+            name: string;
+            rarity: "common" | "rare" | "epic";
+            obtainedAt: Date;
+        }[];
+        harvestHistory: {
+            skinId: string;
+            harvestedAt: Date;
+        }[];
+        lastGrowthDate?: Date | null | undefined;
+    } | null | undefined;
     dailyStats?: {
         completedNewToday: number;
         completedDueToday: number;
@@ -354,6 +526,7 @@ export declare const UserSchema: z.ZodObject<{
     } | null | undefined;
     profileCompleted?: boolean | undefined;
 }, {
+    id: string;
     username: string;
     email: string;
     settings: {
@@ -364,7 +537,6 @@ export declare const UserSchema: z.ZodObject<{
         language?: string | undefined;
         timeZone?: string | undefined;
     };
-    id: string;
     currentGroupId: string | null;
     stats: {
         totalCards?: number | undefined;
@@ -381,6 +553,22 @@ export declare const UserSchema: z.ZodObject<{
     league?: number | undefined;
     experiencePoints?: number | undefined;
     currencyCount?: number | undefined;
+    avocadoGrowth?: {
+        currentPhase?: number | undefined;
+        consecutiveDays?: number | undefined;
+        lastGrowthDate?: unknown;
+        totalHarvests?: number | undefined;
+        collectedSkins?: {
+            id: string;
+            name: string;
+            rarity: "common" | "rare" | "epic";
+            obtainedAt?: unknown;
+        }[] | undefined;
+        harvestHistory?: {
+            skinId: string;
+            harvestedAt?: unknown;
+        }[] | undefined;
+    } | null | undefined;
     dailyStats?: {
         completedNewToday: number;
         completedDueToday: number;

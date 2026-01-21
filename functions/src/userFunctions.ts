@@ -51,8 +51,13 @@ import {
   UndoCardRequestSchema,
   UndoCardResponseSchema,
   UserDailyStatsSchema,
+  UpdateUserStreakIfQualifiedResponse,
 } from "memvocado-types";
 import { serializeTimestamps } from "./utils/serialization";
+import {
+  updateAvocadoGrowthInternal,
+  resetAvocadoGrowthInternal,
+} from "./avocadoFunctions";
 
 const DEFAULT_CARD_ALGO: CardAlgo = {
   difficulty: 2.5,
@@ -116,20 +121,11 @@ function formatYmdInTimeZone(date: Date, timeZone: string): string {
  * @param {string} params.userId Identyfikator użytkownika
  * @param {string} [params.timeZone] Strefa czasowa IANA (np. "Europe/Warsaw")
  * @param {number} [params.threshold=10] Dzienny próg liczby kart
- * @return {Promise<{qualified:boolean, updated:boolean, currentStreak:number, longestStreak:number, lastStreakDate:(string|null), threshold:number, todayCount:(number|undefined)}>}
- */
+ * @return {Promise<UpdateUserStreakIfQualifiedResponse>}*/
 async function updateStreakForTodayIfQualified(params: {
   userId: string;
   threshold?: number;
-}): Promise<{
-  qualified: boolean;
-  updated: boolean;
-  currentStreak: number;
-  longestStreak: number;
-  lastStreakDate: string | null;
-  threshold: number;
-  todayCount: number | undefined;
-}> {
+}): Promise<UpdateUserStreakIfQualifiedResponse> {
   const { userId, threshold } = params;
   const dailyThreshold: number =
     typeof threshold === "number" && threshold > 0 ? threshold : 10;
@@ -206,6 +202,22 @@ async function updateStreakForTodayIfQualified(params: {
     "stats.lastStreakDate": streakDateForStore,
   });
 
+  // Aktualizuj wzrost awokado po spełnieniu dziennego celu
+  let avocadoResult: {
+    updated: boolean;
+    previousPhase: number;
+    currentPhase: number;
+    consecutiveDays: number;
+    canHarvest: boolean;
+  } | null = null;
+
+  try {
+    avocadoResult = await updateAvocadoGrowthInternal({ userId, timeZone: tz });
+  } catch (avocadoErr) {
+    logger.warn("updateStreakForTodayIfQualified: avocado growth update failed", avocadoErr);
+    // Nie przerywaj głównej operacji – to tylko best-effort
+  }
+
   return {
     qualified: true,
     updated: true,
@@ -214,6 +226,12 @@ async function updateStreakForTodayIfQualified(params: {
     lastStreakDate: formatYmdInTimeZone(streakDateForStore, tz),
     threshold: dailyThreshold,
     todayCount,
+    // Avocado data
+    avocadoGrew: avocadoResult?.updated,
+    avocadoPreviousPhase: avocadoResult?.previousPhase,
+    avocadoCurrentPhase: avocadoResult?.currentPhase,
+    avocadoConsecutiveDays: avocadoResult?.consecutiveDays,
+    avocadoCanHarvest: avocadoResult?.canHarvest,
   };
 }
 
@@ -298,6 +316,20 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
       "stats.currentStreak": safeStatsUpdate.currentStreak,
     });
 
+    // Sprawdź i zresetuj wzrost awokado (jeśli nie ma pending harvest)
+    let avocadoWasReset = false;
+    let avocadoHadPendingHarvest = false;
+    try {
+      const avocadoResult = await resetAvocadoGrowthInternal({
+        userId
+      });
+      avocadoWasReset = avocadoResult.wasReset;
+      avocadoHadPendingHarvest = avocadoResult.hadPendingHarvest;
+    } catch (avocadoErr) {
+      logger.warn("updateUserStreakOnLogin: avocado reset check failed", avocadoErr);
+      // Nie przerywaj głównej operacji – to tylko best-effort
+    }
+
     const rawResponse = {
       updated: true,
       currentStreak: 0,
@@ -305,6 +337,8 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
       longestStreak: stats.longestStreak || 0,
       lastStreakDate: lastStreakYmd,
       status: "streak_reset",
+      avocadoWasReset,
+      avocadoHadPendingHarvest,
     };
     const validatedResponse =
       UpdateUserStreakOnLoginResponseSchema.parse(rawResponse);
@@ -609,17 +643,6 @@ export const updateCardProgress = onCall(async (request) => {
     // Aktualizacja statystyk dziennych
     await updateDailyStats(userId, deckId, dailyStats);
     await updateUserStats(userId);
-
-    // Po zapisaniu sesji: sprawdź wspólną logiką, czy dzienny próg (10 kart) został osiągnięty
-    try {
-      await updateStreakForTodayIfQualified({ userId });
-    } catch (streakErr) {
-      logger.warn(
-        "updateCardProgress: streak threshold check failed",
-        streakErr
-      );
-      // Nie przerywaj głównej operacji – to tylko best-effort
-    }
 
     logger.info("Card progress updated successfully", {
       userId,

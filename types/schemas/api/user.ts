@@ -138,6 +138,12 @@ export const UpdateUserStreakIfQualifiedResponseSchema = z.object({
   threshold: z.number(),
   todayCount: z.number().nullish(),
   updated: z.boolean(),
+  // Avocado growth data
+  avocadoGrew: z.boolean().optional(),
+  avocadoPreviousPhase: z.number().min(1).max(5).optional(),
+  avocadoCurrentPhase: z.number().min(1).max(5).optional(),
+  avocadoConsecutiveDays: z.number().optional(),
+  avocadoCanHarvest: z.boolean().optional(),
 });
 
 export type UpdateUserStreakIfQualifiedResponse = z.infer<

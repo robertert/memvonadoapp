@@ -11,9 +11,9 @@ export declare const createDeckWithCards: import("firebase-functions/v2/https").
 export declare const getDeckDetails: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     username: string;
     deck: {
+        id: string;
         createdAt: Date;
         updatedAt: Date;
-        id: string;
         tags: string[];
         title: string;
         icon: string;
@@ -34,8 +34,8 @@ export declare const getDeckDetails: import("firebase-functions/v2/https").Calla
  */
 export declare const getDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     cards: {
-        createdAt: Date;
         id: string;
+        createdAt: Date;
         cardData: {
             front: string;
             back: string;
@@ -70,9 +70,9 @@ export declare const getDeckCards: import("firebase-functions/v2/https").Callabl
  */
 export declare const getPopularDecks: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     decks: {
+        id: string;
         createdAt: Date;
         updatedAt: Date;
-        id: string;
         tags: string[];
         title: string;
         icon: string;
@@ -93,6 +93,7 @@ export declare const getPopularDecks: import("firebase-functions/v2/https").Call
  */
 export declare const getUserDeckDetails: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     deck: {
+        id: string;
         settings: {
             zenMode: boolean;
             shuffleNewCards: boolean;
@@ -100,7 +101,6 @@ export declare const getUserDeckDetails: import("firebase-functions/v2/https").C
             newCardsNumPerDay?: number | undefined;
         };
         updatedAt: Date;
-        id: string;
         title: string;
         cardsNum: number;
         dailyStats?: {
@@ -122,8 +122,8 @@ export declare const getUserDeckDetails: import("firebase-functions/v2/https").C
 }>, unknown>;
 export declare const getUserDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     cards: {
-        createdAt: Date;
         id: string;
+        createdAt: Date;
         cardData: {
             front: string;
             back: string;
@@ -155,8 +155,8 @@ export declare const getUserDeckCards: import("firebase-functions/v2/https").Cal
 }>, unknown>;
 export declare const getUserDueDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     cards: {
-        createdAt: Date;
         id: string;
+        createdAt: Date;
         cardData: {
             front: string;
             back: string;
@@ -197,8 +197,8 @@ export declare const getDeckDailyStats: import("firebase-functions/v2/https").Ca
 }>, unknown>;
 export declare const getUserNewDeckCards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     cards: {
-        createdAt: Date;
         id: string;
+        createdAt: Date;
         cardData: {
             front: string;
             back: string;
@@ -237,8 +237,8 @@ export declare const startLearningSession: import("firebase-functions/v2/https")
         inProgressNewCards: number;
     };
     cards: {
-        createdAt: Date;
         id: string;
+        createdAt: Date;
         cardData: {
             front: string;
             back: string;
@@ -266,6 +266,7 @@ export declare const startLearningSession: import("firebase-functions/v2/https")
         hasChanges?: boolean | undefined;
     }[];
     deck: {
+        id: string;
         settings: {
             zenMode: boolean;
             shuffleNewCards: boolean;
@@ -273,7 +274,6 @@ export declare const startLearningSession: import("firebase-functions/v2/https")
             newCardsNumPerDay?: number | undefined;
         };
         updatedAt: Date;
-        id: string;
         title: string;
         cardsNum: number;
         dailyStats?: {
@@ -345,6 +345,7 @@ export declare const updateUserDeckSettings: import("firebase-functions/v2/https
 export declare const startLearningDeck: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
     deck: {
+        id: string;
         settings: {
             zenMode: boolean;
             shuffleNewCards: boolean;
@@ -352,7 +353,6 @@ export declare const startLearningDeck: import("firebase-functions/v2/https").Ca
             newCardsNumPerDay?: number | undefined;
         };
         updatedAt: Date;
-        id: string;
         title: string;
         cardsNum: number;
         dailyStats?: {

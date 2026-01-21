@@ -32,12 +32,18 @@ export declare const updateUserStreakIfQualified: import("firebase-functions/v2/
     qualified: boolean;
     threshold: number;
     todayCount?: number | null | undefined;
+    avocadoGrew?: boolean | undefined;
+    avocadoPreviousPhase?: number | undefined;
+    avocadoCurrentPhase?: number | undefined;
+    avocadoConsecutiveDays?: number | undefined;
+    avocadoCanHarvest?: boolean | undefined;
 }>, unknown>;
 /**
  * Get user decks with cards
  */
 export declare const getUserDecks: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     decks: {
+        id: string;
         settings: {
             zenMode: boolean;
             shuffleNewCards: boolean;
@@ -45,7 +51,6 @@ export declare const getUserDecks: import("firebase-functions/v2/https").Callabl
             newCardsNumPerDay?: number | undefined;
         };
         updatedAt: Date;
-        id: string;
         title: string;
         cardsNum: number;
         dailyStats?: {
@@ -142,6 +147,7 @@ export declare const updateUserSettings: import("firebase-functions/v2/https").C
  * Get user profile with full information
  */
 export declare const getUserProfile: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    id: string;
     username: string;
     email: string;
     settings: {
@@ -154,7 +160,6 @@ export declare const getUserProfile: import("firebase-functions/v2/https").Calla
     };
     createdAt: Date;
     updatedAt: Date;
-    id: string;
     league: number;
     currentGroupId: string | null;
     experiencePoints: number;
@@ -172,6 +177,22 @@ export declare const getUserProfile: import("firebase-functions/v2/https").Calla
     followingCount: number;
     followersCount: number;
     interests: string[];
+    avocadoGrowth?: {
+        currentPhase: number;
+        consecutiveDays: number;
+        totalHarvests: number;
+        collectedSkins: {
+            id: string;
+            name: string;
+            rarity: "common" | "rare" | "epic";
+            obtainedAt: Date;
+        }[];
+        harvestHistory: {
+            skinId: string;
+            harvestedAt: Date;
+        }[];
+        lastGrowthDate?: Date | null | undefined;
+    } | null | undefined;
     dailyStats?: {
         completedNewToday: number;
         completedDueToday: number;

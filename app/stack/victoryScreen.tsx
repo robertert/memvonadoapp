@@ -7,6 +7,7 @@ import {
   Text,
   View,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { Colors, Fonts } from "../../constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
@@ -15,6 +16,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { TrophyIcon, FireIcon } from "react-native-heroicons/solid";
 import { UpdateUserStreakIfQualifiedResponse } from "@/types/schemas/api/user";
 import { cloudFunctions } from "@/services/cloudFunctions";
+import { AVOCADO_PHASE_NAMES, AVOCADO_TOTAL_DAYS } from "@/constants/avocado";
 
 // Typ odpowiedzi z Twojej Cloud Function
 interface ProgressParams {
@@ -38,9 +40,9 @@ export default function VictoryScreen(): React.JSX.Element {
   const [streakData, setStreakData] =
     useState<UpdateUserStreakIfQualifiedResponse | null>(null);
 
-  // Stan widoku: 'streak' (ogień) lub 'stats' (puchar)
+  // Stan widoku: 'streak' (ogień), 'avocado' (wzrost awokado) lub 'stats' (puchar)
   // Jeśli sesja była pusta, od razu idziemy do stats (bez fetcha streaka)
-  const [viewState, setViewState] = useState<"streak" | "stats">(
+  const [viewState, setViewState] = useState<"streak" | "avocado" | "stats">(
     isEmpty ? "stats" : "streak"
   );
 
@@ -53,6 +55,12 @@ export default function VictoryScreen(): React.JSX.Element {
   const trophyScale = useRef(new Animated.Value(0)).current;
   const statsOpacity = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
+
+  // Avocado animations
+  const avocadoScale = useRef(new Animated.Value(0)).current;
+  const avocadoOpacity = useRef(new Animated.Value(0)).current;
+  const avocadoTextOpacity = useRef(new Animated.Value(0)).current;
+  const avocadoGlowOpacity = useRef(new Animated.Value(0)).current;
 
   // Licznik dni do wyświetlenia
   const [displayStreak, setDisplayStreak] = useState(0);
@@ -67,6 +75,7 @@ export default function VictoryScreen(): React.JSX.Element {
     const fetchStreakData = async () => {
       try {
         const data = await cloudFunctions.updateUserStreakIfQualified();
+        console.log("Streak data:", data);     
         setStreakData(data);
         setDisplayStreak(
           data.updated ? data.currentStreak - 1 : data.currentStreak
@@ -89,6 +98,8 @@ export default function VictoryScreen(): React.JSX.Element {
 
     if (viewState === "streak" && streakData) {
       runStreakAnimation();
+    } else if (viewState === "avocado" && streakData) {
+      runAvocadoAnimation();
     } else {
       runStatsAnimation();
     }
@@ -161,6 +172,94 @@ export default function VictoryScreen(): React.JSX.Element {
         useNativeDriver: true,
       }),
     ]).start(() => {
+      // If avocado grew, show avocado view, otherwise go to stats
+      if (streakData?.avocadoGrew) {
+        setViewState("avocado");
+      } else {
+        setViewState("stats");
+      }
+    });
+  };
+
+  // --- Logika Animacji Awokado ---
+  const runAvocadoAnimation = () => {
+    if (!streakData) return;
+
+    // Reset animations
+    avocadoScale.setValue(0);
+    avocadoOpacity.setValue(0);
+    avocadoTextOpacity.setValue(0);
+    avocadoGlowOpacity.setValue(0);
+
+    // Show avocado with bounce
+    Animated.parallel([
+      Animated.spring(avocadoScale, {
+        toValue: 1,
+        friction: 5,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+      Animated.timing(avocadoOpacity, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Phase change effect - pulse and glow
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(avocadoGlowOpacity, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(avocadoScale, {
+            toValue: 1.2,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.spring(avocadoScale, {
+            toValue: 1,
+            friction: 4,
+            useNativeDriver: true,
+          }),
+          Animated.timing(avocadoGlowOpacity, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+
+      // Show text
+      Animated.timing(avocadoTextOpacity, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+
+      // Wait and transition to stats
+      setTimeout(() => {
+        fadeOutAvocadoAndSwitch();
+      }, 3500);
+    });
+  };
+
+  const fadeOutAvocadoAndSwitch = () => {
+    Animated.parallel([
+      Animated.timing(avocadoOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(avocadoTextOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
       setViewState("stats");
     });
   };
@@ -222,6 +321,92 @@ export default function VictoryScreen(): React.JSX.Element {
   function goBackHandler(): void {
     router.back();
   }
+
+  // --- Render Awokado ---
+  const renderAvocadoContent = () => {
+    if (!streakData) return null;
+
+    const currentPhase = streakData.avocadoCurrentPhase || 1;
+    const previousPhase = streakData.avocadoPreviousPhase || 1;
+    const consecutiveDays = streakData.avocadoConsecutiveDays || 0;
+    const canHarvest = streakData.avocadoCanHarvest || false;
+    const phaseChanged = currentPhase > previousPhase;
+
+    const phaseName = AVOCADO_PHASE_NAMES[currentPhase] || "Pestka";
+
+    return (
+      <View style={[styles.centerContent, { paddingTop: 60 }]}>
+        {/* Glow effect */}
+        <Animated.View
+          style={[
+            styles.avocadoGlow,
+            {
+              opacity: avocadoGlowOpacity,
+              transform: [{ scale: avocadoScale }],
+            },
+          ]}
+        />
+
+        <Animated.View
+          style={{
+            transform: [{ scale: avocadoScale }],
+            opacity: avocadoOpacity,
+            alignItems: "center",
+          }}
+        >
+          <Image
+            source={require("@/assets/memvocadoicon.png")}
+            style={styles.avocadoImage}
+            resizeMode="contain"
+          />
+          <View style={styles.avocadoDaysBadge}>
+            <Text style={styles.avocadoDaysNumber}>
+              {consecutiveDays}/{AVOCADO_TOTAL_DAYS}
+            </Text>
+          </View>
+        </Animated.View>
+
+        <Animated.View
+          style={{
+            opacity: avocadoTextOpacity,
+            alignItems: "center",
+            marginTop: 30,
+          }}
+        >
+          {canHarvest ? (
+            <>
+              <Text style={[styles.avocadoTitle, { color: Colors.accent_500 }]}>
+                Gotowe do zbioru!
+              </Text>
+              <Text style={styles.avocadoSubtitle}>
+                Twoje awokado dojrzalo.{"\n"}Zbierz je na stronie glownej!
+              </Text>
+            </>
+          ) : phaseChanged ? (
+            <>
+              <Text style={styles.avocadoTitle}>Awokado rosnie!</Text>
+              <Text style={styles.avocadoSubtitle}>
+                Faza {currentPhase}: {phaseName}
+              </Text>
+              <Text style={[styles.avocadoSubtitle, { marginTop: 8 }]}>
+                Dzien {consecutiveDays} z {AVOCADO_TOTAL_DAYS}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.avocadoTitle}>Dzien zaliczony!</Text>
+              <Text style={styles.avocadoSubtitle}>
+                Faza {currentPhase}: {phaseName}
+              </Text>
+              <Text style={[styles.avocadoSubtitle, { marginTop: 8 }]}>
+                Dzien {consecutiveDays} z {AVOCADO_TOTAL_DAYS}
+              </Text>
+            </>
+          )}
+        </Animated.View>
+      </View>
+    );
+  };
 
   // --- Render Streaka ---
   const renderStreakContent = () => {
@@ -424,6 +609,8 @@ export default function VictoryScreen(): React.JSX.Element {
           </View>
         ) : viewState === "streak" ? (
           renderStreakContent()
+        ) : viewState === "avocado" ? (
+          renderAvocadoContent()
         ) : (
           renderStatsContent()
         )}
@@ -584,5 +771,54 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
     marginTop: 20,
     lineHeight: 22,
+  },
+  // --- Style Awokado ---
+  avocadoImage: {
+    width: 140,
+    height: 140,
+  },
+  avocadoGlow: {
+    position: "absolute",
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: Colors.accent_500,
+    shadowColor: Colors.accent_500,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 30,
+    elevation: 10,
+  },
+  avocadoDaysBadge: {
+    position: "absolute",
+    bottom: -10,
+    backgroundColor: Colors.primary_100,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.primary_500,
+  },
+  avocadoDaysNumber: {
+    fontFamily: Fonts.primary,
+    fontSize: 18,
+    fontWeight: "900",
+    color: Colors.primary_700,
+  },
+  avocadoTitle: {
+    fontFamily: Fonts.primary,
+    fontSize: 28,
+    fontWeight: "900",
+    color: Colors.primary_500,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  avocadoSubtitle: {
+    fontFamily: Fonts.primary,
+    fontSize: 18,
+    fontWeight: "600",
+    color: Colors.primary_700,
+    textAlign: "center",
+    lineHeight: 24,
   },
 });

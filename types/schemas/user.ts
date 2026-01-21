@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { TimestampSchema } from "./base";
+import { AvocadoGrowthSchema } from "./avocado";
 
 /**
  * Statystyki użytkownika
@@ -70,6 +71,7 @@ export const UserMetaSchema = z
     experiencePoints: z.number().min(0).default(0),
     currencyCount: z.number().min(0).default(0),
     stats: UserStatsSchema,
+    avocadoGrowth: AvocadoGrowthSchema.optional().nullable(),
     dailyStats: UserDailyStatsSchema.optional().nullable(),
     followingCount: z.number().min(0).default(0),
     followersCount: z.number().min(0).default(0),

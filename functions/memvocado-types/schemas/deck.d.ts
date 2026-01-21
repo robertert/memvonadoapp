@@ -94,9 +94,9 @@ export declare const DeckSchema: z.ZodObject<{
     createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
 }, "strict", z.ZodTypeAny, {
+    id: string;
     createdAt: Date;
     updatedAt: Date;
-    id: string;
     tags: string[];
     title: string;
     icon: string;
@@ -306,6 +306,7 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
         lastUpdatedStats?: unknown;
     }>>>;
 }, "strict", z.ZodTypeAny, {
+    id: string;
     settings: {
         zenMode: boolean;
         shuffleNewCards: boolean;
@@ -313,7 +314,6 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
         newCardsNumPerDay?: number | undefined;
     };
     updatedAt: Date;
-    id: string;
     title: string;
     cardsNum: number;
     dailyStats?: {
@@ -331,13 +331,13 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
     isPublic?: boolean | null | undefined;
     lastReviewDate?: Date | undefined;
 }, {
+    id: string;
     settings: {
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         zenMode?: boolean | undefined;
         shuffleNewCards?: boolean | undefined;
     };
-    id: string;
     title: string;
     cardsNum: number;
     updatedAt?: unknown;

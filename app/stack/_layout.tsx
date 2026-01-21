@@ -19,6 +19,7 @@ export default function MainStack(): React.JSX.Element {
       <Stack.Screen name="myLibraryScreen" />
       <Stack.Screen name="settingsScreen" />
       <Stack.Screen name="editCard" />
+      <Stack.Screen name="avocadoCollectionScreen" />
     </Stack>
   );
 }

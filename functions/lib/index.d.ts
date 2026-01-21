@@ -17,3 +17,4 @@ export { getNotifications, markNotificationRead, createNotification, notifyStrea
 export { getLeagueInfo, getUserGroup, updateUserLeague, getAllLeaguesInfo, } from "./leagueFunctions";
 export { addPlaceholderData } from "./placeholderFunctions";
 export { ensureUserDocument, completeOnboarding, checkUsernameAvailability, } from "./authHandlers";
+export { getAvocadoStatus, harvestAvocado, getAvocadoConfigFn as getAvocadoConfig, } from "./avocadoFunctions";

@@ -47,6 +47,20 @@ import type {
   FirstLearnUpdate,
   CardLearningUpdate,
   CardUpdate,
+  // Avocado types
+  AvocadoSkinRarity,
+  AvocadoSkin,
+  AvocadoHarvestLog,
+  AvocadoGrowth,
+  AvocadoGrowthUpdate,
+  AvocadoSkinConfig,
+  AvocadoConfig,
+  GetAvocadoStatusRequest,
+  GetAvocadoStatusResponse,
+  HarvestAvocadoRequest,
+  HarvestAvocadoResponse,
+  GetAvocadoConfigRequest,
+  GetAvocadoConfigResponse,
 } from "./schemas/index";
 
 // Re-eksport schematów do walidacji
@@ -87,6 +101,19 @@ import {
   FirstLearnUpdateSchema,
   CardLearningUpdateSchema,
   CardUpdateSchema,
+  // Avocado schemas
+  AvocadoSkinSchema,
+  AvocadoHarvestLogSchema,
+  AvocadoGrowthSchema,
+  AvocadoGrowthUpdateSchema,
+  AvocadoSkinConfigSchema,
+  AvocadoConfigSchema,
+  GetAvocadoStatusRequestSchema,
+  GetAvocadoStatusResponseSchema,
+  HarvestAvocadoRequestSchema,
+  HarvestAvocadoResponseSchema,
+  GetAvocadoConfigRequestSchema,
+  GetAvocadoConfigResponseSchema,
 } from "./schemas/index";
 
 // ============================================================================

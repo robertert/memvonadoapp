@@ -20,10 +20,13 @@ import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
 import type { User } from "@/types";
+import type { GetAvocadoStatusResponse, AvocadoSkin } from "@/types/schemas/avocado";
 import {
   placeholderUser,
   placeholderDecks,
 } from "../../constants/placeholderData";
+import AvocadoImage from "@/components/avocado/AvocadoImage";
+import { AVOCADO_RARITY_COLORS, DEFAULT_AVOCADO_CONFIG } from "@/constants/avocado";
 
 export default function profileScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
@@ -48,6 +51,7 @@ export default function profileScreen(): React.JSX.Element {
   >([]);
   const [profileData, setProfileData] = useState<User>();
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [avocadoSkins, setAvocadoSkins] = useState<AvocadoSkin[]>([]);
 
   useEffect(() => {
     if (userCtx.id) {
@@ -122,6 +126,19 @@ export default function profileScreen(): React.JSX.Element {
           cards: deck.cardsNum || deck.cards?.length || 0,
         }))
       );
+
+      // Fetch avocado collection (non-blocking)
+      try {
+        const avocadoStatus = await cloudFunctions.getAvocadoStatus();
+        // Sort by rarity (epic first, then rare, then common) and take top 4
+        const sortedSkins = [...(avocadoStatus.collectedSkins || [])].sort((a, b) => {
+          const rarityOrder = { epic: 0, rare: 1, common: 2 };
+          return rarityOrder[a.rarity] - rarityOrder[b.rarity];
+        });
+        setAvocadoSkins(sortedSkins.slice(0, 4));
+      } catch (avocadoErr) {
+        console.log("Failed to fetch avocado skins:", avocadoErr);
+      }
     } catch (error) {
       console.error("Error fetching profile data:", error);
       if (PLACEHOLDER_MODE) {
@@ -306,6 +323,47 @@ export default function profileScreen(): React.JSX.Element {
               />
             )}
           </View>
+          {/* Avocado Collection Preview */}
+          {avocadoSkins.length > 0 && (
+            <View style={styles.sectionContainer}>
+              <Text style={styles.subTitle}>Twoja kolekcja</Text>
+              <ScrollView
+                horizontal={true}
+                showsHorizontalScrollIndicator={false}
+                style={styles.horizontalScroll}
+              >
+                {avocadoSkins.map((skin, idx) => {
+                  const skinConfig = DEFAULT_AVOCADO_CONFIG.skins.find(s => s.id === skin.id);
+                  return (
+                    <View
+                      key={skin.id || idx}
+                      style={[
+                        styles.avocadoSkinItem,
+                        { borderColor: AVOCADO_RARITY_COLORS[skin.rarity] },
+                      ]}
+                    >
+                      <AvocadoImage skinId={skin.id} size="small" />
+                      <Text style={styles.avocadoSkinName}>{skinConfig?.name || skin.name}</Text>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+              <Pressable
+                style={styles.collectionButton}
+                onPress={() => {
+                  router.push("/stack/avocadoCollectionScreen");
+                }}
+              >
+                <Text style={styles.collectionButtonText}>Zobacz wszystkie</Text>
+                <MaterialCommunityIcons
+                  name="arrow-right"
+                  size={20}
+                  color={Colors.primary_700}
+                />
+              </Pressable>
+            </View>
+          )}
+
           <View style={styles.sectionContainer}>
             <Text style={styles.subTitle}>Twoje decki</Text>
             <ScrollView
@@ -583,5 +641,43 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     textAlign: "center",
     padding: 20,
+  },
+  avocadoSkinItem: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 8,
+    marginVertical: 5,
+    width: 90,
+    height: 90,
+    backgroundColor: Colors.primary_100,
+    borderRadius: 16,
+    borderWidth: 3,
+    padding: 8,
+  },
+  avocadoSkinName: {
+    fontSize: 11,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "700",
+    textAlign: "center",
+    marginTop: 4,
+  },
+  collectionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.primary_500,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    alignSelf: "flex-start",
+  },
+  collectionButtonText: {
+    fontSize: 14,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_700,
+    fontWeight: "600",
+    marginRight: 6,
   },
 });

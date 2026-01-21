@@ -311,8 +311,8 @@ export declare const CardSchema: z.ZodObject<{
     hasChanges: z.ZodOptional<z.ZodBoolean>;
     updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
 }, "strict", z.ZodTypeAny, {
-    createdAt: Date;
     id: string;
+    createdAt: Date;
     cardData: {
         front: string;
         back: string;

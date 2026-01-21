@@ -32,24 +32,24 @@ export declare const GetFriendsStreaksResponseSchema: z.ZodObject<{
         name: z.ZodString;
         streak: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
-        userId: string;
         name: string;
+        userId: string;
         streak: number;
     }, {
-        userId: string;
         name: string;
+        userId: string;
         streak: number;
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
     friendsStreaks: {
-        userId: string;
         name: string;
+        userId: string;
         streak: number;
     }[];
 }, {
     friendsStreaks: {
-        userId: string;
         name: string;
+        userId: string;
         streak: number;
     }[];
 }>;

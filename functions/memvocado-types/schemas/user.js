@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FollowersArraySchema = exports.FollowersSchema = exports.FollowingArraySchema = exports.FollowingSchema = exports.UserSchema = exports.UserMetaSchema = exports.UserDailyStatsSchema = exports.UserTimestampSchema = exports.UserCoreSchema = exports.UserSettingsSchema = exports.UserStatsSchema = void 0;
 const zod_1 = require("zod");
 const base_1 = require("./base");
+const avocado_1 = require("./avocado");
 /**
  * Statystyki użytkownika
  */
@@ -56,6 +57,7 @@ exports.UserMetaSchema = zod_1.z
     experiencePoints: zod_1.z.number().min(0).default(0),
     currencyCount: zod_1.z.number().min(0).default(0),
     stats: exports.UserStatsSchema,
+    avocadoGrowth: avocado_1.AvocadoGrowthSchema.optional().nullable(),
     dailyStats: exports.UserDailyStatsSchema.optional().nullable(),
     followingCount: zod_1.z.number().min(0).default(0),
     followersCount: zod_1.z.number().min(0).default(0),

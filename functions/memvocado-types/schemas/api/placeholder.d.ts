@@ -17,15 +17,15 @@ export declare const AddPlaceholderDataResponseSchema: z.ZodObject<{
     totalCards: z.ZodNumber;
     deckIds: z.ZodArray<z.ZodString, "many">;
 }, "strip", z.ZodTypeAny, {
+    success: boolean;
     totalCards: number;
     userId: string;
-    success: boolean;
     decksCreated: number;
     deckIds: string[];
 }, {
+    success: boolean;
     totalCards: number;
     userId: string;
-    success: boolean;
     decksCreated: number;
     deckIds: string[];
 }>;

@@ -414,6 +414,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
     uid: string;
     customToken: string;
     user: {
+        id: string;
         username: string;
         email: string;
         settings: {
@@ -426,7 +427,6 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
         };
         createdAt: Date;
         updatedAt: Date;
-        id: string;
         league: number;
         currentGroupId: string | null;
         experiencePoints: number;
@@ -450,6 +450,7 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
     uid: string;
     customToken: string;
     user: {
+        id: string;
         username: string;
         email: string;
         settings: {
@@ -460,7 +461,6 @@ export declare const AuthRegisterResponseSchema: z.ZodObject<{
             language?: string | undefined;
             timeZone?: string | undefined;
         };
-        id: string;
         currentGroupId: string | null;
         stats: {
             totalCards?: number | undefined;

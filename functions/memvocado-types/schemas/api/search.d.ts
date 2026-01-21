@@ -65,9 +65,9 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strict", z.ZodTypeAny, {
+        id: string;
         createdAt: Date;
         updatedAt: Date;
-        id: string;
         tags: string[];
         title: string;
         icon: string;
@@ -102,9 +102,9 @@ export declare const SearchDecksResponseSchema: z.ZodObject<{
     total: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
     results: {
+        id: string;
         createdAt: Date;
         updatedAt: Date;
-        id: string;
         tags: string[];
         title: string;
         icon: string;

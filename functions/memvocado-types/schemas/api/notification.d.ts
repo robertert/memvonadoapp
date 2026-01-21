@@ -33,14 +33,14 @@ export declare const CreateNotificationRequestSchema: z.ZodObject<{
         readAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
     } & {
         id: z.ZodString;
-    }, "createdAt" | "id" | "readAt">, "strict", z.ZodTypeAny, {
-        type: "info" | "success" | "warning" | "error";
+    }, "id" | "createdAt" | "readAt">, "strict", z.ZodTypeAny, {
+        type: "success" | "info" | "warning" | "error";
         title: string;
         body: string;
         read: boolean;
         linkTo?: string | null | undefined;
     }, {
-        type: "info" | "success" | "warning" | "error";
+        type: "success" | "info" | "warning" | "error";
         title: string;
         body: string;
         linkTo?: string | null | undefined;
@@ -49,7 +49,7 @@ export declare const CreateNotificationRequestSchema: z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     userId: string;
     notification: {
-        type: "info" | "success" | "warning" | "error";
+        type: "success" | "info" | "warning" | "error";
         title: string;
         body: string;
         read: boolean;
@@ -58,7 +58,7 @@ export declare const CreateNotificationRequestSchema: z.ZodObject<{
 }, {
     userId: string;
     notification: {
-        type: "info" | "success" | "warning" | "error";
+        type: "success" | "info" | "warning" | "error";
         title: string;
         body: string;
         linkTo?: string | null | undefined;
@@ -103,16 +103,16 @@ export declare const GetNotificationsResponseSchema: z.ZodObject<{
     } & {
         id: z.ZodString;
     }, "strict", z.ZodTypeAny, {
-        type: "info" | "success" | "warning" | "error";
-        createdAt: Date;
+        type: "success" | "info" | "warning" | "error";
         id: string;
+        createdAt: Date;
         title: string;
         body: string;
         read: boolean;
         linkTo?: string | null | undefined;
         readAt?: Date | undefined;
     }, {
-        type: "info" | "success" | "warning" | "error";
+        type: "success" | "info" | "warning" | "error";
         id: string;
         title: string;
         body: string;
@@ -123,9 +123,9 @@ export declare const GetNotificationsResponseSchema: z.ZodObject<{
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
     notifications: {
-        type: "info" | "success" | "warning" | "error";
-        createdAt: Date;
+        type: "success" | "info" | "warning" | "error";
         id: string;
+        createdAt: Date;
         title: string;
         body: string;
         read: boolean;
@@ -134,7 +134,7 @@ export declare const GetNotificationsResponseSchema: z.ZodObject<{
     }[];
 }, {
     notifications: {
-        type: "info" | "success" | "warning" | "error";
+        type: "success" | "info" | "warning" | "error";
         id: string;
         title: string;
         body: string;

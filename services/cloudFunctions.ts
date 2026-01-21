@@ -278,6 +278,17 @@ import {
   ScanDocumentResponse,
   ScanDocumentResponseSchema,
 } from "@/types/schemas/api/scanning";
+import {
+  GetAvocadoStatusRequest,
+  GetAvocadoStatusResponse,
+  GetAvocadoStatusResponseSchema,
+  HarvestAvocadoRequest,
+  HarvestAvocadoResponse,
+  HarvestAvocadoResponseSchema,
+  GetAvocadoConfigRequest,
+  GetAvocadoConfigResponse,
+  GetAvocadoConfigResponseSchema,
+} from "@/types/schemas/avocado";
 
 // Cloud Functions calls
 export const cloudFunctions = {
@@ -1193,6 +1204,55 @@ export const cloudFunctions = {
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from checkIfLiked");
+    }
+    return validatedData.data;
+  },
+
+  // ============================================================================
+  // Avocado Growth Functions
+  // ============================================================================
+
+  // Get avocado growth status
+  getAvocadoStatus: async () => {
+    const fn = httpsCallable<GetAvocadoStatusRequest, GetAvocadoStatusResponse>(
+      functions,
+      "getAvocadoStatus"
+    );
+    const result = await fn({});
+    const validatedData = GetAvocadoStatusResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getAvocadoStatus");
+    }
+    return validatedData.data;
+  },
+
+  // Harvest avocado (roll gacha for skin)
+  harvestAvocado: async () => {
+    const fn = httpsCallable<HarvestAvocadoRequest, HarvestAvocadoResponse>(
+      functions,
+      "harvestAvocado"
+    );
+    const result = await fn({});
+    const validatedData = HarvestAvocadoResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from harvestAvocado");
+    }
+    return validatedData.data;
+  },
+
+  // Get avocado config (skin pool)
+  getAvocadoConfig: async () => {
+    const fn = httpsCallable<GetAvocadoConfigRequest, GetAvocadoConfigResponse>(
+      functions,
+      "getAvocadoConfig"
+    );
+    const result = await fn({});
+    const validatedData = GetAvocadoConfigResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getAvocadoConfig");
     }
     return validatedData.data;
   },

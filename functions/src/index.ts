@@ -91,3 +91,8 @@ export {
   completeOnboarding,
   checkUsernameAvailability,
 } from "./authHandlers";
+export {
+  getAvocadoStatus,
+  harvestAvocado,
+  getAvocadoConfigFn as getAvocadoConfig,
+} from "./avocadoFunctions";

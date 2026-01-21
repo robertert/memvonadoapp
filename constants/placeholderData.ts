@@ -44,6 +44,14 @@ const _placeholderUser = {
     longestStreak: 7,
     // lastStreakDate i lastStudyDate mogą być pominięte
   },
+  avocadoGrowth: {
+    currentPhase: 1,
+    consecutiveDays: 0,
+    lastGrowthDate: new Date(),
+    totalHarvests: 0,
+    collectedSkins: [],
+    harvestHistory: [],
+  },
   followingCount: 8,
   followersCount: 10,
 };

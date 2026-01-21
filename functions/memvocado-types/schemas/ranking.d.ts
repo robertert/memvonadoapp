@@ -71,8 +71,8 @@ export declare const LeagueGroupSchema: z.ZodObject<{
     id: z.ZodString;
     leagueNumber: z.ZodNumber;
 }, "strict", z.ZodTypeAny, {
-    createdAt: Date;
     id: string;
+    createdAt: Date;
     isFull: boolean;
     capacity: number;
     currentCount: number;
@@ -95,13 +95,13 @@ export declare const LeagueGroupMemberSchema: z.ZodObject<{
     points: z.ZodNumber;
     lastActivityAt: z.ZodEffects<z.ZodDate, Date, unknown>;
 }, "strict", z.ZodTypeAny, {
-    username: string;
     id: string;
+    username: string;
     points: number;
     lastActivityAt: Date;
 }, {
-    username: string;
     id: string;
+    username: string;
     points: number;
     lastActivityAt?: unknown;
 }>;
