@@ -7,33 +7,33 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		131C89E63BFD4BB28FEA8E2B /* FrankRuhlLibre-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F94F8E073B434083906F1353 /* FrankRuhlLibre-Black.ttf */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		2EEA9758CBDA54E815B4C73D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79B9EEF3B892060709CD9BB2 /* ExpoModulesProvider.swift */; };
+		353D6939FF55D39621EAD133 /* libPods-Memvocado.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A2607F259763540C99FEF39 /* libPods-Memvocado.a */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		6D96D7E25A3FBE734DC933F2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7CFDEE092CEB3BAD5134D3C5 /* PrivacyInfo.xcprivacy */; };
-		A45B7275B34843D5B8BC926B /* Peace Sans.otf in Resources */ = {isa = PBXBuildFile; fileRef = 4E0D98FBFE4E43EE89BF5A36 /* Peace Sans.otf */; };
+		3EE2A6533A30290D3AF37872 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A98C31865DB808E5E9CF56BB /* ExpoModulesProvider.swift */; };
+		82DED1724B22407DA195829B /* Peace Sans.otf in Resources */ = {isa = PBXBuildFile; fileRef = CE37F31F29BD4611BE0D862D /* Peace Sans.otf */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		E899E92014F7C8828137E348 /* libPods-Memvocado.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E2E48F5E710457D85E8B15EE /* libPods-Memvocado.a */; };
+		EC3DF4D909242F0F23026578 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 341890F471441D612ADF3C63 /* PrivacyInfo.xcprivacy */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
-		F538B0FD6DA94792B4BB7A8F /* FrankRuhlLibre-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4651D5A9B27E4E37A5715038 /* FrankRuhlLibre-Black.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0A2607F259763540C99FEF39 /* libPods-Memvocado.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Memvocado.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07F961A680F5B00A75B9A /* Memvocado.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Memvocado.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Memvocado/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Memvocado/Info.plist; sourceTree = "<group>"; };
-		4651D5A9B27E4E37A5715038 /* FrankRuhlLibre-Black.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "FrankRuhlLibre-Black.ttf"; path = "../assets/FrankRuhlLibre-Black.ttf"; sourceTree = "<group>"; };
-		4E0D98FBFE4E43EE89BF5A36 /* Peace Sans.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Peace Sans.otf"; path = "../assets/Peace Sans.otf"; sourceTree = "<group>"; };
-		710B20BD549B001DDB3216DB /* Pods-Memvocado.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Memvocado.release.xcconfig"; path = "Target Support Files/Pods-Memvocado/Pods-Memvocado.release.xcconfig"; sourceTree = "<group>"; };
-		79B9EEF3B892060709CD9BB2 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Memvocado/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		7CFDEE092CEB3BAD5134D3C5 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Memvocado/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		341890F471441D612ADF3C63 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Memvocado/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		8A687E85BD80280968FC758B /* Pods-Memvocado.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Memvocado.release.xcconfig"; path = "Target Support Files/Pods-Memvocado/Pods-Memvocado.release.xcconfig"; sourceTree = "<group>"; };
+		A98C31865DB808E5E9CF56BB /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Memvocado/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Memvocado/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		E2E48F5E710457D85E8B15EE /* libPods-Memvocado.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Memvocado.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE37F31F29BD4611BE0D862D /* Peace Sans.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Peace Sans.otf"; path = "../assets/Peace Sans.otf"; sourceTree = "<group>"; };
+		D8219A0671F7150BAD956E3D /* Pods-Memvocado.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Memvocado.debug.xcconfig"; path = "Target Support Files/Pods-Memvocado/Pods-Memvocado.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Memvocado/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Memvocado-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Memvocado-Bridging-Header.h"; path = "Memvocado/Memvocado-Bridging-Header.h"; sourceTree = "<group>"; };
-		F37C55F160EC67DD7C9D63FB /* Pods-Memvocado.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Memvocado.debug.xcconfig"; path = "Target Support Files/Pods-Memvocado/Pods-Memvocado.debug.xcconfig"; sourceTree = "<group>"; };
+		F94F8E073B434083906F1353 /* FrankRuhlLibre-Black.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "FrankRuhlLibre-Black.ttf"; path = "../assets/FrankRuhlLibre-Black.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,7 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E899E92014F7C8828137E348 /* libPods-Memvocado.a in Frameworks */,
+				353D6939FF55D39621EAD133 /* libPods-Memvocado.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -57,7 +57,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				7CFDEE092CEB3BAD5134D3C5 /* PrivacyInfo.xcprivacy */,
+				341890F471441D612ADF3C63 /* PrivacyInfo.xcprivacy */,
 			);
 			name = Memvocado;
 			sourceTree = "<group>";
@@ -66,19 +66,29 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				E2E48F5E710457D85E8B15EE /* libPods-Memvocado.a */,
+				0A2607F259763540C99FEF39 /* libPods-Memvocado.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		4ED27884A15E068954556452 /* Pods */ = {
+		37B9ABBBCEBB75996C6737C0 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				F37C55F160EC67DD7C9D63FB /* Pods-Memvocado.debug.xcconfig */,
-				710B20BD549B001DDB3216DB /* Pods-Memvocado.release.xcconfig */,
+				D8219A0671F7150BAD956E3D /* Pods-Memvocado.debug.xcconfig */,
+				8A687E85BD80280968FC758B /* Pods-Memvocado.release.xcconfig */,
 			);
 			name = Pods;
 			path = Pods;
+			sourceTree = "<group>";
+		};
+		515208EA974145E8A0453D86 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				CE37F31F29BD4611BE0D862D /* Peace Sans.otf */,
+				F94F8E073B434083906F1353 /* FrankRuhlLibre-Black.ttf */,
+			);
+			name = Resources;
+			path = "";
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -95,9 +105,9 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				E373EEFAA6FA48058A5DB7D2 /* Resources */,
-				4ED27884A15E068954556452 /* Pods */,
-				AC51841386D39D50CD2D5185 /* ExpoModulesProviders */,
+				515208EA974145E8A0453D86 /* Resources */,
+				37B9ABBBCEBB75996C6737C0 /* Pods */,
+				8FB01D88F94E377FE3F7D951 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -112,18 +122,18 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		9030ACAC2F8EBA19DDAFF4CB /* Memvocado */ = {
+		8503BD84C5D12C459D4F3C2D /* Memvocado */ = {
 			isa = PBXGroup;
 			children = (
-				79B9EEF3B892060709CD9BB2 /* ExpoModulesProvider.swift */,
+				A98C31865DB808E5E9CF56BB /* ExpoModulesProvider.swift */,
 			);
 			name = Memvocado;
 			sourceTree = "<group>";
 		};
-		AC51841386D39D50CD2D5185 /* ExpoModulesProviders */ = {
+		8FB01D88F94E377FE3F7D951 /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				9030ACAC2F8EBA19DDAFF4CB /* Memvocado */,
+				8503BD84C5D12C459D4F3C2D /* Memvocado */,
 			);
 			name = ExpoModulesProviders;
 			sourceTree = "<group>";
@@ -137,16 +147,6 @@
 			path = Memvocado/Supporting;
 			sourceTree = "<group>";
 		};
-		E373EEFAA6FA48058A5DB7D2 /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				4E0D98FBFE4E43EE89BF5A36 /* Peace Sans.otf */,
-				4651D5A9B27E4E37A5715038 /* FrankRuhlLibre-Black.ttf */,
-			);
-			name = Resources;
-			path = "";
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -155,13 +155,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Memvocado" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				DE58DCB09DB6181C5B3ED018 /* [Expo] Configure project */,
+				18C001BA90327F13D9BFECE7 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				8ACA52112209634480E313A2 /* [CP] Embed Pods Frameworks */,
+				3FE833F732A8E247C6C1303B /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -181,9 +181,7 @@
 				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
-						DevelopmentTeam = RM2NJT3U6B;
 						LastSwiftMigration = 1250;
-						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -213,9 +211,9 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				A45B7275B34843D5B8BC926B /* Peace Sans.otf in Resources */,
-				F538B0FD6DA94792B4BB7A8F /* FrankRuhlLibre-Black.ttf in Resources */,
-				6D96D7E25A3FBE734DC933F2 /* PrivacyInfo.xcprivacy in Resources */,
+				82DED1724B22407DA195829B /* Peace Sans.otf in Resources */,
+				131C89E63BFD4BB28FEA8E2B /* FrankRuhlLibre-Black.ttf in Resources */,
+				EC3DF4D909242F0F23026578 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,6 +259,52 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		18C001BA90327F13D9BFECE7 /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.xcode.env",
+				"$(SRCROOT)/.xcode.env.local",
+				"$(SRCROOT)/Memvocado/Memvocado.entitlements",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-Memvocado/expo-configure-project.sh",
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Pods/Target Support Files/Pods-Memvocado/ExpoModulesProvider.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-Memvocado/expo-configure-project.sh\"\n";
+		};
+		3FE833F732A8E247C6C1303B /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Memvocado/Pods-Memvocado-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Memvocado/Pods-Memvocado-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -299,52 +343,6 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Memvocado/Pods-Memvocado-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		8ACA52112209634480E313A2 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Memvocado/Pods-Memvocado-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Memvocado/Pods-Memvocado-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		DE58DCB09DB6181C5B3ED018 /* [Expo] Configure project */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/.xcode.env",
-				"$(SRCROOT)/.xcode.env.local",
-				"$(SRCROOT)/Memvocado/Memvocado.entitlements",
-				"$(SRCROOT)/Pods/Target Support Files/Pods-Memvocado/expo-configure-project.sh",
-			);
-			name = "[Expo] Configure project";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(SRCROOT)/Pods/Target Support Files/Pods-Memvocado/ExpoModulesProvider.swift",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-Memvocado/expo-configure-project.sh\"\n";
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -353,7 +351,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				2EEA9758CBDA54E815B4C73D /* ExpoModulesProvider.swift in Sources */,
+				3EE2A6533A30290D3AF37872 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -362,15 +360,12 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = F37C55F160EC67DD7C9D63FB /* Pods-Memvocado.debug.xcconfig */;
+			baseConfigurationReference = D8219A0671F7150BAD956E3D /* Pods-Memvocado.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Memvocado/Memvocado.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RM2NJT3U6B;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -401,15 +396,12 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 710B20BD549B001DDB3216DB /* Pods-Memvocado.release.xcconfig */;
+			baseConfigurationReference = 8A687E85BD80280968FC758B /* Pods-Memvocado.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Memvocado/Memvocado.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RM2NJT3U6B;
 				INFOPLIST_FILE = Memvocado/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (

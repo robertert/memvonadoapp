@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Pressable,
   Text,
@@ -6,6 +6,9 @@ import {
   ActivityIndicator,
   StyleSheet,
   Dimensions,
+  Modal,
+  TouchableWithoutFeedback,
+  ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -73,6 +76,9 @@ export default function AllInOneLearnScreen({
   const overlayOpacity = useSharedValue(0);
   const overlayColor = useSharedValue("green");
 
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [tooltipText, setTooltipText] = useState("");
+
   // Reset card position instantly when it goes off screen (same as SRS mode)
   useAnimatedReaction(
     () => translateX.value,
@@ -96,6 +102,23 @@ export default function AllInOneLearnScreen({
     },
     [rotateCard, scaleCard]
   );
+
+  // 2. Funkcja otwierająca Tooltip
+  const handleLongPress = () => {
+    // Obliczamy, która strona jest widoczna na podstawie obrotu
+    // Jeśli obrót to 0, 360, 720 -> Przód
+    // Jeśli obrót to 180, 540 -> Tył
+    const rotation = Math.round(rotateCard.value / 180);
+    const isBackVisible = Math.abs(rotation % 2) === 1;
+
+    const textToShow = isBackVisible ? currentCard?.back : currentCard?.front;
+    
+    if (textToShow) {
+      setTooltipText(textToShow);
+      setTooltipVisible(true);
+      triggerHaptic("success"); // Lekka wibracja jako potwierdzenie
+    }
+  };
 
   // Reset rotation when card changes
   useEffect(() => {
@@ -203,6 +226,13 @@ export default function AllInOneLearnScreen({
       }
     });
 
+    const longPressGesture = Gesture.LongPress()
+    .runOnJS(true)
+    .minDuration(500) // 500ms przytrzymania aktywuje tooltip
+    .onStart(() => {
+      handleLongPress();
+    });
+
   const tapGesture = Gesture.Tap()
     .runOnJS(true)
     .onEnd(() => {
@@ -216,7 +246,7 @@ export default function AllInOneLearnScreen({
       );
     });
 
-  const composedGesture = Gesture.Exclusive(panGesture, tapGesture);
+  const composedGesture = Gesture.Exclusive(panGesture, tapGesture, longPressGesture);
 
   // Animated styles
   const cardStyle = useAnimatedStyle(() => ({
@@ -352,16 +382,20 @@ export default function AllInOneLearnScreen({
         <GestureDetector gesture={composedGesture}>
           <Animated.View style={[styles.cardContainer, cardStyle]}>
             {/* Color overlay */}
-            <Animated.View style={[styles.colorOverlay, overlayStyle]} />
+            <Animated.View style={[styles.colorOverlay, overlayStyle]}/>
 
             {/* Front face */}
             <Animated.View style={[styles.cardFace, frontFaceStyle]}>
-              <Text style={styles.cardText}>{currentCard?.front}</Text>
+              <Text style={styles.cardText} 
+                    >
+                {currentCard?.front}
+              </Text>
             </Animated.View>
 
             {/* Back face */}
             <Animated.View style={[styles.cardFace, backFaceStyle]}>
-              <Text style={[styles.cardText, styles.backFaceText]}>
+              <Text style={[styles.cardText, styles.backFaceText]} 
+                    >
                 {currentCard?.back}
               </Text>
             </Animated.View>
@@ -398,6 +432,36 @@ export default function AllInOneLearnScreen({
             <Text style={styles.statLabel}>Czas</Text>
           </View>
         </View>
+        {/* 5. Komponent MODAL (dodaj na samym dole przed zamknięciem GestureHandlerRootView) */}
+        <Modal
+  visible={tooltipVisible}
+  transparent={true}
+  animationType="fade"
+  onRequestClose={() => setTooltipVisible(false)}
+>
+  {/* Główny kontener pozycjonujący */}
+  <View style={styles.modalOverlay}>
+    
+    {/* WARSTWA 1: Tło do klikania (Zamyka modal) */}
+    {/* StyleSheet.absoluteFill sprawia, że zajmuje cały ekran pod spodem */}
+    <Pressable 
+      style={StyleSheet.absoluteFill} 
+      onPress={() => setTooltipVisible(false)} 
+    />
+
+    {/* WARSTWA 2: Pudełko z treścią (Leży NA Pressable, więc ScrollView działa) */}
+    <View style={styles.modalContent}>
+      <ScrollView 
+        indicatorStyle="black" // Pasek przewijania widoczny
+        contentContainerStyle={styles.modalScrollContent}
+      >
+        <Text style={styles.modalText}>{tooltipText}</Text>
+      </ScrollView>
+      <Text style={styles.modalHint}>Dotknij tła, aby zamknąć</Text>
+    </View>
+
+  </View>
+</Modal>
       </GestureHandlerRootView>
     </LinearGradient>
   );
@@ -469,6 +533,7 @@ const styles = StyleSheet.create({
     color: Colors.primary_700,
     fontSize: 28,
     textAlign: "center",
+    textAlignVertical: "center",
     fontFamily: Fonts.primary,
     fontWeight: "600",
   },
@@ -573,5 +638,46 @@ const styles = StyleSheet.create({
     color: Colors.primary_100,
     fontSize: 16,
     fontFamily: Fonts.primary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)", // Półprzezroczyste tło
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    width: "90%",
+    maxHeight: "60%", // Maksymalna wysokość okna
+    backgroundColor: Colors.primary_100,
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalScrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalText: {
+    fontSize: 24,
+    color: Colors.primary_700,
+    fontFamily: Fonts.primary,
+    textAlign: "center",
+    lineHeight: 34,
+  },
+  modalHint: {
+    marginTop: 20,
+    textAlign: "center",
+    color: Colors.primary_700,
+    opacity: 0.5,
+    fontSize: 14,
   },
 });

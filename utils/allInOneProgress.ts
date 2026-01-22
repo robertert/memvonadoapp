@@ -141,21 +141,26 @@ export async function markCardCompleted(
  */
 export function getNextCard(session: AllInOneSession): AllInOneCard | null {
   const now = Date.now();
-  const TEN_MINUTES = 10 * 60 * 1000;
+  const ONE_MINUTE = 1 * 60 * 1000;
 
   const remaining = session.cards.filter((c) => !c.isCompleted);
   if (remaining.length === 0) return null; // session complete
 
   // Find cards available (not on cooldown)
   const available = remaining.filter(
-    (c) => c.lastWrongAt === null || now - c.lastWrongAt >= TEN_MINUTES
+    (c) => c.lastWrongAt === null || now - c.lastWrongAt >= ONE_MINUTE
   );
 
   if (available.length > 0) {
     // Return first available (ordered by time - oldest wrong first)
-    return available.sort(
-      (a, b) => (a.lastWrongAt ?? 0) - (b.lastWrongAt ?? 0)
-    )[0];
+    const sortedAvailable = available.sort(
+      (a, b) => {
+        if (a.lastWrongAt === null) return 1;
+        if (b.lastWrongAt === null) return -1;
+        return (a.lastWrongAt ?? 0) - (b.lastWrongAt ?? 0);
+      }
+    );
+    return sortedAvailable[0];
   }
 
   // All on cooldown → skip cooldown, return oldest wrong card

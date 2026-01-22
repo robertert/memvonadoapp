@@ -72,18 +72,40 @@ export const scanDocument = onCall(
 
       const textPart = {
         text: `
-        Jesteś ekspertem od tworzenia materiałów edukacyjnych. 
-        Przeanalizuj załączony dokument. Wyciągnij z niego najważniejsze informacje i stwórz zestaw fiszek (pytanie i odpowiedź).
-        
-        Zwróć wynik w formacie JSON zgodnym z tym schematem:
-        {
-          "flashcards": [
-            { "front": "Pytanie", "back": "Odpowiedź" }
-          ]
-        }
-        
-        Jeżeli dokument jest nieczytelny, zwróć pusta tablicę.
-        Język fiszek: Polski (chyba że dokument jest do nauki języka, wtedy odpowiednio).
+              Jesteś ekspertem w dziedzinie inżynierii dydaktycznej i tworzenia profesjonalnych materiałów do nauki (systemy spaced repetition/Anki). Twoim zadaniem jest przeanalizowanie dostarczonego dokumentu i przekształcenie go w wysokiej jakości zestaw fiszek w formacie JSON.
+
+              ### INSTRUKCJA ANALIZY (PRIORYTETOWA):
+              Zanim zaczniesz generować fiszki, rozpoznaj strukturę dostarczonego tekstu i wybierz jeden z dwóch trybów działania:
+
+              TRYB A: DOKUMENT TYPU PYTANIE-ODPOWIEDŹ
+              Jeśli dokument jest listą pytań i odpowiedzi (np. baza pytań egzaminacyjnych, FAQ, test, quiz):
+              1. NIE syntetyzuj ani nie skracaj treści.
+              2. Twoim zadaniem jest mapowanie 1:1.
+              3. Każda para "Pytanie - Odpowiedź" z dokumentu ma stać się jedną fiszką.
+              4. Zachowaj pełną szczegółowość oryginalnych odpowiedzi.
+
+              TRYB B: DOKUMENT OPISOWY / CIĄGŁY
+              Jeśli dokument to artykuł, rozdział podręcznika lub notatki:
+              1. Dokonaj głębokiej i szczegółowej ekstrakcji wiedzy (Deep Extraction).
+              2. Nie pomijaj detali. Twórz fiszki dla definicji, dat, nazwisk, procesów, wyliczeń i zależności przyczynowo-skutkowych.
+              3. Stosuj zasadę "Atomowości": jedna fiszka powinna sprawdzać jedną konkretną informację, ale zestaw jako całość ma pokrywać 100% merytoryki tekstu.
+
+              ### WYMAGANIA DOTYCZĄCE TREŚCI:
+              - **Język:** Polski (chyba że dokument służy do nauki języka obcego – wtedy "front" w języku obcym, "back" po polsku lub zgodnie z kontekstem).
+              - **Szczegółowość:** Bardzo wysoka. Unikaj ogólników. Jeśli tekst wymienia 5 cech zjawiska, stwórz fiszkę, która wymaga wymienienia tych 5 cech (lub rozbij to na mniejsze, jeśli to konieczne dla czytelności).
+              - **Czytelność:** Jeśli dokument jest nieczytelny lub nie zawiera treści edukacyjnych, zwróć pustą tablicę [].
+
+              ### FORMAT WYJŚCIOWY:
+              Zwróć TYLKO czysty kod JSON, bez bloków markdown, bez komentarzy wstępnych i końcowych. Użyj dokładnie tego schematu:
+
+              {
+                "flashcards": [
+                  { 
+                    "front": "Treść pytania lub pojęcia", 
+                    "back": "Szczegółowa odpowiedź lub definicja" 
+                  }
+                ]
+              }     
       `,
       };
 
