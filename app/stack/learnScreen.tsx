@@ -1,6 +1,6 @@
 // React and React Native imports
 import React, { useState, useEffect } from "react";
-import { Pressable, Text, View, ActivityIndicator } from "react-native";
+import { Pressable, Text, View, ActivityIndicator, Modal, ScrollView, StyleSheet } from "react-native";
 
 // Third-party library imports
 import { LinearGradient } from "expo-linear-gradient";
@@ -132,19 +132,37 @@ function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
     streakLost,
   } = useCardLogic(id);
   const { animationValues, animatedStyles, dimensions, TOP } = useAnimations();
-  const { comp, swipeUp } = useGestures({
-    animationValues,
-    newCard,
-    setIsBack,
-    TOP,
-    safeArea,
-  });
 
   const { cards, isLoading, isBack, tooltip, progress, dailyStats } =
     cardLogicState;
 
   // State for confetti trigger - only for streak achievement
   const [showConfetti, setShowConfetti] = useState(false);
+
+  // Tooltip state for long press
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [tooltipText, setTooltipText] = useState("");
+
+  // Handle long press to show tooltip with card text
+  const handleLongPress = () => {
+    const rotation = Math.round(animationValues.rotateCard.value / 180);
+    const isBackVisible = Math.abs(rotation % 2) === 1;
+    const textToShow = isBackVisible ? cards?.[0]?.cardData?.back : cards?.[0]?.cardData?.front;
+
+    if (textToShow) {
+      setTooltipText(textToShow);
+      setTooltipVisible(true);
+    }
+  };
+
+  const { comp, swipeUp } = useGestures({
+    animationValues,
+    newCard,
+    setIsBack,
+    TOP,
+    safeArea,
+    onLongPress: handleLongPress,
+  });
 
   // Animation for flying fire icon - appears big in center, then flies out
   const flyingFireIconScale = useSharedValue(0);
@@ -542,7 +560,74 @@ function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
         <Animated.View style={flyingFireIconAnimatedStyle} pointerEvents="none">
           <BoltIcon size={96} color={Colors.red} />
         </Animated.View>
+
+        {/* Tooltip Modal for long press */}
+        <Modal
+          visible={tooltipVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setTooltipVisible(false)}
+        >
+          <View style={tooltipStyles.modalOverlay}>
+            <Pressable
+              style={StyleSheet.absoluteFill}
+              onPress={() => setTooltipVisible(false)}
+            />
+            <View style={tooltipStyles.modalContent}>
+              <ScrollView
+                indicatorStyle="black"
+                contentContainerStyle={tooltipStyles.modalScrollContent}
+              >
+                <Text style={tooltipStyles.modalText}>{tooltipText}</Text>
+              </ScrollView>
+              <Text style={tooltipStyles.modalHint}>Dotknij tła, aby zamknąć</Text>
+            </View>
+          </View>
+        </Modal>
       </GestureHandlerRootView>
     </LinearGradient>
   );
 }
+
+const tooltipStyles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    width: "90%",
+    maxHeight: "60%",
+    backgroundColor: Colors.primary_100,
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalScrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalText: {
+    fontSize: 24,
+    color: Colors.primary_700,
+    textAlign: "center",
+    lineHeight: 34,
+  },
+  modalHint: {
+    marginTop: 20,
+    textAlign: "center",
+    color: Colors.primary_700,
+    opacity: 0.5,
+    fontSize: 14,
+  },
+});

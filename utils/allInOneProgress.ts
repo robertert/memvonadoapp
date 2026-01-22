@@ -141,14 +141,14 @@ export async function markCardCompleted(
  */
 export function getNextCard(session: AllInOneSession): AllInOneCard | null {
   const now = Date.now();
-  const ONE_MINUTE = 1 * 60 * 1000;
+  const COOLDOWN_TIME = 3 * 60 * 1000;
 
   const remaining = session.cards.filter((c) => !c.isCompleted);
   if (remaining.length === 0) return null; // session complete
 
   // Find cards available (not on cooldown)
   const available = remaining.filter(
-    (c) => c.lastWrongAt === null || now - c.lastWrongAt >= ONE_MINUTE
+    (c) => c.lastWrongAt === null || now - c.lastWrongAt >= COOLDOWN_TIME
   );
 
   if (available.length > 0) {

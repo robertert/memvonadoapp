@@ -50,6 +50,7 @@ interface UseGesturesProps {
   setIsBack: (value: React.SetStateAction<boolean>) => void;
   TOP: number;
   safeArea?: EdgeInsets;
+  onLongPress?: () => void;
 }
 
 /**
@@ -66,6 +67,7 @@ export function useGestures({
   setIsBack,
   TOP,
   safeArea,
+  onLongPress,
 }: UseGesturesProps) {
   const {
     translateX,
@@ -239,12 +241,23 @@ export function useGestures({
       );
     });
 
-  const comp = Gesture.Exclusive(pan, tap);
+  const longPress = Gesture.LongPress()
+    .runOnJS(true)
+    .minDuration(500)
+    .onStart(() => {
+      if (onLongPress) {
+        triggerHaptic("success");
+        onLongPress();
+      }
+    });
+
+  const comp = Gesture.Exclusive(pan, tap, longPress);
 
   return {
     pan,
     swipeUp,
     tap,
+    longPress,
     comp,
   };
 }

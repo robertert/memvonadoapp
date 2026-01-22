@@ -13,7 +13,7 @@ import type { LearningMode } from "@/types";
 
 interface LearningModeModalProps {
   visible: boolean;
-  onSelectMode: (mode: LearningMode, remember: boolean) => void;
+  onSelectMode: (mode: LearningMode) => void;
   onClose: () => void;
 }
 
@@ -22,10 +22,9 @@ export default function LearningModeModal({
   onSelectMode,
   onClose,
 }: LearningModeModalProps): React.JSX.Element {
-  const [rememberChoice, setRememberChoice] = useState(false);
 
   function handleModeSelect(mode: LearningMode): void {
-    onSelectMode(mode, rememberChoice);
+    onSelectMode(mode);
   }
 
   return (
@@ -54,9 +53,9 @@ export default function LearningModeModal({
               <View style={styles.iconContainer}>
                 <CalendarDaysIcon size={48} color={Colors.primary_700} />
               </View>
-              <Text style={styles.modeTitle}>Powtorki rozlozone</Text>
+              <Text style={styles.modeTitle}>Inteligentne powtórki</Text>
               <Text style={styles.modeDescription}>
-                Karty do powtorki wg algorytmu FSRS. Optymalne dla dlugiej pamieci.
+              Inwestycja w pamięć długotrwałą. System planuje naukę tak, aby materiał został w Twojej głowie na lata, a nie tylko do jutrzejszego sprawdzianu
               </Text>
             </Pressable>
 
@@ -74,23 +73,9 @@ export default function LearningModeModal({
               </View>
               <Text style={styles.modeTitle}>Wszystko naraz</Text>
               <Text style={styles.modeDescription}>
-                Wszystkie karty w jednej sesji. Idealne do szybkiej powtorki przed egzaminem.
+              Przerób całą talię w jednej sesji. Karty, których nie znasz, wracają po kilku ruchach, aż do skutku. Idealne do zakuwania przed testem.
               </Text>
             </Pressable>
-          </View>
-
-          {/* Remember choice checkbox */}
-          <View style={styles.rememberContainer}>
-            <Text style={styles.rememberText}>Zapamietaj moj wybor</Text>
-            <Switch
-              value={rememberChoice}
-              onValueChange={setRememberChoice}
-              trackColor={{
-                false: Colors.primary_500,
-                true: Colors.accent_500,
-              }}
-              thumbColor={Colors.primary_700}
-            />
           </View>
 
           {/* Cancel button */}

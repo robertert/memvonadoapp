@@ -336,50 +336,18 @@ export default function deckDetails(): React.JSX.Element {
       return;
     }
 
-    // Check if user has default preference
-    if (userCtx?.id) {
-      try {
-        const userSettings = await cloudFunctions.getUserSettings(userCtx.id);
-        if (userSettings?.settings?.defaultLearningMode) {
-          // Auto-apply default, navigate immediately
-          await cloudFunctions.updateUserDeckSettings(deck.id, {
-            ...userDeck?.settings,
-            learningMode: userSettings.settings.defaultLearningMode,
-          });
-          setUserDeck((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  settings: {
-                    ...prev.settings,
-                    learningMode: userSettings.settings.defaultLearningMode,
-                  },
-                }
-              : prev
-          );
-          navigateToLearn();
-          return;
-        }
-      } catch (error) {
-        console.error("Error fetching user settings:", error);
-      }
-    }
-
     // No mode set, no default → show modal
     setShowModeModal(true);
   }
 
-  async function handleModeSelect(
-    mode: LearningMode,
-    remember: boolean
-  ): Promise<void> {
+  async function handleModeSelect(mode: LearningMode): Promise<void> {
     if (!deck?.id) return;
 
     setShowModeModal(false);
 
     try {
       // Update deck settings with selected mode
-      await cloudFunctions.updateUserDeckSettings(deck.id, {
+      cloudFunctions.updateUserDeckSettings(deck.id, {
         ...userDeck?.settings,
         learningMode: mode,
       });
@@ -392,15 +360,6 @@ export default function deckDetails(): React.JSX.Element {
             }
           : prev
       );
-
-      // If remember is checked, also update user's default preference
-      if (remember && userCtx?.id) {
-        const currentSettings = await cloudFunctions.getUserSettings(userCtx.id);
-        await cloudFunctions.updateUserSettings(userCtx.id, {
-          ...currentSettings.settings,
-          defaultLearningMode: mode,
-        });
-      }
 
       navigateToLearn();
     } catch (error) {

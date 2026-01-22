@@ -405,6 +405,25 @@ export default function AllInOneLearnScreen({
           </Pressable>
         )}
 
+        {/* Edit Card Button */}
+        {currentCard?.cardId && (
+        <Pressable
+          onPress={() => {
+            if (!currentCard?.cardId) return;
+            router.push({
+              pathname: "./editCard",
+              params: { cardId: currentCard.cardId, deckId: deckId },
+            });
+          }}
+          style={{ position: "absolute", top: safeArea.top + 110, right: 20 }}
+          accessibilityLabel="Edit card"
+          accessibilityRole="button"
+          accessibilityHint="Tap to edit card"
+        >
+          <Ionicons name="pencil" size={24} color={Colors.primary_700} />
+        </Pressable>
+        )}
+
         {/* Bottom Stats */}
         <View style={[styles.bottomStats, { paddingBottom: safeArea.bottom + 20 }]}>
           <View style={styles.statItem}>
