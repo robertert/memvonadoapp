@@ -81,6 +81,8 @@ export default function Flashcard({
     return {
       opacity: isBackVisible ? 1 : 0,
       zIndex: isBackVisible ? 1 : 0,
+      transform: [{ scaleX: -1 }],
+      backfaceVisibility: 'visible',
     };
   });
 
@@ -105,7 +107,7 @@ export default function Flashcard({
         <Animated.View
           style={[styles.cardFace, backgroundColorStyle, backAnimatedStyle]}
         >
-          <Text style={[styles.text, styles.backFace]}>
+          <Text style={[styles.text]}>
             {card?.cardData?.back}
           </Text>
         </Animated.View>
@@ -139,7 +141,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary_100,
     padding: 16,
   },
-  backFace: { transform: [{ rotateY: "180deg" }] },
   text: {
     color: Colors.primary_700,
     fontSize: 30,

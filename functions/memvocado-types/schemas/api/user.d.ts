@@ -1131,3 +1131,19 @@ export declare const UndoCardResponseSchema: z.ZodObject<{
     success: boolean;
 }>;
 export type UndoCardResponse = z.infer<typeof UndoCardResponseSchema>;
+export declare const UpdateCardProgressAllInOneRequestSchema: z.ZodObject<{
+    isIncrement: z.ZodBoolean;
+}, "strip", z.ZodTypeAny, {
+    isIncrement: boolean;
+}, {
+    isIncrement: boolean;
+}>;
+export type UpdateCardProgressAllInOneRequest = z.infer<typeof UpdateCardProgressAllInOneRequestSchema>;
+export declare const UpdateCardProgressAllInOneResponseSchema: z.ZodObject<{
+    success: z.ZodBoolean;
+}, "strip", z.ZodTypeAny, {
+    success: boolean;
+}, {
+    success: boolean;
+}>;
+export type UpdateCardProgressAllInOneResponse = z.infer<typeof UpdateCardProgressAllInOneResponseSchema>;

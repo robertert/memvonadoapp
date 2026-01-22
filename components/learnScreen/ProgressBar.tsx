@@ -14,7 +14,7 @@ import { Colors } from "../../constants/colors";
 
 interface ProgressBarProps {
   tabBarValue: number;
-  progressText: string;
+  progressText?: string;
 }
 
 export default function ProgressBar({

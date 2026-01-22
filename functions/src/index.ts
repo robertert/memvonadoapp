@@ -22,6 +22,7 @@ export {
   getCurrentSeason,
   submitPoints,
   weeklyRollOver,
+  updateCardProgressAllInOne,
 } from "./userFunctions";
 export { scanDocument } from "./scanningFunctions";
 export {

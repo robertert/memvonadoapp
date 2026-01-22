@@ -139,6 +139,9 @@ import {
   UndoCardRequest,
   UndoCardResponse,
   UndoCardResponseSchema,
+  UpdateCardProgressAllInOneRequest,
+  UpdateCardProgressAllInOneResponse,
+  UpdateCardProgressAllInOneResponseSchema,
 } from "@/types/schemas/api/user";
 import {
   GetFriendsStreaksRequest,
@@ -261,6 +264,7 @@ import {
   CheckIfLikedRequest,
   CheckIfLikedResponse,
   CheckIfLikedResponseSchema,
+
 } from "@/types/schemas/api/deck";
 import {
   CheckUsernameAvailabilityRequest,
@@ -539,6 +543,20 @@ export const cloudFunctions = {
     return validatedData.data;
   },
 
+  // Update card progress all in one
+  updateCardProgressAllInOne: async (isIncrement: boolean) => {
+    const updateCardProgressAllInOneFunction = httpsCallable<
+      UpdateCardProgressAllInOneRequest,
+      UpdateCardProgressAllInOneResponse
+    >(functions, "updateCardProgressAllInOne");
+    const result = await updateCardProgressAllInOneFunction({ isIncrement });
+    const validatedData = UpdateCardProgressAllInOneResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from updateCardProgressAllInOne");
+    }
+    return validatedData.data;
+  },
   // Create deck with cards in bulk
   createDeckWithCards: async (deckData: DeckCore, cards: CardCore[]) => {
     const createDeckFunction = httpsCallable<

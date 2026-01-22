@@ -48,7 +48,6 @@ export function useAllInOneCardLogic(deckId: string) {
   // Pagination state
   const [hasMoreCards, setHasMoreCards] = useState<boolean>(true);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [sessionTime, setSessionTime] = useState<number>(0);
 
   // Undo history
   const [history, setHistory] = useState<
@@ -70,7 +69,7 @@ export function useAllInOneCardLogic(deckId: string) {
     const nextCard = getNextCard(currentSession);
     setCurrentCard(nextCard);
     setIsBack(false);
-
+    cloudFunctions.updateCardProgressAllInOne(true);
     // Check if session is complete
     if (!nextCard) {
       const remainingIncomplete = currentSession.cards.filter(
@@ -132,7 +131,6 @@ export function useAllInOneCardLogic(deckId: string) {
 
       let existingSession = await getSession(deckId);
 
-      setSessionTime(0);
 
       if (!existingSession) {
         // Fetch cards with pagination (100 at a time)
@@ -165,19 +163,12 @@ export function useAllInOneCardLogic(deckId: string) {
           wrongAttempts: 0,
         };
 
-        setSessionTime(Date.now() - existingSession.startedAt);
         
 
         setHasMoreCards(hasMore);
         setNextCursor(lastDocId);
         await saveSession(existingSession);
       }
-      setInterval(() => {
-        setSessionTime((prev) => {
-          return prev + 1000;
-        });
-
-      }, 1000);
 
       setSession(existingSession);
       advanceToNextCard(existingSession);
@@ -298,6 +289,7 @@ export function useAllInOneCardLogic(deckId: string) {
       // Note: wrongAttempts might be tricky to restore accurately
     };
 
+    cloudFunctions.updateCardProgressAllInOne(false);
     setSession(updatedSession);
     setCurrentCard(restoredCard);
     setIsBack(false);
@@ -328,7 +320,6 @@ export function useAllInOneCardLogic(deckId: string) {
           mode: "all_in_one",
           totalCards: sessionStats.completed.toString(),
           wrongAttempts: sessionStats.wrongAttempts.toString(),
-          sessionTimeMs: sessionTime.toString(),
         },
       });
     }
@@ -348,7 +339,6 @@ export function useAllInOneCardLogic(deckId: string) {
     progress: totalCardsInDeck > 0 ? (session?.completedCards ?? 0) / totalCardsInDeck : 0,
     totalCardsInDeck,
     sessionStats,
-    sessionTime,
     error,
     clearError: () => setError(null),
   };

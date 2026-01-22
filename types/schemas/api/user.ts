@@ -249,3 +249,17 @@ export const UndoCardResponseSchema = z.object({
   success: z.boolean(),
 });
 export type UndoCardResponse = z.infer<typeof UndoCardResponseSchema>;
+
+export const UpdateCardProgressAllInOneRequestSchema = z.object({
+  isIncrement: z.boolean(),
+});
+export type UpdateCardProgressAllInOneRequest = z.infer<
+  typeof UpdateCardProgressAllInOneRequestSchema
+>;
+
+export const UpdateCardProgressAllInOneResponseSchema = z.object({
+  success: z.boolean(),
+});
+export type UpdateCardProgressAllInOneResponse = z.infer<
+  typeof UpdateCardProgressAllInOneResponseSchema
+>;

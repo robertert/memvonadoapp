@@ -576,14 +576,6 @@ export default function VictoryScreen(): React.JSX.Element {
                 <Text style={styles.desc}>Błędne próby</Text>
               </View>
             </View>
-            <View style={styles.insideRow}>
-              <View style={styles.insideSection}>
-                <Text style={[styles.num, { color: Colors.accent_500 }]}>
-                  {formatTime(allInOneSessionTimeMs)}
-                </Text>
-                <Text style={styles.desc}>Czas sesji</Text>
-              </View>
-            </View>
 
             <Text style={styles.summaryText}>
               Świetna robota! Przećwiczone wszystkie karty w jednej sesji.

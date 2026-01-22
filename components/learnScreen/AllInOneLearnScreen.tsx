@@ -33,6 +33,7 @@ import * as Haptics from "expo-haptics";
 import { Colors, Fonts } from "../../constants/colors";
 import { useAllInOneCardLogic } from "../../hooks/learnScreen/useAllInOneCardLogic";
 import { ArrowUturnLeftIcon } from "react-native-heroicons/solid";
+import ProgressBar from "./ProgressBar";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("screen");
 const X_THRESHOLD = 0.15;
@@ -58,7 +59,6 @@ export default function AllInOneLearnScreen({
     progress,
     totalCardsInDeck,
     sessionStats,
-    sessionTime,
     error,
     clearError,
   } = useAllInOneCardLogic(deckId);
@@ -276,6 +276,8 @@ export default function AllInOneLearnScreen({
     return {
       opacity: isBackVisible ? 1 : 0,
       zIndex: isBackVisible ? 1 : 0,
+      transform: [{ scaleX: -1 }],
+      backfaceVisibility: 'visible',
     };
   });
 
@@ -359,16 +361,7 @@ export default function AllInOneLearnScreen({
         </View>
 
         {/* Progress Bar */}
-        <View style={styles.progressBarContainer}>
-          <View style={styles.progressBarBackground}>
-            <View
-              style={[
-                styles.progressBarFill,
-                { width: `${Math.min(progress * 100, 100)}%` },
-              ]}
-            />
-          </View>
-        </View>
+          <ProgressBar tabBarValue={Math.min(progress * 100, 100)} />
 
         {/* Swipe Indicators */}
         <Animated.View style={[styles.leftIndicator, leftIndicatorStyle]}>
@@ -415,21 +408,18 @@ export default function AllInOneLearnScreen({
         {/* Bottom Stats */}
         <View style={[styles.bottomStats, { paddingBottom: safeArea.bottom + 20 }]}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{sessionStats.completed}</Text>
-            <Text style={styles.statLabel}>Zrobione</Text>
+            <Text style={[styles.statNumber, { color: Colors.green }]}>{sessionStats.completed}</Text>
+            <Text style={[styles.statLabel, { color: Colors.primary_100 }]}>Zrobione</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{sessionStats.wrongAttempts}</Text>
-            <Text style={styles.statLabel}>Bledy</Text>
+            <Text style={[styles.statNumber, { color: Colors.red }]}>{sessionStats.wrongAttempts}</Text>
+            <Text style={[styles.statLabel, { color: Colors.primary_100 }]}>Błędy</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {Math.floor(sessionTime / 60000)}:
-              {String(
-                Math.floor((sessionTime % 60000) / 1000)
-              ).padStart(2, "0")}
+            <Text style={[styles.statNumber, { color: Colors.primary_100 }]}>
+                {totalCardsInDeck}
             </Text>
-            <Text style={styles.statLabel}>Czas</Text>
+            <Text style={[styles.statLabel, { color: Colors.primary_100 }]}>Wszystkie</Text>
           </View>
         </View>
         {/* 5. Komponent MODAL (dodaj na samym dole przed zamknięciem GestureHandlerRootView) */}
@@ -443,16 +433,14 @@ export default function AllInOneLearnScreen({
   <View style={styles.modalOverlay}>
     
     {/* WARSTWA 1: Tło do klikania (Zamyka modal) */}
-    {/* StyleSheet.absoluteFill sprawia, że zajmuje cały ekran pod spodem */}
     <Pressable 
       style={StyleSheet.absoluteFill} 
       onPress={() => setTooltipVisible(false)} 
     />
 
-    {/* WARSTWA 2: Pudełko z treścią (Leży NA Pressable, więc ScrollView działa) */}
     <View style={styles.modalContent}>
       <ScrollView 
-        indicatorStyle="black" // Pasek przewijania widoczny
+        indicatorStyle="black" 
         contentContainerStyle={styles.modalScrollContent}
       >
         <Text style={styles.modalText}>{tooltipText}</Text>
@@ -493,17 +481,6 @@ const styles = StyleSheet.create({
     width: "90%",
     marginBottom: 20,
   },
-  progressBarBackground: {
-    height: 8,
-    backgroundColor: Colors.primary_500,
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  progressBarFill: {
-    height: "100%",
-    backgroundColor: Colors.accent_500,
-    borderRadius: 4,
-  },
   cardContainer: {
     alignItems: "center",
     justifyContent: "center",
@@ -527,7 +504,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   backFaceText: {
-    transform: [{ rotateY: "180deg" }],
   },
   cardText: {
     color: Colors.primary_700,

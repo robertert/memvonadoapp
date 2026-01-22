@@ -8,7 +8,7 @@
  */
 export { searchDecks } from "./searchFunctions";
 export { getSearchLogs } from "./searchFunctions";
-export { serverNow, getCurrentSeason, submitPoints, weeklyRollOver, } from "./userFunctions";
+export { serverNow, getCurrentSeason, submitPoints, weeklyRollOver, updateCardProgressAllInOne, } from "./userFunctions";
 export { scanDocument } from "./scanningFunctions";
 export { getUserDecks, updateCardProgress, getUserProgress, getUserSettings, updateUserStreakOnLogin, updateUserStreakIfQualified, updateUserSettings, undoCard, getUserProfile, getUserActivityHeatmap, getUserAwards, } from "./userFunctions";
 export { createDeckWithCards, updateUserStats, syncDeckMetadataToUserCopies, getDeckDetails, getDeckCards, getPopularDecks, resetDeck, updateDeckSettings, updateUserDeckSettings, startLearningDeck, getUserDeckDetails, getUserDeckCards, startLearningSession, getUserDueDeckCards, getDailyUserStats, getDeckDailyStats, getUserNewDeckCards, deleteDeck, checkCardChanges, syncDeckCards, updateCardContent, updateDeck, importAnkiDeck, recordDeckView, toggleDeckLike, checkIfLiked, } from "./deckFunctions";

@@ -73,6 +73,9 @@ export declare const getUserDecks: import("firebase-functions/v2/https").Callabl
 export declare const undoCard: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
 }>, unknown>;
+export declare const updateCardProgressAllInOne: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+}>, unknown>;
 /**
  * Update card progress after review
  */

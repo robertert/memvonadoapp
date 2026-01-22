@@ -52,6 +52,8 @@ import {
   UndoCardResponseSchema,
   UserDailyStatsSchema,
   UpdateUserStreakIfQualifiedResponse,
+  UpdateCardProgressAllInOneRequestSchema,
+  UpdateCardProgressAllInOneResponseSchema
 } from "memvocado-types";
 import { serializeTimestamps } from "./utils/serialization";
 import {
@@ -577,7 +579,45 @@ async function updateUserStats(userId: string) {
     logger.error("Error updating user stats", error);
   }
 }
+export const updateCardProgressAllInOne = onCall(async (request) => {
+  const parsedRequest = UpdateCardProgressAllInOneRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!parsedRequest.success) {
+    logger.error("updateCardProgressAllInOne: invalid request", {
+      issues: parsedRequest.error.issues,
+    });
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
+  }
+  const auth = request.auth;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+  const userId = auth.uid;
 
+  const { isIncrement } =
+    parsedRequest.data;
+
+  try {
+    const increment = isIncrement ? 1 : -1;
+    const userRef = db.doc(`users/${userId}`);
+    await userRef.update({
+      "stats.totalReviews": FieldValue.increment(increment),
+      "dailyStats.completedNewToday": FieldValue.increment(increment),
+    });
+    const successResponse = UpdateCardProgressAllInOneResponseSchema.parse({ success: true });
+    return serializeTimestamps(successResponse);
+  } catch (error) {
+    logger.error("Error updating user stats", error);
+    handleZodError(error, "updateCardProgressAllInOne");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to update card progress all in one");
+  }
+});
 /**
  * Update card progress after review
  */
