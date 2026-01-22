@@ -237,8 +237,51 @@ async function updateStreakForTodayIfQualified(params: {
   };
 }
 
+
 /**
- * Aktualizuje streak użytkownika „na żądanie” przy starcie aplikacji.
+ * Archiwizuje dzienne statystyki do historyDailyStats jeśli są z poprzedniego dnia.
+ * @param {string} userId ID użytkownika
+ * @param {Object} dailyStats Aktualne dzienne statystyki
+ * @param {string} timeZone Strefa czasowa IANA
+ * @return {Promise<string | null>} Data zarchiwizowanych statystyk lub null
+ */
+async function archiveDailyStatsIfNeeded(
+  userId: string,
+  dailyStats: { completedNewToday?: number; completedDueToday?: number; lastUpdatedStats?: unknown } | null | undefined,
+  timeZone: string
+): Promise<string | null> {
+  if (!dailyStats?.lastUpdatedStats) return null;
+
+  const lastUpdated = dailyStats.lastUpdatedStats as { seconds?: number };
+  const statsDate = lastUpdated.seconds
+    ? new Date(lastUpdated.seconds * 1000)
+    : dailyStats.lastUpdatedStats as Date;
+
+  const statsYmd = formatYmdInTimeZone(statsDate, timeZone);
+  const todayYmd = formatYmdInTimeZone(new Date(), timeZone);
+
+  // Archiwizuj tylko jeśli stats są z poprzedniego dnia
+  if (statsYmd === todayYmd) return null;
+
+  const totalCards = (dailyStats.completedNewToday || 0) + (dailyStats.completedDueToday || 0);
+  if (totalCards === 0) return null;
+
+  const historyRef = db.doc(`users/${userId}/historyDailyStats/${statsYmd}`);
+
+  await historyRef.set({
+    date: statsYmd,
+    completedNewToday: dailyStats.completedNewToday || 0,
+    completedDueToday: dailyStats.completedDueToday || 0,
+    totalCards,
+    archivedAt: new Date(),
+  }, { merge: true });
+
+  logger.info("Archived daily stats", { userId, date: statsYmd, totalCards });
+  return statsYmd;
+}
+
+/**
+ * Aktualizuje streak użytkownika „na żądanie" przy starcie aplikacji.
  * Bazuje na tym, czy wczoraj (w strefie czasowej użytkownika) była jakakolwiek sesja.
  * Idempotentne dzięki polu stats.lastStreakDate (YYYY-MM-DD).
  */
@@ -274,6 +317,14 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
 
     // Pobieramy strefę czasową
     const tz = userData.settings?.timeZone || "UTC";
+    const dailyStats = userData.dailyStats || null;
+
+    // ARCHIWIZACJA: przed logiką streaka
+    try {
+      await archiveDailyStatsIfNeeded(userId, dailyStats, tz);
+    } catch (archiveErr) {
+      logger.warn("updateUserStreakOnLogin: daily stats archive failed", archiveErr);
+    }
 
     // Obliczamy daty "dzisiaj" i "wczoraj" w strefie użytkownika
     const now = new Date();
@@ -1358,29 +1409,44 @@ export const getUserActivityHeatmap = onCall(async (request) => {
     const startDate = new Date(today);
     startDate.setDate(today.getDate() - days);
 
-    // Get study sessions in the date range
-    const sessionsRef = db
-      .collection(`users/${userId}/studySessions`)
-      .where("date", ">=", startDate);
+    // Get historical daily stats
+    const startYmd = startDate.toISOString().slice(0, 10);
 
-    const sessionsSnapshot = await sessionsRef.get();
+    const historyRef = db
+      .collection(`users/${userId}/historyDailyStats`)
+      .where("date", ">=", startYmd);
 
-    // Count sessions per day
+    const historySnapshot = await historyRef.get();
+
     const activityMap: Record<string, number> = {};
 
-    sessionsSnapshot.docs.forEach((doc) => {
-      const sessionData = doc.data();
-      const sessionDate = sessionData.date?.toDate
-        ? sessionData.date.toDate()
-        : new Date(sessionData.date);
-
-      if (isNaN(sessionDate.getTime())) {
-        return;
-      }
-
-      const dateKey = sessionDate.toISOString().slice(0, 10); // YYYY-MM-DD
-      activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
+    historySnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      activityMap[data.date] = data.totalCards ||
+        ((data.completedNewToday || 0) + (data.completedDueToday || 0));
     });
+
+    // Dodać dzisiejsze stats (jeszcze nie zarchiwizowane)
+    const userRef = db.doc(`users/${userId}`);
+    const userSnap = await userRef.get();
+    if (userSnap.exists) {
+      const userData = userSnap.data() || {};
+      const dailyStats = userData.dailyStats;
+      const tz = userData.settings?.timeZone || "UTC";
+
+      if (dailyStats?.lastUpdatedStats) {
+        const lastUpdated = dailyStats.lastUpdatedStats as { seconds?: number; toDate?: () => Date };
+        const statsDate = lastUpdated.toDate?.()
+          || new Date((lastUpdated.seconds || 0) * 1000);
+        const todayYmd = formatYmdInTimeZone(new Date(), tz);
+        const statsYmd = formatYmdInTimeZone(statsDate, tz);
+
+        if (statsYmd === todayYmd) {
+          activityMap[todayYmd] = (dailyStats.completedNewToday || 0) +
+                                  (dailyStats.completedDueToday || 0);
+        }
+      }
+    }
 
     // Generate heatmap data for all days in range
     const heatmapData: Array<{ date: string; count: number }> = [];

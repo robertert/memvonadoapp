@@ -65,6 +65,16 @@ export const UserDailyStatsSchema = z.object({
 
 export type UserDailyStats = z.infer<typeof UserDailyStatsSchema>;
 
+export const HistoryDailyStatsSchema = z.object({
+  date: z.string(), // YYYY-MM-DD (document ID)
+  completedNewToday: z.number().min(0),
+  completedDueToday: z.number().min(0),
+  totalCards: z.number().min(0), // suma: completedNewToday + completedDueToday
+  archivedAt: TimestampSchema,
+});
+
+export type HistoryDailyStats = z.infer<typeof HistoryDailyStatsSchema>;
+
 export const UserMetaSchema = z
   .object({
     id: z.string(),

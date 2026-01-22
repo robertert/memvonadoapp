@@ -1,5 +1,5 @@
 /**
- * Aktualizuje streak użytkownika „na żądanie” przy starcie aplikacji.
+ * Aktualizuje streak użytkownika „na żądanie" przy starcie aplikacji.
  * Bazuje na tym, czy wczoraj (w strefie czasowej użytkownika) była jakakolwiek sesja.
  * Idempotentne dzięki polu stats.lastStreakDate (YYYY-MM-DD).
  */

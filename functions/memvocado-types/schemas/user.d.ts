@@ -142,6 +142,26 @@ export declare const UserDailyStatsSchema: z.ZodObject<{
     lastUpdatedStats?: unknown;
 }>;
 export type UserDailyStats = z.infer<typeof UserDailyStatsSchema>;
+export declare const HistoryDailyStatsSchema: z.ZodObject<{
+    date: z.ZodString;
+    completedNewToday: z.ZodNumber;
+    completedDueToday: z.ZodNumber;
+    totalCards: z.ZodNumber;
+    archivedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
+}, "strip", z.ZodTypeAny, {
+    date: string;
+    completedNewToday: number;
+    completedDueToday: number;
+    totalCards: number;
+    archivedAt: Date;
+}, {
+    date: string;
+    completedNewToday: number;
+    completedDueToday: number;
+    totalCards: number;
+    archivedAt?: unknown;
+}>;
+export type HistoryDailyStats = z.infer<typeof HistoryDailyStatsSchema>;
 export declare const UserMetaSchema: z.ZodObject<{
     id: z.ZodString;
     league: z.ZodDefault<z.ZodNumber>;

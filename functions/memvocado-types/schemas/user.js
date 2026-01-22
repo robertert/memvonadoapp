@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.FollowersArraySchema = exports.FollowersSchema = exports.FollowingArraySchema = exports.FollowingSchema = exports.UserSchema = exports.UserMetaSchema = exports.UserDailyStatsSchema = exports.UserTimestampSchema = exports.UserCoreSchema = exports.UserSettingsSchema = exports.UserStatsSchema = void 0;
+exports.FollowersArraySchema = exports.FollowersSchema = exports.FollowingArraySchema = exports.FollowingSchema = exports.UserSchema = exports.UserMetaSchema = exports.HistoryDailyStatsSchema = exports.UserDailyStatsSchema = exports.UserTimestampSchema = exports.UserCoreSchema = exports.UserSettingsSchema = exports.UserStatsSchema = void 0;
 const zod_1 = require("zod");
 const base_1 = require("./base");
 const avocado_1 = require("./avocado");
@@ -50,6 +50,13 @@ exports.UserDailyStatsSchema = zod_1.z.object({
     completedNewToday: zod_1.z.number().min(0),
     completedDueToday: zod_1.z.number().min(0),
     lastUpdatedStats: base_1.TimestampSchema,
+});
+exports.HistoryDailyStatsSchema = zod_1.z.object({
+    date: zod_1.z.string(), // YYYY-MM-DD (document ID)
+    completedNewToday: zod_1.z.number().min(0),
+    completedDueToday: zod_1.z.number().min(0),
+    totalCards: zod_1.z.number().min(0), // suma: completedNewToday + completedDueToday
+    archivedAt: base_1.TimestampSchema,
 });
 exports.UserMetaSchema = zod_1.z
     .object({
