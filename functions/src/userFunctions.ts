@@ -267,14 +267,23 @@ async function archiveDailyStatsIfNeeded(
   if (totalCards === 0) return null;
 
   const historyRef = db.doc(`users/${userId}/historyDailyStats/${statsYmd}`);
+  const userRef = db.doc(`users/${userId}`);
 
-  await historyRef.set({
+  const history = historyRef.set({
     date: statsYmd,
     completedNewToday: dailyStats.completedNewToday || 0,
     completedDueToday: dailyStats.completedDueToday || 0,
     totalCards,
     archivedAt: new Date(),
   }, { merge: true });
+
+  const user = userRef.update({
+    "dailyStats.completedNewToday": 0,
+    "dailyStats.completedDueToday": 0,
+    "dailyStats.lastUpdatedStats": new Date(),
+  });
+
+  await Promise.all([history, user]);
 
   logger.info("Archived daily stats", { userId, date: statsYmd, totalCards });
   return statsYmd;

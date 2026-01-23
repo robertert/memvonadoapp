@@ -373,7 +373,13 @@ export default function profileScreen(): React.JSX.Element {
             >
               {myDecks.length > 0 ? (
                 myDecks.map((deck) => (
-                  <View key={deck.key || deck.id} style={styles.deckItem}>
+                  <Pressable key={deck.key || deck.id} onPress={() => {
+                    router.push({
+                      pathname: "../stack/deckDetails",
+                      params: { deckId: deck.id },
+                    });
+                  }}>
+                  <View style={styles.deckItem}>
                     <MaterialCommunityIcons
                       name="cards"
                       size={24}
@@ -388,6 +394,7 @@ export default function profileScreen(): React.JSX.Element {
                       </Text>
                     )}
                   </View>
+                  </Pressable>
                 ))
               ) : (
                 <Text style={styles.emptyText}>No decks yet</Text>
