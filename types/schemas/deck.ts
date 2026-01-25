@@ -43,6 +43,7 @@ export const DeckMetaSchema = z
     createdBy: z.string(),
     is_deleted: z.boolean().default(false),
     deletedAt: TimestampSchema.optional(),
+    title_lower: z.string().optional(),
   })
   .strict();
 

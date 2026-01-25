@@ -47,8 +47,8 @@ exports.UserTimestampSchema = zod_1.z.object({
     updatedAt: base_1.TimestampSchema,
 });
 exports.UserDailyStatsSchema = zod_1.z.object({
-    completedNewToday: zod_1.z.number().min(0),
-    completedDueToday: zod_1.z.number().min(0),
+    completedNewToday: zod_1.z.number().min(0).default(0),
+    completedDueToday: zod_1.z.number().min(0).default(0),
     lastUpdatedStats: base_1.TimestampSchema,
 });
 exports.HistoryDailyStatsSchema = zod_1.z.object({

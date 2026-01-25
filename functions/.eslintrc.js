@@ -23,6 +23,7 @@ module.exports = {
     "/memvocado-types/**/*", // Ignore synced types package.
     "__tests__/**",
     "jest.config.js",
+    "/migration_scripts/*"
   ],
   plugins: ["@typescript-eslint", "import"],
   rules: {

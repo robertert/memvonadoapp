@@ -124,6 +124,7 @@ export const createDeckWithCards = onCall(async (request) => {
     const deck = {
       id: deckRef.id,
       title: validatedDeckCore.title,
+      title_lower: validatedDeckCore.title.toLowerCase(),
       category: validatedDeckCore.category ?? null,
       icon: validatedDeckCore.icon,
       cardsNum: validatedCards.length,
@@ -1077,7 +1078,11 @@ export const syncDeckMetadataToUserCopies = onDocumentWritten(
       return;
     }
 
-    // Check if category, icon, or tags changed
+    // Check if category, icon, tags, or title changed
+    const beforeTitle = beforeData?.title ?? "";
+    const afterTitle = validatedAfterData.title ?? "";
+    const titleChanged = beforeTitle !== afterTitle;
+
     const beforeCategory = beforeData?.category ?? null;
     const afterCategory = validatedAfterData.category ?? null;
     const categoryChanged = beforeCategory !== afterCategory;
@@ -1096,7 +1101,7 @@ export const syncDeckMetadataToUserCopies = onDocumentWritten(
       JSON.stringify(beforeTags) !== JSON.stringify(afterTags);
 
     // If nothing changed, skip
-    if (!categoryChanged && !iconChanged && !tagsChanged) {
+    if (!categoryChanged && !iconChanged && !tagsChanged && !titleChanged) {
       logger.debug("No metadata changes detected, skipping sync", { deckId });
       return;
     }
@@ -1107,11 +1112,17 @@ export const syncDeckMetadataToUserCopies = onDocumentWritten(
         category?: string | null;
         icon?: string;
         tags?: string[];
+        title?: string;
+        title_lower?: string;
         updatedAt: ReturnType<typeof FieldValue.serverTimestamp>;
       } = {
         updatedAt: FieldValue.serverTimestamp(),
       };
 
+      if (titleChanged) {
+        updateData.title = afterTitle;
+        updateData.title_lower = afterTitle.toLowerCase();
+      }
       if (categoryChanged) {
         updateData.category = afterCategory;
       }
@@ -2117,6 +2128,7 @@ export const syncDeckCards = onCall(async (request) => {
 
     const now = new Date();
     let syncedCount = 0;
+    let deletedCount = 0;
 
     const batches: WriteBatch[] = [];
     let currentBatch = db.batch();
@@ -2130,14 +2142,6 @@ export const syncDeckCards = onCall(async (request) => {
         operationCount = 0;
       }
     };
-
-    if (validatedSourceDeckData.updatedAt) {
-      enqueue((batch) =>
-        batch.update(userDeckRef, {
-          updatedAt: validatedSourceDeckData.updatedAt,
-        })
-      );
-    }
 
     cardsToSync.forEach((cardId) => {
       const sourceCard = sourceCardsMap.get(cardId);
@@ -2158,6 +2162,7 @@ export const syncDeckCards = onCall(async (request) => {
     });
 
     if (syncAll) {
+      // Add new cards from source that user doesn't have
       sourceCardsMap.forEach(({ parsedCard, sanitizedCore }, cardId) => {
         if (userCardIds.has(cardId)) {
           return;
@@ -2183,7 +2188,26 @@ export const syncDeckCards = onCall(async (request) => {
         );
         syncedCount++;
       });
+
+      // Delete cards that user has but source doesn't have anymore
+      userCardIds.forEach((userCardId) => {
+        if (!sourceCardsMap.has(userCardId)) {
+          enqueue((batch) => batch.delete(userCardsRef.doc(userCardId)));
+          deletedCount++;
+        }
+      });
     }
+
+    // Calculate final cardsNum after sync
+    const finalCardsNum = sourceCardsMap.size;
+
+    // Update user deck with new cardsNum and updatedAt
+    enqueue((batch) =>
+      batch.update(userDeckRef, {
+        cardsNum: finalCardsNum,
+        updatedAt: validatedSourceDeckData.updatedAt || now,
+      })
+    );
 
     if (operationCount > 0) {
       batches.push(currentBatch);
@@ -2197,6 +2221,8 @@ export const syncDeckCards = onCall(async (request) => {
       userId,
       deckId,
       syncedCount,
+      deletedCount,
+      finalCardsNum,
       syncAll,
     });
 
@@ -2368,6 +2394,7 @@ export const updateDeck = onCall(async (request) => {
     // Prepare deck update
     const deckUpdate: Record<string, unknown> = {
       title: deckData.title,
+      title_lower: deckData.title.toLowerCase(),
       category: deckData.category ?? null,
       icon: deckData.icon,
       isPublic: deckData.isPublic,

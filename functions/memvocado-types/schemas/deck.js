@@ -38,6 +38,7 @@ exports.DeckMetaSchema = zod_1.z
     createdBy: zod_1.z.string(),
     is_deleted: zod_1.z.boolean().default(false),
     deletedAt: base_1.TimestampSchema.optional(),
+    title_lower: zod_1.z.string().optional(),
 })
     .strict();
 /**

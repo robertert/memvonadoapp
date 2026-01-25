@@ -49,11 +49,12 @@ export const searchDecks = onCall(async (request) => {
     // For now, we'll filter in memory after the query
     // TODO: Consider using composite index if performance becomes an issue
 
-    // Apply text search
+    // Apply text search (case-insensitive using title_lower)
     if (searchText) {
+      const searchTextLower = searchText.toLowerCase();
       query = query
-        .where("title", ">=", searchText)
-        .where("title", "<=", searchText + "\uf8ff")
+        .where("title_lower", ">=", searchTextLower)
+        .where("title_lower", "<=", searchTextLower + "\uf8ff")
         .where("is_deleted", "==", false);
     }
 

@@ -27,6 +27,7 @@ export declare const getDeckDetails: import("firebase-functions/v2/https").Calla
         frontLanguage?: string | null | undefined;
         backLanguage?: string | null | undefined;
         deletedAt?: Date | undefined;
+        title_lower?: string | undefined;
     } | null;
 }>, unknown>;
 /**
@@ -86,6 +87,7 @@ export declare const getPopularDecks: import("firebase-functions/v2/https").Call
         frontLanguage?: string | null | undefined;
         backLanguage?: string | null | undefined;
         deletedAt?: Date | undefined;
+        title_lower?: string | undefined;
     }[];
 }>, unknown>;
 /**

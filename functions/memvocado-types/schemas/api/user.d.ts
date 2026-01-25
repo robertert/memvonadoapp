@@ -916,16 +916,16 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
         }[] | undefined;
     }>>>;
     dailyStats: z.ZodNullable<z.ZodOptional<z.ZodObject<{
-        completedNewToday: z.ZodNumber;
-        completedDueToday: z.ZodNumber;
+        completedNewToday: z.ZodDefault<z.ZodNumber>;
+        completedDueToday: z.ZodDefault<z.ZodNumber>;
         lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strip", z.ZodTypeAny, {
         completedNewToday: number;
         completedDueToday: number;
         lastUpdatedStats: Date;
     }, {
-        completedNewToday: number;
-        completedDueToday: number;
+        completedNewToday?: number | undefined;
+        completedDueToday?: number | undefined;
         lastUpdatedStats?: unknown;
     }>>>;
     followingCount: z.ZodDefault<z.ZodNumber>;
@@ -1016,8 +1016,8 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
     createdAt?: unknown;
     updatedAt?: unknown;
     dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
+        completedNewToday?: number | undefined;
+        completedDueToday?: number | undefined;
         lastUpdatedStats?: unknown;
     } | null | undefined;
     league?: number | undefined;

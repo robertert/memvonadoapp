@@ -179,6 +179,7 @@ export declare const UpdateDeckSettingsRequestSchema: z.ZodObject<{
         createdBy: z.ZodOptional<z.ZodString>;
         is_deleted: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
         deletedAt: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>>;
+        title_lower: z.ZodOptional<z.ZodOptional<z.ZodString>>;
         createdAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
     }, "strict", z.ZodTypeAny, {
@@ -198,6 +199,7 @@ export declare const UpdateDeckSettingsRequestSchema: z.ZodObject<{
         createdBy?: string | undefined;
         is_deleted?: boolean | undefined;
         deletedAt?: Date | undefined;
+        title_lower?: string | undefined;
     }, {
         id?: string | undefined;
         title?: string | undefined;
@@ -215,6 +217,7 @@ export declare const UpdateDeckSettingsRequestSchema: z.ZodObject<{
         createdBy?: string | undefined;
         is_deleted?: boolean | undefined;
         deletedAt?: unknown;
+        title_lower?: string | undefined;
     }>;
 }, "strict", z.ZodTypeAny, {
     deckId: string;
@@ -235,6 +238,7 @@ export declare const UpdateDeckSettingsRequestSchema: z.ZodObject<{
         createdBy?: string | undefined;
         is_deleted?: boolean | undefined;
         deletedAt?: Date | undefined;
+        title_lower?: string | undefined;
     };
 }, {
     deckId: string;
@@ -255,6 +259,7 @@ export declare const UpdateDeckSettingsRequestSchema: z.ZodObject<{
         createdBy?: string | undefined;
         is_deleted?: boolean | undefined;
         deletedAt?: unknown;
+        title_lower?: string | undefined;
     };
 }>;
 export type UpdateDeckSettingsRequest = z.infer<typeof UpdateDeckSettingsRequestSchema>;
@@ -608,6 +613,7 @@ export declare const GetDeckDetailsResponseSchema: z.ZodObject<{
         createdBy: z.ZodString;
         is_deleted: z.ZodDefault<z.ZodBoolean>;
         deletedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+        title_lower: z.ZodOptional<z.ZodString>;
     } & {
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -628,6 +634,7 @@ export declare const GetDeckDetailsResponseSchema: z.ZodObject<{
         frontLanguage?: string | null | undefined;
         backLanguage?: string | null | undefined;
         deletedAt?: Date | undefined;
+        title_lower?: string | undefined;
     }, {
         id: string;
         title: string;
@@ -645,6 +652,7 @@ export declare const GetDeckDetailsResponseSchema: z.ZodObject<{
         likes?: number | undefined;
         is_deleted?: boolean | undefined;
         deletedAt?: unknown;
+        title_lower?: string | undefined;
     }>>;
     username: z.ZodString;
 }, "strip", z.ZodTypeAny, {
@@ -666,6 +674,7 @@ export declare const GetDeckDetailsResponseSchema: z.ZodObject<{
         frontLanguage?: string | null | undefined;
         backLanguage?: string | null | undefined;
         deletedAt?: Date | undefined;
+        title_lower?: string | undefined;
     } | null;
 }, {
     username: string;
@@ -686,6 +695,7 @@ export declare const GetDeckDetailsResponseSchema: z.ZodObject<{
         likes?: number | undefined;
         is_deleted?: boolean | undefined;
         deletedAt?: unknown;
+        title_lower?: string | undefined;
     } | null;
 }>;
 export type GetDeckDetailsResponse = z.infer<typeof GetDeckDetailsResponseSchema>;
@@ -1076,6 +1086,7 @@ export declare const GetPopularDecksResponseSchema: z.ZodObject<{
         createdBy: z.ZodString;
         is_deleted: z.ZodDefault<z.ZodBoolean>;
         deletedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+        title_lower: z.ZodOptional<z.ZodString>;
     } & {
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -1096,6 +1107,7 @@ export declare const GetPopularDecksResponseSchema: z.ZodObject<{
         frontLanguage?: string | null | undefined;
         backLanguage?: string | null | undefined;
         deletedAt?: Date | undefined;
+        title_lower?: string | undefined;
     }, {
         id: string;
         title: string;
@@ -1113,6 +1125,7 @@ export declare const GetPopularDecksResponseSchema: z.ZodObject<{
         likes?: number | undefined;
         is_deleted?: boolean | undefined;
         deletedAt?: unknown;
+        title_lower?: string | undefined;
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
     decks: {
@@ -1132,6 +1145,7 @@ export declare const GetPopularDecksResponseSchema: z.ZodObject<{
         frontLanguage?: string | null | undefined;
         backLanguage?: string | null | undefined;
         deletedAt?: Date | undefined;
+        title_lower?: string | undefined;
     }[];
 }, {
     decks: {
@@ -1151,6 +1165,7 @@ export declare const GetPopularDecksResponseSchema: z.ZodObject<{
         likes?: number | undefined;
         is_deleted?: boolean | undefined;
         deletedAt?: unknown;
+        title_lower?: string | undefined;
     }[];
 }>;
 export type GetPopularDecksResponse = z.infer<typeof GetPopularDecksResponseSchema>;
@@ -2634,16 +2649,16 @@ export declare const GetDeckDailyStatsResponseSchema: z.ZodObject<{
 export type GetDeckDailyStatsResponse = z.infer<typeof GetDeckDailyStatsResponseSchema>;
 export declare const GetDailyUserStatsResponseSchema: z.ZodObject<{
     dailyStats: z.ZodNullable<z.ZodObject<{
-        completedNewToday: z.ZodNumber;
-        completedDueToday: z.ZodNumber;
+        completedNewToday: z.ZodDefault<z.ZodNumber>;
+        completedDueToday: z.ZodDefault<z.ZodNumber>;
         lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strip", z.ZodTypeAny, {
         completedNewToday: number;
         completedDueToday: number;
         lastUpdatedStats: Date;
     }, {
-        completedNewToday: number;
-        completedDueToday: number;
+        completedNewToday?: number | undefined;
+        completedDueToday?: number | undefined;
         lastUpdatedStats?: unknown;
     }>>;
 }, "strip", z.ZodTypeAny, {
@@ -2654,8 +2669,8 @@ export declare const GetDailyUserStatsResponseSchema: z.ZodObject<{
     } | null;
 }, {
     dailyStats: {
-        completedNewToday: number;
-        completedDueToday: number;
+        completedNewToday?: number | undefined;
+        completedDueToday?: number | undefined;
         lastUpdatedStats?: unknown;
     } | null;
 }>;

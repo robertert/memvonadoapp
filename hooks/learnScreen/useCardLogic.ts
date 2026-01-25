@@ -130,11 +130,12 @@ export function useCardLogic(id: string) {
   ): Promise<void> {
     try {
       if (userCtx.id && card.id) {
-        delete card.seenInSession;
+        const cardToUpdate = JSON.parse(JSON.stringify(card));
+        delete cardToUpdate.seenInSession;
         await cloudFunctions.updateCardProgress(
           userCtx.id,
           id, // deck id
-          card,
+          cardToUpdate,
           scheduledTime,
           dailyStatsLocal ?? undefined
         );
@@ -175,8 +176,7 @@ export function useCardLogic(id: string) {
       if (!cards || cards.length === 0) {
         throw new Error("No cards available");
       }
-
-
+      
       if (type === CardGrade.Good) {
         playSound("good");
       } else if (type === CardGrade.Wrong) {
@@ -297,7 +297,7 @@ export function useCardLogic(id: string) {
           }
         }
 
-        let nextCards;
+        let nextCards: (Card & { seenInSession?: boolean })[];
         if (type === CardGrade.Wrong) {
           updatedCard.cardAlgo!.due = new Date(now.getTime() + 1000 * 60 * 10);
           nextCards = [updatedCard, ...cards.slice(1)];
@@ -307,6 +307,8 @@ export function useCardLogic(id: string) {
 
         setHistory([...history, { card: cards[0], dailyStats: historyStats }]);
         nextCards = nextCards.sort(compDueDate); // Sort cards by due date
+
+
         setCards(nextCards);
         updateCardsEvery(
           updatedCard,
@@ -349,7 +351,7 @@ export function useCardLogic(id: string) {
             break;
           case CardGrade.Wrong:
             newConsecutiveGood = 0; // Reset licznika przy złej odpowiedzi
-            newDue = new Date(now.getTime() + 1000 * 60);
+            newDue = new Date(now.getTime() + 1000 * 60 * 2);
             break;
           default:
             break;
@@ -368,7 +370,7 @@ export function useCardLogic(id: string) {
           firstLearn: updatedFirst,
           seenInSession: true,
           grade: type,
-        } as Card;
+        } as Card & { seenInSession?: boolean };
 
         let nextCards = [updatedCard, ...cards.slice(1)];
         nextCards = nextCards.sort(compDueDate);
@@ -407,6 +409,8 @@ export function useCardLogic(id: string) {
       setError(errorMessage);
       console.error("Error in newCard:", error);
     }
+
+    
   }
 
   async function fetchCards(): Promise<void> {

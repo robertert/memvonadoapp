@@ -69,7 +69,7 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "title",
+          "fieldPath": "title_lower",
           "order": "ASCENDING"
         }
       ]
@@ -87,7 +87,7 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "title",
+          "fieldPath": "title_lower",
           "order": "ASCENDING"
         }
       ]
@@ -105,7 +105,7 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "title",
+          "fieldPath": "title_lower",
           "order": "ASCENDING"
         }
       ]
@@ -127,7 +127,7 @@
           "arrayConfig": "CONTAINS"
         },
         {
-          "fieldPath": "title",
+          "fieldPath": "title_lower",
           "order": "ASCENDING"
         }
       ]

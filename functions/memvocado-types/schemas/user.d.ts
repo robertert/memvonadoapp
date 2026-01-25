@@ -129,16 +129,16 @@ export declare const UserTimestampSchema: z.ZodObject<{
 }>;
 export type UserTimestamp = z.infer<typeof UserTimestampSchema>;
 export declare const UserDailyStatsSchema: z.ZodObject<{
-    completedNewToday: z.ZodNumber;
-    completedDueToday: z.ZodNumber;
+    completedNewToday: z.ZodDefault<z.ZodNumber>;
+    completedDueToday: z.ZodDefault<z.ZodNumber>;
     lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
 }, "strip", z.ZodTypeAny, {
     completedNewToday: number;
     completedDueToday: number;
     lastUpdatedStats: Date;
 }, {
-    completedNewToday: number;
-    completedDueToday: number;
+    completedNewToday?: number | undefined;
+    completedDueToday?: number | undefined;
     lastUpdatedStats?: unknown;
 }>;
 export type UserDailyStats = z.infer<typeof UserDailyStatsSchema>;
@@ -259,16 +259,16 @@ export declare const UserMetaSchema: z.ZodObject<{
         }[] | undefined;
     }>>>;
     dailyStats: z.ZodNullable<z.ZodOptional<z.ZodObject<{
-        completedNewToday: z.ZodNumber;
-        completedDueToday: z.ZodNumber;
+        completedNewToday: z.ZodDefault<z.ZodNumber>;
+        completedDueToday: z.ZodDefault<z.ZodNumber>;
         lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strip", z.ZodTypeAny, {
         completedNewToday: number;
         completedDueToday: number;
         lastUpdatedStats: Date;
     }, {
-        completedNewToday: number;
-        completedDueToday: number;
+        completedNewToday?: number | undefined;
+        completedDueToday?: number | undefined;
         lastUpdatedStats?: unknown;
     }>>>;
     followingCount: z.ZodDefault<z.ZodNumber>;
@@ -330,8 +330,8 @@ export declare const UserMetaSchema: z.ZodObject<{
         lastStudyDate?: unknown;
     };
     dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
+        completedNewToday?: number | undefined;
+        completedDueToday?: number | undefined;
         lastUpdatedStats?: unknown;
     } | null | undefined;
     league?: number | undefined;
@@ -484,16 +484,16 @@ export declare const UserSchema: z.ZodObject<{
         }[] | undefined;
     }>>>;
     dailyStats: z.ZodNullable<z.ZodOptional<z.ZodObject<{
-        completedNewToday: z.ZodNumber;
-        completedDueToday: z.ZodNumber;
+        completedNewToday: z.ZodDefault<z.ZodNumber>;
+        completedDueToday: z.ZodDefault<z.ZodNumber>;
         lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strip", z.ZodTypeAny, {
         completedNewToday: number;
         completedDueToday: number;
         lastUpdatedStats: Date;
     }, {
-        completedNewToday: number;
-        completedDueToday: number;
+        completedNewToday?: number | undefined;
+        completedDueToday?: number | undefined;
         lastUpdatedStats?: unknown;
     }>>>;
     followingCount: z.ZodDefault<z.ZodNumber>;
@@ -584,8 +584,8 @@ export declare const UserSchema: z.ZodObject<{
     createdAt?: unknown;
     updatedAt?: unknown;
     dailyStats?: {
-        completedNewToday: number;
-        completedDueToday: number;
+        completedNewToday?: number | undefined;
+        completedDueToday?: number | undefined;
         lastUpdatedStats?: unknown;
     } | null | undefined;
     league?: number | undefined;
