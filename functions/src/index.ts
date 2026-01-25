@@ -8,10 +8,13 @@
  */
 
 import { initializeApp } from "firebase-admin/app";
+import { setGlobalOptions } from "firebase-functions/v2";
 
 // Initialize Firebase Admin FIRST before any imports that use Firebase Admin
 // This must be synchronous to ensure getFirestore() works in imported modules
 initializeApp();
+
+setGlobalOptions({ region: "europe-west1" });
 
 // Import functions that need to be used in triggers (after initialization)
 // Import all functions from modules

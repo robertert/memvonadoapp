@@ -21,6 +21,8 @@ export default function ContributionHeatmap({
   title = "Activity",
 }: Props): React.JSX.Element {
   const today = new Date();
+  // Dni tygodnia 
+  const dayLabels = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "Sb"];
 
   // Zbuduj siatkę dat (tygodnie x 7 dni)
   const grid: { date: string; count: number }[][] = [];
@@ -47,14 +49,26 @@ export default function ContributionHeatmap({
     columnDates.push(columnMondayDate);
   }
 
-  // Dni tygodnia (poniedziałek na górze, niedziela na dole)
-  const dayLabels = ["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"];
+
 
   // Funkcja do pobrania miesiąca z daty
   const getMonth = (dateStr: string): string => {
     const date = new Date(dateStr + "T00:00:00");
     return date.toLocaleDateString("pl-PL", { month: "short" });
   };
+  const getWeekday = (dateStr: string): number => {
+    const date = new Date(dateStr + "T00:00:00");
+    return date.getDay();
+  };
+
+  const lastWeekday = getWeekday(columnDates[columnDates.length - 1]);
+  
+  const startDayIndex = (lastWeekday + 1) % 7;
+
+  const weekdayLabels = [
+    ...dayLabels.slice(startDayIndex),
+    ...dayLabels.slice(0, startDayIndex)
+  ];
 
   // Funkcja sprawdzająca, czy miesiąc się zmienił w stosunku do poprzedniej kolumny
   const shouldShowMonth = (idx: number): boolean => {
@@ -78,7 +92,7 @@ export default function ContributionHeatmap({
       <View style={styles.heatmapWrapper}>
         {/* Etykiety dni tygodnia po lewej */}
         <View style={styles.dayLabelsColumn}>
-          {dayLabels.map((day, idx) => (
+          {weekdayLabels.map((day, idx) => (
             <Text key={idx} style={styles.dayLabel}>
               {day}
             </Text>

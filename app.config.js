@@ -9,6 +9,7 @@ export default {
     orientation: "portrait",
     icon: "./assets/memvocadoicon-fill.png",
     userInterfaceStyle: "automatic",
+    scheme: "memvocado",
     splash: {
       image: "./assets/memvocadoicon.png",
       resizeMode: "contain",

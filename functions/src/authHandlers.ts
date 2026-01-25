@@ -12,7 +12,7 @@ import {
   CheckUsernameAvailabilityResponseSchema,
 } from "memvocado-types/schemas/api/auth";
 
-const REGION = "us-central1";
+const REGION = "europe-west1";
 const db = getFirestore();
 
 /**

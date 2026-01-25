@@ -12,75 +12,7 @@ import {
 import { app } from "../firebase";
 import { auth } from "../firebase";
 
-const functions = getFunctions(app, "us-central1");
-
-/**
- * RN/Expo: przy starcie aplikacji `auth.currentUser` może być chwilowo `null`
- * zanim Firebase odtworzy sesję z AsyncStorage. Dla callable, brak usera oznacza
- * request.auth == null po stronie Functions i błąd "unauthenticated".
- *
- * Używa kombinacji: sprawdzenie currentUser + onIdTokenChanged (token jest potrzebny dla callable)
- * + retry loop dla maksymalnej niezawodności.
- */
-async function waitForAuthenticatedUser(
-  timeoutMs: number = 5000
-): Promise<FirebaseUser> {
-  // Szybkie sprawdzenie - jeśli już mamy usera z tokenem, zwróć go od razu
-  if (auth.currentUser) {
-    // Upewnij się, że token jest gotowy
-    try {
-      await auth.currentUser.getIdToken(false); // false = nie wymuszaj refresh
-      return auth.currentUser;
-    } catch {
-      // Token nie jest gotowy, kontynuuj czekanie
-    }
-  }
-
-  // Retry loop z krótkimi opóźnieniami - czasami auth.currentUser pojawia się szybko
-  const startTime = Date.now();
-  const checkInterval = 100; // sprawdzaj co 100ms
-  const maxChecks = Math.floor(timeoutMs / checkInterval);
-
-  for (let i = 0; i < maxChecks; i++) {
-    if (auth.currentUser) {
-      try {
-        await auth.currentUser.getIdToken(false);
-        return auth.currentUser;
-      } catch {
-        // Token jeszcze nie gotowy, kontynuuj
-      }
-    }
-    await new Promise((resolve) => setTimeout(resolve, checkInterval));
-    if (Date.now() - startTime >= timeoutMs) break;
-  }
-
-  // Jeśli nadal nie ma usera z tokenem, użyj onIdTokenChanged jako fallback
-  // (onIdTokenChanged wywołuje się gdy token jest gotowy, co jest ważne dla callable)
-  return await new Promise<FirebaseUser>((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      unsubscribe();
-      reject(
-        new Error("Auth not ready: user is not authenticated after timeout")
-      );
-    }, timeoutMs);
-
-    const unsubscribe = onIdTokenChanged(auth, async (user) => {
-      if (user) {
-        try {
-          // Upewnij się, że token jest faktycznie dostępny
-          await user.getIdToken(false);
-          clearTimeout(timeout);
-          unsubscribe();
-          resolve(user);
-        } catch (error) {
-          // Token nie jest gotowy, czekamy dalej
-          console.log("Token not ready yet, waiting...");
-        }
-      }
-      // Jeśli user jest null, czekamy dalej (może się pojawić)
-    });
-  });
-}
+const functions = getFunctions(app, "europe-west1");
 
 // Types for Cloud Functions - re-eksport z centralnego katalogu types
 import type {
