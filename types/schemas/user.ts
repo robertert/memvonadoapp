@@ -58,8 +58,8 @@ export const UserTimestampSchema = z.object({
 export type UserTimestamp = z.infer<typeof UserTimestampSchema>;
 
 export const UserDailyStatsSchema = z.object({
-  completedNewToday: z.number().min(0),
-  completedDueToday: z.number().min(0),
+  completedNewToday: z.number().min(0).default(0),
+  completedDueToday: z.number().min(0).default(0),
   lastUpdatedStats: TimestampSchema,
 });
 

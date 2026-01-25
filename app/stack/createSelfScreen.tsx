@@ -82,6 +82,24 @@ export default function createSelfScreen(): React.JSX.Element {
   const initialCardIdsRef = useRef<Set<string>>(new Set());
   const [deletedCardIds, setDeletedCardIds] = useState<Set<string>>(new Set());
 
+  const [showImportModal, setShowImportModal] = useState<boolean>(false);
+
+  const focusRefs = useRef<Record<string, TextInput | null>>({});
+
+  // 2. State to track which card ID should be focused next
+  const [focusTarget, setFocusTarget] = useState<string | null>(null);
+
+  // 3. Effect: Watch for changes in cards/focusTarget. If a target exists and is mounted, focus it.
+  useEffect(() => {
+    if (focusTarget && focusRefs.current[focusTarget]) {
+      // Small timeout ensures the UI is fully ready (keyboard animation etc)
+      setTimeout(() => {
+        focusRefs.current[focusTarget]?.focus();
+        setFocusTarget(null); // Reset target
+      }, 100);
+    }
+  }, [cards, focusTarget]);
+
   const userCtx = useContext(UserContext);
 
   // Use draft hook
@@ -341,22 +359,31 @@ export default function createSelfScreen(): React.JSX.Element {
     }
   }
 
-  function createNewHandler(): void {
+  function createNewHandler(isFront: boolean): string {
+    const newCardId = generageRandomUid();
     setCards((prev) => {
-      return [
-        ...prev,
-        {
-          id: generageRandomUid(),
-          cardData: {
-            front: "",
-            back: "",
-          },
-          tags: [],
-          isNew: true, // Mark as new card
-          isDirty: false, // Not dirty yet
+      const newCard = {
+        id: newCardId,
+        cardData: {
+          front: "",
+          back: "",
         },
-      ];
+        tags: [],
+        isNew: true, // Mark as new card
+        isDirty: false, // Not dirty yet
+      };
+      if (isFront) {
+        return [newCard, ...prev];
+      } else {
+        return [...prev, newCard];
+      }
     });
+    return newCardId;
+  }
+
+  function addAndFocusCard(): void {
+    const newCardId = createNewHandler(false);
+    setFocusTarget(newCardId);
   }
 
   function titleChangeHandler(text: string): void {
@@ -366,7 +393,7 @@ export default function createSelfScreen(): React.JSX.Element {
   // ListHeaderComponent for FlashList
   const ListHeaderComponent = useMemo(
     () => (
-      <View>
+      <View style={{ marginBottom: 20 }}>
         <View style={styles.titleSection}>
           <Text style={styles.titleLabel}>Tytuł decku</Text>
           <View style={styles.titleInputContainer}>
@@ -482,9 +509,30 @@ export default function createSelfScreen(): React.JSX.Element {
             </View>
           </View>
         )}
+        <Pressable onPress={() => {
+          setShowImportModal(true);
+        }}>
+
+        <View style={styles.importButtonContainer}>
+          <Text style={styles.importButtonText}>Importuj fiszki</Text>
+        </View>
+        </Pressable>
+
+
         <View style={styles.cardsSection}>
           <Text style={styles.sectionTitle}>Karty</Text>
         </View>
+        <Pressable
+          onPress={createNewHandler.bind(null, true)}
+          style={styles.addCardButton}
+        >
+          <AntDesign
+            name="plus-circle"
+            size={45}
+            color={Colors.accent_500}
+          />
+          <Text style={styles.addCardText}>Dodaj kartę</Text>
+        </Pressable>
       </View>
     ),
     [title, deckCategory, frontLanguage, backLanguage]
@@ -498,6 +546,14 @@ export default function createSelfScreen(): React.JSX.Element {
         onUpdate={updateCard}
         onDelete={deleteCard}
         deckLanguage={frontLanguage}
+        onEnter={addAndFocusCard} 
+        focusRef={(ref: TextInput | null) => {
+        if (ref) {
+          focusRefs.current[card.id] = ref;
+        } else {
+          delete focusRefs.current[card.id];
+        }
+      }}
       />
     ),
     [updateCard, deleteCard, frontLanguage]
@@ -546,7 +602,7 @@ export default function createSelfScreen(): React.JSX.Element {
                     </View>
                   ) : null}
                   <Pressable
-                    onPress={createNewHandler}
+                    onPress={createNewHandler.bind(null, false)}
                     style={styles.addCardButton}
                   >
                     <AntDesign
@@ -757,7 +813,7 @@ const styles = StyleSheet.create({
     color: Colors.primary_100,
   },
   cardsSection: {
-    marginBottom: 30,
+    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 24,
@@ -964,5 +1020,21 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.primary,
     color: Colors.primary_700,
     fontWeight: "700",
+  },
+  importButtonContainer: {
+    backgroundColor: Colors.primary_700,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  importButtonText: {
+    fontSize: 16,
+    fontFamily: Fonts.primary,
+    color: Colors.primary_100,
+    fontWeight: "700",
+
   },
 });

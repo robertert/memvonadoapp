@@ -58,6 +58,10 @@ export default function Flashcard({
     }
   }, [streakLost]);
 
+  useEffect(() => {
+    rotateValue.value = 0;
+  }, [card?.id]);
+
   const backgroundColorStyle = useAnimatedStyle(() => {
     return {
       backgroundColor: backgroundColor.value,

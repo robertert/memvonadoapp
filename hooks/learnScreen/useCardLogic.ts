@@ -22,6 +22,7 @@ import {
   DeckLearningData,
   DailyStats,
 } from "@/types/schemas";
+import { playSound } from "@/utils/soundTrigger";
 
 const DEFAULT_CARD_ALGO: CardAlgo = {
   difficulty: 2.5,
@@ -175,6 +176,19 @@ export function useCardLogic(id: string) {
         throw new Error("No cards available");
       }
 
+
+      if (type === CardGrade.Good) {
+        playSound("good");
+      } else if (type === CardGrade.Wrong) {
+        playSound("wrong");
+      } else if (type === CardGrade.Hard) {
+        playSound("hard");
+      } else if (type === CardGrade.Easy) {
+        playSound("easy");
+      }
+      
+      setIsBack(false);
+
       // Easy
       // Second Good Answer
       // Card not in first learning phase
@@ -308,6 +322,7 @@ export function useCardLogic(id: string) {
               completedNewToday: dailyStatsLocal?.completedNewToday,
               completedDueToday: dailyStatsLocal?.completedDueToday,
               empty: "false",
+              finished: "true",
             },
           });
         }
@@ -510,6 +525,7 @@ export function useCardLogic(id: string) {
           completedNewToday: dailyStats?.completedNewToday,
           completedDueToday: dailyStats?.completedDueToday,
           empty: "false",
+          finished: "true",
         },
       });
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Pressable, StyleSheet, Text, TextInput } from "react-native";
 import { Colors, Fonts } from "../../constants/colors";
 import { View } from "react-native";
@@ -40,6 +40,8 @@ interface NewCardProps {
   onUpdate: (cardId: string, updates: Partial<EditableCard>) => void;
   onDelete: (cardId: string) => void;
   deckLanguage?: string;
+  onEnter: () => void;
+  focusRef: (ref: TextInput | null) => void;
 }
 
 interface ActiveFields {
@@ -88,6 +90,9 @@ const DICTIONARIES: Record<string, string[]> = {
   de: ["hallo", "hand", "haus", "heute", "helfen", "machen", "mutter"],
 };
 
+type Side = "front" | "back";
+
+
 function getSuggestions(lang: string | undefined, query: string): string[] {
   if (!lang || !query || query.length < 2) return [];
   const list = DICTIONARIES[lang] || [];
@@ -100,121 +105,21 @@ function NewCard({
   onUpdate,
   onDelete,
   deckLanguage,
+  onEnter,
+  focusRef,
 }: NewCardProps): React.JSX.Element {
-  // Zostaw frontFields/backFields bo sterują aktywnymi sekcjami
-  const [isMoreFront, setIsMoreFront] = useState<boolean>(false);
-  const [isMoreBack, setIsMoreBack] = useState<boolean>(false);
 
-  const [frontFields, setFrontFields] = useState<ActiveFields>({
-    tag: false,
-    image: false,
-    audio: false,
-    formula: false,
-  });
-  const [backFields, setBackFields] = useState<ActiveFields>({
-    tag: false,
-    image: false,
-    audio: false,
-    formula: false,
-  });
-  const [currentFrontTag, setCurrentFrontTag] = useState("");
-  const [currentBackTag, setCurrentBackTag] = useState("");
 
-  // Busy/loading stany
-  const [isRecordBusyFront, setIsRecordBusyFront] = useState(false);
-  const [isRecordBusyBack, setIsRecordBusyBack] = useState(false);
-  const [isPlayBusyFront, setIsPlayBusyFront] = useState(false);
-  const [isPlayBusyBack, setIsPlayBusyBack] = useState(false);
-  const [isDeleteBusyFront, setIsDeleteBusyFront] = useState(false);
-  const [isDeleteBusyBack, setIsDeleteBusyBack] = useState(false);
-
-  // Audio hooks dla frontu
-  const audioRecorderFront = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const recorderStateFront = useAudioRecorderState(audioRecorderFront);
-  const audioPlayerFront = useAudioPlayer(card.frontAudio || "");
-  const playerStatusFront = useAudioPlayerStatus(audioPlayerFront);
-
-  // Audio hooks dla backu
-  const audioRecorderBack = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const recorderStateBack = useAudioRecorderState(audioRecorderBack);
-  const audioPlayerBack = useAudioPlayer(card.backAudio || "");
-  const playerStatusBack = useAudioPlayerStatus(audioPlayerBack);
-
-  // Request audio permissions and setup
-  useEffect(() => {
-    (async () => {
-      const status = await AudioModule.requestRecordingPermissionsAsync();
-      if (!status.granted) {
-        console.warn("Brak uprawnień do mikrofonu");
-      }
-
-      await setAudioModeAsync({
-        playsInSilentMode: true,
-        allowsRecording: true,
-      });
-    })();
-  }, []);
-
-  // Update card when recording finishes (front)
-  useEffect(() => {
-    if (
-      recorderStateFront.isRecording === false &&
-      audioRecorderFront.uri &&
-      audioRecorderFront.uri !== card.frontAudio
-    ) {
-      onUpdate(card.id, {
-        frontAudio: audioRecorderFront.uri || undefined,
-      });
-    }
-  }, [recorderStateFront.isRecording, audioRecorderFront.uri]);
-
-  // Update card when recording finishes (back)
-  useEffect(() => {
-    if (
-      recorderStateBack.isRecording === false &&
-      audioRecorderBack.uri &&
-      audioRecorderBack.uri !== card.backAudio
-    ) {
-      onUpdate(card.id, {
-        backAudio: audioRecorderBack.uri || undefined,
-      });
-    }
-  }, [recorderStateBack.isRecording, audioRecorderBack.uri]);
 
   const translateX = useSharedValue(0);
   const opacity = useSharedValue(1);
   const scale = useSharedValue(1);
 
   // Animacje dla paneli advanced
-  const advancedHeightFront = useSharedValue(0);
-  const advancedHeightBack = useSharedValue(0);
-  const [measuredFrontH, setMeasuredFrontH] = useState(0);
-  const [measuredBackH, setMeasuredBackH] = useState(0);
 
-  const advancedStyleFront = useAnimatedStyle(() => ({
-    height: advancedHeightFront.value,
-    opacity: advancedHeightFront.value > 0 ? 1 : 0,
-    overflow: "hidden",
-  }));
 
-  const advancedStyleBack = useAnimatedStyle(() => ({
-    height: advancedHeightBack.value,
-    opacity: advancedHeightBack.value > 0 ? 1 : 0,
-    overflow: "hidden",
-  }));
+  const backInputRef = useRef<TextInput>(null);
 
-  // Animuj otwarcie/zamknięcie panelu z wykorzystaniem zmierzonej wysokości
-  useEffect(() => {
-    const minFront = 100;
-    const target = isMoreFront ? Math.max(measuredFrontH, minFront) : 0;
-    advancedHeightFront.value = withTiming(target, { duration: 220 });
-  }, [isMoreFront, measuredFrontH]);
-
-  useEffect(() => {
-    const minBack = 100;
-    const target = isMoreBack ? Math.max(measuredBackH, minBack) : 0;
-    advancedHeightBack.value = withTiming(target, { duration: 220 });
-  }, [isMoreBack, measuredBackH]);
 
   const cardStyle = useAnimatedStyle(() => {
     return {
@@ -265,6 +170,116 @@ function NewCard({
       }
     });
 
+      // Missing helpers reintroduced
+  function textChangeHandler(
+    text: string,
+    isFront: boolean,
+    gotCard: EditableCard
+  ): void {
+    onUpdate(gotCard.id, {
+      cardData: {
+        ...gotCard.cardData,
+        [isFront ? "front" : "back"]: text,
+      },
+    });
+  }
+
+  function applySuggestion(side: Side, word: string) {
+    onUpdate(card.id, {
+      cardData: {
+        ...card.cardData,
+        [side === "front" ? "front" : "back"]: word,
+      },
+    });
+  }
+
+  /*
+
+  // Zostaw frontFields/backFields bo sterują aktywnymi sekcjami
+  const [isMoreFront, setIsMoreFront] = useState<boolean>(false);
+  const [isMoreBack, setIsMoreBack] = useState<boolean>(false);
+
+  const [frontFields, setFrontFields] = useState<ActiveFields>({
+    tag: false,
+    image: false,
+    audio: false,
+    formula: false,
+  });
+  const [backFields, setBackFields] = useState<ActiveFields>({
+    tag: false,
+    image: false,
+    audio: false,
+    formula: false,
+  });
+  const [currentFrontTag, setCurrentFrontTag] = useState("");
+  const [currentBackTag, setCurrentBackTag] = useState("");
+
+  // Busy/loading stany
+  const [isRecordBusyFront, setIsRecordBusyFront] = useState(false);
+  const [isRecordBusyBack, setIsRecordBusyBack] = useState(false);
+  const [isPlayBusyFront, setIsPlayBusyFront] = useState(false);
+  const [isPlayBusyBack, setIsPlayBusyBack] = useState(false);
+  const [isDeleteBusyFront, setIsDeleteBusyFront] = useState(false);
+  const [isDeleteBusyBack, setIsDeleteBusyBack] = useState(false);
+
+  // Audio hooks dla frontu
+  const audioRecorderFront = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderStateFront = useAudioRecorderState(audioRecorderFront);
+  const audioPlayerFront = useAudioPlayer(card.frontAudio || "");
+  const playerStatusFront = useAudioPlayerStatus(audioPlayerFront);
+
+  // Audio hooks dla backu
+  const audioRecorderBack = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderStateBack = useAudioRecorderState(audioRecorderBack);
+  const audioPlayerBack = useAudioPlayer(card.backAudio || "");
+  const playerStatusBack = useAudioPlayerStatus(audioPlayerBack);
+
+    const advancedHeightFront = useSharedValue(0);
+  const advancedHeightBack = useSharedValue(0);
+  const [measuredFrontH, setMeasuredFrontH] = useState(0);
+  const [measuredBackH, setMeasuredBackH] = useState(0);
+
+  // Request audio permissions and setup
+  useEffect(() => {
+    (async () => {
+      const status = await AudioModule.requestRecordingPermissionsAsync();
+      if (!status.granted) {
+        console.warn("Brak uprawnień do mikrofonu");
+      }
+
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        allowsRecording: true,
+      });
+    })();
+  }, []);
+
+  // Update card when recording finishes (front)
+  useEffect(() => {
+    if (
+      recorderStateFront.isRecording === false &&
+      audioRecorderFront.uri &&
+      audioRecorderFront.uri !== card.frontAudio
+    ) {
+      onUpdate(card.id, {
+        frontAudio: audioRecorderFront.uri || undefined,
+      });
+    }
+  }, [recorderStateFront.isRecording, audioRecorderFront.uri]);
+
+  // Update card when recording finishes (back)
+  useEffect(() => {
+    if (
+      recorderStateBack.isRecording === false &&
+      audioRecorderBack.uri &&
+      audioRecorderBack.uri !== card.backAudio
+    ) {
+      onUpdate(card.id, {
+        backAudio: audioRecorderBack.uri || undefined,
+      });
+    }
+  }, [recorderStateBack.isRecording, audioRecorderBack.uri]);
+
   // Single-open policy helpers
   function setExclusiveFrontField(next: keyof ActiveFields) {
     setFrontFields((prev) => {
@@ -276,6 +291,32 @@ function NewCard({
       };
     });
   }
+
+    const advancedStyleFront = useAnimatedStyle(() => ({
+    height: advancedHeightFront.value,
+    opacity: advancedHeightFront.value > 0 ? 1 : 0,
+    overflow: "hidden",
+  }));
+
+  const advancedStyleBack = useAnimatedStyle(() => ({
+    height: advancedHeightBack.value,
+    opacity: advancedHeightBack.value > 0 ? 1 : 0,
+    overflow: "hidden",
+  }));
+
+  // Animuj otwarcie/zamknięcie panelu z wykorzystaniem zmierzonej wysokości
+  useEffect(() => {
+    const minFront = 100;
+    const target = isMoreFront ? Math.max(measuredFrontH, minFront) : 0;
+    advancedHeightFront.value = withTiming(target, { duration: 220 });
+  }, [isMoreFront, measuredFrontH]);
+
+  useEffect(() => {
+    const minBack = 100;
+    const target = isMoreBack ? Math.max(measuredBackH, minBack) : 0;
+    advancedHeightBack.value = withTiming(target, { duration: 220 });
+  }, [isMoreBack, measuredBackH]);
+
   function setExclusiveBackField(next: keyof ActiveFields) {
     setBackFields((prev) => {
       return {
@@ -323,21 +364,6 @@ function NewCard({
       }
     }
   }
-
-  // Missing helpers reintroduced
-  function textChangeHandler(
-    text: string,
-    isFront: boolean,
-    gotCard: EditableCard
-  ): void {
-    onUpdate(gotCard.id, {
-      cardData: {
-        ...gotCard.cardData,
-        [isFront ? "front" : "back"]: text,
-      },
-    });
-  }
-
   // Tagi (wspólne dla obu stron)
   function addTagFromInput(side: Side) {
     const value = side === "front" ? currentFrontTag : currentBackTag;
@@ -376,17 +402,9 @@ function NewCard({
   }
 
   // Sugestie (uogólnione)
-  function applySuggestion(side: Side, word: string) {
-    onUpdate(card.id, {
-      cardData: {
-        ...card.cardData,
-        [side === "front" ? "front" : "back"]: word,
-      },
-    });
-  }
+
 
   // Uogólnione funkcje audio (DRY)
-  type Side = "front" | "back";
 
   async function handleRecord(side: Side) {
     const isRecording =
@@ -478,6 +496,7 @@ function NewCard({
     if (hasValue) return Colors.primary_500;
     return Colors.primary_700;
   }
+  */
 
   // JSX — usuń warunek trybu simple; zawsze renderuj standardowo z isMoreFront/isMoreBack
   return (
@@ -495,6 +514,11 @@ function NewCard({
                     textChangeHandler(text, true, card)
                   }
                   value={card.cardData.front}
+                  ref={focusRef}
+                  onSubmitEditing={()=>backInputRef.current?.focus()} 
+                  returnKeyType="next"
+                  submitBehavior="submit"
+                  multiline={true}
                 />
               </View>
               {/* Podpowiedzi słownikowe */}
@@ -535,6 +559,7 @@ function NewCard({
                   </View>
                 )}
               {/* Panel rozwijany strzałką: ikony */}
+              {/*
               <Animated.View
                 style={[advancedStyleFront]}
                 pointerEvents={isMoreFront ? "auto" : "none"}
@@ -589,7 +614,6 @@ function NewCard({
                   </View>
                   {frontFields.tag && (
                     <View style={{ marginTop: 7, marginBottom: 7 }}>
-                      {/* input + chips jak wcześniej */}
                       <View
                         style={{
                           flexDirection: "row",
@@ -685,7 +709,6 @@ function NewCard({
                   )}
                   {frontFields.image && (
                     <View style={{ marginTop: 8, gap: 10 }}>
-                      {/* obrazek: picker + miniaturka */}
                       {card.frontImage ? (
                         <View
                           style={{ flexDirection: "row", alignItems: "center" }}
@@ -894,8 +917,10 @@ function NewCard({
                     <Text style={styles.metaFieldStub}>[Panel wzór front]</Text>
                   )}
                 </View>
-              </Animated.View>
+              </Animated.View>  
+              */}
             </View>
+            {/*
             <Pressable
               onPress={() => openMoreHandler("f")}
               style={{ alignSelf: "center" }}
@@ -906,6 +931,7 @@ function NewCard({
                 <AntDesign name="up" size={24} color={Colors.primary_700} />
               )}
             </Pressable>
+            */}
           </View>
 
           {/* BACK */}
@@ -914,11 +940,16 @@ function NewCard({
               <Text style={styles.cardText}>Back</Text>
               <View style={styles.cardInputContainer}>
                 <TextInput
+                  ref={backInputRef}
                   style={styles.cardInput}
                   value={card.cardData.back}
                   onChangeText={(text: string) =>
                     textChangeHandler(text, false, card)
                   }
+                  onSubmitEditing={onEnter} 
+                  returnKeyType="next"
+                  submitBehavior="submit"
+                  multiline={true}
                 />
               </View>
               {deckLanguage &&
@@ -956,6 +987,7 @@ function NewCard({
                     )}
                   </View>
                 )}
+              {/*
               <Animated.View
                 style={[advancedStyleBack]}
                 pointerEvents={isMoreBack ? "auto" : "none"}
@@ -1010,7 +1042,6 @@ function NewCard({
                   </View>
                   {backFields.tag && (
                     <View style={{ marginTop: 7, marginBottom: 7 }}>
-                      {/* input + chips jak wcześniej (dzielą te same tagi) */}
                       <View
                         style={{
                           flexDirection: "row",
@@ -1313,7 +1344,9 @@ function NewCard({
                   )}
                 </View>
               </Animated.View>
+              */}
             </View>
+            {/*
             <Pressable
               onPress={() => openMoreHandler("b")}
               style={{ alignSelf: "center" }}
@@ -1324,6 +1357,7 @@ function NewCard({
                 <AntDesign name="up" size={24} color={Colors.primary_700} />
               )}
             </Pressable>
+            */}
           </View>
         </Animated.View>
         <View style={styles.deleteContainer}>

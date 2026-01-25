@@ -6,8 +6,9 @@ import {
 } from "@react-navigation/native";
 
 import { router, Stack, useSegments } from "expo-router";
-
-import { View, useColorScheme } from "react-native";
+import { Image } from "expo-image";
+import { Colors } from "@/constants/colors";
+import { Animated, View, useColorScheme, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
@@ -23,7 +24,39 @@ const STREAK_RESET_KEY = "streak_reset_pending";
 
 SplashScreen.preventAutoHideAsync();
 
+const CustomSplashScreen = ({ isReady }: { isReady: boolean }) => {
+  const [isVisible, setIsVisible] = useState(true);
+  const opacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isReady) {
+      // Płynne znikanie
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 1500, // Czas trwania animacji (ms)
+        useNativeDriver: true,
+      }).start(() => {
+        setIsVisible(false); // Odmontuj po animacji
+      });
+    }
+  }, [isReady]);
+
+  if (!isVisible) return null;
+
+  return (
+    <Animated.View style={[styles.splashContainer,
+      {opacity}]}>
+      <Image 
+        source={require('../assets/memvocadoicon.png')} // Zmień na swój splash image
+        style={{ width: 200, height: 200 }} 
+      />
+    </Animated.View>
+  );
+};
+
 export default function RootLayout(): React.JSX.Element | null {
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isAppReady, setIsAppReady] = useState(false);
   // Connect to emulators in development mode
   useEffect(() => {
     connectEmulatorsIfNeeded();
@@ -214,6 +247,11 @@ export default function RootLayout(): React.JSX.Element | null {
           }, 1000);
         }
       }
+      finally {
+        if (isMounted) {
+          setIsAuthReady(true);
+      }     
+     }
     });
 
     // Cleanup subscription on unmount
@@ -234,29 +272,30 @@ export default function RootLayout(): React.JSX.Element | null {
     Inter: require("../assets/Inter/Inter-VariableFont_opsz,wght.ttf"),
   });
 
+
   const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded || fontError) {
-      await SplashScreen.hideAsync();
+    if ((fontsLoaded || fontError) && isAuthReady) {
+      setIsAppReady(true);
+      SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, isAuthReady]);
+
 
   // Ukryj splash screen po załadowaniu fontów lub po timeout
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync().catch((err) => {
-        console.error("Error hiding splash screen:", err);
-      });
+    if ((fontsLoaded || fontError) && isAuthReady) {
+      setIsAppReady(true);
+      SplashScreen.hideAsync();
     }
 
     // Fallback: ukryj splash screen po 3 sekundach niezależnie od stanu
     const timeout = setTimeout(() => {
-      SplashScreen.hideAsync().catch((err) => {
-        console.error("Error hiding splash screen (timeout):", err);
-      });
-    }, 3000);
+      setIsAppReady(true);
+      SplashScreen.hideAsync();
+    }, 8000);
 
     return () => clearTimeout(timeout);
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, isAuthReady]);
 
   if (!fontsLoaded && !fontError) {
     return null;
@@ -269,6 +308,7 @@ export default function RootLayout(): React.JSX.Element | null {
           value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
         >
           <UserContextProvider>
+            
             <Stack
               initialRouteName={"(auth)/login"}
               screenOptions={{ headerShown: false }}
@@ -278,9 +318,26 @@ export default function RootLayout(): React.JSX.Element | null {
               <Stack.Screen name="(auth)/resetPassword" />
               <Stack.Screen name="tabs" />
             </Stack>
+            <CustomSplashScreen isReady={isAppReady} />
           </UserContextProvider>
         </ThemeProvider>
       </View>
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  splashContainer: {
+    backgroundColor: Colors.primary_100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+});

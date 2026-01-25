@@ -12,6 +12,7 @@ import {
   shuffleArray,
 } from "../../utils/allInOneProgress";
 import type { Card, DeckLearningData } from "@/types/schemas";
+import { playSound } from "@/utils/soundTrigger";
 
 export interface AllInOneSessionStats {
   completed: number;
@@ -185,6 +186,12 @@ export function useAllInOneCardLogic(deckId: string) {
    */
   async function respondToCard(isCorrect: boolean): Promise<void> {
     if (!session || !currentCard) return;
+
+    if (isCorrect) {
+      playSound("good");
+    } else {
+      playSound("wrong");
+    }
 
     // Save state for undo
     setHistory((prev) => [

@@ -36,6 +36,8 @@ import { BoltIcon, ArrowUturnLeftIcon } from "react-native-heroicons/solid";
 import { Card, LearningMode } from "@/types";
 import { calculateDailyStatsProgress } from "@/constants/dailyStats";
 import { cloudFunctions } from "../../services/cloudFunctions";
+import * as Haptics from "expo-haptics";
+import { playSound } from "@/utils/soundTrigger";
 
 /**
  * Main learning screen component for flashcard learning with gesture-based interactions
@@ -199,11 +201,28 @@ function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
   const travelX = cornerX - screenCenterX;
   const travelY = cornerY - screenCenterY;
 
+  const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+  async function triggerComboHaptics(): Promise<void> {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); 
+    await delay(100); 
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await delay(100);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await delay(100);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await delay(100);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  }
+
+
   // Trigger confetti and flying fire icon animation only when streak is achieved
   React.useEffect(() => {
     if (streakAchieved) {
       setShowConfetti(true);
 
+      playSound("combo");
+      triggerComboHaptics();
       // Flying icon: Start from 0 at center
       flyingFireIconScale.value = 0;
       flyingFireIconTranslateX.value = 0;
@@ -361,7 +380,15 @@ function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
    * Handles navigation back to previous screen
    */
   function goBackHandler(): void {
-    router.back();
+    router.push({
+      pathname: "./victoryScreen",
+      params: {
+        completedNewToday: dailyStats?.completedNewToday?.toString() ?? "0",
+        completedDueToday: dailyStats?.completedDueToday?.toString() ?? "0",
+        empty: "false",
+        finished: "false",
+      },
+    });
   }
 
   if (error) {
@@ -485,15 +512,13 @@ function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
         <View style={learnScreenStyles.header}>
           <Pressable
             onPress={goBackHandler}
-            accessibilityLabel="Go back to previous screen"
+            accessibilityLabel="Finish session"
             accessibilityRole="button"
-            accessibilityHint="Double tap to return to deck selection"
+            accessibilityHint="Tap to finish session"
           >
-            <Ionicons
-              name="chevron-back"
-              size={30}
-              color={Colors.primary_700}
-            />
+            <View style={styles.finishButton}>
+              <Text style={styles.finishText}>Finish</Text>
+            </View>
           </Pressable>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Text
@@ -568,19 +593,19 @@ function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
           animationType="fade"
           onRequestClose={() => setTooltipVisible(false)}
         >
-          <View style={tooltipStyles.modalOverlay}>
+          <View style={styles.modalOverlay}>
             <Pressable
               style={StyleSheet.absoluteFill}
               onPress={() => setTooltipVisible(false)}
             />
-            <View style={tooltipStyles.modalContent}>
+            <View style={styles.modalContent}>
               <ScrollView
                 indicatorStyle="black"
-                contentContainerStyle={tooltipStyles.modalScrollContent}
+                contentContainerStyle={styles.modalScrollContent}
               >
-                <Text style={tooltipStyles.modalText}>{tooltipText}</Text>
+                <Text style={styles.modalText}>{tooltipText}</Text>
               </ScrollView>
-              <Text style={tooltipStyles.modalHint}>Dotknij tła, aby zamknąć</Text>
+              <Text style={styles.modalHint}>Dotknij tła, aby zamknąć</Text>
             </View>
           </View>
         </Modal>
@@ -589,7 +614,21 @@ function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
   );
 }
 
-const tooltipStyles = StyleSheet.create({
+const styles = StyleSheet.create({
+  finishButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.accent_500,
+  },
+  finishText: {
+    fontSize: 12,
+    color: Colors.primary_700,
+    fontWeight: "700",
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.7)",

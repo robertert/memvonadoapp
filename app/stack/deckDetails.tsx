@@ -53,6 +53,7 @@ import {
 
 import { calculateDateAgo } from "@/utils/date";
 import LearningModeModal from "../../components/learnScreen/LearningModeModal";
+import { playSound } from "@/utils/soundTrigger";
 
 interface DeckParams {
   deckId: string;
@@ -81,10 +82,11 @@ export default function deckDetails(): React.JSX.Element {
   // Like functionality state
   const [isLiked, setIsLiked] = useState<boolean>(false);
   const [likeCount, setLikeCount] = useState<number>(0);
-  const [isLikeLoading, setIsLikeLoading] = useState<boolean>(false);
   const likeScale = useRef(new Animated.Value(1)).current;
-  const lastLikeTime = useRef<number>(0);
-  const DEBOUNCE_MS = 500;
+  const DEBOUNCE_MS = 1000;
+
+  const likeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSyncedLikeState = useRef<boolean>(false);   
 
   // Learning mode modal state
   const [showModeModal, setShowModeModal] = useState<boolean>(false);
@@ -106,6 +108,7 @@ export default function deckDetails(): React.JSX.Element {
       try {
         const result = await cloudFunctions.checkIfLiked(typedParams.deckId);
         setIsLiked(result.isLiked);
+        lastSyncedLikeState.current = result.isLiked;
         // Update local cache if different
         if (result.isLiked !== localLiked) {
           if (result.isLiked) {
@@ -129,18 +132,38 @@ export default function deckDetails(): React.JSX.Element {
     }
   }, [deck?.likes]);
 
+  useEffect(() => {
+    return () => {
+      if (likeTimerRef.current) {
+        syncLikeWithServer(!isLiked);
+        clearTimeout(likeTimerRef.current);
+      }
+    };
+  }, []);
+
+  const syncLikeWithServer = async (targetState: boolean) => {
+    if (targetState === lastSyncedLikeState.current) {
+      return;
+    }
+    
+    try {      
+      const result = await cloudFunctions.toggleDeckLike(typedParams.deckId);
+      
+      if (result.liked) {
+        await addLikedDeckId(typedParams.deckId);
+      } else {
+        await removeLikedDeckId(typedParams.deckId);
+      }
+      lastSyncedLikeState.current = result.liked;
+    } catch (error) {
+      console.error("Error syncing like:", error);
+    }
+  };
+
   // Like button handler with debounce
   const handleLikePress = useCallback(async () => {
-    if (!typedParams.deckId || isLikeLoading || PLACEHOLDER_MODE) return;
+    if (!typedParams.deckId || PLACEHOLDER_MODE) return;
 
-    // Debounce check
-    const now = Date.now();
-    if (now - lastLikeTime.current < DEBOUNCE_MS) return;
-    lastLikeTime.current = now;
-
-    // Optimistic update
-    const previousIsLiked = isLiked;
-    const previousLikeCount = likeCount;
     setIsLiked(!isLiked);
     setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
 
@@ -168,33 +191,18 @@ export default function deckDetails(): React.JSX.Element {
       await removeLikedDeckId(typedParams.deckId);
     }
 
-    // Server call
-    setIsLikeLoading(true);
-    try {
-      const result = await cloudFunctions.toggleDeckLike(typedParams.deckId);
-      setIsLiked(result.liked);
-      setLikeCount(result.newLikeCount);
-      // Update cache based on server response
-      if (result.liked) {
-        await addLikedDeckId(typedParams.deckId);
-      } else {
-        await removeLikedDeckId(typedParams.deckId);
-      }
-    } catch (error) {
-      console.error("Error toggling like:", error);
-      // Rollback on error
-      setIsLiked(previousIsLiked);
-      setLikeCount(previousLikeCount);
-      // Rollback cache
-      if (previousIsLiked) {
-        await addLikedDeckId(typedParams.deckId);
-      } else {
-        await removeLikedDeckId(typedParams.deckId);
-      }
-    } finally {
-      setIsLikeLoading(false);
+    if (likeTimerRef.current) {
+      clearTimeout(likeTimerRef.current);
+    } else {
+      syncLikeWithServer(!isLiked);
     }
-  }, [typedParams.deckId, isLiked, likeCount, isLikeLoading, likeScale]);
+
+    likeTimerRef.current = setTimeout(async () => {
+      likeTimerRef.current = null;
+      syncLikeWithServer(!isLiked);
+    }, DEBOUNCE_MS);
+    
+  }, [typedParams.deckId, isLiked, likeCount, likeScale]);
 
   async function checkForChanges(): Promise<void> {
     if (!userCtx.id || !typedParams.deckId || isCheckingChanges) return;
@@ -440,6 +448,8 @@ export default function deckDetails(): React.JSX.Element {
           }}
           onLongPress={() => {
             if (deck?.createdBy !== userCtx.id) return;
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            playSound("click");
             router.push({
               pathname: "./editCard",
               params: { cardId: item.id, deckId: typedParams.deckId },
@@ -624,7 +634,6 @@ export default function deckDetails(): React.JSX.Element {
           <Pressable
             onPress={handleLikePress}
             style={styles.statItem}
-            disabled={isLikeLoading}
           >
             <Animated.View style={{ transform: [{ scale: likeScale }] }}>
               {isLiked ? (

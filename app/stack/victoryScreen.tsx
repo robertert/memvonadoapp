@@ -17,12 +17,14 @@ import { TrophyIcon, FireIcon } from "react-native-heroicons/solid";
 import { UpdateUserStreakIfQualifiedResponse } from "@/types/schemas/api/user";
 import { cloudFunctions } from "@/services/cloudFunctions";
 import { AVOCADO_PHASE_NAMES, AVOCADO_TOTAL_DAYS } from "@/constants/avocado";
+import { playSound } from "@/utils/soundTrigger";
 
 // Typ odpowiedzi z Twojej Cloud Function
 interface ProgressParams {
   completedNewToday?: string;
   completedDueToday?: string;
   empty?: string;
+  finished?: string;
   // All in One mode params
   mode?: string;
   totalCards?: string;
@@ -39,6 +41,7 @@ export default function VictoryScreen(): React.JSX.Element {
   const dueCards = parseInt(params.completedDueToday || "0", 10);
   const totalCards = newCards + dueCards;
   const isEmpty = params.empty === "true";
+  const isFinished = (params.finished === "false") ? false : true;
 
   // All in One mode params
   const isAllInOneMode = params.mode === "all_in_one";
@@ -90,6 +93,7 @@ export default function VictoryScreen(): React.JSX.Element {
       setLoading(false);
       return;
     }
+    playSound("victory");
 
     const fetchStreakData = async () => {
       try {
@@ -545,10 +549,17 @@ export default function VictoryScreen(): React.JSX.Element {
             >
               <TrophyIcon size={48} color={Colors.primary_700} />
             </Animated.View>
+
             <Text style={styles.title}>Sesja zakończona!</Text>
-            <Text style={styles.subtitle}>
-              Wszystkie karty zaliczone.
-            </Text>
+            {isFinished ? (
+              <Text style={styles.subtitle}>
+                Wszystkie karty zaliczone.
+              </Text>
+            ) : (
+              <Text style={styles.subtitle}>
+                Niestety nie udało Ci się zaliczyć wszystkich kart. Wróć jeszcze po nie!
+              </Text>
+            )}
           </Animated.View>
 
           <Animated.View
