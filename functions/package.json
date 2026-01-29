@@ -20,6 +20,7 @@
   },
   "main": "lib/index.js",
   "dependencies": {
+    "@google-cloud/translate": "^8.0.0",
     "@google-cloud/vertexai": "^1.10.0",
     "@mongodb-js/zstd": "^2.0.0",
     "adm-zip": "^0.5.16",

@@ -20,36 +20,44 @@ import {
   DocumentTextIcon,
   CameraIcon,
   ArchiveBoxIcon,
+  ViewfinderCircleIcon,
 } from "react-native-heroicons/solid";
 
 export default function createScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
-  const [showModal, setShowModal] = useState(false);
+  const [showModalCard, setShowModalCard] = useState(false);
+  const [showModalDeck, setShowModalDeck] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      setShowModal(true);
-    }, [])
-  );
 
   const handleCreateDeck = () => {
-    setShowModal(false);
+    setShowModalDeck(false);
+    setShowModalCard(false);
+
     router.push("../stack/createSelfScreen");
   };
 
   const handleImportDeck = () => {
-    setShowModal(false);
+    setShowModalDeck(false);
+    setShowModalCard(false);
     router.push("../stack/fileImportScreen");
   };
 
   const handleScanDocument = () => {
-    setShowModal(false);
+    setShowModalDeck(false);
+    setShowModalCard(false);
     router.push("../stack/scanDocumentScreen");
   };
 
   const handleImportAnki = () => {
-    setShowModal(false);
+    setShowModalDeck(false);
+    setShowModalCard(false);
     router.push("../stack/ankiImportScreen");
+  };
+
+  const handleOCRScan = () => {
+    setShowModalCard(false);
+    setShowModalDeck(false);
+    router.push("../stack/ocrCameraScreen");
   };
 
   return (
@@ -60,28 +68,59 @@ export default function createScreen(): React.JSX.Element {
         colors={[Colors.primary_100, Colors.primary_100]}
       >
         <View style={[styles.container, { paddingTop: safeArea.top + 8 }]}>
-          <Text style={styles.title}>Dodaj nowe karty</Text>
-          <Text style={styles.subtitle}>Wybierz sposób tworzenia</Text>
+          <Text style={styles.title}>Dodaj fiszki</Text>
+          <Text style={styles.subtitle}>Wybierz sposób dodawania</Text>
 
           <Pressable
             style={styles.addButton}
-            onPress={() => setShowModal(true)}
+            onPress={() => setShowModalCard(true)}
           >
             <PlusIcon size={24} color={Colors.primary_700} />
-            <Text style={styles.addButtonText}>Dodaj karty</Text>
+            <Text style={styles.addButtonText}>Dodaj karty do istniejącej talii</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.addButton}
+            onPress={() => setShowModalDeck(true)}
+          >
+            <PlusIcon size={24} color={Colors.primary_700} />
+            <Text style={styles.addButtonText}>Dodaj nowy deck</Text>
           </Pressable>
         </View>
 
         {/* Modal z opcjami */}
         <Modal
-          visible={showModal}
+          visible={showModalCard}
           transparent={true}
           animationType="fade"
-          onRequestClose={() => setShowModal(false)}
+          onRequestClose={() => setShowModalCard(false)}
         >
           <Pressable
             style={styles.modalOverlay}
-            onPress={() => setShowModal(false)}
+            onPress={() => setShowModalCard(false)}
+          >
+            <View style={styles.modalContent}>              
+
+              {/* OCR Text Scan */}
+              <Pressable
+                style={styles.optionButton}
+                onPress={handleOCRScan}
+              >
+                <ViewfinderCircleIcon size={20} color={Colors.primary_700} />
+                <Text style={styles.optionText}>Skanuj tekst</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Modal>
+        <Modal
+          visible={showModalDeck}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowModalDeck(false)}
+        >
+          <Pressable
+            style={styles.modalOverlay}
+            onPress={() => setShowModalDeck(false)}
           >
             <View style={styles.modalContent}>
               {/* Create Deck */}

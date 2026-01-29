@@ -110,6 +110,9 @@ export declare const getUserDeckDetails: import("firebase-functions/v2/https").C
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
+        title_lower?: string | null | undefined;
         lastReviewDate?: Date | undefined;
         dailyStats?: {
             newCardsRemaining: number;
@@ -284,6 +287,9 @@ export declare const startLearningSession: import("firebase-functions/v2/https")
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
+        title_lower?: string | null | undefined;
         lastReviewDate?: Date | undefined;
         dailyStats?: {
             newCardsRemaining: number;
@@ -364,6 +370,9 @@ export declare const startLearningDeck: import("firebase-functions/v2/https").Ca
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
+        title_lower?: string | null | undefined;
         lastReviewDate?: Date | undefined;
         dailyStats?: {
             newCardsRemaining: number;
@@ -451,4 +460,12 @@ export declare const toggleDeckLike: import("firebase-functions/v2/https").Calla
  */
 export declare const checkIfLiked: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     isLiked: boolean;
+}>, unknown>;
+/**
+ * Add a single card to a deck (Quick Add feature)
+ * Works for both source decks (owned by user) and learning decks (user's copies)
+ */
+export declare const addCardToDeck: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+    cardId: string;
 }>, unknown>;

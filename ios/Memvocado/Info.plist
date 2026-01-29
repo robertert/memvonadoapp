@@ -56,7 +56,7 @@
       <true/>
     </dict>
     <key>NSCameraUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your camera</string>
+    <string>Memvocado potrzebuje dostępu do kamery, aby skanować tekst z dokumentów.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>We use the microphone to record pronunciation audio for your cards.</string>
     <key>NSPhotoLibraryUsageDescription</key>

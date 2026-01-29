@@ -33,6 +33,8 @@ yarn-error.*
 *.apk
 *.ipa
 
+.claude/
+
 prd.md
 
 unpack_anki/

@@ -254,6 +254,9 @@ export declare const DeckLearningMetaSchema: z.ZodObject<{
     icon: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     tags: z.ZodOptional<z.ZodNullable<z.ZodArray<z.ZodString, "many">>>;
     isPublic: z.ZodOptional<z.ZodNullable<z.ZodBoolean>>;
+    frontLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    backLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    title_lower: z.ZodOptional<z.ZodNullable<z.ZodString>>;
 }, "strict", z.ZodTypeAny, {
     id: string;
     cardsNum: number;
@@ -261,6 +264,9 @@ export declare const DeckLearningMetaSchema: z.ZodObject<{
     icon?: string | null | undefined;
     tags?: string[] | null | undefined;
     isPublic?: boolean | null | undefined;
+    frontLanguage?: string | null | undefined;
+    backLanguage?: string | null | undefined;
+    title_lower?: string | null | undefined;
 }, {
     id: string;
     cardsNum: number;
@@ -268,6 +274,9 @@ export declare const DeckLearningMetaSchema: z.ZodObject<{
     icon?: string | null | undefined;
     tags?: string[] | null | undefined;
     isPublic?: boolean | null | undefined;
+    frontLanguage?: string | null | undefined;
+    backLanguage?: string | null | undefined;
+    title_lower?: string | null | undefined;
 }>;
 export type DeckLearningMeta = z.infer<typeof DeckLearningMetaSchema>;
 export declare const DeckLearningDataSchema: z.ZodObject<{
@@ -277,6 +286,9 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
     icon: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     tags: z.ZodOptional<z.ZodNullable<z.ZodArray<z.ZodString, "many">>>;
     isPublic: z.ZodOptional<z.ZodNullable<z.ZodBoolean>>;
+    frontLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    backLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    title_lower: z.ZodOptional<z.ZodNullable<z.ZodString>>;
 } & {
     title: z.ZodString;
     settings: z.ZodObject<{
@@ -343,6 +355,9 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
     icon?: string | null | undefined;
     tags?: string[] | null | undefined;
     isPublic?: boolean | null | undefined;
+    frontLanguage?: string | null | undefined;
+    backLanguage?: string | null | undefined;
+    title_lower?: string | null | undefined;
     lastReviewDate?: Date | undefined;
     dailyStats?: {
         newCardsRemaining: number;
@@ -368,7 +383,10 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
     icon?: string | null | undefined;
     tags?: string[] | null | undefined;
     isPublic?: boolean | null | undefined;
+    frontLanguage?: string | null | undefined;
+    backLanguage?: string | null | undefined;
     updatedAt?: unknown;
+    title_lower?: string | null | undefined;
     lastReviewDate?: unknown;
     dailyStats?: {
         newCardsRemaining: number;

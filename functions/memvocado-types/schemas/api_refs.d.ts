@@ -7,6 +7,7 @@ export * from "./api/ranking";
 export * from "./api/notification";
 export * from "./api/search";
 export * from "./api/user";
+export * from "./api/translation";
 export declare const SuccessResponseSchema: z.ZodObject<{
     success: z.ZodBoolean;
     message: z.ZodOptional<z.ZodString>;

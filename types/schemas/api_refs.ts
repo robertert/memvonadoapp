@@ -10,6 +10,7 @@ export * from "./api/ranking";
 export * from "./api/notification";
 export * from "./api/search";
 export * from "./api/user";
+export * from "./api/translation";
 
 // ============================================================================
 // Card Functions

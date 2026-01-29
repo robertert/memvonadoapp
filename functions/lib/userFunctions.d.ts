@@ -58,6 +58,9 @@ export declare const getUserDecks: import("firebase-functions/v2/https").Callabl
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
+        title_lower?: string | null | undefined;
         lastReviewDate?: Date | undefined;
         dailyStats?: {
             newCardsRemaining: number;

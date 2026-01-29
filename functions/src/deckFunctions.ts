@@ -69,6 +69,8 @@ import {
   ToggleDeckLikeResponseSchema,
   CheckIfLikedRequestSchema,
   CheckIfLikedResponseSchema,
+  AddCardToDeckRequestSchema,
+  AddCardToDeckResponseSchema,
 } from "memvocado-types/schemas/api/deck";
 import { convertAnkiApkg } from "./ankiConverter";
 import {
@@ -2971,5 +2973,110 @@ export const checkIfLiked = onCall(async (request) => {
       throw error;
     }
     throw new HttpsError("internal", "Failed to check if deck is liked");
+  }
+});
+
+/**
+ * Add a single card to a deck (Quick Add feature)
+ * Works for both source decks (owned by user) and learning decks (user's copies)
+ */
+export const addCardToDeck = onCall(async (request) => {
+  const auth = request.auth;
+
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  // Validate request data
+  const validationResult = AddCardToDeckRequestSchema.safeParse(request.data);
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckId, cardData, source } = validationResult.data;
+
+  try {
+    // Check if user owns this deck (source deck) or has a learning copy
+    const sourceDeckRef = db.doc(`decks/${deckId}`);
+    const learningDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
+
+    const [sourceDeckSnap, learningDeckSnap] = await Promise.all([
+      sourceDeckRef.get(),
+      learningDeckRef.get(),
+    ]);
+
+    let targetDeckRef: FirebaseFirestore.DocumentReference;
+    let isSourceDeck = false;
+
+    if (sourceDeckSnap.exists) {
+      const sourceDeck = sourceDeckSnap.data() as Deck;
+      if (sourceDeck.createdBy === userId) {
+        // User owns this source deck - add to source
+        targetDeckRef = sourceDeckRef;
+        isSourceDeck = true;
+      } else if (learningDeckSnap.exists) {
+        // User has a learning copy - add to learning copy
+        targetDeckRef = learningDeckRef;
+      } else {
+        throw new HttpsError(
+          "permission-denied",
+          "You don't have permission to add cards to this deck"
+        );
+      }
+    } else if (learningDeckSnap.exists) {
+      // Learning deck only (no source deck exists)
+      targetDeckRef = learningDeckRef;
+    } else {
+      throw new HttpsError("not-found", "Deck not found");
+    }
+
+    // Create the card
+    const cardRef = targetDeckRef.collection("cards").doc();
+    const newCard = {
+      id: cardRef.id,
+      cardData: {
+        front: cardData.front,
+        back: cardData.back || "",
+      },
+      tags: [],
+      createdAt: new Date(),
+      firstLearn: {
+        isNew: true,
+      } as FirstLearn,
+    } as Card;
+
+    const validatedCard = CardSchema.parse(newCard);
+
+    // Update deck cardsNum and add card in a batch
+    const batch = db.batch();
+    batch.set(cardRef, validatedCard);
+    batch.update(targetDeckRef, {
+      cardsNum: FieldValue.increment(1),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    await batch.commit();
+
+    logger.info("Card added to deck via Quick Add", {
+      deckId,
+      cardId: cardRef.id,
+      userId,
+      source: source || "manual",
+      isSourceDeck,
+    });
+
+    const response = { success: true, cardId: cardRef.id };
+    return serializeTimestamps(AddCardToDeckResponseSchema.parse(response));
+  } catch (error) {
+    logger.error("Error adding card to deck", error);
+    handleZodError(error, "addCardToDeck");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to add card to deck");
   }
 });

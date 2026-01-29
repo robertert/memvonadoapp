@@ -103,6 +103,9 @@ exports.DeckLearningMetaSchema = zod_1.z
     icon: zod_1.z.string().nullable().optional(),
     tags: zod_1.z.array(zod_1.z.string()).nullable().optional(),
     isPublic: zod_1.z.boolean().nullable().optional(),
+    frontLanguage: zod_1.z.string().nullable().optional(),
+    backLanguage: zod_1.z.string().nullable().optional(),
+    title_lower: zod_1.z.string().nullable().optional(),
 })
     .strict();
 exports.DeckLearningDataSchema = exports.DeckLearningMetaSchema.merge(exports.DeckLearningCoreSchema)

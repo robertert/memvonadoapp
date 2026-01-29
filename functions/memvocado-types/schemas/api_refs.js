@@ -24,6 +24,7 @@ __exportStar(require("./api/ranking"), exports);
 __exportStar(require("./api/notification"), exports);
 __exportStar(require("./api/search"), exports);
 __exportStar(require("./api/user"), exports);
+__exportStar(require("./api/translation"), exports);
 // ============================================================================
 // Card Functions
 // ============================================================================

@@ -13,6 +13,10 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
 import UserContextProvider from "../store/user-context";
+import QuickAddProvider from "../store/quickAdd-context";
+import { useQuickAdd } from "../store/quickAdd-context";
+import { QuickAddModal } from "../components/quickAdd";
+import Toast from "react-native-toast-message";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, connectEmulatorsIfNeeded, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -53,6 +57,20 @@ const CustomSplashScreen = ({ isReady }: { isReady: boolean }) => {
     </Animated.View>
   );
 };
+
+function QuickAddModalRoot() {
+  const { isVisible, params, hideQuickAdd } = useQuickAdd();
+  return (
+    <QuickAddModal
+      visible={isVisible}
+      onClose={hideQuickAdd}
+      initialFront={params.front}
+      initialBack={params.back}
+      initialDeckId={params.deckId}
+      source={params.source}
+    />
+  );
+}
 
 export default function RootLayout(): React.JSX.Element | null {
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -308,17 +326,20 @@ export default function RootLayout(): React.JSX.Element | null {
           value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
         >
           <UserContextProvider>
-            
-            <Stack
-              initialRouteName={"(auth)/login"}
-              screenOptions={{ headerShown: false }}
-            >
-              <Stack.Screen name="(auth)/login" />
-              <Stack.Screen name="(auth)/onboarding" />
-              <Stack.Screen name="(auth)/resetPassword" />
-              <Stack.Screen name="tabs" />
-            </Stack>
-            <CustomSplashScreen isReady={isAppReady} />
+            <QuickAddProvider>
+              <Stack
+                initialRouteName={"(auth)/login"}
+                screenOptions={{ headerShown: false }}
+              >
+                <Stack.Screen name="(auth)/login" />
+                <Stack.Screen name="(auth)/onboarding" />
+                <Stack.Screen name="(auth)/resetPassword" />
+                <Stack.Screen name="tabs" />
+              </Stack>
+              <QuickAddModalRoot />
+              <CustomSplashScreen isReady={isAppReady} />
+              <Toast />
+            </QuickAddProvider>
           </UserContextProvider>
         </ThemeProvider>
       </View>

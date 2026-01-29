@@ -129,6 +129,9 @@ export const DeckLearningMetaSchema = z
     icon: z.string().nullable().optional(),
     tags: z.array(z.string()).nullable().optional(),
     isPublic: z.boolean().nullable().optional(),
+    frontLanguage: z.string().nullable().optional(),
+    backLanguage: z.string().nullable().optional(),
+    title_lower: z.string().nullable().optional(),
   })
   .strict();
 

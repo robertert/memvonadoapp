@@ -22,6 +22,7 @@ import {
   AVOCADO_REFRESH_DASHBOARD_KEY,
 } from "@/constants/avocado";
 import { router } from "expo-router";
+import { useDeepLink, usePendingQuickAdd } from "@/hooks/useDeepLink";
 
 const STREAK_RESET_KEY = "streak_reset_pending";
 
@@ -34,6 +35,10 @@ interface TabBarIconProps {
 export default function TabsLayout(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ triggerHarvest?: string }>();
+
+  // Deep link hooks
+  useDeepLink();
+  usePendingQuickAdd();
 
   // Streak modal state
   const [showStreakResetModal, setShowStreakResetModal] = useState(false);
@@ -252,6 +257,7 @@ export default function TabsLayout(): React.JSX.Element {
       onClose={() => setShowAvocadoResetModal(false)}
       previousDays={avocadoPreviousDays}
     />
+
     </>
   );
 }

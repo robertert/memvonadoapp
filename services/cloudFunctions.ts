@@ -196,7 +196,9 @@ import {
   CheckIfLikedRequest,
   CheckIfLikedResponse,
   CheckIfLikedResponseSchema,
-
+  AddCardToDeckRequest,
+  AddCardToDeckResponse,
+  AddCardToDeckResponseSchema,
 } from "@/types/schemas/api/deck";
 import {
   CheckUsernameAvailabilityRequest,
@@ -225,6 +227,20 @@ import {
   GetAvocadoConfigResponse,
   GetAvocadoConfigResponseSchema,
 } from "@/types/schemas/avocado";
+import {
+  TranslateTextRequest,
+  TranslateTextResponse,
+  TranslateTextResponseSchema,
+  GetTranslationLimitRequest,
+  GetTranslationLimitResponse,
+  GetTranslationLimitResponseSchema,
+  SupportedLanguage,
+} from "@/types/schemas/api/translation";
+import {
+  ExtractTextFromImageRequest,
+  ExtractTextFromImageResponse,
+  ExtractTextFromImageResponseSchema,
+} from "@/types/schemas/api/ocr";
 
 // Cloud Functions calls
 export const cloudFunctions = {
@@ -1203,6 +1219,92 @@ export const cloudFunctions = {
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from getAvocadoConfig");
+    }
+    return validatedData.data;
+  },
+
+  // ============================================================================
+  // Quick Add Functions
+  // ============================================================================
+
+  // Add a single card to a deck (Quick Add feature)
+  addCardToDeck: async (
+    deckId: string,
+    cardData: { front: string; back?: string },
+    source?: "widget" | "ocr" | "deeplink" | "manual"
+  ) => {
+    const fn = httpsCallable<AddCardToDeckRequest, AddCardToDeckResponse>(
+      functions,
+      "addCardToDeck"
+    );
+    const result = await fn({
+      deckId,
+      cardData: { front: cardData.front, back: cardData.back || "" },
+      source,
+    });
+    const validatedData = AddCardToDeckResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from addCardToDeck");
+    }
+    return validatedData.data;
+  },
+
+  // ============================================================================
+  // Translation Functions
+  // ============================================================================
+
+  // Translate text using Google Cloud Translation API
+  translateText: async (
+    text: string,
+    fromLanguage: SupportedLanguage,
+    toLanguage: SupportedLanguage
+  ) => {
+    const fn = httpsCallable<TranslateTextRequest, TranslateTextResponse>(
+      functions,
+      "translateText"
+    );
+    const result = await fn({ text, fromLanguage, toLanguage });
+    const validatedData = TranslateTextResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from translateText");
+    }
+    return validatedData.data;
+  },
+
+  // Get user's translation usage limit status
+  getTranslationLimit: async () => {
+    const fn = httpsCallable<
+      GetTranslationLimitRequest,
+      GetTranslationLimitResponse
+    >(functions, "getTranslationLimit");
+    const result = await fn({});
+    const validatedData = GetTranslationLimitResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getTranslationLimit");
+    }
+    return validatedData.data;
+  },
+
+  // ============================================================================
+  // OCR Functions
+  // ============================================================================
+
+  // Extract text from an image using Gemini Vision
+  extractTextFromImage: async (storagePath: string, mimeType: string = "image/jpeg") => {
+    const fn = httpsCallable<
+      ExtractTextFromImageRequest,
+      ExtractTextFromImageResponse
+    >(functions, "extractTextFromImage");
+    const result = await fn({ storagePath, mimeType });
+    const validatedData = ExtractTextFromImageResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from extractTextFromImage");
     }
     return validatedData.data;
   },

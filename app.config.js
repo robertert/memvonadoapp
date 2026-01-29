@@ -51,6 +51,20 @@ export default {
           ],
         },
       ],
+      [
+        "expo-build-properties",
+        {
+          ios: {
+            deploymentTarget: "15.5",
+          },
+        },
+      ],
+      [
+        "expo-camera",
+        {
+          cameraPermission: "Memvocado potrzebuje dostępu do kamery, aby skanować tekst z dokumentów.",
+        },
+      ],
     ],
     extra: {
       FIREBASE_API_KEY: process.env.FIREBASE_API_KEY,

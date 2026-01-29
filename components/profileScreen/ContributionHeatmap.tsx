@@ -10,14 +10,14 @@ interface DayData {
 interface Props {
   weeks: number; // ile tygodni wstecz
   data: DayData[]; // zmapowane wyniki {date, count}
-  levels?: number[]; // progi intensywności np. [0,1,3,5]
+  levels?: number[]; // progi intensywności 
   title?: string;
 }
 
 export default function ContributionHeatmap({
   weeks,
   data,
-  levels = [0, 1, 3, 5],
+  levels = [0, 30, 60, 100],
   title = "Activity",
 }: Props): React.JSX.Element {
   const today = new Date();

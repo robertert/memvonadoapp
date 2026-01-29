@@ -397,3 +397,25 @@ export const CheckIfLikedResponseSchema = z.object({
   isLiked: z.boolean(),
 });
 export type CheckIfLikedResponse = z.infer<typeof CheckIfLikedResponseSchema>;
+
+// ===========================
+// Quick Add Card schemas
+// ===========================
+
+export const AddCardToDeckRequestSchema = z
+  .object({
+    deckId: z.string().min(1),
+    cardData: z.object({
+      front: z.string().min(1).max(3000),
+      back: z.string().max(3000).default(""),
+    }),
+    source: z.enum(["widget", "ocr", "deeplink", "manual"]).optional(),
+  })
+  .strict();
+export type AddCardToDeckRequest = z.infer<typeof AddCardToDeckRequestSchema>;
+
+export const AddCardToDeckResponseSchema = z.object({
+  success: z.boolean(),
+  cardId: z.string(),
+});
+export type AddCardToDeckResponse = z.infer<typeof AddCardToDeckResponseSchema>;

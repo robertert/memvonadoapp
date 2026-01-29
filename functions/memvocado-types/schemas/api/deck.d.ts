@@ -900,6 +900,9 @@ export declare const GetUserDecksResponseSchema: z.ZodObject<{
         icon: z.ZodOptional<z.ZodNullable<z.ZodString>>;
         tags: z.ZodOptional<z.ZodNullable<z.ZodArray<z.ZodString, "many">>>;
         isPublic: z.ZodOptional<z.ZodNullable<z.ZodBoolean>>;
+        frontLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        backLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        title_lower: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     } & {
         title: z.ZodString;
         settings: z.ZodObject<{
@@ -966,6 +969,9 @@ export declare const GetUserDecksResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
+        title_lower?: string | null | undefined;
         lastReviewDate?: Date | undefined;
         dailyStats?: {
             newCardsRemaining: number;
@@ -991,7 +997,10 @@ export declare const GetUserDecksResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
         updatedAt?: unknown;
+        title_lower?: string | null | undefined;
         lastReviewDate?: unknown;
         dailyStats?: {
             newCardsRemaining: number;
@@ -1020,6 +1029,9 @@ export declare const GetUserDecksResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
+        title_lower?: string | null | undefined;
         lastReviewDate?: Date | undefined;
         dailyStats?: {
             newCardsRemaining: number;
@@ -1047,7 +1059,10 @@ export declare const GetUserDecksResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
         updatedAt?: unknown;
+        title_lower?: string | null | undefined;
         lastReviewDate?: unknown;
         dailyStats?: {
             newCardsRemaining: number;
@@ -1178,6 +1193,9 @@ export declare const StartLearningDeckResponseSchema: z.ZodObject<{
         icon: z.ZodOptional<z.ZodNullable<z.ZodString>>;
         tags: z.ZodOptional<z.ZodNullable<z.ZodArray<z.ZodString, "many">>>;
         isPublic: z.ZodOptional<z.ZodNullable<z.ZodBoolean>>;
+        frontLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        backLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        title_lower: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     } & {
         title: z.ZodString;
         settings: z.ZodObject<{
@@ -1244,6 +1262,9 @@ export declare const StartLearningDeckResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
+        title_lower?: string | null | undefined;
         lastReviewDate?: Date | undefined;
         dailyStats?: {
             newCardsRemaining: number;
@@ -1269,7 +1290,10 @@ export declare const StartLearningDeckResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
         updatedAt?: unknown;
+        title_lower?: string | null | undefined;
         lastReviewDate?: unknown;
         dailyStats?: {
             newCardsRemaining: number;
@@ -1299,6 +1323,9 @@ export declare const StartLearningDeckResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
+        title_lower?: string | null | undefined;
         lastReviewDate?: Date | undefined;
         dailyStats?: {
             newCardsRemaining: number;
@@ -1327,7 +1354,10 @@ export declare const StartLearningDeckResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
         updatedAt?: unknown;
+        title_lower?: string | null | undefined;
         lastReviewDate?: unknown;
         dailyStats?: {
             newCardsRemaining: number;
@@ -1360,6 +1390,9 @@ export declare const GetUserDeckDetailsResponseSchema: z.ZodObject<{
         icon: z.ZodOptional<z.ZodNullable<z.ZodString>>;
         tags: z.ZodOptional<z.ZodNullable<z.ZodArray<z.ZodString, "many">>>;
         isPublic: z.ZodOptional<z.ZodNullable<z.ZodBoolean>>;
+        frontLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        backLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        title_lower: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     } & {
         title: z.ZodString;
         settings: z.ZodObject<{
@@ -1426,6 +1459,9 @@ export declare const GetUserDeckDetailsResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
+        title_lower?: string | null | undefined;
         lastReviewDate?: Date | undefined;
         dailyStats?: {
             newCardsRemaining: number;
@@ -1451,7 +1487,10 @@ export declare const GetUserDeckDetailsResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
         updatedAt?: unknown;
+        title_lower?: string | null | undefined;
         lastReviewDate?: unknown;
         dailyStats?: {
             newCardsRemaining: number;
@@ -1481,6 +1520,9 @@ export declare const GetUserDeckDetailsResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
+        title_lower?: string | null | undefined;
         lastReviewDate?: Date | undefined;
         dailyStats?: {
             newCardsRemaining: number;
@@ -1509,7 +1551,10 @@ export declare const GetUserDeckDetailsResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
         updatedAt?: unknown;
+        title_lower?: string | null | undefined;
         lastReviewDate?: unknown;
         dailyStats?: {
             newCardsRemaining: number;
@@ -2362,6 +2407,9 @@ export declare const StartLearningSessionResponseSchema: z.ZodObject<{
         icon: z.ZodOptional<z.ZodNullable<z.ZodString>>;
         tags: z.ZodOptional<z.ZodNullable<z.ZodArray<z.ZodString, "many">>>;
         isPublic: z.ZodOptional<z.ZodNullable<z.ZodBoolean>>;
+        frontLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        backLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        title_lower: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     } & {
         title: z.ZodString;
         settings: z.ZodObject<{
@@ -2428,6 +2476,9 @@ export declare const StartLearningSessionResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
+        title_lower?: string | null | undefined;
         lastReviewDate?: Date | undefined;
         dailyStats?: {
             newCardsRemaining: number;
@@ -2453,7 +2504,10 @@ export declare const StartLearningSessionResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
         updatedAt?: unknown;
+        title_lower?: string | null | undefined;
         lastReviewDate?: unknown;
         dailyStats?: {
             newCardsRemaining: number;
@@ -2520,6 +2574,9 @@ export declare const StartLearningSessionResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
+        title_lower?: string | null | undefined;
         lastReviewDate?: Date | undefined;
         dailyStats?: {
             newCardsRemaining: number;
@@ -2585,7 +2642,10 @@ export declare const StartLearningSessionResponseSchema: z.ZodObject<{
         icon?: string | null | undefined;
         tags?: string[] | null | undefined;
         isPublic?: boolean | null | undefined;
+        frontLanguage?: string | null | undefined;
+        backLanguage?: string | null | undefined;
         updatedAt?: unknown;
+        title_lower?: string | null | undefined;
         lastReviewDate?: unknown;
         dailyStats?: {
             newCardsRemaining: number;
@@ -2732,3 +2792,43 @@ export declare const CheckIfLikedResponseSchema: z.ZodObject<{
     isLiked: boolean;
 }>;
 export type CheckIfLikedResponse = z.infer<typeof CheckIfLikedResponseSchema>;
+export declare const AddCardToDeckRequestSchema: z.ZodObject<{
+    deckId: z.ZodString;
+    cardData: z.ZodObject<{
+        front: z.ZodString;
+        back: z.ZodDefault<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        front: string;
+        back: string;
+    }, {
+        front: string;
+        back?: string | undefined;
+    }>;
+    source: z.ZodOptional<z.ZodEnum<["widget", "ocr", "deeplink", "manual"]>>;
+}, "strict", z.ZodTypeAny, {
+    deckId: string;
+    cardData: {
+        front: string;
+        back: string;
+    };
+    source?: "widget" | "ocr" | "deeplink" | "manual" | undefined;
+}, {
+    deckId: string;
+    cardData: {
+        front: string;
+        back?: string | undefined;
+    };
+    source?: "widget" | "ocr" | "deeplink" | "manual" | undefined;
+}>;
+export type AddCardToDeckRequest = z.infer<typeof AddCardToDeckRequestSchema>;
+export declare const AddCardToDeckResponseSchema: z.ZodObject<{
+    success: z.ZodBoolean;
+    cardId: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    success: boolean;
+    cardId: string;
+}, {
+    success: boolean;
+    cardId: string;
+}>;
+export type AddCardToDeckResponse = z.infer<typeof AddCardToDeckResponseSchema>;

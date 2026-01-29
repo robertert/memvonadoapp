@@ -68,6 +68,7 @@ export {
   recordDeckView,
   toggleDeckLike,
   checkIfLiked,
+  addCardToDeck,
 } from "./deckFunctions";
 export {
   getLeaderboard,
@@ -100,3 +101,8 @@ export {
   harvestAvocado,
   getAvocadoConfigFn as getAvocadoConfig,
 } from "./avocadoFunctions";
+export {
+  translateText,
+  getTranslationLimit,
+} from "./translationFunctions";
+export { extractTextFromImage } from "./ocrFunctions";

@@ -154,13 +154,16 @@ export function useCardLogic(id: string) {
       });
       setHistory(history.slice(0, history.length - 1));
       setDailyStats(newDailyStats);
+      
+      const cardToUndo = JSON.parse(JSON.stringify(history[history.length - 1].card));
+      delete cardToUndo.seenInSession;
       try {
         if (!newDailyStats) {
           throw new Error("Daily stats are not defined");
         }
         await cloudFunctions.undoCard(
           id,
-          history[history.length - 1].card,
+          cardToUndo,
           newDailyStats
         );
       } catch (error) {
