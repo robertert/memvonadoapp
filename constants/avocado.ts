@@ -36,6 +36,7 @@ export const AVOCADO_RARITY_COLORS: Record<AvocadoSkinRarity, string> = {
   common: "#4AA859",   // Zielony
   rare: "#AEE1F9",     // Niebieski
   epic: "#FFD700",     // Złoty
+  legendary: "#FFD700", // Legendarny
 };
 
 // Nazwy rzadkości po polsku
@@ -43,18 +44,23 @@ export const AVOCADO_RARITY_NAMES: Record<AvocadoSkinRarity, string> = {
   common: "Zwykłe",
   rare: "Rzadkie",
   epic: "Epickie",
+  legendary: "Legendarny",
 };
 
 // Domyślna konfiguracja (fallback gdy Firestore niedostępny)
 export const DEFAULT_AVOCADO_CONFIG: AvocadoConfig = {
   skins: [
     { id: "classic_avo", name: "Klasyczne", rarity: "common", weight: 20 },
-    { id: "happy_avo", name: "Szczęśliwe", rarity: "common", weight: 20 },
-    { id: "sleepy_avo", name: "Śpiące", rarity: "common", weight: 20 },
-    { id: "nerd_avo", name: "Kujon", rarity: "rare", weight: 15 },
-    { id: "cool_avo", name: "Ziomek", rarity: "rare", weight: 15 },
-    { id: "golden_avo", name: "Złote", rarity: "epic", weight: 5 },
-    { id: "glitch_avo", name: "Glitch", rarity: "epic", weight: 5 },
+    { id: "sport_avo", name: "Sportowe", rarity: "common", weight: 20 },
+    { id: "chef_avo", name: "Kucharz", rarity: "common", weight: 20 },
+    { id: "space_avo", name: "Kosmiczne", rarity: "epic", weight: 2 },
+    { id: "painter_avo", name: "Malarz", rarity: "common", weight: 20 },
+    { id: "ninja_avo", name: "Ninja", rarity: "rare", weight: 5 },
+    { id: "sensei_avo", name: "Sensi", rarity: "rare", weight: 5 },
+    { id: "detective_avo", name: "Detektyw", rarity: "rare", weight: 5 },
+    { id: "king_avo", name: "Król", rarity: "epic", weight: 1 },
+    { id: "robot_avo", name: "Robot", rarity: "epic", weight: 2 },
+    { id: "sleepy_avo", name: "Śpiące", rarity: "rare", weight: 5 },
   ],
   phaseDaysRequired: 1,
   totalPhases: 5,

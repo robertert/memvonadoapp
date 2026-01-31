@@ -104,6 +104,7 @@ export function useTranslation(): UseTranslationReturn {
 
         // Check for translation failure
         if (!result.success || !result.translatedText) {
+          console.error("Translation error:", result);
           setError("Nie udalo sie przetlumaczyc tekstu. Sprobuj ponownie.");
           return null;
         }

@@ -861,17 +861,17 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
         collectedSkins: z.ZodDefault<z.ZodArray<z.ZodObject<{
             id: z.ZodString;
             name: z.ZodString;
-            rarity: z.ZodEnum<["common", "rare", "epic"]>;
+            rarity: z.ZodEnum<["common", "rare", "epic", "legendary"]>;
             obtainedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         }, "strip", z.ZodTypeAny, {
             id: string;
             name: string;
-            rarity: "common" | "rare" | "epic";
+            rarity: "common" | "rare" | "epic" | "legendary";
             obtainedAt: Date;
         }, {
             id: string;
             name: string;
-            rarity: "common" | "rare" | "epic";
+            rarity: "common" | "rare" | "epic" | "legendary";
             obtainedAt?: unknown;
         }>, "many">>;
         harvestHistory: z.ZodDefault<z.ZodArray<z.ZodObject<{
@@ -891,7 +891,7 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
         collectedSkins: {
             id: string;
             name: string;
-            rarity: "common" | "rare" | "epic";
+            rarity: "common" | "rare" | "epic" | "legendary";
             obtainedAt: Date;
         }[];
         harvestHistory: {
@@ -907,7 +907,7 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
         collectedSkins?: {
             id: string;
             name: string;
-            rarity: "common" | "rare" | "epic";
+            rarity: "common" | "rare" | "epic" | "legendary";
             obtainedAt?: unknown;
         }[] | undefined;
         harvestHistory?: {
@@ -979,7 +979,7 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
         collectedSkins: {
             id: string;
             name: string;
-            rarity: "common" | "rare" | "epic";
+            rarity: "common" | "rare" | "epic" | "legendary";
             obtainedAt: Date;
         }[];
         harvestHistory: {
@@ -1031,7 +1031,7 @@ export declare const GetUserProfileResponseSchema: z.ZodObject<{
         collectedSkins?: {
             id: string;
             name: string;
-            rarity: "common" | "rare" | "epic";
+            rarity: "common" | "rare" | "epic" | "legendary";
             obtainedAt?: unknown;
         }[] | undefined;
         harvestHistory?: {

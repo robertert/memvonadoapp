@@ -8,6 +8,9 @@ import {
   Alert,
   Dimensions,
   Image,
+  Modal,
+  ScrollView,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -71,10 +74,18 @@ export default function OCRCameraScreen(): React.JSX.Element {
   const [frontText, setFrontText] = useState<string>("");
   const [backText, setBackText] = useState<string>("");
 
+  // Zoom state
+  const [zoom, setZoom] = useState(0);
+  const zoomShared = useSharedValue(0);
+  const savedZoom = useSharedValue(0);
+
   // Loading states
   const [isCapturing, setIsCapturing] = useState(false);
   const [isProcessingFront, setIsProcessingFront] = useState(false);
   const [isProcessingBack, setIsProcessingBack] = useState(false);
+
+  // Text preview modal
+  const [showTextPreview, setShowTextPreview] = useState(false);
 
   // Gesture values for selection box
   const startX = useSharedValue(0);
@@ -337,7 +348,27 @@ export default function OCRCameraScreen(): React.JSX.Element {
     setBackSelection(null);
     setFrontText("");
     setBackText("");
+    setZoom(0);
+    zoomShared.value = 0;
+    savedZoom.value = 0;
   };
+
+  // Update zoom from gesture (worklet -> JS)
+  const updateZoom = useCallback((value: number) => {
+    setZoom(value);
+  }, []);
+
+  // Pinch gesture for camera zoom
+  const pinchGesture = Gesture.Pinch()
+    .onStart(() => {
+      savedZoom.value = zoomShared.value;
+    })
+    .onUpdate((e) => {
+      // Scale factor: pinch scale 1 = no change, 2 = double zoom
+      const newZoom = Math.min(1, Math.max(0, savedZoom.value + (e.scale - 1) * 0.5));
+      zoomShared.value = newZoom;
+      runOnJS(updateZoom)(newZoom);
+    });
 
   // Request camera permission
   if (!permission) {
@@ -367,54 +398,68 @@ export default function OCRCameraScreen(): React.JSX.Element {
   // Camera mode
   if (mode === "camera") {
     return (
-      <View style={[styles.container, { paddingTop: safeArea.top }]}>
-        <CameraView
-          ref={cameraRef}
-          style={styles.camera}
-          facing="back"
-          flash={flashOn ? "on" : "off"}
-        >
-          {/* Header */}
-          <View style={[styles.header, { paddingTop: safeArea.top + 10 }]}>
-            <Pressable onPress={() => router.back()} hitSlop={10}>
-              <XMarkIcon size={28} color={Colors.white} />
-            </Pressable>
-            <Text style={styles.headerTitle}>Skanuj tekst</Text>
-            <Pressable onPress={() => setFlashOn(!flashOn)} hitSlop={10}>
-              {flashOn ? (
-                <BoltIcon size={28} color={Colors.accent_500} />
-              ) : (
-                <BoltSlashIcon size={28} color={Colors.white} />
-              )}
-            </Pressable>
-          </View>
-
-          {/* Bottom controls */}
-          <View style={[styles.cameraControls, { paddingBottom: safeArea.bottom + 20 }]}>
-            <Pressable style={styles.sourceButton} onPress={pickFromLibrary}>
-              <PhotoIcon size={28} color={Colors.white} />
-              <Text style={styles.sourceButtonText}>Galeria</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.captureButton}
-              onPress={takePhoto}
-              disabled={isCapturing}
+      <GestureHandlerRootView style={[styles.container, { paddingTop: safeArea.top }]}>
+        <GestureDetector gesture={pinchGesture}>
+          <View style={styles.cameraFlex}>
+            <CameraView
+              ref={cameraRef}
+              style={styles.camera}
+              facing="back"
+              enableTorch={flashOn}
+              zoom={zoom}
             >
-              {isCapturing ? (
-                <ActivityIndicator size="small" color={Colors.primary_700} />
-              ) : (
-                <View style={styles.captureButtonInner} />
-              )}
-            </Pressable>
+              {/* Header */}
+              <View style={[styles.header, { paddingTop: safeArea.top + 10 }]}>
+                <Pressable onPress={() => router.back()} hitSlop={10}>
+                  <XMarkIcon size={28} color={Colors.white} />
+                </Pressable>
+                <Text style={styles.headerTitle}>Skanuj tekst</Text>
+                <Pressable onPress={() => setFlashOn(!flashOn)} hitSlop={10}>
+                  {flashOn ? (
+                    <BoltIcon size={28} color={Colors.accent_500} />
+                  ) : (
+                    <BoltSlashIcon size={28} color={Colors.white} />
+                  )}
+                </Pressable>
+              </View>
 
-            <View style={styles.sourceButton}>
-              <CameraIcon size={28} color={Colors.white} />
-              <Text style={styles.sourceButtonText}>Kamera</Text>
-            </View>
+              {/* Zoom indicator */}
+              {zoom > 1 && (
+                <View style={styles.zoomIndicator}>
+                  <Text style={styles.zoomIndicatorText}>
+                    {(1 + zoom * 9).toFixed(1)}x
+                  </Text>
+                </View>
+              )}
+
+              {/* Bottom controls */}
+              <View style={[styles.cameraControls, { paddingBottom: safeArea.bottom + 20 }]}>
+                <Pressable style={styles.sourceButton} onPress={pickFromLibrary}>
+                  <PhotoIcon size={28} color={Colors.white} />
+                  <Text style={styles.sourceButtonText}>Galeria</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.captureButton}
+                  onPress={takePhoto}
+                  disabled={isCapturing}
+                >
+                  {isCapturing ? (
+                    <ActivityIndicator size="small" color={Colors.primary_700} />
+                  ) : (
+                    <View style={styles.captureButtonInner} />
+                  )}
+                </Pressable>
+
+                <View style={styles.sourceButton}>
+                  <CameraIcon size={28} color={Colors.white} />
+                  <Text style={styles.sourceButtonText}>Kamera</Text>
+                </View>
+              </View>
+            </CameraView>
           </View>
-        </CameraView>
-      </View>
+        </GestureDetector>
+      </GestureHandlerRootView>
     );
   }
 
@@ -475,90 +520,154 @@ export default function OCRCameraScreen(): React.JSX.Element {
           </Pressable>
         </View>
 
-        {/* Image with selection overlay */}
-        <View style={styles.imageContainer}>
-          <GestureDetector gesture={panGesture}>
-            <View
-              style={[
-                styles.imageWrapper,
-                { width: displayDims.width, height: displayDims.height },
-              ]}
-            >
-              {imageUri && (
-                <Image
-                  source={{ uri: imageUri }}
-                  style={{
-                    width: displayDims.width,
-                    height: displayDims.height,
-                  }}
-                  resizeMode="contain"
-                />
-              )}
+        <ScrollView
+          style={styles.previewScrollView}
+          contentContainerStyle={styles.previewScrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Image with selection overlay */}
+          <View style={styles.imageContainer}>
+            <GestureDetector gesture={panGesture}>
+              <View
+                style={[
+                  styles.imageWrapper,
+                  { width: displayDims.width, height: displayDims.height },
+                ]}
+              >
+                {imageUri && (
+                  <Image
+                    source={{ uri: imageUri }}
+                    style={{
+                      width: displayDims.width,
+                      height: displayDims.height,
+                    }}
+                    resizeMode="contain"
+                  />
+                )}
 
-              {/* Front selection box */}
-              {frontSelection && (
-                <View
-                  style={[
-                    styles.selectionBox,
-                    styles.frontSelectionBox,
-                    {
-                      left: frontSelection.x,
-                      top: frontSelection.y,
-                      width: frontSelection.width,
-                      height: frontSelection.height,
-                    },
-                  ]}
-                >
-                  <Text style={styles.selectionLabel}>Przod</Text>
+                {/* Front selection box */}
+                {frontSelection && (
+                  <View
+                    style={[
+                      styles.selectionBox,
+                      styles.frontSelectionBox,
+                      {
+                        left: frontSelection.x,
+                        top: frontSelection.y,
+                        width: frontSelection.width,
+                        height: frontSelection.height,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.selectionLabel}>Przod</Text>
+                  </View>
+                )}
+
+                {/* Back selection box */}
+                {backSelection && (
+                  <View
+                    style={[
+                      styles.selectionBox,
+                      styles.backSelectionBox,
+                      {
+                        left: backSelection.x,
+                        top: backSelection.y,
+                        width: backSelection.width,
+                        height: backSelection.height,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.selectionLabelBack}>Tyl</Text>
+                  </View>
+                )}
+
+                {/* Currently drawing box */}
+                <Animated.View style={drawingBoxStyle} />
+              </View>
+            </GestureDetector>
+          </View>
+
+          {/* Text previews */}
+          {(frontText || backText) ? (
+            <Pressable style={styles.textPreviews} onPress={() => setShowTextPreview(true)}>
+              {frontText ? (
+                <View style={styles.textPreviewRow}>
+                  <Text style={styles.textPreviewLabel}>Przod:</Text>
+                  <Text style={styles.textPreviewText} numberOfLines={1}>
+                    {frontText}
+                  </Text>
                 </View>
-              )}
-
-              {/* Back selection box */}
-              {backSelection && (
-                <View
-                  style={[
-                    styles.selectionBox,
-                    styles.backSelectionBox,
-                    {
-                      left: backSelection.x,
-                      top: backSelection.y,
-                      width: backSelection.width,
-                      height: backSelection.height,
-                    },
-                  ]}
-                >
-                  <Text style={styles.selectionLabelBack}>Tyl</Text>
+              ) : null}
+              {backText ? (
+                <View style={styles.textPreviewRow}>
+                  <Text style={styles.textPreviewLabelBack}>Tyl:</Text>
+                  <Text style={styles.textPreviewText} numberOfLines={1}>
+                    {backText}
+                  </Text>
                 </View>
-              )}
-
-              {/* Currently drawing box */}
-              <Animated.View style={drawingBoxStyle} />
-            </View>
-          </GestureDetector>
-        </View>
-
-        {/* Text previews */}
-        <View style={styles.textPreviews}>
-          {frontText ? (
-            <View style={styles.textPreviewRow}>
-              <Text style={styles.textPreviewLabel}>Przod:</Text>
-              <Text style={styles.textPreviewText} numberOfLines={1}>
-                {frontText}
-              </Text>
-            </View>
+              ) : null}
+              <Text style={styles.textPreviewHint}>Kliknij, aby zobaczyc pelny tekst</Text>
+            </Pressable>
           ) : null}
-          {backText ? (
-            <View style={styles.textPreviewRow}>
-              <Text style={styles.textPreviewLabelBack}>Tyl:</Text>
-              <Text style={styles.textPreviewText} numberOfLines={1}>
-                {backText}
-              </Text>
-            </View>
-          ) : null}
-        </View>
+        </ScrollView>
+
+        {/* Text preview modal */}
+        <Modal
+          visible={showTextPreview}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowTextPreview(false)}
+        >
+          <View
+            style={styles.textModalOverlay}
+          >
+              <View style={styles.textModalContent}>
+              <ScrollView
+                style={styles.textModalScroll}
+                showsVerticalScrollIndicator={true}
+                bounces={true}
+                nestedScrollEnabled={true}
+              >
+              <View style={styles.textModalHeader}>
+                <Text style={styles.textModalTitle}>Rozpoznany tekst</Text>
+                <Pressable onPress={() => setShowTextPreview(false)} hitSlop={8}>
+                  <XMarkIcon size={24} color={Colors.primary_700} />
+                </Pressable>
+              </View>
+
+              
+                {frontText ? (
+                  <View style={styles.textModalSection}>
+                    <Text style={styles.textModalLabel}>Przod</Text>
+                    <View style={[styles.textModalBox, styles.textModalBoxFront]}>
+                      <Text style={styles.textModalText} selectable>{frontText}</Text>
+                    </View>
+                  </View>
+                ) : null}
+
+                {backText ? (
+                  <View style={styles.textModalSection}>
+                    <Text style={styles.textModalLabelBack}>Tyl</Text>
+                    <View style={[styles.textModalBox, styles.textModalBoxBack]}>
+                      <Text style={styles.textModalText} selectable>{backText}</Text>
+                    </View>
+                  </View>
+                ) : null}
+                </ScrollView>
+
+
+              <Pressable
+                style={styles.textModalCloseButton}
+                onPress={() => setShowTextPreview(false)}
+              >
+                <Text style={styles.textModalCloseButtonText}>Zamknij</Text>
+              </Pressable>
+              </View>
+          </View>
+        </Modal>
 
         {/* Bottom actions */}
-        <View style={[styles.bottomActions, { paddingBottom: safeArea.bottom + 20 }]}>
+        <View style={[styles.bottomActions, { paddingBottom: safeArea.bottom }]}>
           <Pressable
             style={[
               styles.addCardButton,
@@ -583,7 +692,10 @@ const styles = StyleSheet.create({
   centerContent: {
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: 20,
+  },
+  cameraFlex: {
+    flex: 1,
   },
   camera: {
     flex: 1,
@@ -599,6 +711,22 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: Fonts.primary,
     fontSize: 18,
+    fontWeight: "700",
+    color: Colors.white,
+  },
+  zoomIndicator: {
+    position: "absolute",
+    top: "50%",
+    alignSelf: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    marginTop: -20,
+  },
+  zoomIndicatorText: {
+    fontFamily: Fonts.primary,
+    fontSize: 16,
     fontWeight: "700",
     color: Colors.white,
   },
@@ -683,8 +811,14 @@ const styles = StyleSheet.create({
   toggleButtonTextActive: {
     color: Colors.white,
   },
-  imageContainer: {
+  previewScrollView: {
     flex: 1,
+  },
+  previewScrollContent: {
+    alignItems: "center",
+    paddingBottom: 10,
+  },
+  imageContainer: {
     justifyContent: "center",
     alignItems: "center",
   },
@@ -736,6 +870,7 @@ const styles = StyleSheet.create({
   },
   textPreviewRow: {
     flexDirection: "row",
+    width: "100%",
     alignItems: "center",
     gap: 8,
   },
@@ -802,6 +937,96 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontFamily: Fonts.primary,
     fontSize: 16,
+    color: Colors.primary_700,
+  },
+  textPreviewHint: {
+    fontFamily: Fonts.primary,
+    fontSize: 11,
+    color: Colors.primary_700_50,
+    textAlign: "center",
+    marginTop: 4,
+  },
+  textModalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  textModalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    width: "90%",
+    maxWidth: 400,
+    maxHeight: "70%",
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  textModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  textModalTitle: {
+    fontFamily: Fonts.primary,
+    fontSize: 20,
+    fontWeight: "700",
+    color: Colors.primary_700,
+  },
+  textModalScroll: {
+    flexShrink: 1,
+  },
+  textModalSection: {
+    marginBottom: 16,
+  },
+  textModalLabel: {
+    fontFamily: Fonts.primary,
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.primary_500,
+    marginBottom: 8,
+  },
+  textModalLabelBack: {
+    fontFamily: Fonts.primary,
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.accent_500,
+    marginBottom: 8,
+  },
+  textModalBox: {
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+  },
+  textModalBoxFront: {
+    backgroundColor: "rgba(79, 166, 100, 0.08)",
+    borderColor: Colors.primary_500,
+  },
+  textModalBoxBack: {
+    backgroundColor: "rgba(255, 159, 67, 0.08)",
+    borderColor: Colors.accent_500,
+  },
+  textModalText: {
+    fontFamily: Fonts.primary,
+    fontSize: 16,
+    color: Colors.primary_700,
+    lineHeight: 24,
+  },
+  textModalCloseButton: {
+    marginTop: 16,
+    backgroundColor: Colors.primary_100,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  textModalCloseButtonText: {
+    fontFamily: Fonts.primary,
+    fontSize: 16,
+    fontWeight: "600",
     color: Colors.primary_700,
   },
 });

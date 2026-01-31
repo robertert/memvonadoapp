@@ -106,3 +106,4 @@ export {
   getTranslationLimit,
 } from "./translationFunctions";
 export { extractTextFromImage } from "./ocrFunctions";
+export { processFile } from "./processFileFunctions";

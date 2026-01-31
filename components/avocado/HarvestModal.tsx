@@ -41,6 +41,7 @@ const CONFETTI_COLORS = {
   common: ["#4AA859", "#6BC175", "#8DD99E", "#A8E6B8"],
   rare: ["#AEE1F9", "#7DC8F5", "#4BB0E8", "#1A9FDB"],
   epic: ["#FFD700", "#FFC000", "#FFB300", "#FFA000", "#FF8C00"],
+  legendary: ["#FFD700", "#FFC000", "#FFB300", "#FFA000", "#FF8C00"],
 };
 
 interface ConfettiParticle {

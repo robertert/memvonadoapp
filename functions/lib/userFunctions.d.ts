@@ -197,7 +197,7 @@ export declare const getUserProfile: import("firebase-functions/v2/https").Calla
         collectedSkins: {
             id: string;
             name: string;
-            rarity: "common" | "rare" | "epic";
+            rarity: "common" | "rare" | "epic" | "legendary";
             obtainedAt: Date;
         }[];
         harvestHistory: {

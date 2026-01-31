@@ -8,29 +8,29 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		343ABF4206CC4639B647D013 /* Peace Sans.otf in Resources */ = {isa = PBXBuildFile; fileRef = C4EC79C9ADC047A29C1A83BE /* Peace Sans.otf */; };
+		1DB83A1CD88B92E94EA5406B /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97D17B9C9D92152AF04FB686 /* ExpoModulesProvider.swift */; };
+		30D387DEB9B149D4862DBE78 /* Peace Sans.otf in Resources */ = {isa = PBXBuildFile; fileRef = 7B6C1F81A3D3480D8408552D /* Peace Sans.otf */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		81E749947E864CA4AAC4836C /* FrankRuhlLibre-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 111B40EE1849443B8C966AB3 /* FrankRuhlLibre-Black.ttf */; };
-		86D21DC055DB4D311CC7C77A /* libPods-Memvocado.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 720602C1116D6CC8970BDF24 /* libPods-Memvocado.a */; };
-		973D610F2D7DD97FA8C07B81 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7F1EB8A9824E955A8415F7B /* ExpoModulesProvider.swift */; };
+		56DA5F6F5FD275548DE02690 /* libPods-Memvocado.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 69C905D1A653E18A95CE6538 /* libPods-Memvocado.a */; };
+		7D4F9463735744AAF6EB57AD /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 05925662D3B9417E9ECC9725 /* PrivacyInfo.xcprivacy */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		E782E6B280A9A4A1D6D32388 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 628C98722B6B070201C469AB /* PrivacyInfo.xcprivacy */; };
+		CF0559C45253490CAC0D018F /* FrankRuhlLibre-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 478621B2499F44B8A35DC39A /* FrankRuhlLibre-Black.ttf */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		111B40EE1849443B8C966AB3 /* FrankRuhlLibre-Black.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "FrankRuhlLibre-Black.ttf"; path = "../assets/FrankRuhlLibre-Black.ttf"; sourceTree = "<group>"; };
+		05925662D3B9417E9ECC9725 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Memvocado/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		063D6F46B5C6109DD90D1A09 /* Pods-Memvocado.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Memvocado.release.xcconfig"; path = "Target Support Files/Pods-Memvocado/Pods-Memvocado.release.xcconfig"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* Memvocado.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Memvocado.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Memvocado/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Memvocado/Info.plist; sourceTree = "<group>"; };
-		1E156C776631C841B2C24598 /* Pods-Memvocado.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Memvocado.release.xcconfig"; path = "Target Support Files/Pods-Memvocado/Pods-Memvocado.release.xcconfig"; sourceTree = "<group>"; };
-		628C98722B6B070201C469AB /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Memvocado/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		649D4749D6895BEE5A081A0E /* Pods-Memvocado.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Memvocado.debug.xcconfig"; path = "Target Support Files/Pods-Memvocado/Pods-Memvocado.debug.xcconfig"; sourceTree = "<group>"; };
-		720602C1116D6CC8970BDF24 /* libPods-Memvocado.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Memvocado.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		478621B2499F44B8A35DC39A /* FrankRuhlLibre-Black.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "FrankRuhlLibre-Black.ttf"; path = "../assets/FrankRuhlLibre-Black.ttf"; sourceTree = "<group>"; };
+		5F7851FFAEC9707F839C463E /* Pods-Memvocado.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Memvocado.debug.xcconfig"; path = "Target Support Files/Pods-Memvocado/Pods-Memvocado.debug.xcconfig"; sourceTree = "<group>"; };
+		69C905D1A653E18A95CE6538 /* libPods-Memvocado.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Memvocado.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		7B6C1F81A3D3480D8408552D /* Peace Sans.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Peace Sans.otf"; path = "../assets/Peace Sans.otf"; sourceTree = "<group>"; };
+		97D17B9C9D92152AF04FB686 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Memvocado/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Memvocado/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		C4EC79C9ADC047A29C1A83BE /* Peace Sans.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Peace Sans.otf"; path = "../assets/Peace Sans.otf"; sourceTree = "<group>"; };
-		C7F1EB8A9824E955A8415F7B /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Memvocado/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Memvocado/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Memvocado-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Memvocado-Bridging-Header.h"; path = "Memvocado/Memvocado-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -41,7 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				86D21DC055DB4D311CC7C77A /* libPods-Memvocado.a in Frameworks */,
+				56DA5F6F5FD275548DE02690 /* libPods-Memvocado.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -57,36 +57,44 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				628C98722B6B070201C469AB /* PrivacyInfo.xcprivacy */,
+				05925662D3B9417E9ECC9725 /* PrivacyInfo.xcprivacy */,
 			);
 			name = Memvocado;
+			sourceTree = "<group>";
+		};
+		186B102FBD6E41E65D4470F2 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				698C330439B63E6E44E03ECD /* Memvocado */,
+			);
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				720602C1116D6CC8970BDF24 /* libPods-Memvocado.a */,
+				69C905D1A653E18A95CE6538 /* libPods-Memvocado.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		3D3A562ECD604DC3B34642A5 /* Resources */ = {
+		2F884E77E20248DE8C999C7F /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				C4EC79C9ADC047A29C1A83BE /* Peace Sans.otf */,
-				111B40EE1849443B8C966AB3 /* FrankRuhlLibre-Black.ttf */,
+				7B6C1F81A3D3480D8408552D /* Peace Sans.otf */,
+				478621B2499F44B8A35DC39A /* FrankRuhlLibre-Black.ttf */,
 			);
 			name = Resources;
 			path = "";
 			sourceTree = "<group>";
 		};
-		400F36A1196529F95F4BF7BC /* ExpoModulesProviders */ = {
+		698C330439B63E6E44E03ECD /* Memvocado */ = {
 			isa = PBXGroup;
 			children = (
-				8AC9EE8785795AF947383075 /* Memvocado */,
+				97D17B9C9D92152AF04FB686 /* ExpoModulesProvider.swift */,
 			);
-			name = ExpoModulesProviders;
+			name = Memvocado;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -103,9 +111,9 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				3D3A562ECD604DC3B34642A5 /* Resources */,
-				96ED28088EA187ED309E6980 /* Pods */,
-				400F36A1196529F95F4BF7BC /* ExpoModulesProviders */,
+				2F884E77E20248DE8C999C7F /* Resources */,
+				90F34E0D29D5219D7B1FC490 /* Pods */,
+				186B102FBD6E41E65D4470F2 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -120,19 +128,11 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		8AC9EE8785795AF947383075 /* Memvocado */ = {
+		90F34E0D29D5219D7B1FC490 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				C7F1EB8A9824E955A8415F7B /* ExpoModulesProvider.swift */,
-			);
-			name = Memvocado;
-			sourceTree = "<group>";
-		};
-		96ED28088EA187ED309E6980 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				649D4749D6895BEE5A081A0E /* Pods-Memvocado.debug.xcconfig */,
-				1E156C776631C841B2C24598 /* Pods-Memvocado.release.xcconfig */,
+				5F7851FFAEC9707F839C463E /* Pods-Memvocado.debug.xcconfig */,
+				063D6F46B5C6109DD90D1A09 /* Pods-Memvocado.release.xcconfig */,
 			);
 			name = Pods;
 			path = Pods;
@@ -155,13 +155,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Memvocado" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				58B685A5E3712B84D9123A80 /* [Expo] Configure project */,
+				7B83A27B1B6FCDE908E5D0FE /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				2E185017837E196E40529285 /* [CP] Embed Pods Frameworks */,
+				32393CEE07EC1FAFF231D7B4 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -181,9 +181,7 @@
 				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
-						DevelopmentTeam = RM2NJT3U6B;
 						LastSwiftMigration = 1250;
-						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -213,9 +211,9 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				343ABF4206CC4639B647D013 /* Peace Sans.otf in Resources */,
-				81E749947E864CA4AAC4836C /* FrankRuhlLibre-Black.ttf in Resources */,
-				E782E6B280A9A4A1D6D32388 /* PrivacyInfo.xcprivacy in Resources */,
+				30D387DEB9B149D4862DBE78 /* Peace Sans.otf in Resources */,
+				CF0559C45253490CAC0D018F /* FrankRuhlLibre-Black.ttf in Resources */,
+				7D4F9463735744AAF6EB57AD /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,7 +259,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		2E185017837E196E40529285 /* [CP] Embed Pods Frameworks */ = {
+		32393CEE07EC1FAFF231D7B4 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -283,7 +281,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Memvocado/Pods-Memvocado-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		58B685A5E3712B84D9123A80 /* [Expo] Configure project */ = {
+		7B83A27B1B6FCDE908E5D0FE /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -318,6 +316,17 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/GTMSessionFetcher/GTMSessionFetcher_Core_Privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleDataTransport/GoogleDataTransport_Privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleToolboxForMac/GoogleToolboxForMac_Privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleToolboxForMac/GoogleToolboxForMac_Logger_Privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleUtilities/GoogleUtilities_Privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/MLKitTextRecognition/LatinOCRResources.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/MLKitTextRecognitionChinese/ChineseOCRResources.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/MLKitTextRecognitionDevanagari/DevanagariOCRResources.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/MLKitTextRecognitionJapanese/JapaneseOCRResources.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/MLKitTextRecognitionKorean/KoreanOCRResources.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/PromisesObjC/FBLPromises_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNCAsyncStorage/RNCAsyncStorage_resources.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNSVG/RNSVGFilters.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core_privacy.bundle",
@@ -325,6 +334,7 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/SDWebImage/SDWebImage.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/expo-dev-launcher/EXDevLauncher.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/expo-dev-menu/EXDevMenu.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/nanopb/nanopb_Privacy.bundle",
 			);
 			name = "[CP] Copy Pods Resources";
 			outputPaths = (
@@ -332,6 +342,17 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoConstants_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GTMSessionFetcher_Core_Privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleDataTransport_Privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleToolboxForMac_Privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleToolboxForMac_Logger_Privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleUtilities_Privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/LatinOCRResources.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ChineseOCRResources.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/DevanagariOCRResources.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/JapaneseOCRResources.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/KoreanOCRResources.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FBLPromises_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNCAsyncStorage_resources.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNSVGFilters.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-Core_privacy.bundle",
@@ -339,6 +360,7 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/SDWebImage.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXDevLauncher.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXDevMenu.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/nanopb_Privacy.bundle",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -353,7 +375,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				973D610F2D7DD97FA8C07B81 /* ExpoModulesProvider.swift in Sources */,
+				1DB83A1CD88B92E94EA5406B /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -362,15 +384,12 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 649D4749D6895BEE5A081A0E /* Pods-Memvocado.debug.xcconfig */;
+			baseConfigurationReference = 5F7851FFAEC9707F839C463E /* Pods-Memvocado.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Memvocado/Memvocado.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RM2NJT3U6B;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -390,7 +409,7 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.memvocado.app;
-				PRODUCT_NAME = "Memvocado";
+				PRODUCT_NAME = Memvocado;
 				SWIFT_OBJC_BRIDGING_HEADER = "Memvocado/Memvocado-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -401,15 +420,12 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1E156C776631C841B2C24598 /* Pods-Memvocado.release.xcconfig */;
+			baseConfigurationReference = 063D6F46B5C6109DD90D1A09 /* Pods-Memvocado.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Memvocado/Memvocado.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RM2NJT3U6B;
 				INFOPLIST_FILE = Memvocado/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -424,7 +440,7 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.memvocado.app;
-				PRODUCT_NAME = "Memvocado";
+				PRODUCT_NAME = Memvocado;
 				SWIFT_OBJC_BRIDGING_HEADER = "Memvocado/Memvocado-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

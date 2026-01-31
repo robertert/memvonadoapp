@@ -20,3 +20,4 @@ export { ensureUserDocument, completeOnboarding, checkUsernameAvailability, } fr
 export { getAvocadoStatus, harvestAvocado, getAvocadoConfigFn as getAvocadoConfig, } from "./avocadoFunctions";
 export { translateText, getTranslationLimit, } from "./translationFunctions";
 export { extractTextFromImage } from "./ocrFunctions";
+export { processFile } from "./processFileFunctions";

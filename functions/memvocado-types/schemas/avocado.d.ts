@@ -4,22 +4,22 @@ import { z } from "zod";
  *
  * System 7-dniowego wzrostu awokado z nagrodami gacha
  */
-export declare const AvocadoSkinRarity: z.ZodEnum<["common", "rare", "epic"]>;
+export declare const AvocadoSkinRarity: z.ZodEnum<["common", "rare", "epic", "legendary"]>;
 export type AvocadoSkinRarity = z.infer<typeof AvocadoSkinRarity>;
 export declare const AvocadoSkinSchema: z.ZodObject<{
     id: z.ZodString;
     name: z.ZodString;
-    rarity: z.ZodEnum<["common", "rare", "epic"]>;
+    rarity: z.ZodEnum<["common", "rare", "epic", "legendary"]>;
     obtainedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
 }, "strip", z.ZodTypeAny, {
     id: string;
     name: string;
-    rarity: "common" | "rare" | "epic";
+    rarity: "common" | "rare" | "epic" | "legendary";
     obtainedAt: Date;
 }, {
     id: string;
     name: string;
-    rarity: "common" | "rare" | "epic";
+    rarity: "common" | "rare" | "epic" | "legendary";
     obtainedAt?: unknown;
 }>;
 export type AvocadoSkin = z.infer<typeof AvocadoSkinSchema>;
@@ -42,17 +42,17 @@ export declare const AvocadoGrowthSchema: z.ZodObject<{
     collectedSkins: z.ZodDefault<z.ZodArray<z.ZodObject<{
         id: z.ZodString;
         name: z.ZodString;
-        rarity: z.ZodEnum<["common", "rare", "epic"]>;
+        rarity: z.ZodEnum<["common", "rare", "epic", "legendary"]>;
         obtainedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strip", z.ZodTypeAny, {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt: Date;
     }, {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt?: unknown;
     }>, "many">>;
     harvestHistory: z.ZodDefault<z.ZodArray<z.ZodObject<{
@@ -72,7 +72,7 @@ export declare const AvocadoGrowthSchema: z.ZodObject<{
     collectedSkins: {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt: Date;
     }[];
     harvestHistory: {
@@ -88,7 +88,7 @@ export declare const AvocadoGrowthSchema: z.ZodObject<{
     collectedSkins?: {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt?: unknown;
     }[] | undefined;
     harvestHistory?: {
@@ -105,17 +105,17 @@ export declare const AvocadoGrowthUpdateSchema: z.ZodObject<{
     collectedSkins: z.ZodOptional<z.ZodDefault<z.ZodArray<z.ZodObject<{
         id: z.ZodString;
         name: z.ZodString;
-        rarity: z.ZodEnum<["common", "rare", "epic"]>;
+        rarity: z.ZodEnum<["common", "rare", "epic", "legendary"]>;
         obtainedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strip", z.ZodTypeAny, {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt: Date;
     }, {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt?: unknown;
     }>, "many">>>;
     harvestHistory: z.ZodOptional<z.ZodDefault<z.ZodArray<z.ZodObject<{
@@ -136,7 +136,7 @@ export declare const AvocadoGrowthUpdateSchema: z.ZodObject<{
     collectedSkins?: {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt: Date;
     }[] | undefined;
     harvestHistory?: {
@@ -151,7 +151,7 @@ export declare const AvocadoGrowthUpdateSchema: z.ZodObject<{
     collectedSkins?: {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt?: unknown;
     }[] | undefined;
     harvestHistory?: {
@@ -163,17 +163,17 @@ export type AvocadoGrowthUpdate = z.infer<typeof AvocadoGrowthUpdateSchema>;
 export declare const AvocadoSkinConfigSchema: z.ZodObject<{
     id: z.ZodString;
     name: z.ZodString;
-    rarity: z.ZodEnum<["common", "rare", "epic"]>;
+    rarity: z.ZodEnum<["common", "rare", "epic", "legendary"]>;
     weight: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
     id: string;
     name: string;
-    rarity: "common" | "rare" | "epic";
+    rarity: "common" | "rare" | "epic" | "legendary";
     weight: number;
 }, {
     id: string;
     name: string;
-    rarity: "common" | "rare" | "epic";
+    rarity: "common" | "rare" | "epic" | "legendary";
     weight: number;
 }>;
 export type AvocadoSkinConfig = z.infer<typeof AvocadoSkinConfigSchema>;
@@ -181,17 +181,17 @@ export declare const AvocadoConfigSchema: z.ZodObject<{
     skins: z.ZodArray<z.ZodObject<{
         id: z.ZodString;
         name: z.ZodString;
-        rarity: z.ZodEnum<["common", "rare", "epic"]>;
+        rarity: z.ZodEnum<["common", "rare", "epic", "legendary"]>;
         weight: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         weight: number;
     }, {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         weight: number;
     }>, "many">;
     phaseDaysRequired: z.ZodDefault<z.ZodNumber>;
@@ -200,7 +200,7 @@ export declare const AvocadoConfigSchema: z.ZodObject<{
     skins: {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         weight: number;
     }[];
     phaseDaysRequired: number;
@@ -209,7 +209,7 @@ export declare const AvocadoConfigSchema: z.ZodObject<{
     skins: {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         weight: number;
     }[];
     phaseDaysRequired?: number | undefined;
@@ -226,18 +226,18 @@ export declare const GetAvocadoStatusResponseSchema: z.ZodObject<{
     collectedSkins: z.ZodArray<z.ZodObject<{
         id: z.ZodString;
         name: z.ZodString;
-        rarity: z.ZodEnum<["common", "rare", "epic"]>;
+        rarity: z.ZodEnum<["common", "rare", "epic", "legendary"]>;
     } & {
         obtainedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strip", z.ZodTypeAny, {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt: Date;
     }, {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt?: unknown;
     }>, "many">;
     harvestHistory: z.ZodArray<z.ZodObject<{
@@ -262,7 +262,7 @@ export declare const GetAvocadoStatusResponseSchema: z.ZodObject<{
     collectedSkins: {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt: Date;
     }[];
     harvestHistory: {
@@ -280,7 +280,7 @@ export declare const GetAvocadoStatusResponseSchema: z.ZodObject<{
     collectedSkins: {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt?: unknown;
     }[];
     harvestHistory: {
@@ -299,18 +299,18 @@ export declare const HarvestAvocadoResponseSchema: z.ZodObject<{
     awardedSkin: z.ZodObject<{
         id: z.ZodString;
         name: z.ZodString;
-        rarity: z.ZodEnum<["common", "rare", "epic"]>;
+        rarity: z.ZodEnum<["common", "rare", "epic", "legendary"]>;
     } & {
         obtainedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     }, "strip", z.ZodTypeAny, {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt: Date;
     }, {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt?: unknown;
     }>;
     isNewSkin: z.ZodBoolean;
@@ -321,7 +321,7 @@ export declare const HarvestAvocadoResponseSchema: z.ZodObject<{
     awardedSkin: {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt: Date;
     };
     isNewSkin: boolean;
@@ -331,7 +331,7 @@ export declare const HarvestAvocadoResponseSchema: z.ZodObject<{
     awardedSkin: {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         obtainedAt?: unknown;
     };
     isNewSkin: boolean;
@@ -343,17 +343,17 @@ export declare const GetAvocadoConfigResponseSchema: z.ZodObject<{
     skins: z.ZodArray<z.ZodObject<{
         id: z.ZodString;
         name: z.ZodString;
-        rarity: z.ZodEnum<["common", "rare", "epic"]>;
+        rarity: z.ZodEnum<["common", "rare", "epic", "legendary"]>;
         weight: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         weight: number;
     }, {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         weight: number;
     }>, "many">;
     phaseDaysRequired: z.ZodDefault<z.ZodNumber>;
@@ -362,7 +362,7 @@ export declare const GetAvocadoConfigResponseSchema: z.ZodObject<{
     skins: {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         weight: number;
     }[];
     phaseDaysRequired: number;
@@ -371,7 +371,7 @@ export declare const GetAvocadoConfigResponseSchema: z.ZodObject<{
     skins: {
         id: string;
         name: string;
-        rarity: "common" | "rare" | "epic";
+        rarity: "common" | "rare" | "epic" | "legendary";
         weight: number;
     }[];
     phaseDaysRequired?: number | undefined;

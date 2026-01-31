@@ -8,12 +8,12 @@ import { TimestampSchema } from "./base";
  */
 
 // Rzadkość skórek awokado
-export const AvocadoSkinRarity = z.enum(["common", "rare", "epic"]);
+export const AvocadoSkinRarity = z.enum(["common", "rare", "epic", "legendary"]);
 export type AvocadoSkinRarity = z.infer<typeof AvocadoSkinRarity>;
 
 // Skórka awokado posiadana przez użytkownika
 export const AvocadoSkinSchema = z.object({
-  id: z.string(),           // np. "classic_avo", "golden_avo"
+  id: z.string(),
   name: z.string(),
   rarity: AvocadoSkinRarity,
   obtainedAt: TimestampSchema,

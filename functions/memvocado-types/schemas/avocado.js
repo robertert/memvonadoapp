@@ -9,10 +9,10 @@ const base_1 = require("./base");
  * System 7-dniowego wzrostu awokado z nagrodami gacha
  */
 // Rzadkość skórek awokado
-exports.AvocadoSkinRarity = zod_1.z.enum(["common", "rare", "epic"]);
+exports.AvocadoSkinRarity = zod_1.z.enum(["common", "rare", "epic", "legendary"]);
 // Skórka awokado posiadana przez użytkownika
 exports.AvocadoSkinSchema = zod_1.z.object({
-    id: zod_1.z.string(), // np. "classic_avo", "golden_avo"
+    id: zod_1.z.string(),
     name: zod_1.z.string(),
     rarity: exports.AvocadoSkinRarity,
     obtainedAt: base_1.TimestampSchema,

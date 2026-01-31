@@ -132,7 +132,7 @@ export default function profileScreen(): React.JSX.Element {
         const avocadoStatus = await cloudFunctions.getAvocadoStatus();
         // Sort by rarity (epic first, then rare, then common) and take top 4
         const sortedSkins = [...(avocadoStatus.collectedSkins || [])].sort((a, b) => {
-          const rarityOrder = { epic: 0, rare: 1, common: 2 };
+          const rarityOrder = { epic: 0, rare: 1, common: 2, legendary: 3 };
           return rarityOrder[a.rarity] - rarityOrder[b.rarity];
         });
         setAvocadoSkins(sortedSkins.slice(0, 4));

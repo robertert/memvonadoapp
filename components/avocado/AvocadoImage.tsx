@@ -37,21 +37,19 @@ const phaseImages: Record<number, { normal: ImageSourcePropType; wilted: ImageSo
   },
 };
 
-// TODO: Odkomentuj gdy dodasz właściwe obrazki skórek
-// Skin images (for collection display)
-// const skinImages: Record<string, ImageSourcePropType> = {
-//   classic_avo: require("@/assets/images/avocado/skins/classic_avo.png"),
-//   happy_avo: require("@/assets/images/avocado/skins/happy_avo.png"),
-//   sleepy_avo: require("@/assets/images/avocado/skins/sleepy_avo.png"),
-//   nerd_avo: require("@/assets/images/avocado/skins/nerd_avo.png"),
-//   cool_avo: require("@/assets/images/avocado/skins/cool_avo.png"),
-//   golden_avo: require("@/assets/images/avocado/skins/golden_avo.png"),
-//   glitch_avo: require("@/assets/images/avocado/skins/glitch_avo.png"),
-// };
-
-// TODO: Odkomentuj gdy dodasz obrazek locked placeholder
-// Locked placeholder
-// const lockedPlaceholder = require("@/assets/images/avocado/ui/locked_placeholder.png");
+const skinImages: Record<string, ImageSourcePropType> = {
+  classic_avo: require("@/assets/images/avocado/skins/avo-basic.png"),
+  sport_avo: require("@/assets/images/avocado/skins/avo-sport.png"),
+  chef_avo: require("@/assets/images/avocado/skins/avo-chef.png"),
+  space_avo: require("@/assets/images/avocado/skins/avo-space.png"),
+  painter_avo: require("@/assets/images/avocado/skins/avo-painter.png"),
+  ninja_avo: require("@/assets/images/avocado/skins/avo-ninja.png"),
+  sensei_avo: require("@/assets/images/avocado/skins/avo-sensei.png"),
+  detective_avo: require("@/assets/images/avocado/skins/avo-detective.png"),
+  king_avo: require("@/assets/images/avocado/skins/avo-king.png"),  
+  robot_avo: require("@/assets/images/avocado/skins/avo-robot.png"),
+  sleepy_avo: require("@/assets/images/avocado/skins/avo-sleepy.png"),
+}; 
 
 interface AvocadoImageProps {
   phase?: 1 | 2 | 3 | 4 | 5;
@@ -119,6 +117,8 @@ export default function AvocadoImage({
   } */
   else if (phase && phaseImages[phase]) {
     imageSource = wilted ? phaseImages[phase].wilted : phaseImages[phase].normal;
+  } else if (skinId && skinImages[skinId]) {
+    imageSource = skinImages[skinId];
   } else {
     imageSource = phaseImages[1].normal;
   }

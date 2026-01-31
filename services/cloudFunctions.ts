@@ -217,6 +217,11 @@ import {
   ScanDocumentResponseSchema,
 } from "@/types/schemas/api/scanning";
 import {
+  ProcessFileRequest,
+  ProcessFileResponse,
+  ProcessFileResponseSchema,
+} from "@/types/schemas/api/processFile";
+import {
   GetAvocadoStatusRequest,
   GetAvocadoStatusResponse,
   GetAvocadoStatusResponseSchema,
@@ -429,6 +434,26 @@ export const cloudFunctions = {
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from scanDocument");
+    }
+    return validatedData.data;
+  },
+
+  processFile: async (
+    storagePath: string,
+    mimeType: string,
+    hint?: string,
+    fileName?: string,
+    detail: "low" | "medium" | "high" = "medium"
+  ) => {
+    const fn = httpsCallable<ProcessFileRequest, ProcessFileResponse>(
+      functions,
+      "processFile"
+    );
+    const result = await fn({ storagePath, mimeType, hint, fileName, detail });
+    const validatedData = ProcessFileResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from processFile");
     }
     return validatedData.data;
   },
@@ -1308,4 +1333,5 @@ export const cloudFunctions = {
     }
     return validatedData.data;
   },
+
 };

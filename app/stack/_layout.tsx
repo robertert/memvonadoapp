@@ -21,6 +21,7 @@ export default function MainStack(): React.JSX.Element {
       <Stack.Screen name="editCard" />
       <Stack.Screen name="avocadoCollectionScreen" />
       <Stack.Screen name="ocrCameraScreen" />
+      <Stack.Screen name="processFileScreen" />
     </Stack>
   );
 }

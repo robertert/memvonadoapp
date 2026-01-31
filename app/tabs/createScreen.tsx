@@ -1,20 +1,16 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import {
-  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   Modal,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Colors, Fonts, generageRandomUid } from "../../constants/colors";
-import { ScrollView } from "react-native";
+import { Colors, Fonts,  } from "../../constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { router, useFocusEffect } from "expo-router";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import {
   PlusIcon,
   DocumentTextIcon,
@@ -58,6 +54,12 @@ export default function createScreen(): React.JSX.Element {
     setShowModalCard(false);
     setShowModalDeck(false);
     router.push("../stack/ocrCameraScreen");
+  };
+
+  const handleProcessFile = () => {
+    setShowModalCard(false);
+    setShowModalDeck(false);
+    router.push("../stack/processFileScreen");
   };
 
   return (
@@ -148,6 +150,12 @@ export default function createScreen(): React.JSX.Element {
               >
                 <CameraIcon size={20} color={Colors.primary_700} />
                 <Text style={styles.optionText}>Skanuj dokument</Text>
+              </Pressable>
+
+              {/* Process File */}
+              <Pressable style={styles.optionButton} onPress={handleProcessFile}>
+                <DocumentTextIcon size={20} color={Colors.primary_700} />
+                <Text style={styles.optionText}>Przetwarzaj plik</Text>
               </Pressable>
             </View>
           </Pressable>

@@ -10,10 +10,11 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  FlatList,
 } from "react-native";
 import { Colors, Fonts } from "@/constants/colors";
-import { XMarkIcon } from "react-native-heroicons/outline";
-import { LanguageIcon } from "react-native-heroicons/solid";
+import { XMarkIcon, ChevronDownIcon } from "react-native-heroicons/outline";
+import { LanguageIcon, CheckIcon } from "react-native-heroicons/solid";
 import * as Haptics from "expo-haptics";
 import Toast from "react-native-toast-message";
 import { router } from "expo-router";
@@ -22,7 +23,18 @@ import DeckSelector from "./DeckSelector";
 import { useQuickAdd, QuickAddSource } from "@/store/quickAdd-context";
 import { cloudFunctions } from "@/services/cloudFunctions";
 import { useTranslation } from "@/hooks/useTranslation";
+import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "@/types/schemas/api/translation";
 import type { DeckLearningData } from "@/types";
+
+const LANGUAGE_LABELS: Record<string, string> = {
+  en: "Angielski",
+  pl: "Polski",
+  de: "Niemiecki",
+  es: "Hiszpanski",
+  fr: "Francuski",
+  it: "Wloski",
+  pt: "Portugalski",
+};
 
 const MAX_CHARS = 3000;
 
@@ -60,6 +72,11 @@ export default function QuickAddModal({
   const [back, setBack] = useState(initialBack);
   const [selectedDeck, setSelectedDeck] = useState<DeckLearningData | null>(null);
 
+  // Language override state
+  const [frontLang, setFrontLang] = useState<string | null>(null);
+  const [backLang, setBackLang] = useState<string | null>(null);
+  const [showLangPicker, setShowLangPicker] = useState<"front" | "back" | null>(null);
+
   // Loading states
   const [isSaving, setIsSaving] = useState(false);
 
@@ -71,19 +88,33 @@ export default function QuickAddModal({
     if (visible) {
       setFront(initialFront);
       setBack(initialBack);
+      setFrontLang(null);
+      setBackLang(null);
       autoTranslatedRef.current = false;
     }
   }, [visible, initialFront, initialBack]);
 
-  // Auto-translate when modal opens with front text and deck has languages
+  // Sync language state from deck
+  useEffect(() => {
+    if (selectedDeck) {
+      if (selectedDeck.frontLanguage && !frontLang) {
+        setFrontLang(selectedDeck.frontLanguage);
+      }
+      if (selectedDeck.backLanguage && !backLang) {
+        setBackLang(selectedDeck.backLanguage);
+      }
+    }
+  }, [selectedDeck]);
+
+  // Auto-translate when modal opens with front text and languages set
   useEffect(() => {
     const shouldAutoTranslate =
       visible &&
       initialFront &&
       !initialBack &&
-      selectedDeck?.frontLanguage &&
-      selectedDeck?.backLanguage &&
-      isSupported(selectedDeck.frontLanguage, selectedDeck.backLanguage) &&
+      frontLang &&
+      backLang &&
+      isSupported(frontLang, backLang) &&
       !autoTranslatedRef.current &&
       !isLimitReached;
 
@@ -91,19 +122,15 @@ export default function QuickAddModal({
       autoTranslatedRef.current = true;
       performTranslation(initialFront);
     }
-  }, [visible, initialFront, initialBack, selectedDeck, isSupported, isLimitReached]);
+  }, [visible, initialFront, initialBack, frontLang, backLang, isSupported, isLimitReached]);
 
   // Perform translation
   const performTranslation = async (textToTranslate: string) => {
-    if (!selectedDeck?.frontLanguage || !selectedDeck?.backLanguage) {
+    if (!frontLang || !backLang) {
       return;
     }
 
-    const result = await translate(
-      textToTranslate,
-      selectedDeck.frontLanguage,
-      selectedDeck.backLanguage
-    );
+    const result = await translate(textToTranslate, frontLang, backLang);
 
     if (result) {
       setBack(result);
@@ -209,17 +236,17 @@ export default function QuickAddModal({
       return;
     }
 
-    if (!selectedDeck?.frontLanguage || !selectedDeck?.backLanguage) {
+    if (!frontLang || !backLang) {
       Toast.show({
         type: "info",
         text1: "Brak jezykow",
-        text2: "Ustaw jezyki w ustawieniach talii.",
+        text2: "Wybierz jezyki tlumaczenia ponizej.",
         visibilityTime: 2000,
       });
       return;
     }
 
-    if (!isSupported(selectedDeck.frontLanguage, selectedDeck.backLanguage)) {
+    if (!isSupported(frontLang, backLang)) {
       Toast.show({
         type: "info",
         text1: "Nieobslugiwane jezyki",
@@ -253,11 +280,7 @@ export default function QuickAddModal({
   };
 
   const canTranslate =
-    selectedDeck?.frontLanguage &&
-    selectedDeck?.backLanguage &&
-    front.trim().length > 0 &&
-    isSupported(selectedDeck.frontLanguage, selectedDeck.backLanguage) &&
-    !isLimitReached;
+    front.trim().length > 0 && frontLang && backLang && !isLimitReached;
   return (
     <Modal
       animationType="fade"
@@ -269,7 +292,7 @@ export default function QuickAddModal({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.modalContainer}
       >
-        <Pressable style={styles.modalOverlay} onPress={onClose}>
+        <Pressable style={styles.modalOverlay}>
           <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
           {/* Header */}
           <View style={styles.header}>
@@ -334,7 +357,33 @@ export default function QuickAddModal({
                 maxLength={MAX_CHARS}
               />
 
-              {/* Translate Button */}
+              {/* Language selectors + Translate */}
+              <View style={styles.languageRow}>
+                <Pressable
+                  style={styles.langSelector}
+                  onPress={() => setShowLangPicker("front")}
+                >
+                  <Text style={styles.langSelectorLabel}>Z:</Text>
+                  <Text style={styles.langSelectorValue} numberOfLines={1}>
+                    {frontLang ? LANGUAGE_LABELS[frontLang] || frontLang : "Wybierz"}
+                  </Text>
+                  <ChevronDownIcon size={14} color={Colors.primary_700_50} />
+                </Pressable>
+
+                <Text style={styles.langArrow}>→</Text>
+
+                <Pressable
+                  style={styles.langSelector}
+                  onPress={() => setShowLangPicker("back")}
+                >
+                  <Text style={styles.langSelectorLabel}>Na:</Text>
+                  <Text style={styles.langSelectorValue} numberOfLines={1}>
+                    {backLang ? LANGUAGE_LABELS[backLang] || backLang : "Wybierz"}
+                  </Text>
+                  <ChevronDownIcon size={14} color={Colors.primary_700_50} />
+                </Pressable>
+              </View>
+
               <View style={styles.translateRow}>
                 <Pressable
                   style={[
@@ -365,7 +414,7 @@ export default function QuickAddModal({
                 </Pressable>
 
                 {/* Translation limit indicator */}
-                {selectedDeck?.frontLanguage && selectedDeck?.backLanguage && (
+                {frontLang && backLang && (
                   <Text
                     style={[
                       styles.limitText,
@@ -380,6 +429,62 @@ export default function QuickAddModal({
               </View>
             </View>
           </ScrollView>
+
+          {/* Language picker modal */}
+          <Modal
+            visible={showLangPicker !== null}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowLangPicker(null)}
+          >
+            <Pressable
+              style={styles.langPickerOverlay}
+              onPress={() => setShowLangPicker(null)}
+            >
+              <View style={styles.langPickerContent}>
+                <Text style={styles.langPickerTitle}>
+                  {showLangPicker === "front" ? "Jezyk zrodlowy" : "Jezyk docelowy"}
+                </Text>
+                <FlatList
+                  data={[...SUPPORTED_LANGUAGES]}
+                  keyExtractor={(item) => item}
+                  renderItem={({ item }) => {
+                    const isSelected = showLangPicker === "front"
+                      ? frontLang === item
+                      : backLang === item;
+                    return (
+                      <Pressable
+                        style={[
+                          styles.langItem,
+                          isSelected && styles.langItemSelected,
+                        ]}
+                        onPress={() => {
+                          if (showLangPicker === "front") {
+                            setFrontLang(item);
+                          } else {
+                            setBackLang(item);
+                          }
+                          setShowLangPicker(null);
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.langItemText,
+                            isSelected && styles.langItemTextSelected,
+                          ]}
+                        >
+                          {LANGUAGE_LABELS[item] || item}
+                        </Text>
+                        {isSelected && (
+                          <CheckIcon size={18} color={Colors.primary_500} />
+                        )}
+                      </Pressable>
+                    );
+                  }}
+                />
+              </View>
+            </Pressable>
+          </Modal>
 
           {/* Action Buttons */}
           <View style={styles.actions}>
@@ -409,6 +514,7 @@ export default function QuickAddModal({
           </View>
           </Pressable>
         </Pressable>
+        <Toast />
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -485,6 +591,86 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
     borderWidth: 1,
     borderColor: Colors.primary_700_30,
+  },
+  languageRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  langSelector: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primary_100,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: Colors.primary_700_30,
+    gap: 4,
+  },
+  langSelectorLabel: {
+    fontFamily: Fonts.primary,
+    fontSize: 12,
+    fontWeight: "700",
+    color: Colors.primary_700_50,
+  },
+  langSelectorValue: {
+    flex: 1,
+    fontFamily: Fonts.primary,
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.primary_700,
+  },
+  langArrow: {
+    fontFamily: Fonts.primary,
+    fontSize: 16,
+    color: Colors.primary_700_50,
+  },
+  langPickerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 40,
+  },
+  langPickerContent: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    width: "100%",
+    maxWidth: 300,
+    padding: 20,
+  },
+  langPickerTitle: {
+    fontFamily: Fonts.primary,
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.primary_700,
+    marginBottom: 12,
+  },
+  langItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 2,
+  },
+  langItemSelected: {
+    backgroundColor: Colors.primary_100,
+  },
+  langItemText: {
+    fontFamily: Fonts.primary,
+    fontSize: 16,
+    color: Colors.primary_700,
+  },
+  langItemTextSelected: {
+    fontWeight: "600",
+    color: Colors.primary_500,
   },
   translateRow: {
     flexDirection: "row",

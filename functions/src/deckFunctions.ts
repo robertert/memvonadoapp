@@ -1102,8 +1102,16 @@ export const syncDeckMetadataToUserCopies = onDocumentWritten(
     const tagsChanged =
       JSON.stringify(beforeTags) !== JSON.stringify(afterTags);
 
+    const beforeFrontLanguage = beforeData?.frontLanguage ?? null;
+    const afterFrontLanguage = validatedAfterData.frontLanguage ?? null;
+    const frontLanguageChanged = beforeFrontLanguage !== afterFrontLanguage;
+
+    const beforeBackLanguage = beforeData?.backLanguage ?? null;
+    const afterBackLanguage = validatedAfterData.backLanguage ?? null;
+    const backLanguageChanged = beforeBackLanguage !== afterBackLanguage;
+
     // If nothing changed, skip
-    if (!categoryChanged && !iconChanged && !tagsChanged && !titleChanged) {
+    if (!categoryChanged && !iconChanged && !tagsChanged && !titleChanged && !frontLanguageChanged && !backLanguageChanged) {
       logger.debug("No metadata changes detected, skipping sync", { deckId });
       return;
     }
@@ -1116,6 +1124,8 @@ export const syncDeckMetadataToUserCopies = onDocumentWritten(
         tags?: string[];
         title?: string;
         title_lower?: string;
+        frontLanguage?: string | null;
+        backLanguage?: string | null;
         updatedAt: ReturnType<typeof FieldValue.serverTimestamp>;
       } = {
         updatedAt: FieldValue.serverTimestamp(),
@@ -1133,6 +1143,12 @@ export const syncDeckMetadataToUserCopies = onDocumentWritten(
       }
       if (tagsChanged) {
         updateData.tags = validatedAfterData.tags;
+      }
+      if (frontLanguageChanged) {
+        updateData.frontLanguage = afterFrontLanguage;
+      }
+      if (backLanguageChanged) {
+        updateData.backLanguage = afterBackLanguage;
       }
 
       // Find all users who have a copy of this deck
@@ -1278,6 +1294,8 @@ export const syncDeckMetadataToUserCopies = onDocumentWritten(
           categoryChanged,
           iconChanged,
           tagsChanged,
+          frontLanguageChanged,
+          backLanguageChanged,
         });
       } else {
         logger.info("No valid user copies to update", { deckId });
@@ -1637,6 +1655,8 @@ async function copyUserDeck(
       category: srcDeck.category,
       icon: srcDeck.icon,
       tags: srcDeck.tags,
+      frontLanguage: srcDeck.frontLanguage ?? null,
+      backLanguage: srcDeck.backLanguage ?? null,
     };
     // Validate before saving
     const validatedData = DeckLearningDataSchema.parse(userDeckData);
@@ -3080,3 +3100,4 @@ export const addCardToDeck = onCall(async (request) => {
     throw new HttpsError("internal", "Failed to add card to deck");
   }
 });
+

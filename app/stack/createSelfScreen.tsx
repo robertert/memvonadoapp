@@ -40,6 +40,7 @@ interface CreateSelfParams {
   cards?: string;
   edit?: string;
   deckId?: string;
+  suggestedTitle?: string;
 }
 
 // EditableCard interface with tracking flags
@@ -185,6 +186,10 @@ export default function createSelfScreen(): React.JSX.Element {
             isDirty: false,
           }));
           setCards(cardsWithFlags);
+        }
+        // Auto-fill title from suggestedTitle param (e.g. from processFile)
+        if (typedParams.suggestedTitle) {
+          setTitle(typedParams.suggestedTitle);
         }
       }
     };
