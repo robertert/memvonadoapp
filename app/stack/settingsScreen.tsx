@@ -16,10 +16,21 @@ import { ArrowLeftIcon } from "react-native-heroicons/solid";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
+import { SettingsContext } from "../../store/settings-context";
+import type { AvoLanguage } from "@/types/schemas/api/avoHelper";
+
+const AVO_LANGUAGE_OPTIONS: { label: string; value: AvoLanguage }[] = [
+  { label: "Polski", value: "pl" },
+  { label: "English", value: "en" },
+  { label: "Deutsch", value: "de" },
+  { label: "Español", value: "es" },
+  { label: "Français", value: "fr" },
+];
 
 export default function settingsScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
   const { id: userId } = useContext(UserContext);
+  const { avoLanguage, setAvoLanguage } = useContext(SettingsContext);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   async function handleAddPlaceholderData(): Promise<void> {
@@ -89,6 +100,35 @@ export default function settingsScreen(): React.JSX.Element {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Sekcja - AVO Helper */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>AVO Helper</Text>
+            <Text style={styles.helperText}>
+              Język odpowiedzi maskotki AVO podczas nauki.
+            </Text>
+            <View style={styles.chipRow}>
+              {AVO_LANGUAGE_OPTIONS.map((option) => (
+                <Pressable
+                  key={option.value}
+                  onPress={() => setAvoLanguage(option.value)}
+                  style={[
+                    styles.chip,
+                    avoLanguage === option.value && styles.chipActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      avoLanguage === option.value && styles.chipTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
           {/* Sekcja - Narzędzia deweloperskie */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Narzędzia deweloperskie</Text>
@@ -198,5 +238,32 @@ const styles = StyleSheet.create({
     fontFamily: "Inter",
     lineHeight: 16,
     marginTop: 4,
+  },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: Colors.primary_700_30,
+    backgroundColor: "transparent",
+  },
+  chipActive: {
+    backgroundColor: Colors.primary_700,
+    borderColor: Colors.primary_700,
+  },
+  chipText: {
+    fontSize: 14,
+    fontFamily: "Inter",
+    fontWeight: "600",
+    color: Colors.primary_700,
+  },
+  chipTextActive: {
+    color: Colors.primary_100,
   },
 });

@@ -38,6 +38,9 @@ import { calculateDailyStatsProgress } from "@/constants/dailyStats";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import * as Haptics from "expo-haptics";
 import { playSound } from "@/utils/soundTrigger";
+import { useAvoHelper } from "../../hooks/useAvoHelper";
+import AvoHelperOverlay from "../../components/avoHelper/AvoHelperOverlay";
+import type { AvoCardContext } from "@/types/schemas/api/avoHelper";
 
 /**
  * Main learning screen component for flashcard learning with gesture-based interactions
@@ -137,6 +140,28 @@ function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
 
   const { cards, isLoading, isBack, tooltip, progress, dailyStats } =
     cardLogicState;
+
+  // AVO Helper
+  const avoHelper = useAvoHelper();
+
+  // Build AVO card context from current card
+  const currentCard = cards?.[0];
+  const avoCardContext: AvoCardContext | null = currentCard
+    ? {
+        front: currentCard.cardData?.front || "",
+        back: currentCard.cardData?.back || "",
+        tags: currentCard?.tags || [],
+        deckName: "",
+      }
+    : null;
+
+  // Track answers for AVO mood (CardGrade: Wrong=0, Hard=1, Good=2, Easy=3)
+  React.useEffect(() => {
+    if (lastAnswerType === undefined || lastAnswerType === null) return;
+    const grade = parseInt(lastAnswerType, 10);
+    const isCorrect = grade >= 2; // Good or Easy
+    avoHelper.trackAnswer(isCorrect);
+  }, [lastAnswerType]);
 
   // State for confetti trigger - only for streak achievement
   const [showConfetti, setShowConfetti] = useState(false);
@@ -585,6 +610,12 @@ function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
         <Animated.View style={flyingFireIconAnimatedStyle} pointerEvents="none">
           <BoltIcon size={96} color={Colors.red} />
         </Animated.View>
+
+        {/* AVO Helper */}
+        <AvoHelperOverlay
+          cardContext={avoCardContext}
+          avoHelper={avoHelper}
+        />
 
         {/* Tooltip Modal for long press */}
         <Modal

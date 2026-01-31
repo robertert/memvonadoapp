@@ -246,6 +246,16 @@ import {
   ExtractTextFromImageResponse,
   ExtractTextFromImageResponseSchema,
 } from "@/types/schemas/api/ocr";
+import {
+  AvoQueryRequest,
+  AvoQueryResponse,
+  AvoQueryResponseSchema,
+  GetAvoQueryLimitResponse,
+  GetAvoQueryLimitResponseSchema,
+  AvoChipType,
+  AvoCardContext,
+  AvoLanguage,
+} from "@/types/schemas/api/avoHelper";
 
 // Cloud Functions calls
 export const cloudFunctions = {
@@ -1330,6 +1340,46 @@ export const cloudFunctions = {
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from extractTextFromImage");
+    }
+    return validatedData.data;
+  },
+
+  // ============================================================================
+  // AVO Helper Functions
+  // ============================================================================
+
+  // AVO query - ask AI about a flashcard
+  avoQuery: async (
+    chipType: AvoChipType,
+    cardContext: AvoCardContext,
+    responseLanguage: AvoLanguage,
+    customQuestion?: string
+  ) => {
+    console.log("avoQuery", chipType, cardContext, responseLanguage, customQuestion);
+    const fn = httpsCallable<AvoQueryRequest, AvoQueryResponse>(
+      functions,
+      "avoQuery"
+    );
+    const result = await fn({ chipType, customQuestion, cardContext, responseLanguage });
+    const validatedData = AvoQueryResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from avoQuery");
+    }
+    return validatedData.data;
+  },
+
+  // Get AVO query usage limit
+  getAvoQueryLimit: async () => {
+    const fn = httpsCallable<Record<string, never>, GetAvoQueryLimitResponse>(
+      functions,
+      "getAvoQueryLimit"
+    );
+    const result = await fn({});
+    const validatedData = GetAvoQueryLimitResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getAvoQueryLimit");
     }
     return validatedData.data;
   },

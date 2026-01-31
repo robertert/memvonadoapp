@@ -34,6 +34,9 @@ import { Colors, Fonts } from "../../constants/colors";
 import { useAllInOneCardLogic } from "../../hooks/learnScreen/useAllInOneCardLogic";
 import { ArrowUturnLeftIcon } from "react-native-heroicons/solid";
 import ProgressBar from "./ProgressBar";
+import { useAvoHelper } from "../../hooks/useAvoHelper";
+import AvoHelperOverlay from "../avoHelper/AvoHelperOverlay";
+import type { AvoCardContext } from "@/types/schemas/api/avoHelper";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("screen");
 const X_THRESHOLD = 0.15;
@@ -62,6 +65,18 @@ export default function AllInOneLearnScreen({
     error,
     clearError,
   } = useAllInOneCardLogic(deckId);
+
+  // AVO Helper
+  const avoHelper = useAvoHelper();
+
+  const avoCardContext: AvoCardContext | null = currentCard
+    ? {
+        front: currentCard.front || "",
+        back: currentCard.back || "",
+        tags: [],
+        deckName: "",
+      }
+    : null;
 
   // Animation values
   const translateX = useSharedValue(0);
@@ -138,6 +153,7 @@ export default function AllInOneLearnScreen({
     overlayOpacity.value = withTiming(0.3, { duration: 150 });
     triggerHaptic("success");
     respondToCard(true);
+    avoHelper.trackAnswer(true);
   }
 
   function handleWrong() {
@@ -145,6 +161,7 @@ export default function AllInOneLearnScreen({
     overlayOpacity.value = withTiming(0.3, { duration: 150 });
     triggerHaptic("error");
     respondToCard(false);
+    avoHelper.trackAnswer(false);
   }
 
   // Gesture handlers
@@ -441,6 +458,12 @@ export default function AllInOneLearnScreen({
             <Text style={[styles.statLabel, { color: Colors.primary_100 }]}>Wszystkie</Text>
           </View>
         </View>
+        {/* AVO Helper */}
+        <AvoHelperOverlay
+          cardContext={avoCardContext}
+          avoHelper={avoHelper}
+        />
+
         {/* 5. Komponent MODAL (dodaj na samym dole przed zamknięciem GestureHandlerRootView) */}
         <Modal
   visible={tooltipVisible}

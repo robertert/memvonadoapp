@@ -21,3 +21,4 @@ export { getAvocadoStatus, harvestAvocado, getAvocadoConfigFn as getAvocadoConfi
 export { translateText, getTranslationLimit, } from "./translationFunctions";
 export { extractTextFromImage } from "./ocrFunctions";
 export { processFile } from "./processFileFunctions";
+export { avoQuery, getAvoQueryLimit, } from "./avoHelperFunctions";
