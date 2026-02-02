@@ -223,3 +223,77 @@ export declare const getUserActivityHeatmap: import("firebase-functions/v2/https
 export declare const getUserAwards: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     awards: any[];
 }>, unknown>;
+/**
+ * Get public user profile (for viewing other users)
+ */
+export declare const getPublicUserProfile: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    user: {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        settings: {
+            theme: "light" | "dark";
+            notificationsEnabled: boolean;
+            dailyGoal: number;
+            language: string;
+            timeZone: string;
+            dailyNew?: number | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
+        };
+        username: string;
+        email: string;
+        league: number;
+        currentGroupId: string | null;
+        experiencePoints: number;
+        currencyCount: number;
+        stats: {
+            totalCards: number;
+            totalDecks: number;
+            totalReviews: number;
+            currentStreak: number;
+            longestStreak: number;
+            averageDifficulty?: number | undefined;
+            lastStreakDate?: Date | undefined;
+            lastStudyDate?: Date | undefined;
+        };
+        followingCount: number;
+        followersCount: number;
+        interests: string[];
+        dailyStats?: {
+            completedNewToday: number;
+            completedDueToday: number;
+            lastUpdatedStats: Date;
+        } | null | undefined;
+        avocadoGrowth?: {
+            currentPhase: number;
+            consecutiveDays: number;
+            totalHarvests: number;
+            collectedSkins: {
+                id: string;
+                name: string;
+                rarity: "common" | "rare" | "epic" | "legendary";
+                obtainedAt: Date;
+            }[];
+            harvestHistory: {
+                skinId: string;
+                harvestedAt: Date;
+            }[];
+            lastGrowthDate?: Date | null | undefined;
+        } | null | undefined;
+        profileCompleted?: boolean | undefined;
+    };
+    isFollowing: boolean;
+}>, unknown>;
+/**
+ * Toggle follow/unfollow a user
+ */
+export declare const toggleFollow: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+    isFollowing: boolean;
+}>, unknown>;
+/**
+ * Check if current user is an admin
+ */
+export declare const isCurrentUserAdmin: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    isAdmin: boolean;
+}>, unknown>;

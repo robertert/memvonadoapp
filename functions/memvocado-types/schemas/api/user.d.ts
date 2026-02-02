@@ -1147,3 +1147,409 @@ export declare const UpdateCardProgressAllInOneResponseSchema: z.ZodObject<{
     success: boolean;
 }>;
 export type UpdateCardProgressAllInOneResponse = z.infer<typeof UpdateCardProgressAllInOneResponseSchema>;
+export declare const GetPublicUserProfileRequestSchema: z.ZodObject<{
+    targetUserId: z.ZodString;
+}, "strict", z.ZodTypeAny, {
+    targetUserId: string;
+}, {
+    targetUserId: string;
+}>;
+export type GetPublicUserProfileRequest = z.infer<typeof GetPublicUserProfileRequestSchema>;
+export declare const GetPublicUserProfileResponseSchema: z.ZodObject<{
+    user: z.ZodObject<{
+        username: z.ZodString;
+        email: z.ZodString;
+        settings: z.ZodObject<{
+            theme: z.ZodDefault<z.ZodEnum<["light", "dark"]>>;
+            notificationsEnabled: z.ZodDefault<z.ZodBoolean>;
+            dailyGoal: z.ZodDefault<z.ZodNumber>;
+            dailyNew: z.ZodOptional<z.ZodNumber>;
+            language: z.ZodDefault<z.ZodString>;
+            timeZone: z.ZodDefault<z.ZodString>;
+            defaultLearningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
+        }, "strict", z.ZodTypeAny, {
+            theme: "light" | "dark";
+            notificationsEnabled: boolean;
+            dailyGoal: number;
+            language: string;
+            timeZone: string;
+            dailyNew?: number | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
+        }, {
+            theme?: "light" | "dark" | undefined;
+            notificationsEnabled?: boolean | undefined;
+            dailyGoal?: number | undefined;
+            dailyNew?: number | undefined;
+            language?: string | undefined;
+            timeZone?: string | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
+        }>;
+    } & {
+        id: z.ZodString;
+        league: z.ZodDefault<z.ZodNumber>;
+        currentGroupId: z.ZodNullable<z.ZodString>;
+        experiencePoints: z.ZodDefault<z.ZodNumber>;
+        currencyCount: z.ZodDefault<z.ZodNumber>;
+        stats: z.ZodObject<{
+            totalCards: z.ZodDefault<z.ZodNumber>;
+            totalDecks: z.ZodDefault<z.ZodNumber>;
+            totalReviews: z.ZodDefault<z.ZodNumber>;
+            averageDifficulty: z.ZodOptional<z.ZodNumber>;
+            currentStreak: z.ZodDefault<z.ZodNumber>;
+            longestStreak: z.ZodDefault<z.ZodNumber>;
+            lastStreakDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+            lastStudyDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+        }, "strip", z.ZodTypeAny, {
+            totalCards: number;
+            totalDecks: number;
+            totalReviews: number;
+            currentStreak: number;
+            longestStreak: number;
+            averageDifficulty?: number | undefined;
+            lastStreakDate?: Date | undefined;
+            lastStudyDate?: Date | undefined;
+        }, {
+            totalCards?: number | undefined;
+            totalDecks?: number | undefined;
+            totalReviews?: number | undefined;
+            averageDifficulty?: number | undefined;
+            currentStreak?: number | undefined;
+            longestStreak?: number | undefined;
+            lastStreakDate?: unknown;
+            lastStudyDate?: unknown;
+        }>;
+        avocadoGrowth: z.ZodNullable<z.ZodOptional<z.ZodObject<{
+            currentPhase: z.ZodDefault<z.ZodNumber>;
+            consecutiveDays: z.ZodDefault<z.ZodNumber>;
+            lastGrowthDate: z.ZodNullable<z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>>;
+            totalHarvests: z.ZodDefault<z.ZodNumber>;
+            collectedSkins: z.ZodDefault<z.ZodArray<z.ZodObject<{
+                id: z.ZodString;
+                name: z.ZodString;
+                rarity: z.ZodEnum<["common", "rare", "epic", "legendary"]>;
+                obtainedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
+            }, "strip", z.ZodTypeAny, {
+                id: string;
+                name: string;
+                rarity: "common" | "rare" | "epic" | "legendary";
+                obtainedAt: Date;
+            }, {
+                id: string;
+                name: string;
+                rarity: "common" | "rare" | "epic" | "legendary";
+                obtainedAt?: unknown;
+            }>, "many">>;
+            harvestHistory: z.ZodDefault<z.ZodArray<z.ZodObject<{
+                skinId: z.ZodString;
+                harvestedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
+            }, "strip", z.ZodTypeAny, {
+                skinId: string;
+                harvestedAt: Date;
+            }, {
+                skinId: string;
+                harvestedAt?: unknown;
+            }>, "many">>;
+        }, "strip", z.ZodTypeAny, {
+            currentPhase: number;
+            consecutiveDays: number;
+            totalHarvests: number;
+            collectedSkins: {
+                id: string;
+                name: string;
+                rarity: "common" | "rare" | "epic" | "legendary";
+                obtainedAt: Date;
+            }[];
+            harvestHistory: {
+                skinId: string;
+                harvestedAt: Date;
+            }[];
+            lastGrowthDate?: Date | null | undefined;
+        }, {
+            currentPhase?: number | undefined;
+            consecutiveDays?: number | undefined;
+            lastGrowthDate?: unknown;
+            totalHarvests?: number | undefined;
+            collectedSkins?: {
+                id: string;
+                name: string;
+                rarity: "common" | "rare" | "epic" | "legendary";
+                obtainedAt?: unknown;
+            }[] | undefined;
+            harvestHistory?: {
+                skinId: string;
+                harvestedAt?: unknown;
+            }[] | undefined;
+        }>>>;
+        dailyStats: z.ZodNullable<z.ZodOptional<z.ZodObject<{
+            completedNewToday: z.ZodDefault<z.ZodNumber>;
+            completedDueToday: z.ZodDefault<z.ZodNumber>;
+            lastUpdatedStats: z.ZodEffects<z.ZodDate, Date, unknown>;
+        }, "strip", z.ZodTypeAny, {
+            completedNewToday: number;
+            completedDueToday: number;
+            lastUpdatedStats: Date;
+        }, {
+            completedNewToday?: number | undefined;
+            completedDueToday?: number | undefined;
+            lastUpdatedStats?: unknown;
+        }>>>;
+        followingCount: z.ZodDefault<z.ZodNumber>;
+        followersCount: z.ZodDefault<z.ZodNumber>;
+        profileCompleted: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
+        interests: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+    } & {
+        createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
+        updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
+    }, "strict", z.ZodTypeAny, {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        settings: {
+            theme: "light" | "dark";
+            notificationsEnabled: boolean;
+            dailyGoal: number;
+            language: string;
+            timeZone: string;
+            dailyNew?: number | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
+        };
+        username: string;
+        email: string;
+        league: number;
+        currentGroupId: string | null;
+        experiencePoints: number;
+        currencyCount: number;
+        stats: {
+            totalCards: number;
+            totalDecks: number;
+            totalReviews: number;
+            currentStreak: number;
+            longestStreak: number;
+            averageDifficulty?: number | undefined;
+            lastStreakDate?: Date | undefined;
+            lastStudyDate?: Date | undefined;
+        };
+        followingCount: number;
+        followersCount: number;
+        interests: string[];
+        dailyStats?: {
+            completedNewToday: number;
+            completedDueToday: number;
+            lastUpdatedStats: Date;
+        } | null | undefined;
+        avocadoGrowth?: {
+            currentPhase: number;
+            consecutiveDays: number;
+            totalHarvests: number;
+            collectedSkins: {
+                id: string;
+                name: string;
+                rarity: "common" | "rare" | "epic" | "legendary";
+                obtainedAt: Date;
+            }[];
+            harvestHistory: {
+                skinId: string;
+                harvestedAt: Date;
+            }[];
+            lastGrowthDate?: Date | null | undefined;
+        } | null | undefined;
+        profileCompleted?: boolean | undefined;
+    }, {
+        id: string;
+        settings: {
+            theme?: "light" | "dark" | undefined;
+            notificationsEnabled?: boolean | undefined;
+            dailyGoal?: number | undefined;
+            dailyNew?: number | undefined;
+            language?: string | undefined;
+            timeZone?: string | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
+        };
+        username: string;
+        email: string;
+        currentGroupId: string | null;
+        stats: {
+            totalCards?: number | undefined;
+            totalDecks?: number | undefined;
+            totalReviews?: number | undefined;
+            averageDifficulty?: number | undefined;
+            currentStreak?: number | undefined;
+            longestStreak?: number | undefined;
+            lastStreakDate?: unknown;
+            lastStudyDate?: unknown;
+        };
+        createdAt?: unknown;
+        updatedAt?: unknown;
+        dailyStats?: {
+            completedNewToday?: number | undefined;
+            completedDueToday?: number | undefined;
+            lastUpdatedStats?: unknown;
+        } | null | undefined;
+        league?: number | undefined;
+        experiencePoints?: number | undefined;
+        currencyCount?: number | undefined;
+        avocadoGrowth?: {
+            currentPhase?: number | undefined;
+            consecutiveDays?: number | undefined;
+            lastGrowthDate?: unknown;
+            totalHarvests?: number | undefined;
+            collectedSkins?: {
+                id: string;
+                name: string;
+                rarity: "common" | "rare" | "epic" | "legendary";
+                obtainedAt?: unknown;
+            }[] | undefined;
+            harvestHistory?: {
+                skinId: string;
+                harvestedAt?: unknown;
+            }[] | undefined;
+        } | null | undefined;
+        followingCount?: number | undefined;
+        followersCount?: number | undefined;
+        profileCompleted?: boolean | undefined;
+        interests?: string[] | undefined;
+    }>;
+    isFollowing: z.ZodBoolean;
+}, "strip", z.ZodTypeAny, {
+    user: {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        settings: {
+            theme: "light" | "dark";
+            notificationsEnabled: boolean;
+            dailyGoal: number;
+            language: string;
+            timeZone: string;
+            dailyNew?: number | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
+        };
+        username: string;
+        email: string;
+        league: number;
+        currentGroupId: string | null;
+        experiencePoints: number;
+        currencyCount: number;
+        stats: {
+            totalCards: number;
+            totalDecks: number;
+            totalReviews: number;
+            currentStreak: number;
+            longestStreak: number;
+            averageDifficulty?: number | undefined;
+            lastStreakDate?: Date | undefined;
+            lastStudyDate?: Date | undefined;
+        };
+        followingCount: number;
+        followersCount: number;
+        interests: string[];
+        dailyStats?: {
+            completedNewToday: number;
+            completedDueToday: number;
+            lastUpdatedStats: Date;
+        } | null | undefined;
+        avocadoGrowth?: {
+            currentPhase: number;
+            consecutiveDays: number;
+            totalHarvests: number;
+            collectedSkins: {
+                id: string;
+                name: string;
+                rarity: "common" | "rare" | "epic" | "legendary";
+                obtainedAt: Date;
+            }[];
+            harvestHistory: {
+                skinId: string;
+                harvestedAt: Date;
+            }[];
+            lastGrowthDate?: Date | null | undefined;
+        } | null | undefined;
+        profileCompleted?: boolean | undefined;
+    };
+    isFollowing: boolean;
+}, {
+    user: {
+        id: string;
+        settings: {
+            theme?: "light" | "dark" | undefined;
+            notificationsEnabled?: boolean | undefined;
+            dailyGoal?: number | undefined;
+            dailyNew?: number | undefined;
+            language?: string | undefined;
+            timeZone?: string | undefined;
+            defaultLearningMode?: "srs" | "all_in_one" | undefined;
+        };
+        username: string;
+        email: string;
+        currentGroupId: string | null;
+        stats: {
+            totalCards?: number | undefined;
+            totalDecks?: number | undefined;
+            totalReviews?: number | undefined;
+            averageDifficulty?: number | undefined;
+            currentStreak?: number | undefined;
+            longestStreak?: number | undefined;
+            lastStreakDate?: unknown;
+            lastStudyDate?: unknown;
+        };
+        createdAt?: unknown;
+        updatedAt?: unknown;
+        dailyStats?: {
+            completedNewToday?: number | undefined;
+            completedDueToday?: number | undefined;
+            lastUpdatedStats?: unknown;
+        } | null | undefined;
+        league?: number | undefined;
+        experiencePoints?: number | undefined;
+        currencyCount?: number | undefined;
+        avocadoGrowth?: {
+            currentPhase?: number | undefined;
+            consecutiveDays?: number | undefined;
+            lastGrowthDate?: unknown;
+            totalHarvests?: number | undefined;
+            collectedSkins?: {
+                id: string;
+                name: string;
+                rarity: "common" | "rare" | "epic" | "legendary";
+                obtainedAt?: unknown;
+            }[] | undefined;
+            harvestHistory?: {
+                skinId: string;
+                harvestedAt?: unknown;
+            }[] | undefined;
+        } | null | undefined;
+        followingCount?: number | undefined;
+        followersCount?: number | undefined;
+        profileCompleted?: boolean | undefined;
+        interests?: string[] | undefined;
+    };
+    isFollowing: boolean;
+}>;
+export type GetPublicUserProfileResponse = z.infer<typeof GetPublicUserProfileResponseSchema>;
+export declare const ToggleFollowRequestSchema: z.ZodObject<{
+    targetUserId: z.ZodString;
+}, "strict", z.ZodTypeAny, {
+    targetUserId: string;
+}, {
+    targetUserId: string;
+}>;
+export type ToggleFollowRequest = z.infer<typeof ToggleFollowRequestSchema>;
+export declare const ToggleFollowResponseSchema: z.ZodObject<{
+    success: z.ZodBoolean;
+    isFollowing: z.ZodBoolean;
+}, "strip", z.ZodTypeAny, {
+    success: boolean;
+    isFollowing: boolean;
+}, {
+    success: boolean;
+    isFollowing: boolean;
+}>;
+export type ToggleFollowResponse = z.infer<typeof ToggleFollowResponseSchema>;
+export declare const IsCurrentUserAdminResponseSchema: z.ZodObject<{
+    isAdmin: z.ZodBoolean;
+}, "strip", z.ZodTypeAny, {
+    isAdmin: boolean;
+}, {
+    isAdmin: boolean;
+}>;
+export type IsCurrentUserAdminResponse = z.infer<typeof IsCurrentUserAdminResponseSchema>;

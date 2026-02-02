@@ -44,6 +44,7 @@ export const DeckMetaSchema = z
     is_deleted: z.boolean().default(false),
     deletedAt: TimestampSchema.optional(),
     title_lower: z.string().optional(),
+    editors: z.array(z.string()).default([]),
   })
   .strict();
 

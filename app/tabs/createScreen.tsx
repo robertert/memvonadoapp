@@ -143,15 +143,6 @@ export default function createScreen(): React.JSX.Element {
                 <Text style={styles.optionText}>Importuj z Anki</Text>
               </Pressable>
 
-              {/* Scan Document */}
-              <Pressable
-                style={styles.optionButton}
-                onPress={handleScanDocument}
-              >
-                <CameraIcon size={20} color={Colors.primary_700} />
-                <Text style={styles.optionText}>Skanuj dokument</Text>
-              </Pressable>
-
               {/* Process File */}
               <Pressable style={styles.optionButton} onPress={handleProcessFile}>
                 <DocumentTextIcon size={20} color={Colors.primary_700} />

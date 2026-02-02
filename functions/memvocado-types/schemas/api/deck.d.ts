@@ -180,6 +180,7 @@ export declare const UpdateDeckSettingsRequestSchema: z.ZodObject<{
         is_deleted: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
         deletedAt: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>>;
         title_lower: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+        editors: z.ZodOptional<z.ZodDefault<z.ZodArray<z.ZodString, "many">>>;
         createdAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
     }, "strict", z.ZodTypeAny, {
@@ -200,6 +201,7 @@ export declare const UpdateDeckSettingsRequestSchema: z.ZodObject<{
         is_deleted?: boolean | undefined;
         deletedAt?: Date | undefined;
         title_lower?: string | undefined;
+        editors?: string[] | undefined;
     }, {
         id?: string | undefined;
         title?: string | undefined;
@@ -218,6 +220,7 @@ export declare const UpdateDeckSettingsRequestSchema: z.ZodObject<{
         is_deleted?: boolean | undefined;
         deletedAt?: unknown;
         title_lower?: string | undefined;
+        editors?: string[] | undefined;
     }>;
 }, "strict", z.ZodTypeAny, {
     deckId: string;
@@ -239,6 +242,7 @@ export declare const UpdateDeckSettingsRequestSchema: z.ZodObject<{
         is_deleted?: boolean | undefined;
         deletedAt?: Date | undefined;
         title_lower?: string | undefined;
+        editors?: string[] | undefined;
     };
 }, {
     deckId: string;
@@ -260,6 +264,7 @@ export declare const UpdateDeckSettingsRequestSchema: z.ZodObject<{
         is_deleted?: boolean | undefined;
         deletedAt?: unknown;
         title_lower?: string | undefined;
+        editors?: string[] | undefined;
     };
 }>;
 export type UpdateDeckSettingsRequest = z.infer<typeof UpdateDeckSettingsRequestSchema>;
@@ -614,6 +619,7 @@ export declare const GetDeckDetailsResponseSchema: z.ZodObject<{
         is_deleted: z.ZodDefault<z.ZodBoolean>;
         deletedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         title_lower: z.ZodOptional<z.ZodString>;
+        editors: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     } & {
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -630,6 +636,7 @@ export declare const GetDeckDetailsResponseSchema: z.ZodObject<{
         cardsNum: number;
         createdBy: string;
         is_deleted: boolean;
+        editors: string[];
         category?: string | null | undefined;
         frontLanguage?: string | null | undefined;
         backLanguage?: string | null | undefined;
@@ -653,8 +660,10 @@ export declare const GetDeckDetailsResponseSchema: z.ZodObject<{
         is_deleted?: boolean | undefined;
         deletedAt?: unknown;
         title_lower?: string | undefined;
+        editors?: string[] | undefined;
     }>>;
     username: z.ZodString;
+    isEditor: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     username: string;
     deck: {
@@ -670,12 +679,14 @@ export declare const GetDeckDetailsResponseSchema: z.ZodObject<{
         cardsNum: number;
         createdBy: string;
         is_deleted: boolean;
+        editors: string[];
         category?: string | null | undefined;
         frontLanguage?: string | null | undefined;
         backLanguage?: string | null | undefined;
         deletedAt?: Date | undefined;
         title_lower?: string | undefined;
     } | null;
+    isEditor?: boolean | undefined;
 }, {
     username: string;
     deck: {
@@ -696,7 +707,9 @@ export declare const GetDeckDetailsResponseSchema: z.ZodObject<{
         is_deleted?: boolean | undefined;
         deletedAt?: unknown;
         title_lower?: string | undefined;
+        editors?: string[] | undefined;
     } | null;
+    isEditor?: boolean | undefined;
 }>;
 export type GetDeckDetailsResponse = z.infer<typeof GetDeckDetailsResponseSchema>;
 export declare const GetDeckCardsResponseSchema: z.ZodObject<{
@@ -1102,6 +1115,7 @@ export declare const GetPopularDecksResponseSchema: z.ZodObject<{
         is_deleted: z.ZodDefault<z.ZodBoolean>;
         deletedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
         title_lower: z.ZodOptional<z.ZodString>;
+        editors: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     } & {
         createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
         updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -1118,6 +1132,7 @@ export declare const GetPopularDecksResponseSchema: z.ZodObject<{
         cardsNum: number;
         createdBy: string;
         is_deleted: boolean;
+        editors: string[];
         category?: string | null | undefined;
         frontLanguage?: string | null | undefined;
         backLanguage?: string | null | undefined;
@@ -1141,6 +1156,7 @@ export declare const GetPopularDecksResponseSchema: z.ZodObject<{
         is_deleted?: boolean | undefined;
         deletedAt?: unknown;
         title_lower?: string | undefined;
+        editors?: string[] | undefined;
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
     decks: {
@@ -1156,6 +1172,7 @@ export declare const GetPopularDecksResponseSchema: z.ZodObject<{
         cardsNum: number;
         createdBy: string;
         is_deleted: boolean;
+        editors: string[];
         category?: string | null | undefined;
         frontLanguage?: string | null | undefined;
         backLanguage?: string | null | undefined;
@@ -1181,6 +1198,7 @@ export declare const GetPopularDecksResponseSchema: z.ZodObject<{
         is_deleted?: boolean | undefined;
         deletedAt?: unknown;
         title_lower?: string | undefined;
+        editors?: string[] | undefined;
     }[];
 }>;
 export type GetPopularDecksResponse = z.infer<typeof GetPopularDecksResponseSchema>;
@@ -2832,3 +2850,103 @@ export declare const AddCardToDeckResponseSchema: z.ZodObject<{
     cardId: string;
 }>;
 export type AddCardToDeckResponse = z.infer<typeof AddCardToDeckResponseSchema>;
+export declare const SearchUsersRequestSchema: z.ZodObject<{
+    query: z.ZodString;
+}, "strict", z.ZodTypeAny, {
+    query: string;
+}, {
+    query: string;
+}>;
+export type SearchUsersRequest = z.infer<typeof SearchUsersRequestSchema>;
+export declare const SearchUsersResponseSchema: z.ZodObject<{
+    users: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        username: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        id: string;
+        username: string;
+    }, {
+        id: string;
+        username: string;
+    }>, "many">;
+}, "strip", z.ZodTypeAny, {
+    users: {
+        id: string;
+        username: string;
+    }[];
+}, {
+    users: {
+        id: string;
+        username: string;
+    }[];
+}>;
+export type SearchUsersResponse = z.infer<typeof SearchUsersResponseSchema>;
+export declare const AddDeckEditorRequestSchema: z.ZodObject<{
+    deckId: z.ZodString;
+    userId: z.ZodString;
+}, "strict", z.ZodTypeAny, {
+    deckId: string;
+    userId: string;
+}, {
+    deckId: string;
+    userId: string;
+}>;
+export type AddDeckEditorRequest = z.infer<typeof AddDeckEditorRequestSchema>;
+export declare const AddDeckEditorResponseSchema: z.ZodObject<{
+    success: z.ZodBoolean;
+}, "strip", z.ZodTypeAny, {
+    success: boolean;
+}, {
+    success: boolean;
+}>;
+export type AddDeckEditorResponse = z.infer<typeof AddDeckEditorResponseSchema>;
+export declare const RemoveDeckEditorRequestSchema: z.ZodObject<{
+    deckId: z.ZodString;
+    userId: z.ZodString;
+}, "strict", z.ZodTypeAny, {
+    deckId: string;
+    userId: string;
+}, {
+    deckId: string;
+    userId: string;
+}>;
+export type RemoveDeckEditorRequest = z.infer<typeof RemoveDeckEditorRequestSchema>;
+export declare const RemoveDeckEditorResponseSchema: z.ZodObject<{
+    success: z.ZodBoolean;
+}, "strip", z.ZodTypeAny, {
+    success: boolean;
+}, {
+    success: boolean;
+}>;
+export type RemoveDeckEditorResponse = z.infer<typeof RemoveDeckEditorResponseSchema>;
+export declare const GetDeckEditorsRequestSchema: z.ZodObject<{
+    deckId: z.ZodString;
+}, "strict", z.ZodTypeAny, {
+    deckId: string;
+}, {
+    deckId: string;
+}>;
+export type GetDeckEditorsRequest = z.infer<typeof GetDeckEditorsRequestSchema>;
+export declare const GetDeckEditorsResponseSchema: z.ZodObject<{
+    editors: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        username: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        id: string;
+        username: string;
+    }, {
+        id: string;
+        username: string;
+    }>, "many">;
+}, "strip", z.ZodTypeAny, {
+    editors: {
+        id: string;
+        username: string;
+    }[];
+}, {
+    editors: {
+        id: string;
+        username: string;
+    }[];
+}>;
+export type GetDeckEditorsResponse = z.infer<typeof GetDeckEditorsResponseSchema>;

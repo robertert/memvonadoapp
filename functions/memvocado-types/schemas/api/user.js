@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateCardProgressAllInOneResponseSchema = exports.UpdateCardProgressAllInOneRequestSchema = exports.UndoCardResponseSchema = exports.WeeklyRollOverResponseSchema = exports.SubmitPointsResponseSchema = exports.GetCurrentSeasonResponseSchema = exports.ServerNowSchema = exports.GetUserAwardsResponseSchema = exports.GetUserActivityHeatmapResponseSchema = exports.GetUserProfileResponseSchema = exports.GetUserSettingsResponseSchema = exports.GetUserProgressResponseSchema = exports.UpdateUserStreakOnLoginResponseSchema = exports.UpdateUserStreakIfQualifiedResponseSchema = exports.UpdateUserSettingsRequestSchema = exports.SubmitPointsRequestSchema = exports.GetUserAwardsRequestSchema = exports.GetUserActivityHeatmapRequestSchema = exports.GetUserProfileRequestSchema = exports.GetUserSettingsRequestSchema = exports.UndoCardRequestSchema = exports.GetUserProgressRequestSchema = exports.UpdateCardProgressRequestSchema = exports.GetUserDecksRequestSchema = exports.UpdateUserStreakOnLoginRequestSchema = exports.UpdateUserStreakIfQualifiedRequestSchema = void 0;
+exports.IsCurrentUserAdminResponseSchema = exports.ToggleFollowResponseSchema = exports.ToggleFollowRequestSchema = exports.GetPublicUserProfileResponseSchema = exports.GetPublicUserProfileRequestSchema = exports.UpdateCardProgressAllInOneResponseSchema = exports.UpdateCardProgressAllInOneRequestSchema = exports.UndoCardResponseSchema = exports.WeeklyRollOverResponseSchema = exports.SubmitPointsResponseSchema = exports.GetCurrentSeasonResponseSchema = exports.ServerNowSchema = exports.GetUserAwardsResponseSchema = exports.GetUserActivityHeatmapResponseSchema = exports.GetUserProfileResponseSchema = exports.GetUserSettingsResponseSchema = exports.GetUserProgressResponseSchema = exports.UpdateUserStreakOnLoginResponseSchema = exports.UpdateUserStreakIfQualifiedResponseSchema = exports.UpdateUserSettingsRequestSchema = exports.SubmitPointsRequestSchema = exports.GetUserAwardsRequestSchema = exports.GetUserActivityHeatmapRequestSchema = exports.GetUserProfileRequestSchema = exports.GetUserSettingsRequestSchema = exports.UndoCardRequestSchema = exports.GetUserProgressRequestSchema = exports.UpdateCardProgressRequestSchema = exports.GetUserDecksRequestSchema = exports.UpdateUserStreakOnLoginRequestSchema = exports.UpdateUserStreakIfQualifiedRequestSchema = void 0;
 const zod_1 = require("zod");
 const index_1 = require("../index");
 const base_1 = require("../base");
@@ -145,4 +145,34 @@ exports.UpdateCardProgressAllInOneRequestSchema = zod_1.z.object({
 });
 exports.UpdateCardProgressAllInOneResponseSchema = zod_1.z.object({
     success: zod_1.z.boolean(),
+});
+// ============================================================================
+// Public User Profile
+// ============================================================================
+exports.GetPublicUserProfileRequestSchema = zod_1.z
+    .object({
+    targetUserId: zod_1.z.string(),
+})
+    .strict();
+exports.GetPublicUserProfileResponseSchema = zod_1.z.object({
+    user: index_1.UserSchema,
+    isFollowing: zod_1.z.boolean(),
+});
+// ============================================================================
+// Follow / Unfollow
+// ============================================================================
+exports.ToggleFollowRequestSchema = zod_1.z
+    .object({
+    targetUserId: zod_1.z.string(),
+})
+    .strict();
+exports.ToggleFollowResponseSchema = zod_1.z.object({
+    success: zod_1.z.boolean(),
+    isFollowing: zod_1.z.boolean(),
+});
+// ============================================================================
+// Admin check
+// ============================================================================
+exports.IsCurrentUserAdminResponseSchema = zod_1.z.object({
+    isAdmin: zod_1.z.boolean(),
 });

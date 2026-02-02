@@ -159,7 +159,13 @@ ${cardInfo}
 **Task: Answer User Question.**
 The student asks: "${customQuestion ? customQuestion : "Tell me more about this."}"
 
-Answer the question strictly in the context of this flashcard. If the user asks something unrelated, gently steer them back to the learning topic. Be supportive.`;
+**Guideline for answering:**
+1. **Topic Anchor:** Use the flashcard content to understand *what topic* we are discussing.
+2. **Expand Knowledge:** If the flashcard content is brief, incomplete, or just a summary (e.g., it says "formulas here" but doesn't list them), **use your own general knowledge** to provide the missing details, formulas, or explanations. 
+3. **Do not limit yourself:** Do not say "this is not on the card". If the student asks for details related to the topic, provide them fully and accurately.
+4. **Stay Relevant:** Only answer questions related to the educational topic of the card. If the question is completely unrelated (e.g., about weather), gently steer back.
+
+Be helpful, educational, and act like a knowledgeable tutor who knows more than just what's written on the paper.`;
 
     default:
       return `${baseInstruction}\n\n${cardInfo}\n\nAnalyze this card and provide a helpful tip or summary to ensure the student understands the core concept.`;
@@ -234,7 +240,7 @@ export const avoQuery = onCall(
 
       // Increment usage
       const newCount = await incrementAvoUsage(userId);
-      const remainingAfter = Math.max(0, DAILY_AVO_QUERY_LIMIT - newCount);
+      const remainingAfter = Math.max(0, dailyLimit - newCount);
 
       logger.info("AVO query successful", {
         userId,
@@ -289,7 +295,7 @@ export const getAvoQueryLimit = onCall(async (request) => {
   try {
     const usedToday = await getAvoUsage(userId);
     const getLimit = await getUserAvoQueryLimit();
-    const remainingToday = Math.max(0, DAILY_AVO_QUERY_LIMIT - usedToday);
+    const remainingToday = Math.max(0, getLimit - usedToday);
 
     const response = {
       usedToday,

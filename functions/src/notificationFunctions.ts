@@ -208,8 +208,8 @@ export const onLeagueAdvance = onDocumentWritten(
     }
 
     try {
-      const beforeData = UserSchema.pick({ league: true }).parse(beforeDataRaw);
-      const afterData = UserSchema.pick({ league: true }).parse(afterDataRaw);
+      const beforeData = UserSchema.parse(beforeDataRaw);
+      const afterData = UserSchema.parse(afterDataRaw);
 
       const beforeLeague = beforeData.league ?? 1;
       const afterLeague = afterData.league ?? 1;

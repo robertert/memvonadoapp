@@ -23,12 +23,14 @@ export declare const getDeckDetails: import("firebase-functions/v2/https").Calla
         cardsNum: number;
         createdBy: string;
         is_deleted: boolean;
+        editors: string[];
         category?: string | null | undefined;
         frontLanguage?: string | null | undefined;
         backLanguage?: string | null | undefined;
         deletedAt?: Date | undefined;
         title_lower?: string | undefined;
     } | null;
+    isEditor?: boolean | undefined;
 }>, unknown>;
 /**
  * Get cards for a deck with pagination
@@ -83,6 +85,7 @@ export declare const getPopularDecks: import("firebase-functions/v2/https").Call
         cardsNum: number;
         createdBy: string;
         is_deleted: boolean;
+        editors: string[];
         category?: string | null | undefined;
         frontLanguage?: string | null | undefined;
         backLanguage?: string | null | undefined;
@@ -468,4 +471,34 @@ export declare const checkIfLiked: import("firebase-functions/v2/https").Callabl
 export declare const addCardToDeck: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     success: boolean;
     cardId: string;
+}>, unknown>;
+/**
+ * Search users by username prefix (for editor management)
+ */
+export declare const searchUsers: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    users: {
+        id: string;
+        username: string;
+    }[];
+}>, unknown>;
+/**
+ * Add an editor to a deck (owner-only)
+ */
+export declare const addDeckEditor: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+}>, unknown>;
+/**
+ * Remove an editor from a deck (owner-only)
+ */
+export declare const removeDeckEditor: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    success: boolean;
+}>, unknown>;
+/**
+ * Get editors for a deck
+ */
+export declare const getDeckEditors: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    editors: {
+        id: string;
+        username: string;
+    }[];
 }>, unknown>;

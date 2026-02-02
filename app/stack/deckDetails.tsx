@@ -78,6 +78,7 @@ export default function deckDetails(): React.JSX.Element {
   const [isCheckingChanges, setIsCheckingChanges] = useState<boolean>(false);
   const [dateAgo, setDateAgo] = useState<string>("2 weeks ago");
   const [username, setUsername] = useState<string>("");
+  const [isEditor, setIsEditor] = useState<boolean>(false);
 
   // Like functionality state
   const [isLiked, setIsLiked] = useState<boolean>(false);
@@ -271,7 +272,7 @@ export default function deckDetails(): React.JSX.Element {
         setLastDocId(null);
       } else {
         const [
-          { deck: deckData, username: deckUsername },
+          { deck: deckData, username: deckUsername, isEditor: deckIsEditor },
           { deck: userDeckData, createdDeck: createdDeck },
           { cards: deckCards, hasMore, lastDocId: newLastDocId },
         ] = await Promise.all([
@@ -284,6 +285,7 @@ export default function deckDetails(): React.JSX.Element {
 
         setDateAgo(calculateDateAgo(new Date(deckData.createdAt)));
         setUsername(deckUsername);
+        setIsEditor(deckIsEditor ?? false);
         setDeck(deckData);
         setUserDeck(userDeckData ?? undefined);
         setCards(deckCards);
@@ -447,7 +449,9 @@ export default function deckDetails(): React.JSX.Element {
             );
           }}
           onLongPress={() => {
-            if (deck?.createdBy !== userCtx.id) return;
+            const canEditCards =
+              deck?.createdBy === userCtx.id || isEditor || userCtx.isAdmin;
+            if (!canEditCards) return;
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             playSound("click");
             router.push({
@@ -585,6 +589,8 @@ export default function deckDetails(): React.JSX.Element {
                 pathname: "./deckSettings",
                 params: {
                   isOwner: (deck.createdBy === userCtx.id).toString(),
+                  isEditor: isEditor.toString(),
+                  isAdmin: userCtx.isAdmin.toString(),
                   deckId: deck.id,
                 },
               });
@@ -647,10 +653,20 @@ export default function deckDetails(): React.JSX.Element {
           </Pressable>
         </View>
         <View style={styles.userContainer}>
-          <View style={styles.userInfo}>
+          <Pressable
+            style={styles.userInfo}
+            onPress={() => {
+              if (!deck) return;
+              if (deck.createdBy === userCtx.id) return; // Don't navigate to own profile
+              router.push({
+                pathname: "./userProfileScreen",
+                params: { userId: deck.createdBy },
+              });
+            }}
+          >
             <UserIcon size={24} color={Colors.primary_700} />
             <Text style={styles.userName}>{username}</Text>
-          </View>
+          </Pressable>
           <Text style={styles.dateText}>{dateAgo}</Text>
         </View>
         <View style={styles.progressCard}>

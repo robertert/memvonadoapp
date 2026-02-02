@@ -53,8 +53,15 @@ import {
   UserDailyStatsSchema,
   UpdateUserStreakIfQualifiedResponse,
   UpdateCardProgressAllInOneRequestSchema,
-  UpdateCardProgressAllInOneResponseSchema
+  UpdateCardProgressAllInOneResponseSchema,
 } from "memvocado-types";
+import {
+  GetPublicUserProfileRequestSchema,
+  GetPublicUserProfileResponseSchema,
+  ToggleFollowRequestSchema,
+  ToggleFollowResponseSchema,
+  IsCurrentUserAdminResponseSchema,
+} from "memvocado-types/schemas/api/user";
 import { serializeTimestamps } from "./utils/serialization";
 import {
   updateAvocadoGrowthInternal,
@@ -1526,5 +1533,164 @@ export const getUserAwards = onCall(async (request) => {
       throw error;
     }
     throw new HttpsError("internal", "Failed to get user awards");
+  }
+});
+
+/**
+ * Get public user profile (for viewing other users)
+ */
+export const getPublicUserProfile = onCall(async (request) => {
+  const auth = request.auth;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const parsedRequest = GetPublicUserProfileRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!parsedRequest.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
+  }
+
+  const { targetUserId } = parsedRequest.data;
+  const callerId = auth.uid;
+
+  try {
+    const userDoc = await db.doc(`users/${targetUserId}`).get();
+
+    if (!userDoc.exists) {
+      throw new HttpsError("not-found", "User not found");
+    }
+
+    const rawUser = {
+      id: userDoc.id,
+      ...(userDoc.data() || {}),
+    } as unknown;
+
+    const validatedUser = UserSchema.parse(rawUser);
+
+    // Check if caller follows the target
+    const followDoc = await db
+      .doc(`users/${callerId}/following/${targetUserId}`)
+      .get();
+    const isFollowing = followDoc.exists;
+
+    const response = { user: validatedUser, isFollowing };
+    const validatedResponse =
+      GetPublicUserProfileResponseSchema.parse(response);
+    return serializeTimestamps(validatedResponse);
+  } catch (error) {
+    logger.error("Error getting public user profile", error);
+    handleZodError(error, "getPublicUserProfile");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get public user profile");
+  }
+});
+
+/**
+ * Toggle follow/unfollow a user
+ */
+export const toggleFollow = onCall(async (request) => {
+  const auth = request.auth;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const parsedRequest = ToggleFollowRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!parsedRequest.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
+  }
+
+  const { targetUserId } = parsedRequest.data;
+  const callerId = auth.uid;
+
+  if (callerId === targetUserId) {
+    throw new HttpsError("invalid-argument", "Cannot follow yourself");
+  }
+
+  try {
+    // Verify target user exists
+    const targetUserDoc = await db.doc(`users/${targetUserId}`).get();
+    if (!targetUserDoc.exists) {
+      throw new HttpsError("not-found", "User not found");
+    }
+
+    const followRef = db.doc(`users/${callerId}/following/${targetUserId}`);
+    const followerRef = db.doc(`users/${targetUserId}/followers/${callerId}`);
+    const followDoc = await followRef.get();
+
+    const batch = db.batch();
+
+    if (followDoc.exists) {
+      // Unfollow
+      batch.delete(followRef);
+      batch.delete(followerRef);
+      batch.update(db.doc(`users/${callerId}`), {
+        followingCount: FieldValue.increment(-1),
+      });
+      batch.update(db.doc(`users/${targetUserId}`), {
+        followersCount: FieldValue.increment(-1),
+      });
+      await batch.commit();
+
+      logger.info("User unfollowed", { callerId, targetUserId });
+      const response = { success: true, isFollowing: false };
+      return ToggleFollowResponseSchema.parse(response);
+    } else {
+      // Follow
+      const now = new Date();
+      batch.set(followRef, { followedAt: now });
+      batch.set(followerRef, { followedAt: now });
+      batch.update(db.doc(`users/${callerId}`), {
+        followingCount: FieldValue.increment(1),
+      });
+      batch.update(db.doc(`users/${targetUserId}`), {
+        followersCount: FieldValue.increment(1),
+      });
+      await batch.commit();
+
+      logger.info("User followed", { callerId, targetUserId });
+      const response = { success: true, isFollowing: true };
+      return ToggleFollowResponseSchema.parse(response);
+    }
+  } catch (error) {
+    logger.error("Error toggling follow", error);
+    handleZodError(error, "toggleFollow");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to toggle follow");
+  }
+});
+
+/**
+ * Check if current user is an admin
+ */
+export const isCurrentUserAdmin = onCall(async (request) => {
+  const auth = request.auth;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const userId = auth.uid;
+
+  try {
+    const adminSnap = await db.doc(`admin/roles/admins/${userId}`).get();
+    const response = { isAdmin: adminSnap.exists };
+    return IsCurrentUserAdminResponseSchema.parse(response);
+  } catch (error) {
+    logger.error("Error checking admin status", error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to check admin status");
   }
 });

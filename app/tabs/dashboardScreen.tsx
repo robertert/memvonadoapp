@@ -68,12 +68,12 @@ export default function decksScreen(): React.JSX.Element {
             setAvocadoStatus((prev) =>
               prev
                 ? {
-                    ...prev,
-                    currentPhase: 1,
-                    consecutiveDays: 0,
-                    canHarvest: false,
-                    totalHarvests: prev.totalHarvests + 1,
-                  }
+                  ...prev,
+                  currentPhase: 1,
+                  consecutiveDays: 0,
+                  canHarvest: false,
+                  totalHarvests: prev.totalHarvests + 1,
+                }
                 : null
             );
             // Odśwież dane z serwera w tle

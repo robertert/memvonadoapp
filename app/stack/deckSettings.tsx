@@ -30,6 +30,8 @@ import {
 
 type DeckParams = {
   isOwner: string;
+  isEditor?: string;
+  isAdmin?: string;
   deckId: string;
 };
 
@@ -57,6 +59,15 @@ export default function deckSettings(): React.JSX.Element {
   const [showIconModal, setShowIconModal] = useState<boolean>(false);
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [isResetting, setIsResetting] = useState<boolean>(false);
+
+  // Editor management state
+  const [editors, setEditors] = useState<{ id: string; username: string }[]>([]);
+  const [showEditorModal, setShowEditorModal] = useState<boolean>(false);
+  const [editorSearchQuery, setEditorSearchQuery] = useState<string>("");
+  const [editorSearchResults, setEditorSearchResults] = useState<
+    { id: string; username: string }[]
+  >([]);
+  const [isSearchingEditors, setIsSearchingEditors] = useState<boolean>(false);
   const [isCustomPace, setIsCustomPace] = useState<boolean>(false);
 
   const userCtx = useContext(UserContext);
@@ -71,7 +82,10 @@ export default function deckSettings(): React.JSX.Element {
 
       if (!userCtx?.id) throw new Error("No userCtx");
 
-      if (params.isOwner === "true") {
+      const canEditMetadata =
+        params.isOwner === "true" || params.isAdmin === "true";
+
+      if (canEditMetadata) {
         const { deck: deckData } = await cloudFunctions.getDeckDetails(
           typedParams.deckId
         );
@@ -84,6 +98,17 @@ export default function deckSettings(): React.JSX.Element {
       );
       if (!deckData) throw new Error("Deck not found");
       setDeck(deckData);
+
+      // Load editors if owner
+      if (params.isOwner === "true") {
+        try {
+          const { editors: editorsList } =
+            await cloudFunctions.getDeckEditors(typedParams.deckId);
+          setEditors(editorsList);
+        } catch {
+          // Ignore editor loading errors
+        }
+      }
     } catch (error) {
       console.error("Error fetching deck data:", error);
     } finally {
@@ -91,20 +116,83 @@ export default function deckSettings(): React.JSX.Element {
     }
   }
 
+  async function handleSearchEditors(): Promise<void> {
+    if (!editorSearchQuery.trim()) return;
+    setIsSearchingEditors(true);
+    try {
+      const { users } = await cloudFunctions.searchUsers(
+        editorSearchQuery.trim()
+      );
+      // Filter out users already in editors list and the owner
+      setEditorSearchResults(
+        users.filter(
+          (u) =>
+            u.id !== userCtx.id &&
+            !editors.some((e) => e.id === u.id)
+        )
+      );
+    } catch (error) {
+      console.error("Error searching users:", error);
+    } finally {
+      setIsSearchingEditors(false);
+    }
+  }
+
+  async function handleAddEditor(userId: string, username: string): Promise<void> {
+    try {
+      await cloudFunctions.addDeckEditor(typedParams.deckId, userId);
+      setEditors((prev) => [...prev, { id: userId, username }]);
+      setEditorSearchResults((prev) => prev.filter((u) => u.id !== userId));
+    } catch (error) {
+      console.error("Error adding editor:", error);
+      Alert.alert("Błąd", "Nie udało się dodać edytora.");
+    }
+  }
+
+  async function handleRemoveEditor(userId: string): Promise<void> {
+    Alert.alert(
+      "Usuń edytora",
+      "Czy na pewno chcesz usunąć tego edytora?",
+      [
+        { text: "Anuluj", style: "cancel" },
+        {
+          text: "Usuń",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await cloudFunctions.removeDeckEditor(typedParams.deckId, userId);
+              setEditors((prev) => prev.filter((e) => e.id !== userId));
+            } catch (error) {
+              console.error("Error removing editor:", error);
+              Alert.alert("Błąd", "Nie udało się usunąć edytora.");
+            }
+          },
+        },
+      ]
+    );
+  }
+
   async function saveSettings(): Promise<void> {
     try {
       setIsLoading(true);
       if (!deck) throw new Error("No deck");
-      if (!authorDeck) throw new Error("No author deck");
       if (!userCtx.id) throw new Error("No userCtx");
 
-      await Promise.all([
-        cloudFunctions.updateDeckSettings(typedParams.deckId, authorDeck),
+      const promises: Promise<unknown>[] = [
         cloudFunctions.updateUserDeckSettings(
           typedParams.deckId,
           deck.settings
         ),
-      ]);
+      ];
+
+      // Only update deck settings if user can edit metadata
+      if (authorDeck && (typedParams.isOwner === "true" || typedParams.isAdmin === "true")) {
+        promises.push(
+          cloudFunctions.updateDeckSettings(typedParams.deckId, authorDeck)
+        );
+      }
+
+      await Promise.all(promises);
       router.back();
     } catch (error) {
       console.error("Error saving settings:", error);
@@ -470,8 +558,8 @@ export default function deckSettings(): React.JSX.Element {
             </View>
           )}
 
-          {/* Ikonka decku */}
-          {typedParams.isOwner === "true" && (
+          {/* Ikonka decku - owner or admin only */}
+          {(typedParams.isOwner === "true" || typedParams.isAdmin === "true") && (
             <>
               <View style={styles.section}>
                 <Pressable
@@ -515,33 +603,86 @@ export default function deckSettings(): React.JSX.Element {
                   />
                 </Pressable>
               </View>
-
-              {/* Edycja decku */}
-              <View style={styles.section}>
-                <Pressable
-                  onPress={() => {
-                    router.push({
-                      pathname: "./createSelfScreen",
-                      params: { deckId: typedParams.deckId, edit: "true" },
-                    });
-                  }}
-                  style={[styles.settingRow, styles.editButton]}
-                >
-                  <MaterialCommunityIcons
-                    name="pencil"
-                    size={24}
-                    color={Colors.primary_700}
-                  />
-                  <Text style={styles.editButtonText}>Edytuj deck</Text>
-                  <MaterialCommunityIcons
-                    name="chevron-right"
-                    size={24}
-                    color={Colors.primary_700}
-                  />
-                </Pressable>
-              </View>
             </>
           )}
+
+          {/* Edycja decku - owner, editor, or admin */}
+          {(typedParams.isOwner === "true" || typedParams.isEditor === "true" || typedParams.isAdmin === "true") && (
+            <View style={styles.section}>
+              <Pressable
+                onPress={() => {
+                  router.push({
+                    pathname: "./createSelfScreen",
+                    params: {
+                      deckId: typedParams.deckId,
+                      edit: "true",
+                      isEditor: typedParams.isEditor || "false",
+                      isAdmin: typedParams.isAdmin || "false",
+                    },
+                  });
+                }}
+                style={[styles.settingRow, styles.editButton]}
+              >
+                <MaterialCommunityIcons
+                  name="pencil"
+                  size={24}
+                  color={Colors.primary_700}
+                />
+                <Text style={styles.editButtonText}>Edytuj deck</Text>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={24}
+                  color={Colors.primary_700}
+                />
+              </Pressable>
+            </View>
+          )}
+          {/* Editor management - owner only */}
+          {typedParams.isOwner === "true" && (
+            <View style={styles.section}>
+              <Text style={[styles.settingTitle, { marginBottom: 8, marginLeft: 4 }]}>
+                Edytorzy
+              </Text>
+              {editors.length === 0 ? (
+                <Text style={[styles.settingValue, { marginLeft: 4, marginBottom: 8 }]}>
+                  Brak edytorów
+                </Text>
+              ) : (
+                editors.map((editor) => (
+                  <View
+                    key={editor.id}
+                    style={[
+                      styles.settingRow,
+                      { justifyContent: "space-between", marginBottom: 4 },
+                    ]}
+                  >
+                    <Text style={styles.settingTitle}>{editor.username}</Text>
+                    <Pressable onPress={() => handleRemoveEditor(editor.id)}>
+                      <MaterialCommunityIcons
+                        name="close-circle"
+                        size={22}
+                        color="#ef4444"
+                      />
+                    </Pressable>
+                  </View>
+                ))
+              )}
+              <Pressable
+                onPress={() => setShowEditorModal(true)}
+                style={[styles.settingRow, { marginTop: 4 }]}
+              >
+                <MaterialCommunityIcons
+                  name="account-plus"
+                  size={24}
+                  color={Colors.primary_700}
+                />
+                <Text style={[styles.editButtonText, { marginLeft: 8 }]}>
+                  Dodaj edytora
+                </Text>
+              </Pressable>
+            </View>
+          )}
+
           {/* Reset decku */}
           <View style={styles.section}>
             <Pressable
@@ -680,6 +821,93 @@ export default function deckSettings(): React.JSX.Element {
                 onPress={() => setShowCategoryModal(false)}
               >
                 <Text style={styles.modalCloseText}>Anuluj</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Editor Search Modal */}
+        <Modal
+          visible={showEditorModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowEditorModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Dodaj edytora</Text>
+              <View style={{ flexDirection: "row", marginBottom: 12 }}>
+                <TextInput
+                  style={[styles.settingRow, { flex: 1, marginRight: 8 }]}
+                  placeholder="Wyszukaj po nazwie użytkownika"
+                  value={editorSearchQuery}
+                  onChangeText={setEditorSearchQuery}
+                  onSubmitEditing={handleSearchEditors}
+                  autoCapitalize="none"
+                />
+                <Pressable
+                  onPress={handleSearchEditors}
+                  style={{
+                    backgroundColor: Colors.primary_700,
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    justifyContent: "center",
+                  }}
+                >
+                  {isSearchingEditors ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <MaterialCommunityIcons
+                      name="magnify"
+                      size={22}
+                      color="white"
+                    />
+                  )}
+                </Pressable>
+              </View>
+              <ScrollView style={styles.modalScroll}>
+                {editorSearchResults.map((user) => (
+                  <View
+                    key={user.id}
+                    style={[
+                      styles.modalItem,
+                      { justifyContent: "space-between" },
+                    ]}
+                  >
+                    <Text style={styles.modalItemText}>{user.username}</Text>
+                    <Pressable
+                      onPress={() => handleAddEditor(user.id, user.username)}
+                    >
+                      <MaterialCommunityIcons
+                        name="plus-circle"
+                        size={24}
+                        color={Colors.primary_700}
+                      />
+                    </Pressable>
+                  </View>
+                ))}
+                {editorSearchResults.length === 0 &&
+                  editorSearchQuery.length > 0 &&
+                  !isSearchingEditors && (
+                    <Text
+                      style={[
+                        styles.settingValue,
+                        { textAlign: "center", marginTop: 12 },
+                      ]}
+                    >
+                      Brak wyników
+                    </Text>
+                  )}
+              </ScrollView>
+              <Pressable
+                style={styles.modalCloseButton}
+                onPress={() => {
+                  setShowEditorModal(false);
+                  setEditorSearchQuery("");
+                  setEditorSearchResults([]);
+                }}
+              >
+                <Text style={styles.modalCloseText}>Zamknij</Text>
               </Pressable>
             </View>
           </View>

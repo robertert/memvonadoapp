@@ -57,10 +57,12 @@ export default function editCard(): React.JSX.Element {
         throw new Error("Deck not found");
       }
 
-      // Only allow editing if user is the author
-      if (deckData.createdBy !== userCtx.id) {
+      // Allow editing if user is the author, an editor, or an admin
+      const isOwner = deckData.createdBy === userCtx.id;
+      const isEditorUser = deckData.editors?.includes(userCtx.id!) ?? false;
+      if (!isOwner && !isEditorUser && !userCtx.isAdmin) {
         alert(
-          "Nie masz uprawnień do edycji tej karty. Tylko autor decku może edytować karty."
+          "Nie masz uprawnień do edycji tej karty. Tylko autor lub edytor decku może edytować karty."
         );
         router.back();
         return;

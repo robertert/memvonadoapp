@@ -41,6 +41,8 @@ interface CreateSelfParams {
   edit?: string;
   deckId?: string;
   suggestedTitle?: string;
+  isEditor?: string;
+  isAdmin?: string;
 }
 
 // EditableCard interface with tracking flags
@@ -61,6 +63,12 @@ export default function createSelfScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const typedParams = params as CreateSelfParams;
+
+  // Permission: editors can only modify cards, not deck metadata
+  const isEditorOnly =
+    typedParams.edit === "true" &&
+    typedParams.isEditor === "true" &&
+    typedParams.isAdmin !== "true";
 
   const [cards, setCards] = useState<EditableCard[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -403,11 +411,12 @@ export default function createSelfScreen(): React.JSX.Element {
           <Text style={styles.titleLabel}>Tytuł decku</Text>
           <View style={styles.titleInputContainer}>
             <TextInput
-              style={styles.titleInput}
+              style={[styles.titleInput, isEditorOnly && { opacity: 0.5 }]}
               onChangeText={titleChangeHandler}
               value={title}
               placeholder="Wprowadź tytuł..."
               placeholderTextColor={Colors.primary_700_50}
+              editable={!isEditorOnly}
             />
           </View>
         </View>
@@ -425,10 +434,12 @@ export default function createSelfScreen(): React.JSX.Element {
               return (
                 <Pressable
                   key={category}
-                  onPress={() => setDeckCategory(category)}
+                  onPress={() => !isEditorOnly && setDeckCategory(category)}
+                  disabled={isEditorOnly}
                   style={[
                     styles.categoryChip,
                     isActive && styles.categoryChipActive,
+                    isEditorOnly && { opacity: 0.5 },
                   ]}
                 >
                   <Text

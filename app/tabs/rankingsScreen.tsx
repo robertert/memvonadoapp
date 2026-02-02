@@ -240,8 +240,15 @@ export default function rankingsScreen(): React.JSX.Element {
   };
 
   const renderUserItem = (user: RankingUser) => (
-    <View
+    <Pressable
       key={user.userId}
+      onPress={() => {
+        if (user.userId === userCtx.id) return;
+        router.push({
+          pathname: "../stack/userProfileScreen",
+          params: { userId: user.userId },
+        });
+      }}
       style={[
         styles.userItem,
         user.position <= 3 && activeTab === "random" && styles.userItemTop,
@@ -279,7 +286,7 @@ export default function rankingsScreen(): React.JSX.Element {
           </View>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 
   const SkeletonUserItem = () => (

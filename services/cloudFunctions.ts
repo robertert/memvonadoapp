@@ -74,6 +74,14 @@ import {
   UpdateCardProgressAllInOneRequest,
   UpdateCardProgressAllInOneResponse,
   UpdateCardProgressAllInOneResponseSchema,
+  GetPublicUserProfileRequest,
+  GetPublicUserProfileResponse,
+  GetPublicUserProfileResponseSchema,
+  ToggleFollowRequest,
+  ToggleFollowResponse,
+  ToggleFollowResponseSchema,
+  IsCurrentUserAdminResponse,
+  IsCurrentUserAdminResponseSchema,
 } from "@/types/schemas/api/user";
 import {
   GetFriendsStreaksRequest,
@@ -199,6 +207,18 @@ import {
   AddCardToDeckRequest,
   AddCardToDeckResponse,
   AddCardToDeckResponseSchema,
+  SearchUsersRequest,
+  SearchUsersResponse,
+  SearchUsersResponseSchema,
+  AddDeckEditorRequest,
+  AddDeckEditorResponse,
+  AddDeckEditorResponseSchema,
+  RemoveDeckEditorRequest,
+  RemoveDeckEditorResponse,
+  RemoveDeckEditorResponseSchema,
+  GetDeckEditorsRequest,
+  GetDeckEditorsResponse,
+  GetDeckEditorsResponseSchema,
 } from "@/types/schemas/api/deck";
 import {
   CheckUsernameAvailabilityRequest,
@@ -1380,6 +1400,115 @@ export const cloudFunctions = {
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from getAvoQueryLimit");
+    }
+    return validatedData.data;
+  },
+
+  // Get public user profile
+  getPublicUserProfile: async (targetUserId: string) => {
+    const fn = httpsCallable<
+      GetPublicUserProfileRequest,
+      GetPublicUserProfileResponse
+    >(functions, "getPublicUserProfile");
+    const result = await fn({ targetUserId });
+    const validatedData = GetPublicUserProfileResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getPublicUserProfile");
+    }
+    return validatedData.data;
+  },
+
+  // Toggle follow/unfollow
+  toggleFollow: async (targetUserId: string) => {
+    const fn = httpsCallable<ToggleFollowRequest, ToggleFollowResponse>(
+      functions,
+      "toggleFollow"
+    );
+    const result = await fn({ targetUserId });
+    const validatedData = ToggleFollowResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from toggleFollow");
+    }
+    return validatedData.data;
+  },
+
+  // Check if current user is admin
+  isCurrentUserAdmin: async () => {
+    const fn = httpsCallable<Record<string, never>, IsCurrentUserAdminResponse>(
+      functions,
+      "isCurrentUserAdmin"
+    );
+    const result = await fn({});
+    const validatedData = IsCurrentUserAdminResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from isCurrentUserAdmin");
+    }
+    return validatedData.data;
+  },
+
+  // Search users by username
+  searchUsers: async (query: string) => {
+    const fn = httpsCallable<SearchUsersRequest, SearchUsersResponse>(
+      functions,
+      "searchUsers"
+    );
+    const result = await fn({ query });
+    const validatedData = SearchUsersResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from searchUsers");
+    }
+    return validatedData.data;
+  },
+
+  // Add editor to deck
+  addDeckEditor: async (deckId: string, userId: string) => {
+    const fn = httpsCallable<AddDeckEditorRequest, AddDeckEditorResponse>(
+      functions,
+      "addDeckEditor"
+    );
+    const result = await fn({ deckId, userId });
+    const validatedData = AddDeckEditorResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from addDeckEditor");
+    }
+    return validatedData.data;
+  },
+
+  // Remove editor from deck
+  removeDeckEditor: async (deckId: string, userId: string) => {
+    const fn = httpsCallable<RemoveDeckEditorRequest, RemoveDeckEditorResponse>(
+      functions,
+      "removeDeckEditor"
+    );
+    const result = await fn({ deckId, userId });
+    const validatedData = RemoveDeckEditorResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from removeDeckEditor");
+    }
+    return validatedData.data;
+  },
+
+  // Get deck editors
+  getDeckEditors: async (deckId: string) => {
+    const fn = httpsCallable<GetDeckEditorsRequest, GetDeckEditorsResponse>(
+      functions,
+      "getDeckEditors"
+    );
+    const result = await fn({ deckId });
+    const validatedData = GetDeckEditorsResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getDeckEditors");
     }
     return validatedData.data;
   },

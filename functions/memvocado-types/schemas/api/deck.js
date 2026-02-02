@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AddCardToDeckResponseSchema = exports.AddCardToDeckRequestSchema = exports.CheckIfLikedResponseSchema = exports.CheckIfLikedRequestSchema = exports.ToggleDeckLikeResponseSchema = exports.ToggleDeckLikeRequestSchema = exports.RecordDeckViewResponseSchema = exports.RecordDeckViewRequestSchema = exports.GetDailyUserStatsResponseSchema = exports.GetDeckDailyStatsResponseSchema = exports.StartLearningSessionResponseSchema = exports.ImportAnkiDeckResponseSchema = exports.ImportAnkiDeckRequestSchema = exports.UpdateDeckResponseSchema = exports.UpdateCardContentResponseSchema = exports.SyncDeckCardsResponseSchema = exports.CheckCardChangesResponseSchema = exports.GetUserNewDeckCardsResponseSchema = exports.GetUserDueDeckCardsResponseSchema = exports.GetUserDeckCardsResponseSchema = exports.GetUserDeckDetailsResponseSchema = exports.DeleteDeckResponseSchema = exports.StartLearningDeckResponseSchema = exports.GetPopularDecksResponseSchema = exports.CreateDeckWithCardsResponseSchema = exports.GetUserDecksResponseSchema = exports.GetDeckCardsResponseSchema = exports.GetDeckDetailsResponseSchema = exports.GetDailyUserStatsRequestSchema = exports.GetDeckDailyStatsRequestSchema = exports.StartLearningSessionRequestSchema = exports.UpdateDeckRequestSchema = exports.UpdateCardContentRequestSchema = exports.SyncDeckCardsRequestSchema = exports.CheckCardChangesRequestSchema = exports.DeleteDeckRequestSchema = exports.StartLearningDeckRequestSchema = exports.UpdateUserDeckSettingsRequestSchema = exports.UpdateDeckSettingsRequestSchema = exports.ResetDeckRequestSchema = exports.GetUserNewDeckCardsRequestSchema = exports.GetUserDueDeckCardsRequestSchema = exports.GetUserDeckCardsRequestSchema = exports.GetUserDeckDetailsRequestSchema = exports.GetPopularDecksRequestSchema = exports.GetDeckCardsRequestSchema = exports.GetDeckDetailsRequestSchema = exports.CreateDeckWithCardsRequestSchema = void 0;
+exports.SearchUsersResponseSchema = exports.SearchUsersRequestSchema = exports.AddCardToDeckResponseSchema = exports.AddCardToDeckRequestSchema = exports.CheckIfLikedResponseSchema = exports.CheckIfLikedRequestSchema = exports.ToggleDeckLikeResponseSchema = exports.ToggleDeckLikeRequestSchema = exports.RecordDeckViewResponseSchema = exports.RecordDeckViewRequestSchema = exports.GetDailyUserStatsResponseSchema = exports.GetDeckDailyStatsResponseSchema = exports.StartLearningSessionResponseSchema = exports.ImportAnkiDeckResponseSchema = exports.ImportAnkiDeckRequestSchema = exports.UpdateDeckResponseSchema = exports.UpdateCardContentResponseSchema = exports.SyncDeckCardsResponseSchema = exports.CheckCardChangesResponseSchema = exports.GetUserNewDeckCardsResponseSchema = exports.GetUserDueDeckCardsResponseSchema = exports.GetUserDeckCardsResponseSchema = exports.GetUserDeckDetailsResponseSchema = exports.DeleteDeckResponseSchema = exports.StartLearningDeckResponseSchema = exports.GetPopularDecksResponseSchema = exports.CreateDeckWithCardsResponseSchema = exports.GetUserDecksResponseSchema = exports.GetDeckCardsResponseSchema = exports.GetDeckDetailsResponseSchema = exports.GetDailyUserStatsRequestSchema = exports.GetDeckDailyStatsRequestSchema = exports.StartLearningSessionRequestSchema = exports.UpdateDeckRequestSchema = exports.UpdateCardContentRequestSchema = exports.SyncDeckCardsRequestSchema = exports.CheckCardChangesRequestSchema = exports.DeleteDeckRequestSchema = exports.StartLearningDeckRequestSchema = exports.UpdateUserDeckSettingsRequestSchema = exports.UpdateDeckSettingsRequestSchema = exports.ResetDeckRequestSchema = exports.GetUserNewDeckCardsRequestSchema = exports.GetUserDueDeckCardsRequestSchema = exports.GetUserDeckCardsRequestSchema = exports.GetUserDeckDetailsRequestSchema = exports.GetPopularDecksRequestSchema = exports.GetDeckCardsRequestSchema = exports.GetDeckDetailsRequestSchema = exports.CreateDeckWithCardsRequestSchema = void 0;
+exports.GetDeckEditorsResponseSchema = exports.GetDeckEditorsRequestSchema = exports.RemoveDeckEditorResponseSchema = exports.RemoveDeckEditorRequestSchema = exports.AddDeckEditorResponseSchema = exports.AddDeckEditorRequestSchema = void 0;
 const zod_1 = require("zod");
 const index_1 = require("../index");
 // ===========================
@@ -129,6 +130,7 @@ exports.GetDailyUserStatsRequestSchema = zod_1.z.object({}).strict();
 exports.GetDeckDetailsResponseSchema = zod_1.z.object({
     deck: index_1.DeckSchema.nullable(),
     username: zod_1.z.string(),
+    isEditor: zod_1.z.boolean().optional(),
 });
 exports.GetDeckCardsResponseSchema = zod_1.z.object({
     cards: zod_1.z.array(index_1.CardSchema),
@@ -250,4 +252,50 @@ exports.AddCardToDeckRequestSchema = zod_1.z
 exports.AddCardToDeckResponseSchema = zod_1.z.object({
     success: zod_1.z.boolean(),
     cardId: zod_1.z.string(),
+});
+// ===========================
+// Search Users schemas
+// ===========================
+exports.SearchUsersRequestSchema = zod_1.z
+    .object({
+    query: zod_1.z.string().min(1),
+})
+    .strict();
+exports.SearchUsersResponseSchema = zod_1.z.object({
+    users: zod_1.z.array(zod_1.z.object({
+        id: zod_1.z.string(),
+        username: zod_1.z.string(),
+    })),
+});
+// ===========================
+// Deck Editor Management schemas
+// ===========================
+exports.AddDeckEditorRequestSchema = zod_1.z
+    .object({
+    deckId: zod_1.z.string(),
+    userId: zod_1.z.string(),
+})
+    .strict();
+exports.AddDeckEditorResponseSchema = zod_1.z.object({
+    success: zod_1.z.boolean(),
+});
+exports.RemoveDeckEditorRequestSchema = zod_1.z
+    .object({
+    deckId: zod_1.z.string(),
+    userId: zod_1.z.string(),
+})
+    .strict();
+exports.RemoveDeckEditorResponseSchema = zod_1.z.object({
+    success: zod_1.z.boolean(),
+});
+exports.GetDeckEditorsRequestSchema = zod_1.z
+    .object({
+    deckId: zod_1.z.string(),
+})
+    .strict();
+exports.GetDeckEditorsResponseSchema = zod_1.z.object({
+    editors: zod_1.z.array(zod_1.z.object({
+        id: zod_1.z.string(),
+        username: zod_1.z.string(),
+    })),
 });

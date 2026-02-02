@@ -16,6 +16,7 @@ import TypingDots from "./TypingDots";
 import type { AvoMessage } from "../../hooks/useAvoHelper";
 import type { AvoChipType, AvoCardContext } from "@/types/schemas/api/avoHelper";
 import Markdown from "react-native-markdown-display";
+import { useFocusEffect } from "@react-navigation/native";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -48,6 +49,9 @@ export default function AvoBubble({
   const scrollRef = useRef<ScrollView>(null);
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customText, setCustomText] = useState("");
+  const [selectionModalVisible, setSelectionModalVisible] = useState(false);
+  const [selectionModalText, setSelectionModalText] = useState("");
+  const [selectionModalIsUser, setSelectionModalIsUser] = useState(false);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -57,6 +61,10 @@ export default function AvoBubble({
       }, 100);
     }
   }, [messages.length, isLoading]);
+
+  useFocusEffect(() => {
+    scrollRef.current?.scrollToEnd();
+  })
 
   function handleChipPress(chipType: AvoChipType) {
     if (isLimitReached) return;
@@ -73,6 +81,17 @@ export default function AvoBubble({
     onChipPress("custom", customText.trim());
     setCustomText("");
     setShowCustomInput(false);
+  }
+
+  function openSelectionModal(text: string, isUser: boolean) {
+    setSelectionModalText(text);
+    setSelectionModalIsUser(isUser);
+    setSelectionModalVisible(true);
+  }
+
+  function closeSelectionModal() {
+    setSelectionModalVisible(false);
+    setSelectionModalText("");
   }
 
   return (
@@ -106,7 +125,7 @@ export default function AvoBubble({
             {messages.map((msg) => {
 
               const isUser = msg.type !== "avo_response";
-                            
+
               // Tworzymy style markdown dynamicznie, aby dopasować kolory
               const markdownStyles = {
                 body: {
@@ -129,21 +148,25 @@ export default function AvoBubble({
                   marginLeft: 4,
                 },
               } as StyleSheet.NamedStyles<any>;
-              
+
               return (
-              <View
-                key={msg.id}
-                style={[
-                  styles.messageBubble,
-                  msg.type === "avo_response"
-                    ? styles.avoMessage
-                    : styles.userMessage,
-                ]}
-              >
-                <Markdown style={markdownStyles}>{msg.text}</Markdown>
-              </View>
-            );
-          })}
+                <Pressable
+                  key={msg.id}
+                  style={[
+                    styles.messageBubble,
+                    msg.type === "avo_response"
+                      ? styles.avoMessage
+                      : styles.userMessage,
+                  ]}
+                  onLongPress={() => openSelectionModal(msg.text, isUser)}
+                  delayLongPress={400}
+                >
+                  <Markdown style={markdownStyles}>
+                    {msg.text}
+                  </Markdown>
+                </Pressable>
+              );
+            })}
 
             {isLoading && (
               <View style={[styles.messageBubble, styles.avoMessage]}>
@@ -214,6 +237,35 @@ export default function AvoBubble({
             ))}
           </View>
         </View>
+
+        {/* Modal zaznaczania – surowy tekst w jednym TextInput */}
+        <Modal
+          visible={selectionModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={closeSelectionModal}
+        >
+          <Pressable style={styles.selectionModalBackdrop} onPress={closeSelectionModal}>
+            <Pressable style={styles.selectionModalCard} onPress={(e) => e.stopPropagation()}>
+              <Text style={styles.selectionModalTitle}>Zaznacz tekst</Text>
+              <TextInput
+                style={[
+                  styles.selectionModalInput,
+                  selectionModalIsUser && styles.selectionModalInputUser,
+                ]}
+                value={selectionModalText}
+                editable={false}
+                multiline
+                scrollEnabled
+                selectionColor={Colors.primary_500}
+                selectTextOnFocus
+              />
+              <Pressable style={styles.selectionModalCloseButton} onPress={closeSelectionModal}>
+                <Text style={styles.selectionModalCloseText}>Zamknij</Text>
+              </Pressable>
+            </Pressable>
+          </Pressable>
+        </Modal>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -350,5 +402,61 @@ const styles = StyleSheet.create({
   },
   chipTextDisabled: {
     color: Colors.primary_700_50,
+  },
+  selectionModalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  selectionModalCard: {
+    width: "100%",
+    maxHeight: SCREEN_HEIGHT * 0.6,
+    backgroundColor: Colors.primary_100,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.primary_700_30,
+  },
+  selectionModalTitle: {
+    fontFamily: Fonts.primary,
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.primary_700,
+    marginBottom: 8,
+  },
+  selectionModalInput: {
+    fontFamily: Fonts.primary,
+    fontSize: 14,
+    lineHeight: 20,
+    color: Colors.primary_700,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: Colors.primary_700_30,
+    borderRadius: 12,
+    padding: 12,
+    minHeight: 120,
+    maxHeight: SCREEN_HEIGHT * 0.4,
+    textAlignVertical: "top",
+  },
+  selectionModalInputUser: {
+    backgroundColor: Colors.primary_500,
+    color: Colors.primary_100,
+    borderColor: Colors.primary_700_30,
+  },
+  selectionModalCloseButton: {
+    marginTop: 12,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    backgroundColor: Colors.primary_700,
+  },
+  selectionModalCloseText: {
+    fontFamily: Fonts.primary,
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.primary_100,
   },
 });

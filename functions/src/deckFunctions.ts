@@ -71,6 +71,14 @@ import {
   CheckIfLikedResponseSchema,
   AddCardToDeckRequestSchema,
   AddCardToDeckResponseSchema,
+  SearchUsersRequestSchema,
+  SearchUsersResponseSchema,
+  AddDeckEditorRequestSchema,
+  AddDeckEditorResponseSchema,
+  RemoveDeckEditorRequestSchema,
+  RemoveDeckEditorResponseSchema,
+  GetDeckEditorsRequestSchema,
+  GetDeckEditorsResponseSchema,
 } from "memvocado-types/schemas/api/deck";
 import { convertAnkiApkg } from "./ankiConverter";
 import {
@@ -249,9 +257,16 @@ export const getDeckDetails = onCall(async (request) => {
 
     // Use document ID (override any id field in data)
 
+    // Check if caller is an editor
+    const callerId = request.auth?.uid;
+    const isEditor = callerId
+      ? (validatedDeckData.editors || []).includes(callerId)
+      : false;
+
     const response = {
       deck: validatedDeckData,
       username: userData.username,
+      isEditor,
     };
     const validatedResponse = GetDeckDetailsResponseSchema.parse(response);
     return serializeTimestamps(validatedResponse);
@@ -1461,8 +1476,8 @@ export const updateDeckSettings = onCall(async (request) => {
     }
     const validatedDeckData = DeckSchema.parse(rawDeckData);
 
-    // Check if user is the creator of the deck
-    if (validatedDeckData.createdBy !== userId) {
+    // Check if user is the creator of the deck or an admin
+    if (validatedDeckData.createdBy !== userId && !(await isAdmin(userId))) {
       throw new HttpsError(
         "permission-denied",
         "User does not have permission"
@@ -1817,8 +1832,8 @@ export const deleteDeck = onCall(async (request) => {
     }
     const validatedDeckData = DeckSchema.parse(rawDeckData);
 
-    // Check if user is the creator of the deck
-    if (validatedDeckData.createdBy !== userId) {
+    // Check if user is the creator of the deck or an admin
+    if (validatedDeckData.createdBy !== userId && !(await isAdmin(userId))) {
       throw new HttpsError(
         "permission-denied",
         "User does not have permission to delete this deck"
@@ -2264,6 +2279,16 @@ export const syncDeckCards = onCall(async (request) => {
 });
 
 /**
+ * Check if user is admin
+ * @param {string} userId - User ID
+ * @return {Promise<boolean>} True if user is admin, false otherwise
+ */
+async function isAdmin(userId: string): Promise<boolean> {
+  const adminSnap = await db.doc(`admin/roles/admins/${userId}`).get();
+  return adminSnap.exists;
+}
+
+/**
  * Update card content (cardData and tags) - only for source deck authors
  */
 export const updateCardContent = onCall(async (request) => {
@@ -2312,7 +2337,9 @@ export const updateCardContent = onCall(async (request) => {
       throw new HttpsError("not-found", "Deck not found");
     }
     const validatedDeckData = DeckSchema.parse(rawDeckData);
-    if (validatedDeckData.createdBy !== userId) {
+    const isOwner = validatedDeckData.createdBy === userId;
+    const isEditorUser = (validatedDeckData.editors || []).includes(userId);
+    if (!isOwner && !isEditorUser && !(await isAdmin(userId))) {
       throw new HttpsError(
         "permission-denied",
         "You don't have permission to edit this card"
@@ -2391,11 +2418,32 @@ export const updateDeck = onCall(async (request) => {
 
     const validatedDeckData = DeckSchema.parse(rawDeckData);
 
-    // Check if user is the owner
-    if (validatedDeckData.createdBy !== userId) {
+    // Permission check: owner, editor, or admin
+    const isOwner = validatedDeckData.createdBy === userId;
+    const isEditorUser = (validatedDeckData.editors || []).includes(userId);
+    const isAdminUser = !isOwner && !isEditorUser ? await isAdmin(userId) : false;
+
+    if (!isOwner && !isEditorUser && !isAdminUser) {
       throw new HttpsError(
         "permission-denied",
         "You don't have permission to edit this deck"
+      );
+    }
+
+    // Editors can only modify cards, not deck metadata
+    const hasDeckDataChanges =
+      deckData.title !== validatedDeckData.title ||
+      deckData.category !== (validatedDeckData.category ?? null) ||
+      deckData.icon !== validatedDeckData.icon ||
+      deckData.isPublic !== validatedDeckData.isPublic ||
+      JSON.stringify(deckData.tags || []) !== JSON.stringify(validatedDeckData.tags || []) ||
+      (deckData.frontLanguage ?? null) !== (validatedDeckData.frontLanguage ?? null) ||
+      (deckData.backLanguage ?? null) !== (validatedDeckData.backLanguage ?? null);
+
+    if (isEditorUser && !isOwner && !isAdminUser && hasDeckDataChanges) {
+      throw new HttpsError(
+        "permission-denied",
+        "Editors can only modify cards, not deck metadata"
       );
     }
 
@@ -3034,8 +3082,10 @@ export const addCardToDeck = onCall(async (request) => {
 
     if (sourceDeckSnap.exists) {
       const sourceDeck = sourceDeckSnap.data() as Deck;
-      if (sourceDeck.createdBy === userId) {
-        // User owns this source deck - add to source
+      const isOwner = sourceDeck.createdBy === userId;
+      const isEditorUser = (sourceDeck.editors || []).includes(userId);
+      if (isOwner || isEditorUser || await isAdmin(userId)) {
+        // User owns, edits, or is admin - add to source
         targetDeckRef = sourceDeckRef;
         isSourceDeck = true;
       } else if (learningDeckSnap.exists) {
@@ -3098,6 +3148,237 @@ export const addCardToDeck = onCall(async (request) => {
       throw error;
     }
     throw new HttpsError("internal", "Failed to add card to deck");
+  }
+});
+
+/**
+ * Search users by username prefix (for editor management)
+ */
+export const searchUsers = onCall(async (request) => {
+  const auth = request.auth;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const validationResult = SearchUsersRequestSchema.safeParse(request.data);
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { query } = validationResult.data;
+
+  try {
+    const endStr = query + "\uf8ff";
+
+    const usersSnap = await db
+      .collection("users")
+      .where("username", ">=", query)
+      .where("username", "<=", endStr)
+      .limit(10)
+      .get();
+
+    const users = usersSnap.docs.map((doc) => ({
+      id: doc.id,
+      username: doc.data().username || doc.id,
+    }));
+
+    const response = { users };
+    return SearchUsersResponseSchema.parse(response);
+  } catch (error) {
+    logger.error("Error searching users", error);
+    handleZodError(error, "searchUsers");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to search users");
+  }
+});
+
+/**
+ * Add an editor to a deck (owner-only)
+ */
+export const addDeckEditor = onCall(async (request) => {
+  const auth = request.auth;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const validationResult = AddDeckEditorRequestSchema.safeParse(request.data);
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckId, userId: editorUserId } = validationResult.data;
+  const callerId = auth.uid;
+
+  try {
+    const deckRef = db.collection("decks").doc(deckId);
+    const deckSnap = await deckRef.get();
+
+    if (!deckSnap.exists) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
+
+    const deckData = deckSnap.data();
+    if (!deckData) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
+
+    // Only the deck owner can manage editors
+    if (deckData.createdBy !== callerId) {
+      throw new HttpsError(
+        "permission-denied",
+        "Only the deck owner can manage editors"
+      );
+    }
+
+    // Verify the editor user exists
+    const editorSnap = await db.doc(`users/${editorUserId}`).get();
+    if (!editorSnap.exists) {
+      throw new HttpsError("not-found", "User not found");
+    }
+
+    // Add editor to the array (avoid duplicates)
+    await deckRef.update({
+      editors: FieldValue.arrayUnion(editorUserId),
+    });
+
+    logger.info("Editor added to deck", { deckId, editorUserId, callerId });
+
+    const response = { success: true };
+    return AddDeckEditorResponseSchema.parse(response);
+  } catch (error) {
+    logger.error("Error adding deck editor", error);
+    handleZodError(error, "addDeckEditor");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to add deck editor");
+  }
+});
+
+/**
+ * Remove an editor from a deck (owner-only)
+ */
+export const removeDeckEditor = onCall(async (request) => {
+  const auth = request.auth;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const validationResult = RemoveDeckEditorRequestSchema.safeParse(
+    request.data
+  );
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckId, userId: editorUserId } = validationResult.data;
+  const callerId = auth.uid;
+
+  try {
+    const deckRef = db.collection("decks").doc(deckId);
+    const deckSnap = await deckRef.get();
+
+    if (!deckSnap.exists) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
+
+    const deckData = deckSnap.data();
+    if (!deckData) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
+
+    if (deckData.createdBy !== callerId) {
+      throw new HttpsError(
+        "permission-denied",
+        "Only the deck owner can manage editors"
+      );
+    }
+
+    await deckRef.update({
+      editors: FieldValue.arrayRemove(editorUserId),
+    });
+
+    logger.info("Editor removed from deck", {
+      deckId,
+      editorUserId,
+      callerId,
+    });
+
+    const response = { success: true };
+    return RemoveDeckEditorResponseSchema.parse(response);
+  } catch (error) {
+    logger.error("Error removing deck editor", error);
+    handleZodError(error, "removeDeckEditor");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to remove deck editor");
+  }
+});
+
+/**
+ * Get editors for a deck
+ */
+export const getDeckEditors = onCall(async (request) => {
+  const auth = request.auth;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+
+  const validationResult = GetDeckEditorsRequestSchema.safeParse(request.data);
+  if (!validationResult.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: validationResult.error.issues,
+    });
+  }
+
+  const { deckId } = validationResult.data;
+
+  try {
+    const deckRef = db.collection("decks").doc(deckId);
+    const deckSnap = await deckRef.get();
+
+    if (!deckSnap.exists) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
+
+    const deckData = deckSnap.data();
+    if (!deckData) {
+      throw new HttpsError("not-found", "Deck not found");
+    }
+
+    const editorIds: string[] = deckData.editors || [];
+
+    // Fetch usernames for each editor
+    const editors = await Promise.all(
+      editorIds.map(async (editorId) => {
+        const userSnap = await db.doc(`users/${editorId}`).get();
+        return {
+          id: editorId,
+          username: userSnap.exists
+            ? userSnap.data()?.username || editorId
+            : editorId,
+        };
+      })
+    );
+
+    const response = { editors };
+    return GetDeckEditorsResponseSchema.parse(response);
+  } catch (error) {
+    logger.error("Error getting deck editors", error);
+    handleZodError(error, "getDeckEditors");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get deck editors");
   }
 });
 

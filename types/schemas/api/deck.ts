@@ -208,6 +208,7 @@ export type GetDailyUserStatsRequest = z.infer<
 export const GetDeckDetailsResponseSchema = z.object({
   deck: DeckSchema.nullable(),
   username: z.string(),
+  isEditor: z.boolean().optional(),
 });
 export type GetDeckDetailsResponse = z.infer<
   typeof GetDeckDetailsResponseSchema
@@ -419,3 +420,77 @@ export const AddCardToDeckResponseSchema = z.object({
   cardId: z.string(),
 });
 export type AddCardToDeckResponse = z.infer<typeof AddCardToDeckResponseSchema>;
+
+// ===========================
+// Search Users schemas
+// ===========================
+
+export const SearchUsersRequestSchema = z
+  .object({
+    query: z.string().min(1),
+  })
+  .strict();
+export type SearchUsersRequest = z.infer<typeof SearchUsersRequestSchema>;
+
+export const SearchUsersResponseSchema = z.object({
+  users: z.array(
+    z.object({
+      id: z.string(),
+      username: z.string(),
+    })
+  ),
+});
+export type SearchUsersResponse = z.infer<typeof SearchUsersResponseSchema>;
+
+// ===========================
+// Deck Editor Management schemas
+// ===========================
+
+export const AddDeckEditorRequestSchema = z
+  .object({
+    deckId: z.string(),
+    userId: z.string(),
+  })
+  .strict();
+export type AddDeckEditorRequest = z.infer<typeof AddDeckEditorRequestSchema>;
+
+export const AddDeckEditorResponseSchema = z.object({
+  success: z.boolean(),
+});
+export type AddDeckEditorResponse = z.infer<typeof AddDeckEditorResponseSchema>;
+
+export const RemoveDeckEditorRequestSchema = z
+  .object({
+    deckId: z.string(),
+    userId: z.string(),
+  })
+  .strict();
+export type RemoveDeckEditorRequest = z.infer<
+  typeof RemoveDeckEditorRequestSchema
+>;
+
+export const RemoveDeckEditorResponseSchema = z.object({
+  success: z.boolean(),
+});
+export type RemoveDeckEditorResponse = z.infer<
+  typeof RemoveDeckEditorResponseSchema
+>;
+
+export const GetDeckEditorsRequestSchema = z
+  .object({
+    deckId: z.string(),
+  })
+  .strict();
+export type GetDeckEditorsRequest = z.infer<typeof GetDeckEditorsRequestSchema>;
+
+export const GetDeckEditorsResponseSchema = z.object({
+  editors: z.array(
+    z.object({
+      id: z.string(),
+      username: z.string(),
+    })
+  ),
+});
+export type GetDeckEditorsResponse = z.infer<
+  typeof GetDeckEditorsResponseSchema
+>;

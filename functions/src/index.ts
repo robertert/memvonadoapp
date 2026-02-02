@@ -40,6 +40,9 @@ export {
   getUserProfile,
   getUserActivityHeatmap,
   getUserAwards,
+  getPublicUserProfile,
+  toggleFollow,
+  isCurrentUserAdmin,
 } from "./userFunctions";
 export {
   createDeckWithCards,
@@ -69,6 +72,10 @@ export {
   toggleDeckLike,
   checkIfLiked,
   addCardToDeck,
+  searchUsers,
+  addDeckEditor,
+  removeDeckEditor,
+  getDeckEditors,
 } from "./deckFunctions";
 export {
   getLeaderboard,

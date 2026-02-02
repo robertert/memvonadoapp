@@ -2,10 +2,12 @@ import React, { createContext, useEffect, useState, ReactNode } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { cloudFunctions } from "../services/cloudFunctions";
 
 interface UserContextType {
   id: string | null;
   name: string | null;
+  isAdmin: boolean;
   getUser: (name: string, id: string) => void;
   delUser: () => void;
 }
@@ -13,6 +15,7 @@ interface UserContextType {
 export const UserContext = createContext<UserContextType>({
   id: null,
   name: null,
+  isAdmin: false,
   getUser: (name: string, id: string) => {},
   delUser: () => {},
 });
@@ -26,6 +29,7 @@ function UserContextProvider({
 }: UserContextProviderProps): React.JSX.Element {
   const [name, setName] = useState<string | null>("");
   const [id, setId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   function getUser(gotName: string, gotId: string): void {
     setId(gotId);
@@ -35,6 +39,7 @@ function UserContextProvider({
   function delUser(): void {
     setId(null);
     setName(null);
+    setIsAdmin(false);
   }
 
   // Keep in sync with Firebase Auth (handles reload/fast refresh)
@@ -56,9 +61,18 @@ function UserContextProvider({
         } catch {
           if (!name) setName("User");
         }
+
+        // Check admin status
+        try {
+          const adminResult = await cloudFunctions.isCurrentUserAdmin();
+          setIsAdmin(adminResult.isAdmin);
+        } catch {
+          setIsAdmin(false);
+        }
       } else {
         setId(null);
         setName(null);
+        setIsAdmin(false);
       }
     });
     return () => unsubscribe();
@@ -67,6 +81,7 @@ function UserContextProvider({
   const value: UserContextType = {
     id: id,
     name: name,
+    isAdmin: isAdmin,
     getUser: getUser,
     delUser: delUser,
   };

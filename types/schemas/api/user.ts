@@ -263,3 +263,52 @@ export const UpdateCardProgressAllInOneResponseSchema = z.object({
 export type UpdateCardProgressAllInOneResponse = z.infer<
   typeof UpdateCardProgressAllInOneResponseSchema
 >;
+
+// ============================================================================
+// Public User Profile
+// ============================================================================
+
+export const GetPublicUserProfileRequestSchema = z
+  .object({
+    targetUserId: z.string(),
+  })
+  .strict();
+export type GetPublicUserProfileRequest = z.infer<
+  typeof GetPublicUserProfileRequestSchema
+>;
+
+export const GetPublicUserProfileResponseSchema = z.object({
+  user: UserSchema,
+  isFollowing: z.boolean(),
+});
+export type GetPublicUserProfileResponse = z.infer<
+  typeof GetPublicUserProfileResponseSchema
+>;
+
+// ============================================================================
+// Follow / Unfollow
+// ============================================================================
+
+export const ToggleFollowRequestSchema = z
+  .object({
+    targetUserId: z.string(),
+  })
+  .strict();
+export type ToggleFollowRequest = z.infer<typeof ToggleFollowRequestSchema>;
+
+export const ToggleFollowResponseSchema = z.object({
+  success: z.boolean(),
+  isFollowing: z.boolean(),
+});
+export type ToggleFollowResponse = z.infer<typeof ToggleFollowResponseSchema>;
+
+// ============================================================================
+// Admin check
+// ============================================================================
+
+export const IsCurrentUserAdminResponseSchema = z.object({
+  isAdmin: z.boolean(),
+});
+export type IsCurrentUserAdminResponse = z.infer<
+  typeof IsCurrentUserAdminResponseSchema
+>;

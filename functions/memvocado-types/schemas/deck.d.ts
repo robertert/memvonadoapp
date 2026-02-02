@@ -54,6 +54,7 @@ export declare const DeckMetaSchema: z.ZodObject<{
     is_deleted: z.ZodDefault<z.ZodBoolean>;
     deletedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
     title_lower: z.ZodOptional<z.ZodString>;
+    editors: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
 }, "strict", z.ZodTypeAny, {
     id: string;
     views: number;
@@ -61,6 +62,7 @@ export declare const DeckMetaSchema: z.ZodObject<{
     cardsNum: number;
     createdBy: string;
     is_deleted: boolean;
+    editors: string[];
     deletedAt?: Date | undefined;
     title_lower?: string | undefined;
 }, {
@@ -72,6 +74,7 @@ export declare const DeckMetaSchema: z.ZodObject<{
     is_deleted?: boolean | undefined;
     deletedAt?: unknown;
     title_lower?: string | undefined;
+    editors?: string[] | undefined;
 }>;
 export type DeckMeta = z.infer<typeof DeckMetaSchema>;
 /**
@@ -94,6 +97,7 @@ export declare const DeckSchema: z.ZodObject<{
     is_deleted: z.ZodDefault<z.ZodBoolean>;
     deletedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
     title_lower: z.ZodOptional<z.ZodString>;
+    editors: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
 } & {
     createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
     updatedAt: z.ZodEffects<z.ZodDate, Date, unknown>;
@@ -110,6 +114,7 @@ export declare const DeckSchema: z.ZodObject<{
     cardsNum: number;
     createdBy: string;
     is_deleted: boolean;
+    editors: string[];
     category?: string | null | undefined;
     frontLanguage?: string | null | undefined;
     backLanguage?: string | null | undefined;
@@ -133,6 +138,7 @@ export declare const DeckSchema: z.ZodObject<{
     is_deleted?: boolean | undefined;
     deletedAt?: unknown;
     title_lower?: string | undefined;
+    editors?: string[] | undefined;
 }>;
 export type Deck = z.infer<typeof DeckSchema>;
 /**
