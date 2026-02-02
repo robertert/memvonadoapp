@@ -7,7 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import { Dimensions } from "react-native";
 import Animated, {
   useSharedValue,
@@ -135,7 +135,9 @@ function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
     streakAchieved,
     clearStreakAchieved,
     streakLost,
+    applyEditedCard,
   } = useCardLogic(id);
+  const navigation = useNavigation();
   const { animationValues, animatedStyles, dimensions, TOP } = useAnimations();
 
   const { cards, isLoading, isBack, tooltip, progress, dailyStats } =
@@ -162,6 +164,14 @@ function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
     const isCorrect = grade >= 2; // Good or Easy
     avoHelper.trackAnswer(isCorrect);
   }, [lastAnswerType]);
+
+  // Apply edited card data when screen regains focus (e.g., after editing)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      applyEditedCard();
+    });
+    return unsubscribe;
+  }, [navigation, applyEditedCard]);
 
   // State for confetti trigger - only for streak achievement
   const [showConfetti, setShowConfetti] = useState(false);

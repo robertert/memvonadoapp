@@ -17,6 +17,7 @@ import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
 import { Card, CardCore } from "@/types";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { setEditedCard } from "../../utils/editedCardStore";
 
 interface EditCardParams {
   cardId: string;
@@ -111,6 +112,15 @@ export default function editCard(): React.JSX.Element {
         typedParams.cardId,
         updatedCardData
       );
+
+      // Store edited data so learn screens can update locally
+      setEditedCard({
+        cardId: typedParams.cardId,
+        front: front.trim(),
+        back: back.trim(),
+        tags: tags,
+      });
+
       router.back();
     } catch (error) {
       console.error("Error saving card:", error);

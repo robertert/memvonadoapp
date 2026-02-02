@@ -2,6 +2,7 @@ import { useContext, useEffect, useState, useCallback } from "react";
 import { router } from "expo-router";
 import { UserContext } from "../../store/user-context";
 import { cloudFunctions } from "../../services/cloudFunctions";
+import { consumeEditedCard } from "../../utils/editedCardStore";
 import {
   AllInOneSession,
   AllInOneCard,
@@ -313,6 +314,34 @@ export function useAllInOneCardLogic(deckId: string) {
     wrongAttempts: session?.wrongAttempts ?? 0,
   };
 
+  /**
+   * Checks if a card was edited and updates local state accordingly.
+   * Called when the screen regains focus after returning from the edit screen.
+   */
+  const applyEditedCard = useCallback(() => {
+    const edited = consumeEditedCard();
+    if (!edited) return;
+
+    // Update current card if it matches
+    setCurrentCard((prev) => {
+      if (!prev || prev.cardId !== edited.cardId) return prev;
+      return { ...prev, front: edited.front, back: edited.back };
+    });
+
+    // Update session cards
+    setSession((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        cards: prev.cards.map((c) =>
+          c.cardId === edited.cardId
+            ? { ...c, front: edited.front, back: edited.back }
+            : c
+        ),
+      };
+    });
+  }, []);
+
   // Initialize session on mount
   useEffect(() => {
     initSession();
@@ -348,5 +377,6 @@ export function useAllInOneCardLogic(deckId: string) {
     sessionStats,
     error,
     clearError: () => setError(null),
+    applyEditedCard,
   };
 }

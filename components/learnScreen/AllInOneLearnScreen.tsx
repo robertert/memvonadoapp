@@ -18,7 +18,7 @@ import {
   GestureDetector,
 } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useNavigation } from "expo-router";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -64,7 +64,18 @@ export default function AllInOneLearnScreen({
     sessionStats,
     error,
     clearError,
+    applyEditedCard,
   } = useAllInOneCardLogic(deckId);
+
+  const navigation = useNavigation();
+
+  // Apply edited card data when screen regains focus (e.g., after editing)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      applyEditedCard();
+    });
+    return unsubscribe;
+  }, [navigation, applyEditedCard]);
 
   // AVO Helper
   const avoHelper = useAvoHelper();

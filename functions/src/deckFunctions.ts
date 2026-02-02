@@ -2353,11 +2353,24 @@ export const updateCardContent = onCall(async (request) => {
       throw new HttpsError("not-found", "Card not found");
     }
 
-    // Update card
+    // Update card in source deck
     await cardRef.update({
       cardData: validatedCardData.cardData,
       tags: validatedCardData.tags || [],
     });
+
+    // Also update the user's learning copy if it exists
+    const userCardRef = db
+      .collection("users").doc(userId)
+      .collection("decks").doc(deckId)
+      .collection("cards").doc(cardId);
+    const userCardSnap = await userCardRef.get();
+    if (userCardSnap.exists) {
+      await userCardRef.update({
+        cardData: validatedCardData.cardData,
+        tags: validatedCardData.tags || [],
+      });
+    }
 
     logger.info("Card content updated", {
       userId,

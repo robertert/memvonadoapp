@@ -1,8 +1,9 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useCallback } from "react";
 import { router } from "expo-router";
 import { fsrs, Rating } from "ts-fsrs";
 import { UserContext } from "../../store/user-context";
 import { cloudFunctions } from "../../services/cloudFunctions";
+import { consumeEditedCard } from "../../utils/editedCardStore";
 import { FSRS_PARAMS } from "../../app/stack/learnScreen.constants";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
 import {
@@ -543,6 +544,28 @@ export function useCardLogic(id: string) {
     fetchCards();
   }, []);
 
+  /**
+   * Checks if a card was edited and updates local state accordingly.
+   * Called when the screen regains focus after returning from the edit screen.
+   */
+  const applyEditedCard = useCallback(() => {
+    const edited = consumeEditedCard();
+    if (!edited) return;
+
+    setCards((prev) => {
+      if (!prev || prev.length === 0) return prev;
+      const idx = prev.findIndex((c) => c.id === edited.cardId);
+      if (idx === -1) return prev;
+      const updated = [...prev];
+      updated[idx] = {
+        ...updated[idx],
+        cardData: { front: edited.front, back: edited.back },
+        tags: edited.tags,
+      };
+      return updated;
+    });
+  }, []);
+
   // Wrapper for newCard to track last answer and streak
   const newCardWithTracking = (type: CardGrade): void => {
     setLastAnswerType(type.toString());
@@ -594,5 +617,6 @@ export function useCardLogic(id: string) {
     streakAchieved,
     clearStreakAchieved: () => setStreakAchieved(false),
     streakLost,
+    applyEditedCard,
   };
 }
