@@ -1,172 +1,90 @@
-# 🥑 Memvocado
+# Memvocado
 
-**Memvocado** to nowoczesna aplikacja mobilna do nauki z fiszkami, wykorzystująca zaawansowany algorytm FSRS (Free Spaced Repetition Scheduler) do optymalizacji procesu zapamiętywania. Aplikacja łączy w sobie elementy gamifikacji, system rankingów i lig oraz społecznościowe funkcje, które motywują do regularnej nauki.
+**Memvocado** is a cross-platform mobile flashcard learning app built with React Native and Expo. It uses the FSRS (Free Spaced Repetition Scheduler) algorithm to optimize memorization, and combines gamification (an avocado mascot growth system, leagues, streaks), social features (following, leaderboards), and AI-powered tools (OCR scanning, document processing, in-context AI tutor) to keep learners engaged.
 
 
----
-
-## 📋 Spis treści
-
-- [Funkcjonalności](#-funkcjonalności)
-- [Technologie](#-technologie)
-- [Architektura](#-architektura)
-- [Instalacja i uruchomienie](#-instalacja-i-uruchomienie)
-- [Struktura projektu](#-struktura-projektu)
-- [Kluczowe komponenty](#-kluczowe-komponenty)
-- [Algorytm nauki](#-algorytm-nauki)
-- [Backend](#-backend)
-- [Testy](#-testy)
-- [Deployment](#-deployment)
-- [Dokumentacja](#-dokumentacja)
+<link href="./FEATURES.md">More in FEATURES.md </link>
 
 ---
 
-## ✨ Funkcjonalności
-
-### 📚 System nauki z fiszkami
-
-- **Algorytm FSRS**: Zaawansowany algorytm powtarzania z odstępami (spaced repetition) dla optymalnej nauki
-- **Faza pierwszego uczenia**: Stopniowe wprowadzanie nowych kart przed przejściem do pełnego algorytmu FSRS
-- **Inteligentne sesje**: Automatyczne dobieranie kart do nauki na podstawie daty powtórki i postępu
-- **Animacje i gesty**: Płynne animacje i gesty przesuwania dla lepszego UX
-- **Wielojęzyczność**: Obsługa wielu języków w interfejsie
-
-### 🏆 System rankingów i lig
-
-- **15 poziomów lig**: Od podstawowej ligi do Diamentowej Ligi
-- **Tygodniowe sezony**: System rankingów resetowany co tydzień
-- **Grupy ligowe**: Użytkownicy przypisani do 20-osobowych grup w swojej lidze
-- **Tabela liderów**: Globalne i lokalne rankingi
-
-### 👥 Funkcje społecznościowe
-
-- **System znajomych**: Dodawanie znajomych, śledzenie ich postępów
-- **Seria aktywności (Streak)**: Śledzenie codziennej aktywności
-- **Statystyki**: Szczegółowe statystyki nauki, heatmapa aktywności
-- **Udostępnianie talii**: Publiczne i prywatne talie do nauki
-
-### 🎨 Interfejs użytkownika
-
-- **Nowoczesny design**: Intuicyjny i przyjazny interfejs
-- **Ciemny/jasny motyw**: Obsługa motywów
-- **Animacje**: Płynne przejścia i animacje
-- **Responsywność**: Optymalizacja dla różnych rozmiarów ekranów
-
-### 🔔 Powiadomienia
-
-- **Powiadomienia push**: Przypomnienia o nauce
-- **Powiadomienia systemowe**: Awans w lidze, przerwana seria, zakończenie sezonu
-
----
-
-## 🛠 Technologie
+## Tech Stack
 
 ### Frontend
 
-- **React Native** (v0.81.5) - Framework do aplikacji mobilnych
-- **Expo** (v54.0.20) - Narzędzia i SDK dla React Native
-- **Expo Router** (v6.0.13) - Routing oparty na systemie plików
-- **TypeScript** (v5.9.2) - Typowanie statyczne
-- **React Native Reanimated** (v4.1.1) - Zaawansowane animacje
-- **React Native Gesture Handler** (v2.28.0) - Obsługa gestów
-- **ts-fsrs** (v3.5.7) - Implementacja algorytmu FSRS
+| Technology | Version | Purpose |
+|---|---|---|
+| React Native | 0.81.5 | Cross-platform mobile framework |
+| Expo | 54 | Build tooling, native APIs, OTA updates |
+| Expo Router | 6 | File-based routing (tabs + stack) |
+| TypeScript | 5.9 | Static type safety |
+| React Native Reanimated | 4.1 | Gesture-driven animations |
+| React Native Gesture Handler | 2.28 | Touch and swipe gestures |
+| ts-fsrs | 3.5.7 | FSRS spaced repetition algorithm |
+| Zod | 3.23 | Runtime schema validation |
 
 ### Backend
 
-- **Firebase Cloud Functions** (v6.0.1) - Serwerless backend
-- **Cloud Firestore** - Baza danych NoSQL
-- **Firebase Authentication** - Autentykacja użytkowników
-- **Firebase Storage** - Przechowywanie plików
-- **Firebase Analytics** - Analiza użycia
-- **Node.js** (v20) - Runtime dla Cloud Functions
+| Technology | Version | Purpose |
+|---|---|---|
+| Firebase Cloud Functions | 6.0 | Serverless API (Node 20, `europe-west1`) |
+| Cloud Firestore | - | NoSQL document database |
+| Firebase Authentication | - | Google & Apple Sign-In |
+| Firebase Storage | - | User uploads, photos, Anki files |
+| Google Cloud Vertex AI (Gemini) | - | AI file processing & AVO Helper tutor |
+| Google Cloud Translation API | - | Multi-language translation |
+| ML Kit Text Recognition | - | On-device OCR |
 
-### Narzędzia deweloperskie
+### Supporting Libraries (Backend)
 
-- **Jest** (v29.7.0) - Framework testowy
-- **React Testing Library** (v12.4.2) - Testy komponentów
-- **ESLint** - Linting kodu
-- **TypeScript** - Kompilator TypeScript
+`pdf-parse`, `mammoth` (DOCX), `xlsx`, `better-sqlite3` + `adm-zip` (Anki `.apkg` import), `pdf-lib`
 
-### Platformy
+### Platforms
 
-- **iOS** - Aplikacja natywna (Swift)
-- **Android** - Aplikacja natywna
-- **Web** - Wersja webowa (opcjonalna)
-
----
-
-## 🏗 Architektura
-
-### Frontend (React Native)
-
-```
-app/
-├── (auth)/          # Ekrany autentykacji
-├── tabs/            # Główne zakładki (dashboard, search, create, profile, rankings)
-├── stack/           # Ekrany nawigacji stosu (learn, deck details, settings)
-└── _layout.tsx      # Główny layout aplikacji
-
-store/               # Context API dla globalnego stanu
-services/            # Serwisy komunikacji z backendem
-constants/           # Stałe aplikacji
-ui/                  # Komponenty UI
-```
-
-### Backend (Firebase Cloud Functions)
-
-```
-functions/src/
-├── index.ts                 # Główny punkt eksportu
-├── userFunctions.ts         # Funkcje użytkownika
-├── deckFunctions.ts          # Zarządzanie taliami i kartami
-├── learningFunctions.ts     # Funkcje nauki
-├── rankingFunctions.ts      # System rankingów
-├── leagueFunctions.ts       # System lig
-├── notificationFunctions.ts # Powiadomienia
-└── searchFunctions.ts       # Wyszukiwanie
-```
-
-### Baza danych (Firestore)
-
-- `users/{userId}` - Dane użytkowników
-- `decks/{deckId}` - Talie
-- `decks/{deckId}/cards/{cardId}` - Karty
-- `seasonUserPoints/{seasonId}/users/{userId}` - Punkty w sezonie
-- `leagueGroups/{seasonId}/{league}/groups/{groupId}` - Grupy ligowe
-- `users/{userId}/notifications/{notificationId}` - Powiadomienia
+- **iOS** (primary) -- requires Xcode for native builds
+- **Android** -- requires Android SDK
+- **Web** -- experimental (`expo start --web`)
 
 ---
 
-## 🚀 Instalacja i uruchomienie
+## Prerequisites
 
-### Wymagania wstępne
+- **Node.js** v20+
+- **npm** (ships with Node)
+- **Expo CLI** -- `npx expo` (no global install required)
+- **Firebase CLI** -- `npm install -g firebase-tools` (for backend work)
+- **EAS CLI** -- `npm install -g eas-cli` (for native builds)
+- **Xcode** (macOS, for iOS simulator) or **Android Studio** (for Android emulator)
 
-- Node.js (v20 lub nowszy)
-- npm lub yarn
-- Expo CLI
-- Firebase CLI (dla backendu)
-- iOS Simulator (dla macOS) lub Android Emulator
+---
 
-### Instalacja
+## Installation & Setup
 
-1. **Sklonuj repozytorium**
+### 1. Clone the repository
 
 ```bash
 git clone <repository-url>
 cd Memvocado
 ```
 
-2. **Zainstaluj zależności**
+### 2. Install dependencies
 
 ```bash
+# Frontend dependencies
 npm install
+
+# Shared types package
+cd types && npm install && npm run build && cd ..
+
+# Backend (Cloud Functions) dependencies
 cd functions && npm install && cd ..
 ```
 
-3. **Skonfiguruj zmienne środowiskowe**
-   Utwórz plik `.env` w głównym katalogu:
+### 3. Configure environment variables
+
+Create a `.env` file in the project root:
 
 ```env
+# Firebase
 FIREBASE_API_KEY=your_api_key
 FIREBASE_AUTH_DOMAIN=your_auth_domain
 FIREBASE_PROJECT_ID=your_project_id
@@ -174,278 +92,190 @@ FIREBASE_STORAGE_BUCKET=your_storage_bucket
 FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 FIREBASE_APP_ID=your_app_id
 FIREBASE_MEASUREMENT_ID=your_measurement_id
+
+# Google Sign-In OAuth Client IDs
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=your_ios_client_id
+EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=your_android_client_id
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your_web_client_id
 ```
 
-4. **Uruchom aplikację**
+### 4. Run the app
 
 ```bash
-# Frontend
+# Start Expo dev server
 npm start
 
-# Backend (w osobnym terminalu)
+# Or target a specific platform
+npm run ios
+npm run android
+npm run web
+```
+
+### 5. Run the backend locally (optional)
+
+```bash
 npm run functions:serve
 ```
 
-### Dostępne skrypty
-
-```bash
-# Frontend
-npm start              # Uruchom Expo dev server
-npm run ios            # Uruchom na iOS
-npm run android        # Uruchom na Android
-npm run web            # Uruchom wersję webową
-npm test               # Uruchom testy
-npm run type-check     # Sprawdź typy TypeScript
-
-# Backend
-npm run functions:serve    # Uruchom emulator Firebase
-npm run functions:build    # Skompiluj TypeScript
-npm run functions:deploy   # Wdróż funkcje do Firebase
-```
+This starts the Firebase emulator suite (Firestore, Functions) on `localhost`.
 
 ---
 
-## 📁 Struktura projektu
+## Scripts
+
+### Frontend (`package.json`)
+
+| Script | Description |
+|---|---|
+| `npm start` | Start Expo development server |
+| `npm run ios` | Build and run on iOS simulator |
+| `npm run android` | Build and run on Android emulator |
+| `npm run web` | Start web version |
+| `npm run type-check` | Run TypeScript compiler checks (`tsc --noEmit`) |
+| `npm test` | Run Jest test suite |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run test:coverage` | Generate coverage report |
+
+### Backend (`functions/package.json`)
+
+| Script | Description |
+|---|---|
+| `npm run functions:serve` | Build and start Firebase emulators |
+| `npm run functions:build` | Compile TypeScript to JavaScript |
+| `npm run functions:deploy` | Deploy Cloud Functions to Firebase |
+
+### Shared Types (`types/package.json`)
+
+| Script | Description |
+|---|---|
+| `npm run prepare` | Build shared type definitions |
+
+---
+
+## Project Structure
 
 ```
 Memvocado/
-├── app/                      # Główna aplikacja (Expo Router)
-│   ├── (auth)/              # Ekrany logowania/rejestracji
-│   ├── tabs/                # Zakładki główne
-│   ├── stack/               # Ekrany nawigacji
-│   └── _layout.tsx          # Layout główny
+├── app/                          # Screens (Expo Router, file-based)
+│   ├── (auth)/                   #   Login, onboarding, password reset
+│   ├── tabs/                     #   Bottom-tab screens (dashboard, search, create, rankings, profile)
+│   ├── stack/                    #   Stack screens (learn, deck details, settings, OCR, import, etc.)
+│   ├── _layout.tsx               #   Root layout (auth guard, providers, splash)
+│   └── index.tsx                 #   Entry redirect
 │
-├── functions/               # Firebase Cloud Functions
-│   ├── src/                # Kod źródłowy funkcji
-│   ├── lib/                # Skompilowany kod
-│   └── __tests__/          # Testy funkcji
+├── components/                   # Reusable UI components
+│   ├── learnScreen/              #   Flashcard, ProgressBar, BottomSheet, Confetti, etc.
+│   ├── avocado/                  #   AvocadoGrowthWidget, HarvestModal, AvocadoImage
+│   ├── avoHelper/                #   AvoFAB, AvoHelperOverlay, AvoBubble, TypingDots
+│   ├── quickAdd/                 #   QuickAddModal, DeckSelector
+│   ├── profileScreen/            #   ContributionHeatmap
+│   └── ...                       #   Header, Divider, PieChart, StreakLostModal, etc.
 │
-├── store/                   # Globalny stan (Context API)
-│   ├── user-context.tsx    # Kontekst użytkownika
-│   └── settings-context.tsx # Kontekst ustawień
+├── hooks/                        # Custom React hooks
+│   ├── learnScreen/              #   useCardLogic, useAnimations, useGestures, useAllInOneCardLogic
+│   ├── useAvoHelper.ts           #   AI tutor helper hook
+│   ├── useTranslation.ts         #   Translation hook with rate limiting
+│   ├── useDeepLink.ts            #   Deep link & Quick Add handler
+│   └── useDeckDraft.ts           #   Draft persistence for deck creation
 │
-├── services/                # Serwisy
-│   └── cloudFunctions.ts   # Klient Firebase Functions
+├── store/                        # Global state (React Context)
+│   ├── user-context.tsx          #   Auth state, user ID, admin flag
+│   ├── settings-context.tsx      #   App settings (language, AVO language)
+│   └── quickAdd-context.tsx      #   Quick Add modal state
 │
-├── constants/              # Stałe aplikacji
-│   ├── colors.ts          # Kolory
-│   ├── flags.ts            # Flagi funkcjonalności
-│   └── placeholderData.ts  # Dane testowe
+├── services/
+│   └── cloudFunctions.ts         # Typed Firebase Cloud Functions client (60+ endpoints)
 │
-├── ui/                     # Komponenty UI
-│   ├── Header.tsx
-│   ├── CustomPieChart.tsx
-│   └── ContributionHeatmap.tsx
+├── constants/                    # App constants
+│   ├── colors.ts                 #   Theme colors & fonts
+│   ├── settings.ts               #   Category options, learning pace, languages
+│   ├── avocado.ts                #   Avocado phase config, skin pool, rarity colors
+│   ├── flags.ts                  #   Feature flags (placeholder/demo mode)
+│   ├── dailyStats.ts             #   Daily progress calculation
+│   └── placeholderData.ts        #   Demo/placeholder data
 │
-├── __tests__/              # Testy frontendu
-├── assets/                 # Zasoby (obrazy, fonty)
-└── ios/                    # Konfiguracja iOS
+├── utils/                        # Utility functions
+│   ├── soundTrigger.ts           #   Audio playback (combo, click sounds)
+│   ├── likedDecksCache.ts        #   Local AsyncStorage cache for liked decks
+│   ├── date.ts                   #   Date formatting helpers
+│   ├── allInOneProgress.ts       #   All-in-One mode progress tracking
+│   └── editedCardStore.ts        #   Temporary card edit state
+│
+├── types/                        # Shared TypeScript types & Zod schemas (npm package)
+│   └── schemas/                  #   API request/response schemas, entity schemas
+│
+├── functions/                    # Firebase Cloud Functions (backend)
+│   └── src/
+│       ├── index.ts              #   Function exports
+│       ├── userFunctions.ts      #   User management, streaks, settings, profiles
+│       ├── deckFunctions.ts      #   Deck CRUD, card management, sync, likes
+│       ├── searchFunctions.ts    #   Deck search with filters
+│       ├── rankingFunctions.ts   #   Leaderboards, points, rankings
+│       ├── leagueFunctions.ts    #   League system, groups, seasons
+│       ├── avocadoFunctions.ts   #   Avocado growth, harvest, gacha
+│       ├── avoHelperFunctions.ts #   AI tutor (Vertex AI / Gemini)
+│       ├── translationFunctions.ts # Google Cloud Translation
+│       ├── ocrFunctions.ts       #   Gemini Vision OCR
+│       ├── processFileFunctions.ts # AI document → flashcard extraction
+│       ├── scanningFunctions.ts  #   Document scanning pipeline
+│       ├── ankiConverter.ts      #   Anki .apkg → Memvocado converter
+│       ├── notificationFunctions.ts # In-app notifications
+│       ├── authHandlers.ts       #   Onboarding, username check
+│       ├── placeholderFunctions.ts # Demo data seeding
+│       └── superMemo2.ts         #   SM-2 algorithm (legacy/fallback)
+│
+├── firebase.ts                   # Firebase SDK initialization
+├── app.config.js                 # Expo configuration (env vars, plugins, scheme)
+├── tsconfig.json                 # TypeScript configuration
+├── babel.config.js               # Babel configuration (module resolver)
+├── metro.config.js               # Metro bundler configuration
+├── eas.json                      # EAS Build profiles
+├── firebase.json                 # Firebase project configuration
+├── firestore.rules               # Firestore security rules
+└── firestore.indexes.json        # Firestore composite indexes
 ```
 
 ---
 
-## 🔑 Kluczowe komponenty
+## Configuration
 
-### System nauki
+### Environment Variables
 
-- **`learnScreen.tsx`** - Główny ekran nauki z fiszkami
-- **`useCardLogic.ts`** - Logika zarządzania kartami w sesji
-- **`useAnimations.ts`** - Animacje kart
-- **`useGestures.ts`** - Obsługa gestów przesuwania
-- **`Flashcard.tsx`** - Komponent karty fiszki
+All Firebase and OAuth credentials are loaded from `.env` via `dotenv/config` in `app.config.js` and exposed through `expo-constants`:
 
-### Zarządzanie taliami
+| Variable | Required | Description |
+|---|---|---|
+| `FIREBASE_API_KEY` | Yes | Firebase Web API key |
+| `FIREBASE_AUTH_DOMAIN` | Yes | Firebase Auth domain |
+| `FIREBASE_PROJECT_ID` | Yes | Firebase project ID |
+| `FIREBASE_STORAGE_BUCKET` | Yes | Firebase Storage bucket |
+| `FIREBASE_MESSAGING_SENDER_ID` | Yes | Firebase Cloud Messaging sender ID |
+| `FIREBASE_APP_ID` | Yes | Firebase app ID |
+| `FIREBASE_MEASUREMENT_ID` | No | Firebase Analytics measurement ID |
+| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Yes | Google OAuth iOS client ID |
+| `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` | Yes | Google OAuth Android client ID |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Yes | Google OAuth Web client ID |
 
-- **`deckDetails.tsx`** - Szczegóły talii
-- **`createScreen.tsx`** - Tworzenie nowej talii
-- **`fileImportScreen.tsx`** - Import talii z pliku
+### Deep Linking
 
-### System rankingów
+The app registers the `memvocado://` URL scheme for deep links and Quick Add functionality.
 
-- **`rankingsScreen.tsx`** - Ekran rankingów
-- **`leagueScreen.tsx`** - Szczegóły ligi
-- **`dashboardScreen.tsx`** - Dashboard z statystykami
-
----
-
-## 🧠 Algorytm nauki
-
-Memvocado wykorzystuje **FSRS (Free Spaced Repetition Scheduler)**, jeden z najnowocześniejszych algorytmów powtarzania z odstępami.
-
-### Faza pierwszego uczenia (First Learning)
-
-Nowe karty przechodzą przez fazę wprowadzającą:
-
-- **Dwie kolejne dobre odpowiedzi** → karta przechodzi do algorytmu FSRS
-- **Krótkie przerwy**: 10 min (dobra odpowiedź), 5 min (trudna), 1 min (błędna)
-
-### Algorytm FSRS
-
-Po przejściu pierwszej fazy, karta jest zarządzana przez FSRS:
-
-- **Dostosowuje interwały** na podstawie historii odpowiedzi
-- **Uczy się trudności** każdej karty
-- **Optymalizuje czas powtórki** dla maksymalnej efektywności
-
-### Parametry FSRS
-
-```typescript
-w: [
-  0.4, 0.6, 2.4, 5.8, 4.93, 0.94, 0.86, 0.01, 1.49, 0.14, 0.94, 2.18, 0.05,
-  0.34, 1.26, 0.29, 2.61,
-];
-```
-
-Więcej szczegółów w [CARD_FLOW_DOCUMENTATION.md](./CARD_FLOW_DOCUMENTATION.md)
-
----
-
-## 🔧 Backend
-
-Backend Memvocado jest zbudowany na **Firebase Cloud Functions** i zapewnia:
-
-### Główne funkcje
-
-- **Zarządzanie użytkownikami**: Autentykacja, profil, statystyki
-- **Zarządzanie taliami**: Tworzenie, edycja, wyszukiwanie talii
-- **System nauki**: Aktualizacja postępu kart, algorytm FSRS
-- **System rankingów**: Punkty, ligi, grupy, sezony
-- **Powiadomienia**: Tworzenie i zarządzanie powiadomieniami
-- **Wyszukiwanie**: Zaawansowane wyszukiwanie talii z filtrami
-
-### Region
-
-Funkcje są wdrożone w regionie **europe-west1** dla optymalnej wydajności w Europie.
-
-### Dokumentacja
-
-Szczegółowa dokumentacja backendu znajduje się w [functions/BACKEND_DOCUMENTATION.md](./functions/BACKEND_DOCUMENTATION.md)
-
----
-
-## 🧪 Testy
-
-Projekt zawiera testy jednostkowe i integracyjne:
-
-### Frontend
+### Deployment
 
 ```bash
-npm test                    # Uruchom wszystkie testy
-npm run test:watch          # Tryb watch
-npm run test:coverage       # Raport pokrycia
-```
-
-### Backend
-
-```bash
-cd functions
-npm test                    # Uruchom testy funkcji
-npm run test:watch          # Tryb watch
-npm run test:coverage       # Raport pokrycia
-```
-
-### Testowane obszary
-
-- Logika kart (FSRS, first learning)
-- Przejścia między kartami
-- Obsługa błędów
-- Zarządzanie sesjami
-- Funkcje backendu
-
----
-
-## 📦 Deployment
-
-### Frontend (Expo)
-
-```bash
-# Build dla iOS
+# Native builds via EAS
 eas build --platform ios
-
-# Build dla Android
 eas build --platform android
 
-# Deploy do Expo
+# OTA updates
 eas update
+
+# Backend deployment
+npm run functions:deploy
 ```
 
-### Backend (Firebase)
-
-```bash
-cd functions
-npm run deploy
-```
-
-Szczegółowe instrukcje w [DEPLOYMENT.md](./DEPLOYMENT.md)
-
 ---
 
-## 📚 Dokumentacja
+## License
 
-### Główne dokumenty
-
-- **[CARD_FLOW_DOCUMENTATION.md](./CARD_FLOW_DOCUMENTATION.md)** - Dokumentacja przepływu kart i algorytmu nauki
-- **[functions/BACKEND_DOCUMENTATION.md](./functions/BACKEND_DOCUMENTATION.md)** - Dokumentacja backendu i API
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Instrukcje deploymentu
-- **[MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)** - Przewodnik migracji
-- **[TYPESCRIPT_MIGRATION.md](./TYPESCRIPT_MIGRATION.md)** - Migracja do TypeScript
-
-### Testy
-
-- **[**tests**/README.md](./__tests__/README.md)** - Dokumentacja testów frontendu
-- **[functions/**tests**/README.md](./functions/__tests__/README.md)** - Dokumentacja testów backendu
-
----
-
-## 🎯 Kluczowe funkcjonalności
-
-### System lig (15 poziomów)
-
-1-10. **Podstawowe ligi** (szare → różowe) 11. **Brązowa Liga** (#CD7F32) 12. **Srebrna Liga** (#C0C0C0) 13. **Złota Liga** (#FFD700) 14. **Platynowa Liga** (#6A5ACD) 15. **Diamentowa Liga** (#00BFFF)
-
-### Tygodniowe sezony
-
-- Sezony rozpoczynają się w poniedziałek 00:00 UTC
-- Trwają 7 dni
-- Automatyczny rollover i snapshot tabeli liderów
-
-### System grup
-
-- Użytkownicy przypisywani do 20-osobowych grup w swojej lidze
-- Rankingi pokazują pozycję w grupie
-- Automatyczne przypisywanie do nowych grup przy awansie
-
----
-
-## 🔐 Bezpieczeństwo
-
-- **Autentykacja**: Firebase Authentication
-- **Reguły Firestore**: Kontrola dostępu do danych
-- **Walidacja**: Walidacja danych po stronie serwera
-- **Autoryzacja**: Sprawdzanie uprawnień w Cloud Functions
-
----
-
-## 🤝 Wsparcie
-
-W razie pytań lub problemów:
-
-- Sprawdź dokumentację w folderze `docs/`
-- Zobacz logi Firebase Functions
-- Sprawdź kod źródłowy w odpowiednich modułach
-
----
-
-## 📄 Licencja
-
-Projekt prywatny - wszystkie prawa zastrzeżone.
-
----
-
-## 🚧 Status projektu
-
-Projekt jest w aktywnej fazie rozwoju. Funkcjonalności są regularnie dodawane i ulepszane.
-
----
-
-**Memvocado** - Nauka z fiszkami, która działa! 🥑✨
+Private project -- all rights reserved.
