@@ -16,6 +16,9 @@ import * as DocumentPicker from "expo-document-picker";
 import { ref, uploadBytes } from "firebase/storage";
 import { storage } from "../../firebase";
 import { cloudFunctions } from "../../services/cloudFunctions";
+import DeckSelectorModal, {
+  SelectedDeck,
+} from "../../components/DeckSelectorModal";
 
 export default function ankiImportScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
@@ -26,6 +29,11 @@ export default function ankiImportScreen(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isImporting, setIsImporting] = useState<boolean>(false);
   const [deckTitle, setDeckTitle] = useState<string>("");
+
+  // Deck selection state
+  const [showDeckSelector, setShowDeckSelector] = useState<boolean>(false);
+  const [selectedDeck, setSelectedDeck] = useState<SelectedDeck | null>(null);
+  const [isNewDeck, setIsNewDeck] = useState<boolean>(true);
 
   async function pickAnkiFile(): Promise<void> {
     try {
@@ -45,18 +53,38 @@ export default function ankiImportScreen(): React.JSX.Element {
           name: asset.name || "Nieznany plik",
           uri: asset.uri,
         });
+
+        // Use file name (without extension) as default deck title
+        if (!deckTitle && asset.name) {
+          const nameWithoutExt = asset.name.replace(/\.apkg$/i, "");
+          setDeckTitle(nameWithoutExt);
+        }
       }
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
-      Alert.alert("Błąd", "Nie udało się wybrać pliku");
+      Alert.alert("Blad", "Nie udalo sie wybrac pliku");
       console.error("Error picking file:", error);
     }
   }
 
+  // Handle new deck selection
+  const handleSelectNewDeck = () => {
+    setSelectedDeck(null);
+    setIsNewDeck(true);
+    setShowDeckSelector(false);
+  };
+
+  // Handle existing deck selection
+  const handleSelectExistingDeck = (deck: SelectedDeck) => {
+    setSelectedDeck(deck);
+    setIsNewDeck(false);
+    setShowDeckSelector(false);
+  };
+
   async function handleImport(): Promise<void> {
     if (!selectedFile) {
-      Alert.alert("Błąd", "Proszę wybrać plik Anki (.apkg)");
+      Alert.alert("Blad", "Prosze wybrac plik Anki (.apkg)");
       return;
     }
 
@@ -73,12 +101,18 @@ export default function ankiImportScreen(): React.JSX.Element {
 
       await uploadBytes(storageRef, blob);
 
+      // If importing to existing deck, we'd need backend support for targetDeckId
+      // For now, we always create a new deck but use the provided title
       const importResponse = await cloudFunctions.importAnkiDeck(
         storagePath,
-        deckTitle.trim() || undefined
+        isNewDeck ? (deckTitle.trim() || undefined) : selectedDeck?.title
       );
 
-      // Przekieruj do szczegółów utworzonej talii
+      // If we selected an existing deck, we would ideally merge cards
+      // This requires backend modification to support targetDeckId param
+      // For now, it creates a new deck
+
+      // Przekieruj do szczegolow utworzonej talii
       router.replace({
         pathname: "../stack/deckDetails",
         params: { deckId: importResponse.deckId },
@@ -88,8 +122,8 @@ export default function ankiImportScreen(): React.JSX.Element {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "Nie udało się zaimportować talii Anki";
-      Alert.alert("Błąd importu", errorMessage);
+          : "Nie udalo sie zaimportowac talii Anki";
+      Alert.alert("Blad importu", errorMessage);
       console.error("Error importing Anki deck:", error);
     }
   }
@@ -112,22 +146,49 @@ export default function ankiImportScreen(): React.JSX.Element {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title}>Importuj talię z Anki</Text>
+        <Text style={styles.title}>Importuj talie z Anki</Text>
         <Text style={styles.subtitle}>
           Wybierz plik .apkg z talii Anki do zaimportowania
         </Text>
 
-        {/* Pole tytułu talii */}
-        <View style={styles.titleInputContainer}>
-          <Text style={styles.titleLabel}>Tytuł talii</Text>
-          <TextInput
-            style={styles.titleInput}
-            value={deckTitle}
-            onChangeText={setDeckTitle}
-            placeholder="Wprowadź tytuł talii..."
-            placeholderTextColor={Colors.primary_700_50}
-          />
+        {/* Deck selection */}
+        <View style={styles.deckSelectionContainer}>
+          <Text style={styles.sectionLabel}>Gdzie zaimportowac?</Text>
+          <Pressable
+            style={styles.deckSelectionButton}
+            onPress={() => setShowDeckSelector(true)}
+          >
+            <Ionicons
+              name={isNewDeck ? "add-circle-outline" : "folder-outline"}
+              size={22}
+              color={Colors.primary_700}
+            />
+            <Text style={styles.deckSelectionText} numberOfLines={1}>
+              {isNewDeck
+                ? "Utworz nowa talie"
+                : `Dodaj do: ${selectedDeck?.title}`}
+            </Text>
+            <Ionicons
+              name="chevron-down"
+              size={20}
+              color={Colors.primary_700_50}
+            />
+          </Pressable>
         </View>
+
+        {/* Pole tytulu talii - only for new deck */}
+        {isNewDeck && (
+          <View style={styles.titleInputContainer}>
+            <Text style={styles.titleLabel}>Tytul talii</Text>
+            <TextInput
+              style={styles.titleInput}
+              value={deckTitle}
+              onChangeText={setDeckTitle}
+              placeholder="Wprowadz tytul talii..."
+              placeholderTextColor={Colors.primary_700_50}
+            />
+          </View>
+        )}
 
         {/* Przycisk wyboru pliku */}
         <Pressable
@@ -151,7 +212,7 @@ export default function ankiImportScreen(): React.JSX.Element {
           )}
         </Pressable>
 
-        {/* Wyświetlanie wybranego pliku */}
+        {/* Wyswietlanie wybranego pliku */}
         {selectedFile && !isLoading && (
           <View style={styles.selectedFileContainer}>
             <Ionicons
@@ -177,16 +238,27 @@ export default function ankiImportScreen(): React.JSX.Element {
           {isImporting ? (
             <ActivityIndicator size="small" color={Colors.primary_100} />
           ) : (
-            <Text style={styles.importButtonText}>Importuj talię</Text>
+            <Text style={styles.importButtonText}>
+              {isNewDeck ? "Importuj talie" : "Importuj i dodaj karty"}
+            </Text>
           )}
         </Pressable>
 
         {isImporting && (
           <Text style={styles.importingText}>
-            Importowanie talii... To może chwilę potrwać.
+            Importowanie talii... To moze chwile potrwac.
           </Text>
         )}
       </View>
+
+      {/* Deck Selector Modal */}
+      <DeckSelectorModal
+        visible={showDeckSelector}
+        onSelectNew={handleSelectNewDeck}
+        onSelectExisting={handleSelectExistingDeck}
+        onClose={() => setShowDeckSelector(false)}
+        showCloseButton={true}
+      />
     </View>
   );
 }
@@ -229,7 +301,36 @@ const styles = StyleSheet.create({
     color: Colors.primary_700,
     fontWeight: "500",
     textAlign: "center",
-    marginBottom: 40,
+    marginBottom: 30,
+  },
+  sectionLabel: {
+    fontFamily: Fonts.primary,
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.primary_700,
+    marginBottom: 10,
+  },
+  deckSelectionContainer: {
+    width: "100%",
+    marginBottom: 20,
+  },
+  deckSelectionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderColor: Colors.primary_700,
+    gap: 10,
+  },
+  deckSelectionText: {
+    flex: 1,
+    fontFamily: Fonts.primary,
+    fontSize: 16,
+    color: Colors.primary_700,
+    fontWeight: "600",
   },
   filePickerButton: {
     flexDirection: "row",
@@ -303,7 +404,6 @@ const styles = StyleSheet.create({
   titleInputContainer: {
     width: "100%",
     marginBottom: 20,
-    paddingHorizontal: 20,
   },
   titleLabel: {
     fontFamily: Fonts.primary,

@@ -5,65 +5,67 @@ import {
   Text,
   Modal,
   View,
+  TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Colors, Fonts,  } from "../../constants/colors";
+import { Colors, Fonts } from "../../constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { router } from "expo-router";
 import {
   PlusIcon,
   DocumentTextIcon,
-  CameraIcon,
   ArchiveBoxIcon,
   ViewfinderCircleIcon,
+  PencilSquareIcon,
 } from "react-native-heroicons/solid";
 
-export default function createScreen(): React.JSX.Element {
+export default function CreateScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
-  const [showModalCard, setShowModalCard] = useState(false);
-  const [showModalDeck, setShowModalDeck] = useState(false);
+  const [showMethodsModal, setShowMethodsModal] = useState<boolean>(false);
 
-
-  const handleCreateDeck = () => {
-    setShowModalDeck(false);
-    setShowModalCard(false);
-
-    router.push("../stack/createSelfScreen");
+  // Navigation handler
+  const handleNavigation = (path: string) => {
+    setShowMethodsModal(false);
+    router.push(path);
   };
 
-  const handleImportDeck = () => {
-    setShowModalDeck(false);
-    setShowModalCard(false);
-    router.push("../stack/fileImportScreen");
-  };
-
-  const handleScanDocument = () => {
-    setShowModalDeck(false);
-    setShowModalCard(false);
-    router.push("../stack/scanDocumentScreen");
-  };
-
-  const handleImportAnki = () => {
-    setShowModalDeck(false);
-    setShowModalCard(false);
-    router.push("../stack/ankiImportScreen");
-  };
-
-  const handleOCRScan = () => {
-    setShowModalCard(false);
-    setShowModalDeck(false);
-    router.push("../stack/ocrCameraScreen");
-  };
-
-  const handleProcessFile = () => {
-    setShowModalCard(false);
-    setShowModalDeck(false);
-    router.push("../stack/processFileScreen");
-  };
+  // Menu options - unified list without mode distinction
+  const menuOptions = [
+    {
+      id: "manual",
+      label: "Dodaj ręcznie",
+      icon: <PencilSquareIcon size={20} color={Colors.primary_700} />,
+      action: () => handleNavigation("../stack/createSelfScreen"),
+    },
+    {
+      id: "ocr",
+      label: "Skanuj tekst (OCR)",
+      icon: <ViewfinderCircleIcon size={20} color={Colors.primary_700} />,
+      action: () => handleNavigation("../stack/ocrCameraScreen"),
+    },
+    {
+      id: "file",
+      label: "Przetwarzaj plik",
+      icon: <DocumentTextIcon size={20} color={Colors.primary_700} />,
+      action: () => handleNavigation("../stack/processFileScreen"),
+    },
+    {
+      id: "import_deck",
+      label: "Importuj talię (JSON)",
+      icon: <DocumentTextIcon size={20} color={Colors.primary_700} />,
+      action: () => handleNavigation("../stack/fileImportScreen"),
+    },
+    {
+      id: "anki",
+      label: "Importuj z Anki",
+      icon: <ArchiveBoxIcon size={20} color={Colors.primary_700} />,
+      action: () => handleNavigation("../stack/ankiImportScreen"),
+    },
+  ];
 
   return (
-    <GestureHandlerRootView>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <LinearGradient
         start={{ x: 0, y: 0 }}
         style={styles.background}
@@ -73,82 +75,41 @@ export default function createScreen(): React.JSX.Element {
           <Text style={styles.title}>Dodaj fiszki</Text>
           <Text style={styles.subtitle}>Wybierz sposób dodawania</Text>
 
+          {/* Single button to open methods modal */}
           <Pressable
             style={styles.addButton}
-            onPress={() => setShowModalCard(true)}
+            onPress={() => setShowMethodsModal(true)}
           >
             <PlusIcon size={24} color={Colors.primary_700} />
-            <Text style={styles.addButtonText}>Dodaj karty do istniejącej talii</Text>
-          </Pressable>
-
-          <Pressable
-            style={styles.addButton}
-            onPress={() => setShowModalDeck(true)}
-          >
-            <PlusIcon size={24} color={Colors.primary_700} />
-            <Text style={styles.addButtonText}>Dodaj nowy deck</Text>
+            <Text style={styles.addButtonText}>Dodaj fiszki</Text>
           </Pressable>
         </View>
 
-        {/* Modal z opcjami */}
+        {/* Methods Modal */}
         <Modal
-          visible={showModalCard}
+          visible={showMethodsModal}
           transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowModalCard(false)}
+          animationType="slide"
+          onRequestClose={() => setShowMethodsModal(false)}
         >
           <Pressable
             style={styles.modalOverlay}
-            onPress={() => setShowModalCard(false)}
+            onPress={() => setShowMethodsModal(false)}
           >
-            <View style={styles.modalContent}>              
+            <Pressable style={styles.modalContent} onPress={() => {}}>
+              <Text style={styles.modalHeader}>Wybierz metodę</Text>
 
-              {/* OCR Text Scan */}
-              <Pressable
-                style={styles.optionButton}
-                onPress={handleOCRScan}
-              >
-                <ViewfinderCircleIcon size={20} color={Colors.primary_700} />
-                <Text style={styles.optionText}>Skanuj tekst</Text>
-              </Pressable>
-            </View>
-          </Pressable>
-        </Modal>
-        <Modal
-          visible={showModalDeck}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowModalDeck(false)}
-        >
-          <Pressable
-            style={styles.modalOverlay}
-            onPress={() => setShowModalDeck(false)}
-          >
-            <View style={styles.modalContent}>
-              {/* Create Deck */}
-              <Pressable style={styles.optionButton} onPress={handleCreateDeck}>
-                <PlusIcon size={20} color={Colors.primary_700} />
-                <Text style={styles.optionText}>Utwórz talie</Text>
-              </Pressable>
-
-              {/* Import Deck */}
-              <Pressable style={styles.optionButton} onPress={handleImportDeck}>
-                <DocumentTextIcon size={20} color={Colors.primary_700} />
-                <Text style={styles.optionText}>Importuj talię</Text>
-              </Pressable>
-
-              {/* Import Anki */}
-              <Pressable style={styles.optionButton} onPress={handleImportAnki}>
-                <ArchiveBoxIcon size={20} color={Colors.primary_700} />
-                <Text style={styles.optionText}>Importuj z Anki</Text>
-              </Pressable>
-
-              {/* Process File */}
-              <Pressable style={styles.optionButton} onPress={handleProcessFile}>
-                <DocumentTextIcon size={20} color={Colors.primary_700} />
-                <Text style={styles.optionText}>Przetwarzaj plik</Text>
-              </Pressable>
-            </View>
+              {menuOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.id}
+                  style={styles.optionButton}
+                  onPress={option.action}
+                >
+                  {option.icon}
+                  <Text style={styles.optionText}>{option.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </Pressable>
           </Pressable>
         </Modal>
       </LinearGradient>
@@ -187,33 +148,42 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     justifyContent: "flex-end",
     alignItems: "center",
-    paddingBottom: 100, // Pozycjonowanie nad przyciskiem plus
   },
   modalContent: {
     backgroundColor: Colors.primary_100,
-    borderRadius: 16,
-    padding: 8,
-    width: 200,
-    borderWidth: 2,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    width: "100%",
+    borderTopWidth: 2,
     borderColor: Colors.primary_700,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 20,
+  },
+  modalHeader: {
+    fontSize: 18,
+    fontFamily: Fonts.primary,
+    fontWeight: "700",
+    color: Colors.primary_700,
+    marginBottom: 16,
+    textAlign: "center",
+    opacity: 0.8,
   },
   optionButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 16,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: "rgba(255,255,255, 0.5)",
   },
   optionText: {
     fontSize: 16,
@@ -227,12 +197,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: Colors.accent_500,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
     borderRadius: 16,
     borderWidth: 2,
     borderColor: Colors.primary_700,
-    marginTop: 40,
+    marginTop: 24,
+    width: "100%",
+    maxWidth: 340,
   },
   addButtonText: {
     fontSize: 18,

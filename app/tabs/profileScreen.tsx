@@ -112,8 +112,8 @@ export default function profileScreen(): React.JSX.Element {
             a.type === "league"
               ? `Liga ${a.leagueNumber}`
               : a.type === "streak"
-              ? `Streak ${a.streakDays}`
-              : a.milestoneType || "Award",
+                ? `Streak ${a.streakDays}`
+                : a.milestoneType || "Award",
         }))
       );
 
@@ -231,7 +231,7 @@ export default function profileScreen(): React.JSX.Element {
           </View>
         </View>
         <View style={styles.statsContainer}>
-          <Text style={styles.subTitle}>Your Stats</Text>
+          <Text style={styles.subTitle}>Twoje statystyki</Text>
           {isLoading ? (
             <ActivityIndicator size="small" color={Colors.accent_500} />
           ) : (
@@ -379,21 +379,21 @@ export default function profileScreen(): React.JSX.Element {
                       params: { deckId: deck.id },
                     });
                   }}>
-                  <View style={styles.deckItem}>
-                    <MaterialCommunityIcons
-                      name="cards"
-                      size={24}
-                      color={Colors.primary_700}
-                      style={styles.deckIcon}
-                    />
-                    <Text style={styles.deckName}>{deck.name}</Text>
-                    <Text style={styles.deckCards}>{deck.cards} kart</Text>
-                    {deck.lastStudied && (
-                      <Text style={styles.deckLastStudied}>
-                        {deck.lastStudied}
-                      </Text>
-                    )}
-                  </View>
+                    <View style={styles.deckItem}>
+                      <MaterialCommunityIcons
+                        name="cards"
+                        size={24}
+                        color={Colors.primary_700}
+                        style={styles.deckIcon}
+                      />
+                      <Text style={styles.deckName}>{deck.name}</Text>
+                      <Text style={styles.deckCards}>{deck.cards} kart</Text>
+                      {deck.lastStudied && (
+                        <Text style={styles.deckLastStudied}>
+                          {deck.lastStudied}
+                        </Text>
+                      )}
+                    </View>
                   </Pressable>
                 ))
               ) : (
