@@ -15,7 +15,7 @@ const dimensions = Dimensions.get("screen");
  */
 export function useAnimations() {
   const safeArea = useSafeAreaInsets();
-  const TOP = -dimensions.height + 200;
+  const TOP = -200;
   const TRANSLATE_VAL = 60;
 
   // Animation values

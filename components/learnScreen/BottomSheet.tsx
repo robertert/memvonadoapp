@@ -36,6 +36,17 @@ export default function BottomSheet({
   safeArea,
   dailyStats,
 }: BottomSheetProps) {
+  const todo =
+    (dailyStats?.newCardsRemaining ?? 0) +
+    (dailyStats?.dueCardsRemaining ?? 0);
+  const inProgress =
+    (dailyStats?.inProgressDueCards ?? 0) +
+    (dailyStats?.inProgressNewCards ?? 0);
+  const done =
+    (dailyStats?.completedNewToday ?? 0) +
+    (dailyStats?.completedDueToday ?? 0);
+  const total = todo + inProgress + done;
+
   return (
     <Animated.View
       style={[
@@ -55,361 +66,118 @@ export default function BottomSheet({
             },
           ]}
         >
-          <Animated.View style={outsideStyles}>
-            <View
-              style={{
-                paddingTop: 10,
-                flexDirection: "row",
-                justifyContent: "space-around",
-              }}
-            >
-              <Text
-                style={{
-                  color: Colors.blue,
-                  fontSize: 25,
-                  fontWeight: "bold",
-                }}
-              >
-                {dailyStats?.newCardsRemaining}
-              </Text>
-              <Text
-                style={{
-                  color: Colors.red,
-                  fontSize: 25,
-                  fontWeight: "bold",
-                }}
-              >
-                {dailyStats?.dueCardsRemaining}
-              </Text>
-              <Text
-                style={{
-                  color: Colors.yellow,
-                  fontSize: 25,
-                  fontWeight: "bold",
-                }}
-              >
-                {(dailyStats?.inProgressDueCards ?? 0) +
-                  (dailyStats?.inProgressNewCards ?? 0)}
-              </Text>
-              <Text
-                style={{
-                  color: Colors.green,
-                  fontSize: 25,
-                  fontWeight: "bold",
-                }}
-              >
-                {(dailyStats?.completedNewToday ?? 0) +
-                  (dailyStats?.completedDueToday ?? 0)}
-              </Text>
-              <Text
-                style={{
-                  color: Colors.primary_100,
-                  fontSize: 25,
-                  fontWeight: "bold",
-                }}
-              >
-                {(dailyStats?.newCardsRemaining ?? 0) +
-                  (dailyStats?.dueCardsRemaining ?? 0) +
-                  (dailyStats?.inProgressDueCards ?? 0) +
-                  (dailyStats?.inProgressNewCards ?? 0) +
-                  (dailyStats?.completedNewToday ?? 0) +
-                  (dailyStats?.completedDueToday ?? 0)}
-              </Text>
-            </View>
-          </Animated.View>
-
-          <Animated.View style={[insideStyles]}>
+          {/* Expanded view — first in DOM so content starts at top of panel */}
+          <Animated.View style={insideStyles}>
             <Animated.View style={[{ flex: 1 }, insideDisplayStyles]}>
-              {/* Statistics rows */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  marginVertical: 10,
-                  justifyContent: "space-around",
-                }}
-              >
-                <View style={{ alignItems: "center" }}>
-                  <Text style={{ color: "#74b9ff", fontSize: 30 }}>
-                    {progress.easy}
-                  </Text>
-                  <Text style={{ color: "#ffffff", fontSize: 20 }}>Easy</Text>
-                </View>
-                <View style={{ alignItems: "center" }}>
-                  <Text style={{ color: "#51cf66", fontSize: 30 }}>
-                    {progress.good}
-                  </Text>
-                  <Text style={{ color: "#ffffff", fontSize: 20 }}>Good</Text>
-                </View>
-                <View style={{ alignItems: "center" }}>
-                  <Text style={{ color: "#ffd43b", fontSize: 30 }}>
-                    {progress.hard}
-                  </Text>
-                  <Text style={{ color: "#ffffff", fontSize: 20 }}>Hard</Text>
-                </View>
-                <View style={{ alignItems: "center" }}>
-                  <Text style={{ color: "#ff6b6b", fontSize: 30 }}>
-                    {progress.wrong}
-                  </Text>
-                  <Text style={{ color: "#ffffff", fontSize: 20 }}>Wrong</Text>
-                </View>
+              {/* Drag handle */}
+              <View style={{ paddingVertical: 16, alignItems: "center" }}>
+                <View
+                  style={{
+                    width: 40,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: Colors.primary_100,
+                    opacity: 0.4,
+                  }}
+                />
               </View>
 
-              <View
-                style={{
-                  flexDirection: "row",
-                  marginVertical: 10,
-                  justifyContent: "space-around",
-                }}
-              >
+              {/* POSTĘP Header + X / Y kart */}
+              <View style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "flex-end",
+                paddingHorizontal: 20,
+                marginBottom: 16,
+              }}>
+                <Text style={{ color: Colors.primary_100, opacity: 0.6, fontSize: 12, fontWeight: "600", letterSpacing: 1 }}>
+                  POSTĘP
+                </Text>
+                <Text style={{ color: Colors.primary_100, fontSize: 14 }}>
+                  <Text style={{ fontWeight: "bold" }}>{done}</Text>
+                  <Text style={{ opacity: 0.6 }}> / {total} kart</Text>
+                </Text>
+              </View>
+
+              {/* Stats row: Do zrobienia / W trakcie / Zrobione */}
+              <View style={{ flexDirection: "row", justifyContent: "space-around", paddingHorizontal: 20, marginBottom: 20 }}>
                 <View style={{ alignItems: "center" }}>
-                  <Text style={{ color: "#ffffff", fontSize: 30 }}>
-                    {progress.all}
-                  </Text>
-                  <Text style={{ color: "#ffffff", fontSize: 20 }}>All</Text>
+                  <Text style={{ color: Colors.primary_100, fontSize: 22, fontWeight: "bold" }}>{todo}</Text>
+                  <Text style={{ color: Colors.primary_100, fontSize: 11, opacity: 0.6, marginTop: 2 }}>Do zrobienia</Text>
                 </View>
                 <View style={{ alignItems: "center" }}>
-                  <Text style={{ color: "#ffffff", fontSize: 30 }}>
-                    {progress.todo}
-                  </Text>
-                  <Text style={{ color: "#ffffff", fontSize: 20 }}>To do</Text>
+                  <Text style={{ color: Colors.primary_100, fontSize: 22, fontWeight: "bold" }}>{inProgress}</Text>
+                  <Text style={{ color: Colors.primary_100, fontSize: 11, opacity: 0.6, marginTop: 2 }}>W trakcie</Text>
                 </View>
                 <View style={{ alignItems: "center" }}>
-                  <Text style={{ color: "#ffffff", fontSize: 30 }}>
-                    {Math.ceil(
-                      ((progress.all - progress.todo) * 100) / progress.all
-                    )}
-                    %
-                  </Text>
-                  <Text style={{ color: "#ffffff", fontSize: 20 }}>done</Text>
+                  <Text style={{ color: Colors.primary_100, fontSize: 22, fontWeight: "bold" }}>{done}</Text>
+                  <Text style={{ color: Colors.primary_100, fontSize: 11, opacity: 0.6, marginTop: 2 }}>Zrobione</Text>
                 </View>
               </View>
 
               {/* Progress bar */}
-              <View style={{ paddingHorizontal: 20, marginVertical: 10 }}>
-                <View
-                  style={{
-                    height: 6,
-                    backgroundColor: "#cccccc",
-                    borderRadius: 3,
-                    overflow: "hidden",
-                  }}
-                >
-                  <View
-                    style={{
-                      height: "100%",
-                      width: `${tabBarValue}%`,
-                      backgroundColor: "#ffffff",
-                      borderRadius: 3,
-                    }}
-                  />
+              <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
+                <View style={{ height: 8, backgroundColor: Colors.primary_100_30, borderRadius: 4, overflow: "hidden" }}>
+                  <View style={{ height: "100%", width: `${tabBarValue}%`, backgroundColor: Colors.primary_100, borderRadius: 4 }} />
                 </View>
               </View>
 
-              {/* Daily Stats Section */}
-              {dailyStats && (
-                <>
-                  <View
-                    style={{
-                      width: "90%",
-                      height: 1,
-                      marginVertical: 10,
-                      backgroundColor: "#ffffff",
-                      alignSelf: "center",
-                    }}
-                  />
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      marginVertical: 10,
-                      justifyContent: "space-around",
-                    }}
-                  >
-                    <View style={{ alignItems: "center" }}>
-                      <Text style={{ color: "#ffffff", fontSize: 30 }}>
-                        {dailyStats.newCardsRemaining}
-                      </Text>
-                      <Text style={{ color: "#ffffff", fontSize: 20 }}>
-                        Nowe
-                      </Text>
-                    </View>
-                    <View style={{ alignItems: "center" }}>
-                      <Text style={{ color: "#ffffff", fontSize: 30 }}>
-                        {dailyStats.dueCardsRemaining}
-                      </Text>
-                      <Text style={{ color: "#ffffff", fontSize: 20 }}>
-                        Due
-                      </Text>
-                    </View>
-                    <View style={{ alignItems: "center" }}>
-                      <Text style={{ color: "#ffffff", fontSize: 30 }}>
-                        {dailyStats.inProgressDueCards +
-                          dailyStats.inProgressNewCards}
-                      </Text>
-                      <Text style={{ color: "#ffffff", fontSize: 20 }}>
-                        In Progress
-                      </Text>
-                    </View>
-                    <View style={{ alignItems: "center" }}>
-                      <Text style={{ color: "#ffffff", fontSize: 30 }}>
-                        {(dailyStats.completedNewToday ?? 0) +
-                          (dailyStats.completedDueToday ?? 0)}
-                      </Text>
-                      <Text style={{ color: "#ffffff", fontSize: 20 }}>
-                        Zrobione
-                      </Text>
-                    </View>
-                  </View>
-                </>
-              )}
+              {/* Separator */}
+              <View style={{ width: "88%", height: 1, backgroundColor: Colors.primary_100, opacity: 0.12, alignSelf: "center", marginBottom: 20 }} />
 
-              {/* Divider */}
-              <View
-                style={{
-                  width: "90%",
-                  height: 1,
-                  marginVertical: 10,
-                  backgroundColor: "#ffffff",
-                  alignSelf: "center",
-                }}
-              />
+              {/* SESJA section */}
+              <Text style={{ color: Colors.primary_100, opacity: 0.6, fontSize: 12, fontWeight: "600", letterSpacing: 1, paddingHorizontal: 20, marginBottom: 16 }}>
+                SESJA
+              </Text>
 
-              {/* Chart section */}
-              <View style={{ flex: 1, alignItems: "center" }}>
-                <Text
-                  style={{
-                    marginTop: 20,
-                    marginBottom: 40,
-                    fontSize: 30,
-                    color: "#ffffff",
-                  }}
-                >
-                  Current state chart
-                </Text>
-
-                <View style={{ marginTop: 20, paddingHorizontal: 20 }}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginVertical: 5,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: 10,
-                        marginRight: 10,
-                        backgroundColor: "#74b9ff",
-                      }}
-                    />
-                    <Text style={{ fontSize: 16, color: "#339af0" }}>
-                      Easy: {progress.easy}
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginVertical: 5,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: 10,
-                        marginRight: 10,
-                        backgroundColor: "#51cf66",
-                      }}
-                    />
-                    <Text style={{ fontSize: 16, color: "#40c057" }}>
-                      Good: {progress.good}
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginVertical: 5,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: 10,
-                        marginRight: 10,
-                        backgroundColor: "#ffd43b",
-                      }}
-                    />
-                    <Text style={{ fontSize: 16, color: "#fab005" }}>
-                      Hard: {progress.hard}
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginVertical: 5,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: 10,
-                        marginRight: 10,
-                        backgroundColor: "#ff6b6b",
-                      }}
-                    />
-                    <Text style={{ fontSize: 16, color: "#fa5252" }}>
-                      Wrong: {progress.wrong}
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginVertical: 5,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: 10,
-                        marginRight: 10,
-                        backgroundColor: "#ffffff",
-                      }}
-                    />
-                    <Text style={{ fontSize: 16, color: "#495057" }}>
-                      Rest: {progress.todo}
-                    </Text>
-                  </View>
+              <View style={{ flexDirection: "row", justifyContent: "space-around", paddingHorizontal: 20 }}>
+                <View style={{ alignItems: "center" }}>
+                  <Text style={{ color: Colors.blue, fontSize: 26 }}>{progress.easy}</Text>
+                  <Text style={{ color: Colors.primary_100, fontSize: 13, opacity: 0.8 }}>Easy</Text>
                 </View>
-
-                {/* Tooltip */}
-                {tooltip.shown && (
-                  <Animated.View
-                    style={{
-                      backgroundColor: tooltip.color,
-                      position: "absolute",
-                      padding: 20,
-                      borderRadius: 15,
-                      alignSelf: "center",
-                      top: 120,
-                      borderWidth: 2,
-                      borderColor: tooltip.textColor,
-                    }}
-                  >
-                    <Text style={{ color: tooltip.textColor }}>
-                      {tooltip.text}
-                    </Text>
-                  </Animated.View>
-                )}
+                <View style={{ alignItems: "center" }}>
+                  <Text style={{ color: Colors.green, fontSize: 26 }}>{progress.good}</Text>
+                  <Text style={{ color: Colors.primary_100, fontSize: 13, opacity: 0.8 }}>Good</Text>
+                </View>
+                <View style={{ alignItems: "center" }}>
+                  <Text style={{ color: Colors.yellow, fontSize: 26 }}>{progress.hard}</Text>
+                  <Text style={{ color: Colors.primary_100, fontSize: 13, opacity: 0.8 }}>Hard</Text>
+                </View>
+                <View style={{ alignItems: "center" }}>
+                  <Text style={{ color: Colors.red, fontSize: 26 }}>{progress.wrong}</Text>
+                  <Text style={{ color: Colors.primary_100, fontSize: 13, opacity: 0.8 }}>Wrong</Text>
+                </View>
               </View>
             </Animated.View>
+          </Animated.View>
+
+          {/* Collapsed view — second in DOM, sits below expanded (invisible when open) */}
+          <Animated.View style={outsideStyles}>
+            <View style={{ alignItems: "center", paddingTop: 8 }}>
+              <View
+                style={{
+                  width: 28,
+                  height: 3,
+                  borderRadius: 2,
+                  backgroundColor: Colors.primary_100,
+                  opacity: 0.25,
+                }}
+              />
+            </View>
+            <View style={{ paddingVertical: 10, flexDirection: "row", justifyContent: "space-around" }}>
+              <View style={{ alignItems: "center" }}>
+                <Text style={{ color: Colors.primary_100, fontSize: 25, fontWeight: "bold" }}>{todo}</Text>
+                <Text style={{ color: Colors.primary_100, fontSize: 11, opacity: 0.7, marginTop: 2 }}>Do zrobienia</Text>
+              </View>
+              <View style={{ alignItems: "center" }}>
+                <Text style={{ color: Colors.primary_100, fontSize: 25, fontWeight: "bold" }}>{inProgress}</Text>
+                <Text style={{ color: Colors.primary_100, fontSize: 11, opacity: 0.7, marginTop: 2 }}>W trakcie</Text>
+              </View>
+              <View style={{ alignItems: "center" }}>
+                <Text style={{ color: Colors.primary_100, fontSize: 25, fontWeight: "bold" }}>{done}</Text>
+                <Text style={{ color: Colors.primary_100, fontSize: 11, opacity: 0.7, marginTop: 2 }}>Zrobione</Text>
+              </View>
+            </View>
           </Animated.View>
         </Animated.View>
       </GestureDetector>
