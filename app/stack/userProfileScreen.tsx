@@ -6,17 +6,19 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  Share,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Fonts } from "../../constants/colors";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { ArrowLeftIcon, FireIcon } from "react-native-heroicons/solid";
+import { ArrowLeftIcon, FireIcon, ShareIcon } from "react-native-heroicons/solid";
 import { router, useLocalSearchParams } from "expo-router";
 import { FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
 import ContributionHeatmap from "../../components/profileScreen/ContributionHeatmap";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
 import type { User } from "@/types";
+import { buildUserShareMessage } from "@/utils/deepLinks";
 
 interface UserProfileParams {
   userId: string;
@@ -138,7 +140,16 @@ export default function userProfileScreen(): React.JSX.Element {
         <Text style={styles.headerTitle}>
           {profileData?.username ?? "Unknown"}
         </Text>
-        <View style={{ width: 24 }} />
+        <Pressable
+          onPress={() => {
+            if (!profileData?.username) return;
+            Share.share({
+              message: buildUserShareMessage(profileData.username),
+            });
+          }}
+        >
+          <ShareIcon size={22} color={Colors.primary_700} />
+        </Pressable>
       </View>
       <ScrollView
         style={styles.scrollView}

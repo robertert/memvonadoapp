@@ -8,6 +8,7 @@ interface UserContextType {
   id: string | null;
   name: string | null;
   isAdmin: boolean;
+  isUserLoaded: boolean;
   getUser: (name: string, id: string) => void;
   delUser: () => void;
 }
@@ -16,6 +17,7 @@ export const UserContext = createContext<UserContextType>({
   id: null,
   name: null,
   isAdmin: false,
+  isUserLoaded: false,
   getUser: (name: string, id: string) => {},
   delUser: () => {},
 });
@@ -30,6 +32,7 @@ function UserContextProvider({
   const [name, setName] = useState<string | null>("");
   const [id, setId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isUserLoaded, setIsUserLoaded] = useState<boolean>(false);
 
   function getUser(gotName: string, gotId: string): void {
     setId(gotId);
@@ -74,6 +77,7 @@ function UserContextProvider({
         setName(null);
         setIsAdmin(false);
       }
+      setIsUserLoaded(true);
     });
     return () => unsubscribe();
   }, []);
@@ -82,6 +86,7 @@ function UserContextProvider({
     id: id,
     name: name,
     isAdmin: isAdmin,
+    isUserLoaded: isUserLoaded,
     getUser: getUser,
     delUser: delUser,
   };

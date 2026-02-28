@@ -9,7 +9,6 @@ export default {
     orientation: "portrait",
     icon: "./assets/memvocadoicon-fill.png",
     userInterfaceStyle: "automatic",
-    scheme: "memvocado",
     splash: {
       image: "./assets/memvocadoicon.png",
       resizeMode: "contain",
@@ -19,6 +18,9 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.memvocado.app",
+      associatedDomains: [
+        `applinks:memvocado.com${process.env.EAS_BUILD_PROFILE === "production" ? "" : "?mode=developer"}`,
+      ],
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSMicrophoneUsageDescription:
@@ -33,6 +35,32 @@ export default {
       },
       package: "com.memvocado.app",
       permissions: ["RECORD_AUDIO"],
+      intentFilters: [
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [
+            { scheme: "https", host: "memvocado.com", pathPrefix: "/user" },
+          ],
+          category: ["BROWSABLE", "DEFAULT"],
+        },
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [
+            { scheme: "https", host: "memvocado.com", pathPrefix: "/deck" },
+          ],
+          category: ["BROWSABLE", "DEFAULT"],
+        },
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [
+            { scheme: "https", host: "memvocado.com", path: "/leaderboard" },
+          ],
+          category: ["BROWSABLE", "DEFAULT"],
+        },
+      ],
     },
     web: {
       favicon: "./assets/favicon.png",

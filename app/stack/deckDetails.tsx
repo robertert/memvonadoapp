@@ -11,6 +11,7 @@ import {
   Dimensions,
   Alert,
   Modal,
+  Share,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Fonts } from "../../constants/colors";
@@ -31,6 +32,7 @@ import {
   RectangleStackIcon,
   UserIcon,
   Cog6ToothIcon,
+  ShareIcon,
 } from "react-native-heroicons/solid";
 import { HeartIcon as HeartIconOutline } from "react-native-heroicons/outline";
 import { HeartIcon as HeartIconSolid } from "react-native-heroicons/solid";
@@ -54,6 +56,7 @@ import {
 import { calculateDateAgo } from "@/utils/date";
 import LearningModeModal from "../../components/learnScreen/LearningModeModal";
 import { playSound } from "@/utils/soundTrigger";
+import { buildDeckShareMessage } from "@/utils/deepLinks";
 
 interface DeckParams {
   deckId: string;
@@ -582,23 +585,35 @@ export default function deckDetails(): React.JSX.Element {
             <ArrowLeftIcon color={Colors.primary_700} size={30} />
           </Pressable>
           <Text style={styles.headerTitle}>{deck?.title}</Text>
-          <Pressable
-            onPress={() => {
-              if (!deck) return;
-              router.push({
-                pathname: "./deckSettings",
-                params: {
-                  isOwner: (deck.createdBy === userCtx.id).toString(),
-                  isEditor: isEditor.toString(),
-                  isAdmin: userCtx.isAdmin.toString(),
-                  deckId: deck.id,
-                },
-              });
-            }}
-            style={styles.settingsButton}
-          >
-            <Cog6ToothIcon color={Colors.primary_700} size={24} />
-          </Pressable>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Pressable
+              onPress={() => {
+                if (!deck) return;
+                Share.share({
+                  message: buildDeckShareMessage(deck.title, deck.id),
+                });
+              }}
+            >
+              <ShareIcon color={Colors.primary_700} size={22} />
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                if (!deck) return;
+                router.push({
+                  pathname: "./deckSettings",
+                  params: {
+                    isOwner: (deck.createdBy === userCtx.id).toString(),
+                    isEditor: isEditor.toString(),
+                    isAdmin: userCtx.isAdmin.toString(),
+                    deckId: deck.id,
+                  },
+                });
+              }}
+              style={styles.settingsButton}
+            >
+              <Cog6ToothIcon color={Colors.primary_700} size={24} />
+            </Pressable>
+          </View>
         </View>
         <View style={styles.listContainer}>
           <Animated.FlatList

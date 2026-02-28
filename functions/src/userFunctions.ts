@@ -61,6 +61,8 @@ import {
   ToggleFollowRequestSchema,
   ToggleFollowResponseSchema,
   IsCurrentUserAdminResponseSchema,
+  GetUserByUsernameRequestSchema,
+  GetUserByUsernameResponseSchema,
 } from "memvocado-types/schemas/api/user";
 import { serializeTimestamps } from "./utils/serialization";
 import {
@@ -1692,5 +1694,46 @@ export const isCurrentUserAdmin = onCall(async (request) => {
       throw error;
     }
     throw new HttpsError("internal", "Failed to check admin status");
+  }
+});
+
+/**
+ * Get user by username (for deep link resolution — no auth required)
+ */
+export const getUserByUsername = onCall(async (request) => {
+  const parsedRequest = GetUserByUsernameRequestSchema.safeParse(
+    request.data || {}
+  );
+  if (!parsedRequest.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsedRequest.error.issues,
+    });
+  }
+
+  const { username } = parsedRequest.data;
+  const normalizedUsername = username.trim().toLowerCase();
+
+  try {
+    const usernameQuery = await db
+      .collection("users")
+      .where("username", "==", normalizedUsername)
+      .limit(1)
+      .get();
+
+    if (usernameQuery.empty) {
+      const response = { exists: false };
+      return GetUserByUsernameResponseSchema.parse(response);
+    }
+
+    const userDoc = usernameQuery.docs[0];
+    const response = { exists: true, userId: userDoc.id };
+    return GetUserByUsernameResponseSchema.parse(response);
+  } catch (error) {
+    logger.error("Error getting user by username", error);
+    handleZodError(error, "getUserByUsername");
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "Failed to get user by username");
   }
 });

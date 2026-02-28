@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IsCurrentUserAdminResponseSchema = exports.ToggleFollowResponseSchema = exports.ToggleFollowRequestSchema = exports.GetPublicUserProfileResponseSchema = exports.GetPublicUserProfileRequestSchema = exports.UpdateCardProgressAllInOneResponseSchema = exports.UpdateCardProgressAllInOneRequestSchema = exports.UndoCardResponseSchema = exports.WeeklyRollOverResponseSchema = exports.SubmitPointsResponseSchema = exports.GetCurrentSeasonResponseSchema = exports.ServerNowSchema = exports.GetUserAwardsResponseSchema = exports.GetUserActivityHeatmapResponseSchema = exports.GetUserProfileResponseSchema = exports.GetUserSettingsResponseSchema = exports.GetUserProgressResponseSchema = exports.UpdateUserStreakOnLoginResponseSchema = exports.UpdateUserStreakIfQualifiedResponseSchema = exports.UpdateUserSettingsRequestSchema = exports.SubmitPointsRequestSchema = exports.GetUserAwardsRequestSchema = exports.GetUserActivityHeatmapRequestSchema = exports.GetUserProfileRequestSchema = exports.GetUserSettingsRequestSchema = exports.UndoCardRequestSchema = exports.GetUserProgressRequestSchema = exports.UpdateCardProgressRequestSchema = exports.GetUserDecksRequestSchema = exports.UpdateUserStreakOnLoginRequestSchema = exports.UpdateUserStreakIfQualifiedRequestSchema = void 0;
+exports.IsCurrentUserAdminResponseSchema = exports.ToggleFollowResponseSchema = exports.ToggleFollowRequestSchema = exports.GetPublicUserProfileResponseSchema = exports.GetPublicUserProfileRequestSchema = exports.GetUserByUsernameResponseSchema = exports.GetUserByUsernameRequestSchema = exports.UpdateCardProgressAllInOneResponseSchema = exports.UpdateCardProgressAllInOneRequestSchema = exports.UndoCardResponseSchema = exports.WeeklyRollOverResponseSchema = exports.SubmitPointsResponseSchema = exports.GetCurrentSeasonResponseSchema = exports.ServerNowSchema = exports.GetUserAwardsResponseSchema = exports.GetUserActivityHeatmapResponseSchema = exports.GetUserProfileResponseSchema = exports.GetUserSettingsResponseSchema = exports.GetUserProgressResponseSchema = exports.UpdateUserStreakOnLoginResponseSchema = exports.UpdateUserStreakIfQualifiedResponseSchema = exports.UpdateUserSettingsRequestSchema = exports.SubmitPointsRequestSchema = exports.GetUserAwardsRequestSchema = exports.GetUserActivityHeatmapRequestSchema = exports.GetUserProfileRequestSchema = exports.GetUserSettingsRequestSchema = exports.UndoCardRequestSchema = exports.GetUserProgressRequestSchema = exports.UpdateCardProgressRequestSchema = exports.GetUserDecksRequestSchema = exports.UpdateUserStreakOnLoginRequestSchema = exports.UpdateUserStreakIfQualifiedRequestSchema = void 0;
 const zod_1 = require("zod");
 const index_1 = require("../index");
 const base_1 = require("../base");
@@ -145,6 +145,18 @@ exports.UpdateCardProgressAllInOneRequestSchema = zod_1.z.object({
 });
 exports.UpdateCardProgressAllInOneResponseSchema = zod_1.z.object({
     success: zod_1.z.boolean(),
+});
+// ============================================================================
+// Get User By Username (for deep links — no auth required)
+// ============================================================================
+exports.GetUserByUsernameRequestSchema = zod_1.z
+    .object({
+    username: zod_1.z.string().min(1).max(50),
+})
+    .strict();
+exports.GetUserByUsernameResponseSchema = zod_1.z.object({
+    exists: zod_1.z.boolean(),
+    userId: zod_1.z.string().optional(),
 });
 // ============================================================================
 // Public User Profile

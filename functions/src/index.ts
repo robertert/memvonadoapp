@@ -43,6 +43,7 @@ export {
   getPublicUserProfile,
   toggleFollow,
   isCurrentUserAdmin,
+  getUserByUsername,
 } from "./userFunctions";
 export {
   createDeckWithCards,

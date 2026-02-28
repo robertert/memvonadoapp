@@ -53,8 +53,10 @@ export default function decksScreen(): React.JSX.Element {
   const userCtx = useContext(UserContext);
 
   useEffect(() => {
-    fetchDecks();
-  }, []);
+    if (userCtx.id || PLACEHOLDER_MODE) {
+      fetchDecks();
+    }
+  }, [userCtx.id]);
 
   // Sprawdź czy trzeba odświeżyć po zbiorze awokado
   useFocusEffect(

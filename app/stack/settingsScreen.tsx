@@ -14,6 +14,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { ArrowLeftIcon } from "react-native-heroicons/solid";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { signOut } from "firebase/auth";
+import { auth } from "../../firebase";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
 import { SettingsContext } from "../../store/settings-context";
@@ -68,6 +70,28 @@ export default function settingsScreen(): React.JSX.Element {
               );
             } finally {
               setIsLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  function handleLogout(): void {
+    Alert.alert(
+      "Wyloguj się",
+      "Czy na pewno chcesz się wylogować?",
+      [
+        { text: "Anuluj", style: "cancel" },
+        {
+          text: "Wyloguj",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await signOut(auth);
+            } catch (error) {
+              console.error("Error signing out:", error);
+              Alert.alert("Błąd", "Nie udało się wylogować. Spróbuj ponownie.");
             }
           },
         },
@@ -163,6 +187,23 @@ export default function settingsScreen(): React.JSX.Element {
               do celów testowych.
             </Text>
           </View>
+
+          {/* Sekcja - Konto */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Konto</Text>
+            <Pressable
+              onPress={handleLogout}
+              style={[styles.actionButton, styles.logoutButton]}
+            >
+              <MaterialCommunityIcons
+                name="logout"
+                size={24}
+                color={Colors.primary_100}
+                style={{ marginRight: 8 }}
+              />
+              <Text style={styles.actionButtonText}>Wyloguj się</Text>
+            </Pressable>
+          </View>
         </ScrollView>
       </View>
     </LinearGradient>
@@ -222,6 +263,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 12,
     marginBottom: 8,
+  },
+  logoutButton: {
+    backgroundColor: Colors.red,
   },
   actionButtonDisabled: {
     opacity: 0.5,

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
 import {
   DarkTheme,
   DefaultTheme,
@@ -13,6 +13,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
 import UserContextProvider from "../store/user-context";
+import { UserContext } from "../store/user-context";
 import QuickAddProvider from "../store/quickAdd-context";
 import { useQuickAdd } from "../store/quickAdd-context";
 import { QuickAddModal } from "../components/quickAdd";
@@ -23,6 +24,7 @@ import { doc, getDoc } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { PLACEHOLDER_MODE, PLACEHOLDER_SEEDED_KEY } from "../constants/flags";
 import { cloudFunctions } from "../services/cloudFunctions";
+import { useDeepLink } from "../hooks/useDeepLink";
 
 const STREAK_RESET_KEY = "streak_reset_pending";
 
@@ -50,9 +52,9 @@ const CustomSplashScreen = ({ isReady }: { isReady: boolean }) => {
   return (
     <Animated.View style={[styles.splashContainer,
       {opacity}]}>
-      <Image 
+      <Image
         source={require('../assets/memvocadoicon.png')} // Zmień na swój splash image
-        style={{ width: 200, height: 200 }} 
+        style={{ width: 200, height: 200 }}
       />
     </Animated.View>
   );
@@ -72,8 +74,48 @@ function QuickAddModalRoot() {
   );
 }
 
+function DeepLinkHandler({
+  isAuthReady,
+  isAuthenticated,
+  isAppReady,
+}: {
+  isAuthReady: boolean;
+  isAuthenticated: boolean;
+  isAppReady: boolean;
+}) {
+  const { isResolvingDeepLink } = useDeepLink({ isAuthReady, isAuthenticated, isAppReady });
+  return null;
+}
+
+/**
+ * Reads isUserLoaded from UserContext and hides the splash screen
+ * only after both fonts are loaded, auth is ready, AND user data is loaded.
+ */
+function SplashController({
+  fontsReady,
+  isAuthReady,
+  onAppReady,
+}: {
+  fontsReady: boolean;
+  isAuthReady: boolean;
+  onAppReady: () => void;
+}) {
+  const { isUserLoaded } = useContext(UserContext);
+  const triggeredRef = useRef(false);
+
+  useEffect(() => {
+    if (fontsReady && isAuthReady && isUserLoaded && !triggeredRef.current) {
+      triggeredRef.current = true;
+      onAppReady();
+    }
+  }, [fontsReady, isAuthReady, isUserLoaded, onAppReady]);
+
+  return null;
+}
+
 export default function RootLayout(): React.JSX.Element | null {
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAppReady, setIsAppReady] = useState(false);
   // Connect to emulators in development mode
   useEffect(() => {
@@ -81,13 +123,10 @@ export default function RootLayout(): React.JSX.Element | null {
   }, []);
 
   // Handle authentication state changes - jeden centralny handler
-  // FUTURE: Można dodać onboarding przed logowaniem sprawdzając AsyncStorage flag
-  // np. const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
-  // if (!hasSeenOnboarding && !user) { router.replace('/(auth)/preLoginOnboarding'); }
   const segments = useSegments();
   const navigationHandledRef = useRef(false);
   const lastRouteRef = useRef<string | null>(null);
-  const streakCheckedRef = useRef<string | null>(null); // Zapobiega wielokrotnemu sprawdzaniu dla tego samego usera
+  const streakCheckedRef = useRef<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -95,6 +134,8 @@ export default function RootLayout(): React.JSX.Element | null {
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!isMounted) return;
+
+      setIsAuthenticated(!!user);
 
       // Zapobiegaj wielokrotnym przekierowaniom
       if (navigationHandledRef.current) {
@@ -124,16 +165,13 @@ export default function RootLayout(): React.JSX.Element | null {
             const userRef = doc(db, "users", user.uid);
             const snapshot = await getDoc(userRef);
 
-            if (!snapshot.exists()) {
-              console.log("User document does not exist, creating...");
-              // Dokument nie istnieje - utwórz podstawowy dokument
+              if (!snapshot.exists()) {
               try {
                 await cloudFunctions.ensureUserDocument();
                 console.log("User document created successfully");
               } catch (e) {
                 console.error("Error creating user document:", e);
               }
-              // Przekieruj do onboardingu tylko jeśli nie jesteśmy już tam
               if (
                 isMounted &&
                 !currentPath.includes("onboarding") &&
@@ -142,7 +180,6 @@ export default function RootLayout(): React.JSX.Element | null {
                 navigationHandledRef.current = true;
                 lastRouteRef.current = "onboarding";
                 router.replace("/(auth)/onboarding");
-                // Reset flag po 1 sekundzie
                 setTimeout(() => {
                   navigationHandledRef.current = false;
                 }, 1000);
@@ -154,7 +191,6 @@ export default function RootLayout(): React.JSX.Element | null {
             const profileCompleted = userData?.profileCompleted === true;
 
             if (!profileCompleted) {
-              // Przekieruj do onboardingu (wieloetapowa rejestracja) tylko jeśli nie jesteśmy już tam
               if (
                 isMounted &&
                 !currentPath.includes("onboarding") &&
@@ -169,19 +205,16 @@ export default function RootLayout(): React.JSX.Element | null {
               }
             } else {
               // Profil uzupełniony - sprawdź streak przy logowaniu
-              // Sprawdzamy tylko raz dla danego użytkownika (zapobiega wielokrotnym wywołaniom)
               if (
                 isMounted &&
                 streakCheckedRef.current !== user.uid &&
                 !currentPath.includes("onboarding")
               ) {
                 streakCheckedRef.current = user.uid;
-                
-                // Sprawdź streak przy logowaniu
+
                 try {
                   const streakResult = await cloudFunctions.updateUserStreakOnLogin();
 
-                  // Jeśli streak został przerwany, zapisz do AsyncStorage (tabsy sprawdzą to przy mount)
                   if (streakResult.status === "streak_reset" && streakResult.updated) {
                     await AsyncStorage.setItem(
                       STREAK_RESET_KEY,
@@ -193,7 +226,6 @@ export default function RootLayout(): React.JSX.Element | null {
                   }
                 } catch (error) {
                   console.error("Error checking streak on login:", error);
-                  // Nie blokuj logowania jeśli sprawdzenie streak się nie powiodło
                 }
               }
 
@@ -213,7 +245,6 @@ export default function RootLayout(): React.JSX.Element | null {
             }
           } catch (e) {
             console.error("Error checking profile completion:", e);
-            // W przypadku błędu, spróbuj utworzyć dokument i przekieruj do onboardingu
             try {
               await cloudFunctions.ensureUserDocument();
             } catch (err) {
@@ -235,7 +266,6 @@ export default function RootLayout(): React.JSX.Element | null {
         } else {
           // Użytkownik nie jest zalogowany - resetuj streak check
           streakCheckedRef.current = null;
-          // Przekieruj do ekranu logowania tylko jeśli nie jesteśmy już tam
           if (
             isMounted &&
             !currentPath.includes("login") &&
@@ -251,7 +281,6 @@ export default function RootLayout(): React.JSX.Element | null {
         }
       } catch (error) {
         console.error("Unexpected error in auth state handler:", error);
-        // W przypadku nieoczekiwanego błędu, przekieruj do logowania tylko jeśli nie jesteśmy już tam
         if (
           isMounted &&
           !currentPath.includes("login") &&
@@ -268,7 +297,7 @@ export default function RootLayout(): React.JSX.Element | null {
       finally {
         if (isMounted) {
           setIsAuthReady(true);
-      }     
+      }
      }
     });
 
@@ -280,7 +309,8 @@ export default function RootLayout(): React.JSX.Element | null {
       }
       unsubscribe();
     };
-  }, [segments]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const colorScheme = useColorScheme();
 
@@ -290,38 +320,30 @@ export default function RootLayout(): React.JSX.Element | null {
     Inter: require("../assets/Inter/Inter-VariableFont_opsz,wght.ttf"),
   });
 
+  const fontsReady = !!(fontsLoaded || fontError);
 
-  const onLayoutRootView = useCallback(async () => {
-    if ((fontsLoaded || fontError) && isAuthReady) {
-      setIsAppReady(true);
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError, isAuthReady]);
+  const handleAppReady = useCallback(() => {
+    setIsAppReady(true);
+    SplashScreen.hideAsync();
+  }, []);
 
-
-  // Ukryj splash screen po załadowaniu fontów lub po timeout
+  // Fallback: ukryj splash screen po 8 sekundach niezależnie od stanu
   useEffect(() => {
-    if ((fontsLoaded || fontError) && isAuthReady) {
-      setIsAppReady(true);
-      SplashScreen.hideAsync();
-    }
-
-    // Fallback: ukryj splash screen po 3 sekundach niezależnie od stanu
     const timeout = setTimeout(() => {
       setIsAppReady(true);
       SplashScreen.hideAsync();
     }, 8000);
 
     return () => clearTimeout(timeout);
-  }, [fontsLoaded, fontError, isAuthReady]);
+  }, []);
 
-  if (!fontsLoaded && !fontError) {
+  if (!fontsReady) {
     return null;
   }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View onLayout={onLayoutRootView} style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
         <ThemeProvider
           value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
         >
@@ -336,6 +358,16 @@ export default function RootLayout(): React.JSX.Element | null {
                 <Stack.Screen name="(auth)/resetPassword" />
                 <Stack.Screen name="tabs" />
               </Stack>
+              <SplashController
+                fontsReady={fontsReady}
+                isAuthReady={isAuthReady}
+                onAppReady={handleAppReady}
+              />
+              <DeepLinkHandler
+                isAuthReady={isAuthReady}
+                isAuthenticated={isAuthenticated}
+                isAppReady={isAppReady}
+              />
               <QuickAddModalRoot />
               <CustomSplashScreen isReady={isAppReady} />
               <Toast />

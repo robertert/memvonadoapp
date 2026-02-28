@@ -82,6 +82,9 @@ import {
   ToggleFollowResponseSchema,
   IsCurrentUserAdminResponse,
   IsCurrentUserAdminResponseSchema,
+  GetUserByUsernameRequest,
+  GetUserByUsernameResponse,
+  GetUserByUsernameResponseSchema,
 } from "@/types/schemas/api/user";
 import {
   GetFriendsStreaksRequest,
@@ -1509,6 +1512,25 @@ export const cloudFunctions = {
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from getDeckEditors");
+    }
+    return validatedData.data;
+  },
+
+  // ============================================================================
+  // Deep Link Functions
+  // ============================================================================
+
+  // Get user by username (for deep link resolution — no auth required)
+  getUserByUsername: async (username: string) => {
+    const fn = httpsCallable<
+      GetUserByUsernameRequest,
+      GetUserByUsernameResponse
+    >(functions, "getUserByUsername");
+    const result = await fn({ username });
+    const validatedData = GetUserByUsernameResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getUserByUsername");
     }
     return validatedData.data;
   },

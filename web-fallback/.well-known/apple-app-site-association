@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "RM2NJT3U6B.com.memvocado.app",
+        "paths": [
+          "/user/*",
+          "/deck/*",
+          "/leaderboard"
+        ]
+      }
+    ]
+  }
+}

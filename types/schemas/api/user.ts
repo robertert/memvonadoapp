@@ -265,6 +265,27 @@ export type UpdateCardProgressAllInOneResponse = z.infer<
 >;
 
 // ============================================================================
+// Get User By Username (for deep links — no auth required)
+// ============================================================================
+
+export const GetUserByUsernameRequestSchema = z
+  .object({
+    username: z.string().min(1).max(50),
+  })
+  .strict();
+export type GetUserByUsernameRequest = z.infer<
+  typeof GetUserByUsernameRequestSchema
+>;
+
+export const GetUserByUsernameResponseSchema = z.object({
+  exists: z.boolean(),
+  userId: z.string().optional(),
+});
+export type GetUserByUsernameResponse = z.infer<
+  typeof GetUserByUsernameResponseSchema
+>;
+
+// ============================================================================
 // Public User Profile
 // ============================================================================
 

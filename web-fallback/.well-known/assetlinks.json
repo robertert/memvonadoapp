@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.memvocado.app",
+      "sha256_cert_fingerprints": [
+        "A5:58:84:B5:5D:43:4E:0E:BF:7B:FB:E1:53:13:27:3F:4E:CB:54:E4:F1:7D:76:5C:8E:D6:F2:30:3E:B0:27:E2"
+      ]
+    }
+  }
+]

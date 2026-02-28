@@ -297,3 +297,10 @@ export declare const toggleFollow: import("firebase-functions/v2/https").Callabl
 export declare const isCurrentUserAdmin: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     isAdmin: boolean;
 }>, unknown>;
+/**
+ * Get user by username (for deep link resolution — no auth required)
+ */
+export declare const getUserByUsername: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
+    exists: boolean;
+    userId?: string | undefined;
+}>, unknown>;

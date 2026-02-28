@@ -1147,6 +1147,25 @@ export declare const UpdateCardProgressAllInOneResponseSchema: z.ZodObject<{
     success: boolean;
 }>;
 export type UpdateCardProgressAllInOneResponse = z.infer<typeof UpdateCardProgressAllInOneResponseSchema>;
+export declare const GetUserByUsernameRequestSchema: z.ZodObject<{
+    username: z.ZodString;
+}, "strict", z.ZodTypeAny, {
+    username: string;
+}, {
+    username: string;
+}>;
+export type GetUserByUsernameRequest = z.infer<typeof GetUserByUsernameRequestSchema>;
+export declare const GetUserByUsernameResponseSchema: z.ZodObject<{
+    exists: z.ZodBoolean;
+    userId: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    exists: boolean;
+    userId?: string | undefined;
+}, {
+    exists: boolean;
+    userId?: string | undefined;
+}>;
+export type GetUserByUsernameResponse = z.infer<typeof GetUserByUsernameResponseSchema>;
 export declare const GetPublicUserProfileRequestSchema: z.ZodObject<{
     targetUserId: z.ZodString;
 }, "strict", z.ZodTypeAny, {

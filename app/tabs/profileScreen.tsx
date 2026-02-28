@@ -17,6 +17,7 @@ import { FireIcon } from "react-native-heroicons/solid";
 import { FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
 import ContributionHeatmap from "../../components/profileScreen/ContributionHeatmap";
 import { cloudFunctions } from "../../services/cloudFunctions";
+import { buildUserShareMessage } from "@/utils/deepLinks";
 import { UserContext } from "../../store/user-context";
 import { PLACEHOLDER_MODE } from "../../constants/flags";
 import type { User } from "@/types";
@@ -175,8 +176,9 @@ export default function profileScreen(): React.JSX.Element {
   }
 
   function shareProfileHandler(): void {
+    if (!profileData?.username) return;
     Share.share({
-      message: "Share profile",
+      message: buildUserShareMessage(profileData.username),
     });
   }
 

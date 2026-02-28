@@ -22,7 +22,8 @@ import {
   AVOCADO_REFRESH_DASHBOARD_KEY,
 } from "@/constants/avocado";
 import { router } from "expo-router";
-import { useDeepLink, usePendingQuickAdd } from "@/hooks/useDeepLink";
+import { consumePendingDeepLink } from "@/hooks/useDeepLink";
+import { useQuickAdd, QuickAddSource } from "@/store/quickAdd-context";
 
 const STREAK_RESET_KEY = "streak_reset_pending";
 
@@ -36,9 +37,78 @@ export default function TabsLayout(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ triggerHarvest?: string }>();
 
-  // Deep link hooks
-  useDeepLink();
-  usePendingQuickAdd();
+  const { showQuickAdd } = useQuickAdd();
+
+  // Consume pending deep link after auth + tabs mount
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    let isMounted = true;
+
+    const handlePendingDeepLink = async () => {
+      try {
+        const pendingRoute = await consumePendingDeepLink();
+        if (!pendingRoute || !isMounted) return;
+
+        timeoutId = setTimeout(async () => {
+          if (!isMounted) return;
+          console.log("handling pending deep link");
+          switch (pendingRoute.type) {
+            case "add": {
+              const validSources: QuickAddSource[] = ["widget", "ocr", "deeplink", "manual"];
+              const source = validSources.includes(pendingRoute.params.source as QuickAddSource)
+                ? (pendingRoute.params.source as QuickAddSource)
+                : "deeplink";
+              showQuickAdd({
+                front: pendingRoute.params.term,
+                deckId: pendingRoute.params.deck,
+                source,
+                autoTranslate: pendingRoute.params.translate === "true",
+              });
+              break;
+            }
+            case "user": {
+              const { username } = pendingRoute.params;
+              if (!username) return;
+              try {
+                const result = await cloudFunctions.getUserByUsername(username);
+                if (result.exists && result.userId && isMounted) {
+                  router.push({
+                    pathname: "/stack/userProfileScreen",
+                    params: { userId: result.userId },
+                  });
+                }
+              } catch (error) {
+                console.error("Error resolving pending username:", error);
+              }
+              break;
+            }
+            case "deck": {
+              if (pendingRoute.params.deckId) {
+                router.push({
+                  pathname: "/stack/deckDetails",
+                  params: { deckId: pendingRoute.params.deckId },
+                });
+              }
+              break;
+            }
+            case "leaderboard": {
+              router.replace("/tabs/rankingsScreen");
+              break;
+            }
+          }
+        }, 500);
+      } catch (error) {
+        console.error("Error handling pending deep link:", error);
+      }
+    };
+
+    handlePendingDeepLink();
+
+    return () => {
+      isMounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, []);
 
   // Streak modal state
   const [showStreakResetModal, setShowStreakResetModal] = useState(false);
@@ -138,125 +208,125 @@ export default function TabsLayout(): React.JSX.Element {
   return (
     <>
       <Tabs
-      screenOptions={{
-        tabBarShowLabel: false,
-        tabBarInactiveTintColor: Colors.primary_700,
-        tabBarActiveTintColor: Colors.accent_500,
-        headerShown: false,
-        tabBarBackground: () => {
-          return (
-            <View
-              style={[
-                styles.tabBar,
-                { height: insets.bottom + 70, paddingBottom: insets.bottom },
-              ]}
-            >
-              <View style={styles.tabBarInner} />
-            </View>
-          );
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="dashboardScreen"
-        options={{
-          tabBarIcon: ({ focused, color, size }: TabBarIconProps) => {
+        screenOptions={{
+          tabBarShowLabel: false,
+          tabBarInactiveTintColor: Colors.primary_700,
+          tabBarActiveTintColor: Colors.accent_500,
+          headerShown: false,
+          tabBarBackground: () => {
             return (
-              <>
-                <HomeIcon size={sizeC} color={color} />
-                {focused && (
-                  <View style={[styles.line, { backgroundColor: color }]} />
-                )}
-              </>
+              <View
+                style={[
+                  styles.tabBar,
+                  { height: insets.bottom + 70, paddingBottom: insets.bottom },
+                ]}
+              >
+                <View style={styles.tabBarInner} />
+              </View>
             );
           },
         }}
+      >
+        <Tabs.Screen
+          name="dashboardScreen"
+          options={{
+            tabBarIcon: ({ focused, color, size }: TabBarIconProps) => {
+              return (
+                <>
+                  <HomeIcon size={sizeC} color={color} />
+                  {focused && (
+                    <View style={[styles.line, { backgroundColor: color }]} />
+                  )}
+                </>
+              );
+            },
+          }}
+        />
+
+        <Tabs.Screen
+          name="searchScreen"
+          options={{
+            tabBarIcon: ({ focused, color, size }: TabBarIconProps) => {
+              return (
+                <>
+                  <MagnifyingGlassIcon size={sizeC} color={color} />
+                  {focused && (
+                    <View style={[styles.line, { backgroundColor: color }]} />
+                  )}
+                </>
+              );
+            },
+          }}
+        />
+        <Tabs.Screen
+          name="createScreen"
+          options={{
+            tabBarIcon: ({ focused, color, size }: TabBarIconProps) => {
+              return (
+                <>
+                  <PlusIcon size={sizeC} color={color} />
+
+                  {focused && (
+                    <View style={[styles.line, { backgroundColor: color }]} />
+                  )}
+                </>
+              );
+            },
+          }}
+        />
+        <Tabs.Screen
+          name="rankingsScreen"
+          options={{
+            tabBarIcon: ({ focused, color, size }: TabBarIconProps) => {
+              return (
+                <>
+                  <ChartBarIcon size={sizeC} color={color} />
+                  {focused && (
+                    <View style={[styles.line, { backgroundColor: color }]} />
+                  )}
+                </>
+              );
+            },
+          }}
+        />
+        <Tabs.Screen
+          name="profileScreen"
+          options={{
+            tabBarIcon: ({ focused, color, size }: TabBarIconProps) => {
+              return (
+                <>
+                  <UserIcon size={sizeC} color={color} />
+                  {focused && (
+                    <View style={[styles.line, { backgroundColor: color }]} />
+                  )}
+                </>
+              );
+            },
+          }}
+        />
+      </Tabs>
+
+      <StreakLostModal
+        visible={showStreakResetModal}
+        onClose={() => setShowStreakResetModal(false)}
+        previousStreak={previousStreak}
       />
 
-      <Tabs.Screen
-        name="searchScreen"
-        options={{
-          tabBarIcon: ({ focused, color, size }: TabBarIconProps) => {
-            return (
-              <>
-                <MagnifyingGlassIcon size={sizeC} color={color} />
-                {focused && (
-                  <View style={[styles.line, { backgroundColor: color }]} />
-                )}
-              </>
-            );
-          },
-        }}
+      <HarvestModal
+        visible={showHarvestModal}
+        onClose={handleHarvestClose}
+        awardedSkin={awardedSkin}
+        isNewSkin={isNewSkin}
+        isLoading={harvestLoading}
+        error={harvestError}
+        onRetry={handleHarvestRetry}
       />
-      <Tabs.Screen
-        name="createScreen"
-        options={{
-          tabBarIcon: ({ focused, color, size }: TabBarIconProps) => {
-            return (
-              <>
-                <PlusIcon size={sizeC} color={color} />
 
-                {focused && (
-                  <View style={[styles.line, { backgroundColor: color }]} />
-                )}
-              </>
-            );
-          },
-        }}
+      <AvocadoResetModal
+        visible={showAvocadoResetModal}
+        onClose={() => setShowAvocadoResetModal(false)}
+        previousDays={avocadoPreviousDays}
       />
-      <Tabs.Screen
-        name="rankingsScreen"
-        options={{
-          tabBarIcon: ({ focused, color, size }: TabBarIconProps) => {
-            return (
-              <>
-                <ChartBarIcon size={sizeC} color={color} />
-                {focused && (
-                  <View style={[styles.line, { backgroundColor: color }]} />
-                )}
-              </>
-            );
-          },
-        }}
-      />
-      <Tabs.Screen
-        name="profileScreen"
-        options={{
-          tabBarIcon: ({ focused, color, size }: TabBarIconProps) => {
-            return (
-              <>
-                <UserIcon size={sizeC} color={color} />
-                {focused && (
-                  <View style={[styles.line, { backgroundColor: color }]} />
-                )}
-              </>
-            );
-          },
-        }}
-      />
-    </Tabs>
-    
-    <StreakLostModal
-      visible={showStreakResetModal}
-      onClose={() => setShowStreakResetModal(false)}
-      previousStreak={previousStreak}
-    />
-
-    <HarvestModal
-      visible={showHarvestModal}
-      onClose={handleHarvestClose}
-      awardedSkin={awardedSkin}
-      isNewSkin={isNewSkin}
-      isLoading={harvestLoading}
-      error={harvestError}
-      onRetry={handleHarvestRetry}
-    />
-
-    <AvocadoResetModal
-      visible={showAvocadoResetModal}
-      onClose={() => setShowAvocadoResetModal(false)}
-      previousDays={avocadoPreviousDays}
-    />
 
     </>
   );
