@@ -8,11 +8,13 @@ import React, {
 } from "react";
 import {
   ActivityIndicator,
+  FlatList,
   Modal,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
+  ViewToken,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Fonts, generageRandomUid } from "../../constants/colors";
@@ -36,7 +38,6 @@ import {
   DeckCore,
 } from "@/types";
 import { CATEGORY_OPTIONS, LANGUAGE_OPTIONS } from "@/constants/settings";
-import { FlashList } from "@shopify/flash-list";
 import { useDeckDraft } from "@/hooks/useDeckDraft";
 
 interface CreateSelfParams {
@@ -103,6 +104,8 @@ export default function createSelfScreen(): React.JSX.Element {
   const [deletedCardIds, setDeletedCardIds] = useState<Set<string>>(new Set());
 
   const focusRefs = useRef<Record<string, TextInput | null>>({});
+  const flashListRef = useRef<FlatList<EditableCard>>(null);
+  const lastVisibleIndexRef = useRef<number>(0);
 
   // 2. State to track which card ID should be focused next
   const [focusTarget, setFocusTarget] = useState<string | null>(null);
@@ -477,6 +480,35 @@ export default function createSelfScreen(): React.JSX.Element {
     }
   }
 
+  const handleViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      if (viewableItems.length > 0) {
+        const last = viewableItems[viewableItems.length - 1];
+        if (last.index !== null && last.index !== undefined) {
+          lastVisibleIndexRef.current = last.index;
+        }
+      }
+    },
+    []
+  );
+
+  function createCardAtIndex(index: number): string {
+    const newCardId = generageRandomUid();
+    setCards((prev) => {
+      const newCard: EditableCard = {
+        id: newCardId,
+        cardData: { front: "", back: "" },
+        tags: [],
+        isNew: true,
+        isDirty: false,
+      };
+      const result = [...prev];
+      result.splice(index, 0, newCard);
+      return result;
+    });
+    return newCardId;
+  }
+
   function createNewHandler(isFront: boolean): string {
     const newCardId = generageRandomUid();
     setCards((prev) => {
@@ -504,6 +536,19 @@ export default function createSelfScreen(): React.JSX.Element {
     setFocusTarget(newCardId);
   }
 
+  function handleFabPress(): void {
+    const insertIndex = Math.min(lastVisibleIndexRef.current + 1, cards.length);
+    createCardAtIndex(insertIndex);
+    setTimeout(() => {
+      const scrollIndex = Math.min(insertIndex, cards.length); // cards.length = newLength - 1
+      flashListRef.current?.scrollToIndex({
+        index: scrollIndex,
+        animated: true,
+        viewPosition: 0.5,
+      });
+    }, 50);
+  }
+
   function titleChangeHandler(text: string): void {
     setTitle(text);
   }
@@ -529,6 +574,25 @@ export default function createSelfScreen(): React.JSX.Element {
     }
     return "Utwórz Deck";
   }, [isEditMode, selectedDeck]);
+
+  const duplicateCardIds = useMemo<Set<string>>(() => {
+    const seen = new Map<string, string>(); // normalizedFront -> first card id
+    const duplicates = new Set<string>();
+
+    for (const card of cards) {
+      const normalized = card.cardData.front.trim().toLowerCase();
+      if (normalized === "") continue;
+
+      if (seen.has(normalized)) {
+        duplicates.add(seen.get(normalized)!);
+        duplicates.add(card.id);
+      } else {
+        seen.set(normalized, card.id);
+      }
+    }
+
+    return duplicates;
+  }, [cards]);
 
   // ListHeaderComponent for FlashList
   const ListHeaderComponent = useMemo(
@@ -678,17 +742,6 @@ export default function createSelfScreen(): React.JSX.Element {
         <View style={styles.cardsSection}>
           <Text style={styles.sectionTitle}>Karty</Text>
         </View>
-        <Pressable
-          onPress={createNewHandler.bind(null, true)}
-          style={styles.addCardButton}
-        >
-          <AntDesign
-            name="plus-circle"
-            size={45}
-            color={Colors.accent_500}
-          />
-          <Text style={styles.addCardText}>Dodaj kartę</Text>
-        </Pressable>
       </View>
     ),
     [title, deckCategory, frontLanguage, backLanguage, selectedDeck, isEditorOnly]
@@ -703,6 +756,7 @@ export default function createSelfScreen(): React.JSX.Element {
         onDelete={deleteCard}
         deckLanguage={frontLanguage}
         onEnter={addAndFocusCard}
+        isDuplicate={duplicateCardIds.has(card.id)}
         focusRef={(ref: TextInput | null) => {
           if (ref) {
             focusRefs.current[card.id] = ref;
@@ -712,7 +766,7 @@ export default function createSelfScreen(): React.JSX.Element {
         }}
       />
     ),
-    [updateCard, deleteCard, frontLanguage]
+    [updateCard, deleteCard, frontLanguage, duplicateCardIds]
   );
 
   return (
@@ -740,8 +794,10 @@ export default function createSelfScreen(): React.JSX.Element {
           </View>
         ) : (
           <>
-            <FlashList
+            <FlatList
+              ref={flashListRef}
               data={cards}
+              onViewableItemsChanged={handleViewableItemsChanged}
               renderItem={renderItem}
               keyExtractor={(item) => item.id}
               ListHeaderComponent={ListHeaderComponent}
@@ -749,6 +805,7 @@ export default function createSelfScreen(): React.JSX.Element {
                 typedParams.edit === "true" ? loadMoreCards : undefined
               }
               onEndReachedThreshold={0.5}
+              onScrollToIndexFailed={() => {}}
               ListFooterComponent={
                 <>
                   {isLoadingMoreCards ? (
@@ -759,21 +816,15 @@ export default function createSelfScreen(): React.JSX.Element {
                       />
                     </View>
                   ) : null}
-                  <Pressable
-                    onPress={createNewHandler.bind(null, false)}
-                    style={styles.addCardButton}
-                  >
-                    <AntDesign
-                      name="plus-circle"
-                      size={45}
-                      color={Colors.accent_500}
-                    />
-                    <Text style={styles.addCardText}>Dodaj kartę</Text>
-                  </Pressable>
+                  <View style={{ height: 16 }} />
                 </>
               }
               contentContainerStyle={styles.flashListContent}
             />
+
+            <Pressable onPress={handleFabPress} style={styles.fab}>
+              <AntDesign name="plus" size={24} color={Colors.primary_100} />
+            </Pressable>
 
             <Pressable onPress={saveHandler} style={styles.saveButton}>
               <Text style={styles.saveText}>{saveButtonText}</Text>
@@ -1024,6 +1075,23 @@ const styles = StyleSheet.create({
     color: Colors.primary_700,
     fontWeight: "700",
     marginLeft: 10,
+  },
+  fab: {
+    position: "absolute",
+    bottom: 110,
+    right: 15,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primary_700,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
+    zIndex: 10,
   },
   saveButton: {
     backgroundColor: Colors.primary_700,

@@ -42,6 +42,7 @@ interface NewCardProps {
   deckLanguage?: string;
   onEnter: () => void;
   focusRef: (ref: TextInput | null) => void;
+  isDuplicate?: boolean;
 }
 
 interface ActiveFields {
@@ -107,6 +108,7 @@ function NewCard({
   deckLanguage,
   onEnter,
   focusRef,
+  isDuplicate = false,
 }: NewCardProps): React.JSX.Element {
 
 
@@ -503,6 +505,12 @@ function NewCard({
     <GestureDetector gesture={pan} key={card.id}>
       <Animated.View style={[cardStyle, styles.cardStack]}>
         <Animated.View style={[styles.cardContainer]}>
+          {isDuplicate && (
+            <View style={styles.duplicateBadge}>
+              <AntDesign name="warning" size={13} color={Colors.primary_100} />
+              <Text style={styles.duplicateBadgeText}>Duplikat</Text>
+            </View>
+          )}
           {/* FRONT */}
           <View style={styles.cardSection}>
             <View style={styles.cardLabelContainer}>
@@ -1378,6 +1386,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary_700,
     borderWidth: 2,
     marginBottom: 16,
+    backgroundColor: Colors.primary_100,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1499,6 +1508,23 @@ const styles = StyleSheet.create({
     color: Colors.primary_500,
     fontSize: 14,
     fontFamily: Fonts.primary,
+  },
+  duplicateBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: Colors.red,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 12,
+    gap: 5,
+  },
+  duplicateBadgeText: {
+    color: Colors.primary_100,
+    fontSize: 12,
+    fontFamily: Fonts.primary,
+    fontWeight: "700",
   },
 });
 
