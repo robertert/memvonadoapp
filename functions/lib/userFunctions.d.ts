@@ -50,6 +50,7 @@ export declare const getUserDecks: import("firebase-functions/v2/https").Callabl
         settings: {
             zenMode: boolean;
             shuffleNewCards: boolean;
+            bidirectional: boolean;
             dueCardsNumPerDay?: number | undefined;
             newCardsNumPerDay?: number | undefined;
             learningMode?: "srs" | "all_in_one" | undefined;

@@ -469,6 +469,33 @@ export default function deckSettings(): React.JSX.Element {
             </View>
           </View>
 
+          {/* Nauka dwukierunkowa */}
+          <View style={styles.section}>
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingTitle}>Nauka dwukierunkowa</Text>
+                <Text style={styles.settingDescription}>
+                  Każda karta pojawi się dwa razy — przód→tył i tył→przód
+                </Text>
+              </View>
+              <Switch
+                value={deck?.settings.bidirectional ?? false}
+                onValueChange={(value) => {
+                  if (!deck) return;
+                  setDeck({
+                    ...deck,
+                    settings: { ...deck.settings, bidirectional: value },
+                  });
+                }}
+                trackColor={{
+                  false: Colors.primary_500,
+                  true: Colors.accent_500,
+                }}
+                thumbColor={Colors.primary_700}
+              />
+            </View>
+          </View>
+
           {/* Tryb nauki */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Tryb nauki</Text>

@@ -102,6 +102,8 @@ export const CardLearningSchema = z
     cardAlgo: CardAlgoSchema.optional(),
     firstLearn: FirstLearnSchema,
     grade: z.nativeEnum(CardGrade).optional(), // -1: not graded, 0: wrong, 1: hard, 2: good, 3: easy
+    cardAlgoReverse: CardAlgoSchema.optional(),
+    firstLearnReverse: FirstLearnSchema.optional(),
   })
   .strict();
 

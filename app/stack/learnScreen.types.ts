@@ -1,6 +1,14 @@
 import type { Card, DeckLearningData, DailyStats } from "@/types";
 import { SharedValue, useAnimatedStyle } from "react-native-reanimated";
 
+export type SessionDirection = "forward" | "reverse";
+
+export interface SessionItem {
+  card: Card;
+  direction: SessionDirection;
+  seenInSession?: boolean;
+}
+
 export interface ProgressState {
   easy: number;
   hard: number;
@@ -23,7 +31,7 @@ export interface LearnScreenParams {
 }
 
 export interface CardLogicState {
-  cards: Card[] | undefined;
+  cards: SessionItem[] | undefined;
   isLoading: boolean;
   isBack: boolean;
   tooltip: TooltipState;

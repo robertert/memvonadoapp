@@ -528,7 +528,8 @@ export const cloudFunctions = {
     deckId: string,
     card: Card,
     scheduledTime: number,
-    dailyStats?: DailyStats
+    dailyStats?: DailyStats,
+    direction?: "forward" | "reverse"
   ) => {
     const updateCardProgressFunction = httpsCallable<
       UpdateCardProgressRequest,
@@ -540,6 +541,7 @@ export const cloudFunctions = {
       card,
       scheduledTime,
       dailyStats,
+      direction,
     });
     const validatedData = SuccessResponseSchema.safeParse(result.data);
     if (!validatedData.success) {

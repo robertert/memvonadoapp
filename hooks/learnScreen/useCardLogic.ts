@@ -14,6 +14,7 @@ import {
   ProgressState,
   TooltipState,
   CardLogicState,
+  SessionItem,
 } from "../../app/stack/learnScreen.types";
 import {
   Card,
@@ -37,7 +38,6 @@ const DEFAULT_CARD_ALGO: CardAlgo = {
 };
 
 const f = fsrs(FSRS_PARAMS);
-const now = new Date();
 
 /**
  * Custom hook for managing card learning logic, FSRS algorithm, and progress tracking
@@ -47,7 +47,7 @@ const now = new Date();
 export function useCardLogic(id: string) {
   const userCtx = useContext(UserContext);
 
-  const [cards, setCards] = useState<(Card & { seenInSession?: boolean })[]>();
+  const [cards, setCards] = useState<SessionItem[]>();
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isBack, setIsBack] = useState<boolean>(false);
   const [dailyStats, setDailyStats] = useState<DailyStats | null>(null);
@@ -75,7 +75,7 @@ export function useCardLogic(id: string) {
   const [isFinished, setIsFinished] = useState<boolean>(false);
   const [history, setHistory] = useState<
     {
-      card: Card & { seenInSession?: boolean };
+      item: SessionItem;
       dailyStats: DailyStats | null;
     }[]
   >([]);
@@ -92,28 +92,33 @@ export function useCardLogic(id: string) {
     dailyStats,
   };
 
-  function compDueDate(a: any, b: any): number {
+  function getItemDue(item: SessionItem): number {
     const nowMs = new Date().getTime();
-
-    // Determine due time depending on phase
-    const aDue =
-      a.firstLearn?.isFirst || a.firstLearn?.isNew
-        ? a.firstLearn?.due
-          ? new Date(a.firstLearn.due).getTime()
-          : nowMs
-        : a.cardAlgo?.due
-        ? new Date(a.cardAlgo.due).getTime()
+    const card = item.card;
+    if (item.direction === "reverse") {
+      const fl = card.firstLearnReverse;
+      if (fl?.isFirst || fl?.isNew) {
+        return fl.due ? new Date(fl.due).getTime() : nowMs;
+      }
+      return card.cardAlgoReverse?.due
+        ? new Date(card.cardAlgoReverse.due).getTime()
         : nowMs;
-    const bDue =
-      b.firstLearn?.isFirst || b.firstLearn?.isNew
-        ? b.firstLearn?.due
-          ? new Date(b.firstLearn.due).getTime()
-          : nowMs
-        : b.cardAlgo?.due
-        ? new Date(b.cardAlgo.due).getTime()
-        : nowMs;
+    }
+    const fl = card.firstLearn;
+    if (fl?.isFirst || fl?.isNew) {
+      return fl.due ? new Date(fl.due).getTime() : nowMs;
+    }
+    return card.cardAlgo?.due
+      ? new Date(card.cardAlgo.due).getTime()
+      : nowMs;
+  }
 
-    // If both are currently due, prioritize cards already seen in this session
+  function compDueDate(a: SessionItem, b: SessionItem): number {
+    const nowMs = new Date().getTime();
+    const aDue = getItemDue(a);
+    const bDue = getItemDue(b);
+
+    // If both are currently due, prioritize items already seen in this session
     const aSeen = a.seenInSession ? 1 : 0;
     const bSeen = b.seenInSession ? 1 : 0;
     if (aDue <= nowMs && bDue <= nowMs) {
@@ -125,20 +130,20 @@ export function useCardLogic(id: string) {
   }
 
   async function updateCardsEvery(
-    card: Card & { seenInSession?: boolean },
+    item: SessionItem,
     scheduledTime: number,
     dailyStatsLocal: DailyStats | null
   ): Promise<void> {
     try {
-      if (userCtx.id && card.id) {
-        const cardToUpdate = JSON.parse(JSON.stringify(card));
-        delete cardToUpdate.seenInSession;
+      if (userCtx.id && item.card.id) {
+        const cardToUpdate: Card = JSON.parse(JSON.stringify(item.card));
         await cloudFunctions.updateCardProgress(
           userCtx.id,
           id, // deck id
           cardToUpdate,
           scheduledTime,
-          dailyStatsLocal ?? undefined
+          dailyStatsLocal ?? undefined,
+          item.direction
         );
       }
     } catch (e) {
@@ -147,17 +152,17 @@ export function useCardLogic(id: string) {
   }
   async function goBackInHistory(): Promise<void> {
     if (history.length > 0) {
-      const newDailyStats = history[history.length - 1].dailyStats;
+      const lastEntry = history[history.length - 1];
+      const newDailyStats = lastEntry.dailyStats;
       setCards((prev) => {
         const newCards = [...(prev ?? [])];
-        newCards.unshift(history[history.length - 1].card);
+        newCards.unshift(lastEntry.item);
         return newCards;
       });
       setHistory(history.slice(0, history.length - 1));
       setDailyStats(newDailyStats);
-      
-      const cardToUndo = JSON.parse(JSON.stringify(history[history.length - 1].card));
-      delete cardToUndo.seenInSession;
+
+      const cardToUndo: Card = JSON.parse(JSON.stringify(lastEntry.item.card));
       try {
         if (!newDailyStats) {
           throw new Error("Daily stats are not defined");
@@ -174,13 +179,14 @@ export function useCardLogic(id: string) {
   }
 
   function newCard(type: CardGrade): void {
+    const now = new Date();
     try {
       setError(null); // Clear any previous errors
 
       if (!cards || cards.length === 0) {
         throw new Error("No cards available");
       }
-      
+
       if (type === CardGrade.Good) {
         playSound("good");
       } else if (type === CardGrade.Wrong) {
@@ -190,33 +196,33 @@ export function useCardLogic(id: string) {
       } else if (type === CardGrade.Easy) {
         playSound("easy");
       }
-      
+
       setIsBack(false);
 
-      // Easy
-      // Second Good Answer
-      // Card not in first learning phase
+      const currentItem = cards[0];
+      const isReverse = currentItem.direction === "reverse";
+      const currentCard = currentItem.card;
 
+      // Pick the correct firstLearn / cardAlgo based on direction
+      const firstLearn = isReverse
+        ? currentCard.firstLearnReverse
+        : currentCard.firstLearn;
+      const cardAlgoField = isReverse
+        ? currentCard.cardAlgoReverse
+        : currentCard.cardAlgo;
+
+      // Easy / Second Good / Card not in first learning phase
       if (
         type == CardGrade.Easy ||
-        (type == CardGrade.Good && cards[0].firstLearn?.consecutiveGood == 1) ||
-        (cards[0].firstLearn &&
-          !cards[0].firstLearn.isFirst &&
-          !cards[0].firstLearn.isNew)
+        (type == CardGrade.Good && firstLearn?.consecutiveGood == 1) ||
+        (firstLearn && !firstLearn.isFirst && !firstLearn.isNew)
       ) {
         /////////////////////////////////////////////////////////////
         // CASE 1: Card graduates to FSRS algorithm
         /////////////////////////////////////////////////////////////
-        if (!cards[0]) {
-          throw new Error("Card algo is not defined");
-        }
-        if (!cards[0].cardAlgo) {
-          cards[0].cardAlgo = DEFAULT_CARD_ALGO;
-        }
-        // Card graduates to FSRS algorithm
-        const newCrd = f.repeat(cards[0].cardAlgo, now);
+        const algoBase = cardAlgoField ?? DEFAULT_CARD_ALGO;
+        const newCrd = f.repeat(algoBase, now);
         let newCardAlgo: CardAlgo;
-        // Switch case for answer type
         switch (type) {
           case CardGrade.Wrong:
             newCardAlgo = newCrd[Rating.Again].card;
@@ -236,46 +242,54 @@ export function useCardLogic(id: string) {
             break;
         }
 
-        const currentCard = cards[0];
-        const updatedCard = {
-          ...currentCard,
-          firstLearn: {
-            ...currentCard.firstLearn!,
-            isNew: false,
-            isFirst: false,
-            consecutiveGood: 0,
-          },
-          seenInSession: true,
-          grade: type,
-          cardAlgo: newCardAlgo,
-        } as Card;
+        const updatedFirstLearn = {
+          ...firstLearn!,
+          isNew: false,
+          isFirst: false,
+          consecutiveGood: 0,
+        } as FirstLearn;
 
-        // Wrong answer: set due to 10 minutes from now
-        // Hard/Good/Easy: remove card from current session
+        // Build updated card with correct direction fields
+        const updatedCard: Card = isReverse
+          ? {
+              ...currentCard,
+              firstLearnReverse: updatedFirstLearn,
+              cardAlgoReverse: newCardAlgo,
+              grade: type,
+            }
+          : {
+              ...currentCard,
+              firstLearn: updatedFirstLearn,
+              cardAlgo: newCardAlgo,
+              grade: type,
+            };
+
+        const updatedItem: SessionItem = {
+          ...currentItem,
+          card: updatedCard,
+          seenInSession: true,
+        };
 
         let dailyStatsLocal = dailyStats;
-        const historyStats = { ...dailyStatsLocal } as DailyStats; // Deep copy of daily stats
+        const historyStats = { ...dailyStatsLocal } as DailyStats;
 
         if (dailyStatsLocal) {
-          if (cards[0].firstLearn?.isNew) {
+          if (firstLearn?.isNew) {
             dailyStatsLocal.newCardsRemaining = Math.max(
               0,
               dailyStatsLocal.newCardsRemaining - 1
             );
             dailyStatsLocal.completedNewToday += 1;
-          } else if (
-            !cards[0].firstLearn?.isNew &&
-            cards[0].firstLearn?.isFirst
-          ) {
+          } else if (!firstLearn?.isNew && firstLearn?.isFirst) {
             dailyStatsLocal.inProgressNewCards = Math.max(
               0,
               dailyStatsLocal.inProgressNewCards - 1
             );
             dailyStatsLocal.completedNewToday += 1;
           } else if (
-            !cards[0].firstLearn?.isFirst &&
+            !firstLearn?.isFirst &&
             type !== CardGrade.Wrong &&
-            cards[0].seenInSession
+            currentItem.seenInSession
           ) {
             dailyStatsLocal.inProgressDueCards = Math.max(
               0,
@@ -283,16 +297,16 @@ export function useCardLogic(id: string) {
             );
             dailyStatsLocal.completedDueToday += 1;
           } else if (
-            !cards[0].firstLearn?.isFirst &&
+            !firstLearn?.isFirst &&
             type !== CardGrade.Wrong &&
-            !cards[0].seenInSession
+            !currentItem.seenInSession
           ) {
             dailyStatsLocal.dueCardsRemaining = Math.max(
               0,
               dailyStatsLocal.dueCardsRemaining - 1
             );
             dailyStatsLocal.completedDueToday += 1;
-          } else if (!cards[0].firstLearn?.isFirst && !cards[0].seenInSession) {
+          } else if (!firstLearn?.isFirst && !currentItem.seenInSession) {
             dailyStatsLocal.dueCardsRemaining = Math.max(
               0,
               dailyStatsLocal.dueCardsRemaining - 1
@@ -301,25 +315,37 @@ export function useCardLogic(id: string) {
           }
         }
 
-        let nextCards: (Card & { seenInSession?: boolean })[];
+        let nextCards: SessionItem[];
         if (type === CardGrade.Wrong) {
-          updatedCard.cardAlgo!.due = new Date(now.getTime() + 1000 * 60 * 10);
-          nextCards = [updatedCard, ...cards.slice(1)];
+          const wrongAlgo = isReverse
+            ? { ...updatedCard.cardAlgoReverse!, due: new Date(now.getTime() + 1000 * 60 * 10) }
+            : { ...updatedCard.cardAlgo!, due: new Date(now.getTime() + 1000 * 60 * 10) };
+          const wrongCard: Card = isReverse
+            ? { ...updatedCard, cardAlgoReverse: wrongAlgo }
+            : { ...updatedCard, cardAlgo: wrongAlgo };
+          nextCards = [{ ...updatedItem, card: wrongCard }, ...cards.slice(1)];
         } else {
           nextCards = cards.slice(1);
         }
 
-        setHistory([...history, { card: cards[0], dailyStats: historyStats }]);
-        nextCards = nextCards.sort(compDueDate); // Sort cards by due date
-
+        setHistory([...history, { item: currentItem, dailyStats: historyStats }]);
+        nextCards = nextCards.sort(compDueDate);
 
         setCards(nextCards);
         updateCardsEvery(
-          updatedCard,
+          updatedItem,
           newCardAlgo.due.getTime() - now.getTime(),
           dailyStatsLocal
         );
         setDailyStats(dailyStatsLocal);
+        setProgress((prev) => ({
+          ...prev,
+          easy: type === CardGrade.Easy ? prev.easy + 1 : prev.easy,
+          good: type === CardGrade.Good ? prev.good + 1 : prev.good,
+          hard: type === CardGrade.Hard ? prev.hard + 1 : prev.hard,
+          wrong: type === CardGrade.Wrong ? prev.wrong + 1 : prev.wrong,
+          todo: nextCards.length,
+        }));
 
         if (nextCards.length === 0) {
           router.replace({
@@ -337,25 +363,23 @@ export function useCardLogic(id: string) {
         // CASE 2: Card is in first learning phase
         /////////////////////////////////////////////////////////////
 
-        const currentCard = cards[0];
-        const baseFirst = { ...currentCard.firstLearn } as FirstLearn;
-        const now = new Date();
+        const baseFirst = { ...(firstLearn ?? { isNew: true }) } as FirstLearn;
+        const nowLocal = new Date();
 
         let newConsecutiveGood = baseFirst.consecutiveGood || 0;
         let newDue = new Date();
-        // Switch case for answer type
         switch (type) {
           case CardGrade.Good:
             newConsecutiveGood = (baseFirst.consecutiveGood || 0) + 1;
-            newDue = new Date(now.getTime() + 1000 * 60 * 10);
+            newDue = new Date(nowLocal.getTime() + 1000 * 60 * 10);
             break;
           case CardGrade.Hard:
-            newConsecutiveGood = 0; // Reset licznika przy złej odpowiedzi
-            newDue = new Date(now.getTime() + 1000 * 60 * 5);
+            newConsecutiveGood = 0;
+            newDue = new Date(nowLocal.getTime() + 1000 * 60 * 5);
             break;
           case CardGrade.Wrong:
-            newConsecutiveGood = 0; // Reset licznika przy złej odpowiedzi
-            newDue = new Date(now.getTime() + 1000 * 60 * 2);
+            newConsecutiveGood = 0;
+            newDue = new Date(nowLocal.getTime() + 1000 * 60 * 2);
             break;
           default:
             break;
@@ -369,35 +393,43 @@ export function useCardLogic(id: string) {
           consecutiveGood: newConsecutiveGood,
         } as FirstLearn;
 
-        const updatedCard = {
-          ...currentCard,
-          firstLearn: updatedFirst,
-          seenInSession: true,
-          grade: type,
-        } as Card & { seenInSession?: boolean };
+        const updatedCard: Card = isReverse
+          ? { ...currentCard, firstLearnReverse: updatedFirst, grade: type }
+          : { ...currentCard, firstLearn: updatedFirst, grade: type };
 
-        let nextCards = [updatedCard, ...cards.slice(1)];
+        const updatedItem: SessionItem = {
+          ...currentItem,
+          card: updatedCard,
+          seenInSession: true,
+        };
+
+        let nextCards = [updatedItem, ...cards.slice(1)];
         nextCards = nextCards.sort(compDueDate);
 
         let dailyStatsLocal = dailyStats;
-        const historyStats = { ...dailyStatsLocal } as DailyStats; // Deep copy of daily stats
+        const historyStats = { ...dailyStatsLocal } as DailyStats;
 
-        if (dailyStatsLocal) {
-          if (currentCard.firstLearn?.isNew == true) {
-            dailyStatsLocal.newCardsRemaining = Math.max(
-              0,
-              dailyStatsLocal.newCardsRemaining - 1
-            );
-            dailyStatsLocal.inProgressNewCards += 1;
-          }
+        if (dailyStatsLocal && firstLearn?.isNew) {
+          dailyStatsLocal.newCardsRemaining = Math.max(
+            0,
+            dailyStatsLocal.newCardsRemaining - 1
+          );
+          dailyStatsLocal.inProgressNewCards += 1;
         }
 
-        setHistory([...history, { card: cards[0], dailyStats: historyStats }]);
+        setHistory([...history, { item: currentItem, dailyStats: historyStats }]);
         setDailyStats(dailyStatsLocal);
         setCards(nextCards);
+        setProgress((prev) => ({
+          ...prev,
+          good: type === CardGrade.Good ? prev.good + 1 : prev.good,
+          hard: type === CardGrade.Hard ? prev.hard + 1 : prev.hard,
+          wrong: type === CardGrade.Wrong ? prev.wrong + 1 : prev.wrong,
+          todo: nextCards.length,
+        }));
         updateCardsEvery(
-          updatedCard,
-          newDue.getTime() - now.getTime(),
+          updatedItem,
+          newDue.getTime() - nowLocal.getTime(),
           dailyStatsLocal
         );
 
@@ -413,8 +445,6 @@ export function useCardLogic(id: string) {
       setError(errorMessage);
       console.error("Error in newCard:", error);
     }
-
-    
   }
 
   async function fetchCards(): Promise<void> {
@@ -431,41 +461,44 @@ export function useCardLogic(id: string) {
           settings: { zenMode: false, shuffleNewCards: false },
         } as DeckLearningData);
 
-        // Przekształć placeholderCards na format Card
-        const transformedCards: Card[] = placeholderCards.map(
-          (card, idx) =>
+        // Przekształć placeholderCards na format SessionItem
+        const transformedItems: SessionItem[] = placeholderCards.map(
+          (card) =>
             ({
-              id: card.id,
-              cardData: card.cardData,
-              firstLearn: {
-                isNew: true,
-                isFirst: true,
-                due: new Date(),
-                consecutiveGood: 0,
-              },
-            } as Card)
+              card: {
+                id: card.id,
+                cardData: card.cardData,
+                firstLearn: {
+                  isNew: true,
+                  isFirst: true,
+                  due: new Date(),
+                  consecutiveGood: 0,
+                },
+              } as Card,
+              direction: "forward" as const,
+            })
         );
 
-        setCards(transformedCards);
+        setCards(transformedItems);
         setProgress({
           easy: 0,
           hard: 0,
           good: 0,
           wrong: 0,
-          todo: transformedCards.length,
-          all: transformedCards.length,
+          todo: transformedItems.length,
+          all: transformedItems.length,
         });
         setIsLoading(false);
         return;
       }
 
-      const { cards, dailyStats, deck } =
+      const { items, dailyStats, deck } =
         await cloudFunctions.startLearningSession(id);
 
       setDeck(deck);
       setDailyStats(dailyStats);
 
-      if (cards.length === 0) {
+      if (items.length === 0) {
         router.replace({
           pathname: "./victoryScreen",
           params: { empty: "true" },
@@ -474,15 +507,19 @@ export function useCardLogic(id: string) {
       }
 
       // Sort and set
-      const sortedSessionCards = cards.sort(compDueDate);
-      setCards(sortedSessionCards as Card[]);
+      const sessionItems: SessionItem[] = items.map((item) => ({
+        card: item.card,
+        direction: item.direction as "forward" | "reverse",
+      }));
+      const sortedSessionItems = sessionItems.sort(compDueDate);
+      setCards(sortedSessionItems);
       setProgress({
         easy: 0,
         hard: 0,
         good: 0,
         wrong: 0,
-        todo: sortedSessionCards.length,
-        all: sortedSessionCards.length,
+        todo: sortedSessionItems.length,
+        all: sortedSessionItems.length,
       });
       // Reset streak when starting new session
       setCurrentStreak(0);
@@ -554,13 +591,16 @@ export function useCardLogic(id: string) {
 
     setCards((prev) => {
       if (!prev || prev.length === 0) return prev;
-      const idx = prev.findIndex((c) => c.id === edited.cardId);
+      const idx = prev.findIndex((item) => item.card.id === edited.cardId);
       if (idx === -1) return prev;
       const updated = [...prev];
       updated[idx] = {
         ...updated[idx],
-        cardData: { front: edited.front, back: edited.back },
-        tags: edited.tags,
+        card: {
+          ...updated[idx].card,
+          cardData: { front: edited.front, back: edited.back },
+          tags: edited.tags,
+        },
       };
       return updated;
     });

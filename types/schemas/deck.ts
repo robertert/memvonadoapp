@@ -79,6 +79,7 @@ export const DeckSettingsSchema = z
     zenMode: z.boolean().default(false),
     shuffleNewCards: z.boolean().default(false),
     learningMode: LearningModeSchema.optional(), // undefined = never selected
+    bidirectional: z.boolean().default(false),
   })
   .strict();
 

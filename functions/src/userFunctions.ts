@@ -370,7 +370,7 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
         status: "streak_safe",
       };
     }
-    if ( stats.currentStreak === 0 ) { // Jeśli streak jest 0, nie resetujemy
+    if (stats.currentStreak === 0) { // Jeśli streak jest 0, nie resetujemy
       return {
         updated: false,
         currentStreak: stats.currentStreak || 0,
@@ -703,9 +703,10 @@ export const updateCardProgress = onCall(async (request) => {
     });
   }
 
-  const { userId, deckId, card, scheduledTime, dailyStats } =
+  const { userId, deckId, card, scheduledTime, dailyStats, direction } =
     parsedRequest.data;
 
+  const isReverse = direction === "reverse";
   const validatedCard = CardSchema.parse(card);
 
   try {
@@ -716,22 +717,44 @@ export const updateCardProgress = onCall(async (request) => {
     const now = Date.now();
 
     let cardUpdateData: Card;
-    if (validatedCard.firstLearn?.isFirst) {
-      cardUpdateData = CardSchema.parse({
-        ...validatedCard,
-        firstLearn: {
-          ...validatedCard.firstLearn,
-          due: new Date(now + scheduledTime),
-        },
-      });
+    if (isReverse) {
+      // Update reverse-direction algo
+      if (validatedCard.firstLearnReverse?.isFirst) {
+        cardUpdateData = CardSchema.parse({
+          ...validatedCard,
+          firstLearnReverse: {
+            ...validatedCard.firstLearnReverse,
+            due: new Date(now + scheduledTime),
+          },
+        });
+      } else {
+        cardUpdateData = {
+          ...validatedCard,
+          cardAlgoReverse: {
+            ...(validatedCard.cardAlgoReverse ?? DEFAULT_CARD_ALGO),
+            due: new Date(now + scheduledTime),
+          },
+        };
+      }
     } else {
-      cardUpdateData = {
-        ...validatedCard,
-        cardAlgo: {
-          ...(validatedCard.cardAlgo ?? DEFAULT_CARD_ALGO),
-          due: new Date(now + scheduledTime),
-        },
-      };
+      // Update forward-direction algo (existing logic)
+      if (validatedCard.firstLearn?.isFirst) {
+        cardUpdateData = CardSchema.parse({
+          ...validatedCard,
+          firstLearn: {
+            ...validatedCard.firstLearn,
+            due: new Date(now + scheduledTime),
+          },
+        });
+      } else {
+        cardUpdateData = {
+          ...validatedCard,
+          cardAlgo: {
+            ...(validatedCard.cardAlgo ?? DEFAULT_CARD_ALGO),
+            due: new Date(now + scheduledTime),
+          },
+        };
+      }
     }
 
     const validatedCardUpdateData = CardSchema.parse(cardUpdateData);
@@ -750,7 +773,6 @@ export const updateCardProgress = onCall(async (request) => {
     // Log study session
     await db.collection(`users/${userId}/studySessions`).add(studySession);
 
-    // Aktualizacja statystyk dziennych
     await updateDailyStats(userId, deckId, dailyStats);
     await updateUserStats(userId);
 
@@ -1461,7 +1483,7 @@ export const getUserActivityHeatmap = onCall(async (request) => {
 
         if (statsYmd === todayYmd) {
           activityMap[todayYmd] = (dailyStats.completedNewToday || 0) +
-                                  (dailyStats.completedDueToday || 0);
+            (dailyStats.completedDueToday || 0);
         }
       }
     }

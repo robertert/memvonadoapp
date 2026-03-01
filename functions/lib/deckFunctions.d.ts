@@ -63,6 +63,23 @@ export declare const getDeckCards: import("firebase-functions/v2/https").Callabl
             last_review?: Date | undefined;
         } | undefined;
         grade?: import("memvocado-types/schemas/card").CardGrade | undefined;
+        cardAlgoReverse?: {
+            difficulty: number;
+            scheduled_days: number;
+            due: Date;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            last_review?: Date | undefined;
+        } | undefined;
+        firstLearnReverse?: {
+            isNew: boolean;
+            due?: Date | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        } | undefined;
         hasChanges?: boolean | undefined;
     }[];
     hasMore: boolean;
@@ -105,6 +122,7 @@ export declare const getUserDeckDetails: import("firebase-functions/v2/https").C
         settings: {
             zenMode: boolean;
             shuffleNewCards: boolean;
+            bidirectional: boolean;
             dueCardsNumPerDay?: number | undefined;
             newCardsNumPerDay?: number | undefined;
             learningMode?: "srs" | "all_in_one" | undefined;
@@ -157,6 +175,23 @@ export declare const getUserDeckCards: import("firebase-functions/v2/https").Cal
             last_review?: Date | undefined;
         } | undefined;
         grade?: import("memvocado-types/schemas/card").CardGrade | undefined;
+        cardAlgoReverse?: {
+            difficulty: number;
+            scheduled_days: number;
+            due: Date;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            last_review?: Date | undefined;
+        } | undefined;
+        firstLearnReverse?: {
+            isNew: boolean;
+            due?: Date | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        } | undefined;
         hasChanges?: boolean | undefined;
     }[];
     hasMore: boolean;
@@ -190,6 +225,23 @@ export declare const getUserDueDeckCards: import("firebase-functions/v2/https").
             last_review?: Date | undefined;
         } | undefined;
         grade?: import("memvocado-types/schemas/card").CardGrade | undefined;
+        cardAlgoReverse?: {
+            difficulty: number;
+            scheduled_days: number;
+            due: Date;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            last_review?: Date | undefined;
+        } | undefined;
+        firstLearnReverse?: {
+            isNew: boolean;
+            due?: Date | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        } | undefined;
         hasChanges?: boolean | undefined;
     }[];
 }>, unknown>;
@@ -232,26 +284,7 @@ export declare const getUserNewDeckCards: import("firebase-functions/v2/https").
             last_review?: Date | undefined;
         } | undefined;
         grade?: import("memvocado-types/schemas/card").CardGrade | undefined;
-        hasChanges?: boolean | undefined;
-    }[];
-}>, unknown>;
-export declare const startLearningSession: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
-    cards: {
-        id: string;
-        tags: string[];
-        createdAt: Date;
-        cardData: {
-            front: string;
-            back: string;
-        };
-        firstLearn: {
-            isNew: boolean;
-            due?: Date | undefined;
-            isFirst?: boolean | undefined;
-            consecutiveGood?: number | undefined;
-        };
-        updatedAt?: Date | undefined;
-        cardAlgo?: {
+        cardAlgoReverse?: {
             difficulty: number;
             scheduled_days: number;
             due: Date;
@@ -262,9 +295,16 @@ export declare const startLearningSession: import("firebase-functions/v2/https")
             lapses: number;
             last_review?: Date | undefined;
         } | undefined;
-        grade?: import("memvocado-types/schemas/card").CardGrade | undefined;
+        firstLearnReverse?: {
+            isNew: boolean;
+            due?: Date | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        } | undefined;
         hasChanges?: boolean | undefined;
     }[];
+}>, unknown>;
+export declare const startLearningSession: import("firebase-functions/v2/https").CallableFunction<any, Promise<{
     dailyStats: {
         newCardsRemaining: number;
         dueCardsRemaining: number;
@@ -282,6 +322,7 @@ export declare const startLearningSession: import("firebase-functions/v2/https")
         settings: {
             zenMode: boolean;
             shuffleNewCards: boolean;
+            bidirectional: boolean;
             dueCardsNumPerDay?: number | undefined;
             newCardsNumPerDay?: number | undefined;
             learningMode?: "srs" | "all_in_one" | undefined;
@@ -304,6 +345,55 @@ export declare const startLearningSession: import("firebase-functions/v2/https")
             lastUpdatedStats: Date;
         } | null | undefined;
     };
+    items: {
+        card: {
+            id: string;
+            tags: string[];
+            createdAt: Date;
+            cardData: {
+                front: string;
+                back: string;
+            };
+            firstLearn: {
+                isNew: boolean;
+                due?: Date | undefined;
+                isFirst?: boolean | undefined;
+                consecutiveGood?: number | undefined;
+            };
+            updatedAt?: Date | undefined;
+            cardAlgo?: {
+                difficulty: number;
+                scheduled_days: number;
+                due: Date;
+                reps: number;
+                state: number;
+                stability: number;
+                elapsed_days: number;
+                lapses: number;
+                last_review?: Date | undefined;
+            } | undefined;
+            grade?: import("memvocado-types/schemas/card").CardGrade | undefined;
+            cardAlgoReverse?: {
+                difficulty: number;
+                scheduled_days: number;
+                due: Date;
+                reps: number;
+                state: number;
+                stability: number;
+                elapsed_days: number;
+                lapses: number;
+                last_review?: Date | undefined;
+            } | undefined;
+            firstLearnReverse?: {
+                isNew: boolean;
+                due?: Date | undefined;
+                isFirst?: boolean | undefined;
+                consecutiveGood?: number | undefined;
+            } | undefined;
+            hasChanges?: boolean | undefined;
+        };
+        direction: "reverse" | "forward";
+    }[];
 }>, unknown>;
 /**
  * Update user stats when deck is modified
@@ -365,6 +455,7 @@ export declare const startLearningDeck: import("firebase-functions/v2/https").Ca
         settings: {
             zenMode: boolean;
             shuffleNewCards: boolean;
+            bidirectional: boolean;
             dueCardsNumPerDay?: number | undefined;
             newCardsNumPerDay?: number | undefined;
             learningMode?: "srs" | "all_in_one" | undefined;

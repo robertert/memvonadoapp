@@ -33,7 +33,7 @@ import AllInOneLearnScreen from "../../components/learnScreen/AllInOneLearnScree
 import { learnScreenStyles } from "./learnScreen.styles";
 import { Colors } from "../../constants/colors";
 import { BoltIcon, ArrowUturnLeftIcon } from "react-native-heroicons/solid";
-import { Card, LearningMode } from "@/types";
+import { LearningMode } from "@/types";
 import { calculateDailyStatsProgress } from "@/constants/dailyStats";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import * as Haptics from "expo-haptics";
@@ -147,7 +147,8 @@ function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
   const avoHelper = useAvoHelper();
 
   // Build AVO card context from current card
-  const currentCard = cards?.[0];
+  const currentItem = cards?.[0];
+  const currentCard = currentItem?.card;
   const avoCardContext: AvoCardContext | null = currentCard
     ? {
         front: currentCard.cardData?.front || "",
@@ -184,7 +185,10 @@ function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
   const handleLongPress = () => {
     const rotation = Math.round(animationValues.rotateCard.value / 180);
     const isBackVisible = Math.abs(rotation % 2) === 1;
-    const textToShow = isBackVisible ? cards?.[0]?.cardData?.back : cards?.[0]?.cardData?.front;
+    const dir = currentItem?.direction ?? "forward";
+    const textToShow = isBackVisible
+      ? (dir === "reverse" ? currentCard?.cardData?.front : currentCard?.cardData?.back)
+      : (dir === "reverse" ? currentCard?.cardData?.back : currentCard?.cardData?.front);
 
     if (textToShow) {
       setTooltipText(textToShow);
@@ -527,7 +531,8 @@ function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
         style={[learnScreenStyles.container, { paddingTop: safeArea.top + 8 }]}
       >
         <Flashcard
-          card={cards ? (cards[0] as Card) : undefined}
+          card={currentCard}
+          direction={currentItem?.direction ?? "forward"}
           isBack={isBack}
           rStyle={rStyle}
           rotateValue={animationValues.rotateCard}
@@ -601,10 +606,10 @@ function SRSLearnScreen({ deckId }: { deckId: string }): React.JSX.Element {
 
         <Pressable
           onPress={() => {
-            if (!cards?.[0]?.id) return;
+            if (!currentCard?.id) return;
             router.push({
               pathname: "./editCard",
-              params: { cardId: cards[0].id, deckId: id },
+              params: { cardId: currentCard.id, deckId: id },
             });
           }}
           style={{ position: "absolute", top: safeArea.top + 110, right: 20 }}

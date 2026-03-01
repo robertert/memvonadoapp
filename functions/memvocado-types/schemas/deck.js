@@ -65,6 +65,7 @@ exports.DeckSettingsSchema = zod_1.z
     zenMode: zod_1.z.boolean().default(false),
     shuffleNewCards: zod_1.z.boolean().default(false),
     learningMode: exports.LearningModeSchema.optional(), // undefined = never selected
+    bidirectional: zod_1.z.boolean().default(false),
 })
     .strict();
 /**

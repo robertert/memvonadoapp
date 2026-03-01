@@ -155,9 +155,11 @@ export declare const DeckSettingsSchema: z.ZodObject<{
     zenMode: z.ZodDefault<z.ZodBoolean>;
     shuffleNewCards: z.ZodDefault<z.ZodBoolean>;
     learningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
+    bidirectional: z.ZodDefault<z.ZodBoolean>;
 }, "strict", z.ZodTypeAny, {
     zenMode: boolean;
     shuffleNewCards: boolean;
+    bidirectional: boolean;
     dueCardsNumPerDay?: number | undefined;
     newCardsNumPerDay?: number | undefined;
     learningMode?: "srs" | "all_in_one" | undefined;
@@ -167,6 +169,7 @@ export declare const DeckSettingsSchema: z.ZodObject<{
     zenMode?: boolean | undefined;
     shuffleNewCards?: boolean | undefined;
     learningMode?: "srs" | "all_in_one" | undefined;
+    bidirectional?: boolean | undefined;
 }>;
 export type DeckSettings = z.infer<typeof DeckSettingsSchema>;
 /**
@@ -209,9 +212,11 @@ export declare const DeckLearningCoreSchema: z.ZodObject<{
         zenMode: z.ZodDefault<z.ZodBoolean>;
         shuffleNewCards: z.ZodDefault<z.ZodBoolean>;
         learningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
+        bidirectional: z.ZodDefault<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
         zenMode: boolean;
         shuffleNewCards: boolean;
+        bidirectional: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         learningMode?: "srs" | "all_in_one" | undefined;
@@ -221,12 +226,14 @@ export declare const DeckLearningCoreSchema: z.ZodObject<{
         zenMode?: boolean | undefined;
         shuffleNewCards?: boolean | undefined;
         learningMode?: "srs" | "all_in_one" | undefined;
+        bidirectional?: boolean | undefined;
     }>;
 }, "strict", z.ZodTypeAny, {
     title: string;
     settings: {
         zenMode: boolean;
         shuffleNewCards: boolean;
+        bidirectional: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         learningMode?: "srs" | "all_in_one" | undefined;
@@ -239,6 +246,7 @@ export declare const DeckLearningCoreSchema: z.ZodObject<{
         zenMode?: boolean | undefined;
         shuffleNewCards?: boolean | undefined;
         learningMode?: "srs" | "all_in_one" | undefined;
+        bidirectional?: boolean | undefined;
     };
 }>;
 export type DeckLearningCore = z.infer<typeof DeckLearningCoreSchema>;
@@ -303,9 +311,11 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
         zenMode: z.ZodDefault<z.ZodBoolean>;
         shuffleNewCards: z.ZodDefault<z.ZodBoolean>;
         learningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
+        bidirectional: z.ZodDefault<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
         zenMode: boolean;
         shuffleNewCards: boolean;
+        bidirectional: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         learningMode?: "srs" | "all_in_one" | undefined;
@@ -315,6 +325,7 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
         zenMode?: boolean | undefined;
         shuffleNewCards?: boolean | undefined;
         learningMode?: "srs" | "all_in_one" | undefined;
+        bidirectional?: boolean | undefined;
     }>;
 } & {
     lastReviewDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
@@ -353,6 +364,7 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
     settings: {
         zenMode: boolean;
         shuffleNewCards: boolean;
+        bidirectional: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         learningMode?: "srs" | "all_in_one" | undefined;
@@ -384,6 +396,7 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
         zenMode?: boolean | undefined;
         shuffleNewCards?: boolean | undefined;
         learningMode?: "srs" | "all_in_one" | undefined;
+        bidirectional?: boolean | undefined;
     };
     category?: string | null | undefined;
     icon?: string | null | undefined;
@@ -444,18 +457,21 @@ export declare const DeckSettingsUpdateSchema: z.ZodObject<{
     zenMode: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
     shuffleNewCards: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
     learningMode: z.ZodOptional<z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>>;
+    bidirectional: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
 }, "strict", z.ZodTypeAny, {
     dueCardsNumPerDay?: number | undefined;
     newCardsNumPerDay?: number | undefined;
     zenMode?: boolean | undefined;
     shuffleNewCards?: boolean | undefined;
     learningMode?: "srs" | "all_in_one" | undefined;
+    bidirectional?: boolean | undefined;
 }, {
     dueCardsNumPerDay?: number | undefined;
     newCardsNumPerDay?: number | undefined;
     zenMode?: boolean | undefined;
     shuffleNewCards?: boolean | undefined;
     learningMode?: "srs" | "all_in_one" | undefined;
+    bidirectional?: boolean | undefined;
 }>;
 export type DeckSettingsUpdate = z.infer<typeof DeckSettingsUpdateSchema>;
 /**
@@ -503,9 +519,11 @@ export declare const DeckLearningDataUpdateSchema: z.ZodObject<{
         zenMode: z.ZodDefault<z.ZodBoolean>;
         shuffleNewCards: z.ZodDefault<z.ZodBoolean>;
         learningMode: z.ZodOptional<z.ZodEnum<["srs", "all_in_one"]>>;
+        bidirectional: z.ZodDefault<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
         zenMode: boolean;
         shuffleNewCards: boolean;
+        bidirectional: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         learningMode?: "srs" | "all_in_one" | undefined;
@@ -515,6 +533,7 @@ export declare const DeckLearningDataUpdateSchema: z.ZodObject<{
         zenMode?: boolean | undefined;
         shuffleNewCards?: boolean | undefined;
         learningMode?: "srs" | "all_in_one" | undefined;
+        bidirectional?: boolean | undefined;
     }>>;
 } & {
     lastReviewDate: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
@@ -548,6 +567,7 @@ export declare const DeckLearningDataUpdateSchema: z.ZodObject<{
     settings?: {
         zenMode: boolean;
         shuffleNewCards: boolean;
+        bidirectional: boolean;
         dueCardsNumPerDay?: number | undefined;
         newCardsNumPerDay?: number | undefined;
         learningMode?: "srs" | "all_in_one" | undefined;
@@ -570,6 +590,7 @@ export declare const DeckLearningDataUpdateSchema: z.ZodObject<{
         zenMode?: boolean | undefined;
         shuffleNewCards?: boolean | undefined;
         learningMode?: "srs" | "all_in_one" | undefined;
+        bidirectional?: boolean | undefined;
     } | undefined;
     lastReviewDate?: unknown;
     dailyStats?: {

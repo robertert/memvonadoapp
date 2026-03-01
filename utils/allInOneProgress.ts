@@ -9,6 +9,7 @@ export interface AllInOneCard {
   cardId: string;
   front: string;
   back: string;
+  direction: "forward" | "reverse";
   wrongCount: number;
   lastWrongAt: number | null; // timestamp when marked wrong
   isCompleted: boolean;
@@ -81,14 +82,15 @@ export async function clearSession(deckId: string): Promise<void> {
  */
 export async function markCardWrong(
   deckId: string,
-  cardId: string
+  cardId: string,
+  direction: "forward" | "reverse" = "forward"
 ): Promise<void> {
   try {
     const session = await getSession(deckId);
     if (!session) return;
 
     const updatedCards = session.cards.map((card) =>
-      card.cardId === cardId
+      card.cardId === cardId && card.direction === direction
         ? {
             ...card,
             wrongCount: card.wrongCount + 1,
@@ -112,14 +114,17 @@ export async function markCardWrong(
  */
 export async function markCardCompleted(
   deckId: string,
-  cardId: string
+  cardId: string,
+  direction: "forward" | "reverse" = "forward"
 ): Promise<void> {
   try {
     const session = await getSession(deckId);
     if (!session) return;
 
     const updatedCards = session.cards.map((card) =>
-      card.cardId === cardId ? { ...card, isCompleted: true } : card
+      card.cardId === cardId && card.direction === direction
+        ? { ...card, isCompleted: true }
+        : card
     );
 
     const completedCount = updatedCards.filter((c) => c.isCompleted).length;

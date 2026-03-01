@@ -20,6 +20,7 @@ import { Card } from "@/types/schemas";
 
 interface FlashcardProps {
   card: Card | undefined;
+  direction?: "forward" | "reverse";
   isBack: boolean;
   rStyle: AnimatedStyle;
   rotateValue: SharedValue<number>;
@@ -30,6 +31,7 @@ interface FlashcardProps {
 
 export default function Flashcard({
   card,
+  direction = "forward",
   isBack,
   rStyle,
   rotateValue,
@@ -60,7 +62,7 @@ export default function Flashcard({
 
   useEffect(() => {
     rotateValue.value = 0;
-  }, [card?.id]);
+  }, [card?.id, direction]);
 
   const backgroundColorStyle = useAnimatedStyle(() => {
     return {
@@ -104,7 +106,11 @@ export default function Flashcard({
         <Animated.View
           style={[styles.cardFace, backgroundColorStyle, frontAnimatedStyle]}
         >
-          <Text style={styles.text}>{card?.cardData?.front}</Text>
+          <Text style={styles.text}>
+            {direction === "reverse"
+              ? card?.cardData?.back
+              : card?.cardData?.front}
+          </Text>
         </Animated.View>
 
         {/* --- TYŁ KARTY --- */}
@@ -112,7 +118,9 @@ export default function Flashcard({
           style={[styles.cardFace, backgroundColorStyle, backAnimatedStyle]}
         >
           <Text style={[styles.text]}>
-            {card?.cardData?.back}
+            {direction === "reverse"
+              ? card?.cardData?.front
+              : card?.cardData?.back}
           </Text>
         </Animated.View>
       </Animated.View>

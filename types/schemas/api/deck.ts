@@ -329,8 +329,14 @@ export type ImportAnkiDeckResponse = z.infer<
   typeof ImportAnkiDeckResponseSchema
 >;
 
+export const SessionItemSchema = z.object({
+  card: CardSchema,
+  direction: z.enum(["forward", "reverse"]),
+});
+export type SessionItem = z.infer<typeof SessionItemSchema>;
+
 export const StartLearningSessionResponseSchema = z.object({
-  cards: z.array(CardSchema),
+  items: z.array(SessionItemSchema),
   dailyStats: DailyStatsSchema,
   deck: DeckLearningDataSchema,
 });

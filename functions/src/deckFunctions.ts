@@ -6,6 +6,7 @@ import { getStorage } from "firebase-admin/storage";
 import { z } from "zod";
 import {
   Card,
+  CardAlgo,
   CardCore,
   DeckLearningData,
   DeckSchema,
@@ -583,7 +584,10 @@ async function getUserDueDeckCardsLocal(
     (c) => c.firstLearn?.isFirst && !c.firstLearn?.isNew
   );
   const dueFSRS: Card[] = validatedRaw.filter(
-    (c) => c.cardAlgo?.due && c.cardAlgo.due.getTime() <= now
+    (c) =>
+      c.cardAlgo?.due &&
+      c.cardAlgo.due.getTime() <= now &&
+      !c.firstLearn?.isNew
   );
 
   const validatedCards: Card[] = [...dueFirst, ...dueFSRS];
@@ -668,17 +672,17 @@ async function getUserNewDeckCardsLocal(
   const userSnap = await userRef.get();
   const userData = userSnap.exists
     ? UserSchema.parse({
-        id: userSnap.id,
-        ...userSnap.data(),
-      })
+      id: userSnap.id,
+      ...userSnap.data(),
+    })
     : null;
 
   // Sprawdź dailyStats i użyj newCardsRemaining jeśli istnieje i jest z dzisiaj
   const effectiveLimit = userDeckData.settings.newCardsNumPerDay
     ? userDeckData.settings.newCardsNumPerDay
     : userData?.settings?.dailyNew
-    ? userData?.settings?.dailyNew
-    : 50;
+      ? userData?.settings?.dailyNew
+      : 50;
 
   // Get new cards directly from user's collection (all cards are already copied)
   const userCardsRef = userDeckRef.collection("cards");
@@ -863,6 +867,79 @@ async function getUserDeckLocal(
   return DeckLearningDataSchema.parse(userDeckSnap.data());
 }
 
+/**
+ * @param {string} userId - User ID
+ * @param {string} deckId - Deck ID
+ * @return {Promise<Card[]>} Due reverse-direction cards
+ */
+async function getUserDueReverseCardsLocal(
+  userId: string,
+  deckId: string
+): Promise<Card[]> {
+  const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
+  const now = Date.now();
+  const nowEnd = new Date(now);
+  nowEnd.setHours(23, 59, 59, 999);
+
+  const [cardsSnapFirst, cardsSnapDue] = await Promise.all([
+    deckRef
+      .collection("cards")
+      .where("firstLearnReverse.isNew", "==", false)
+      .where("firstLearnReverse.isFirst", "==", true)
+      .get(),
+    deckRef
+      .collection("cards")
+      .where("cardAlgoReverse.due", "<=", nowEnd)
+      .get(),
+  ]);
+
+  const seen = new Set<string>();
+  const validatedRaw: Card[] = [];
+  for (const doc of [...cardsSnapFirst.docs, ...cardsSnapDue.docs]) {
+    if (!seen.has(doc.id)) {
+      seen.add(doc.id);
+      validatedRaw.push(CardSchema.parse({ id: doc.id, ...doc.data() }));
+    }
+  }
+
+  const dueFirst = validatedRaw.filter(
+    (c) => c.firstLearnReverse?.isFirst && !c.firstLearnReverse?.isNew
+  );
+  const dueFSRS = validatedRaw.filter(
+    (c) =>
+      c.cardAlgoReverse?.due &&
+      c.cardAlgoReverse.due.getTime() <= now &&
+      !c.firstLearnReverse?.isNew
+  );
+
+  return [...dueFirst, ...dueFSRS];
+}
+
+/**
+ * @typedef {Object} InterleaveItem
+ * @property {Card} card
+ * @property {"forward" | "reverse"} direction
+ */
+
+/**
+ * Interleaves two arrays of card items (forward and reverse) into one array.
+ * @param {InterleaveItem[]} forward - Forward items
+ * @param {InterleaveItem[]} reverse - Reverse items
+ * @return {InterleaveItem[]} Interleaved items
+ */
+function interleaveItems(
+  forward: { card: Card; direction: "forward" | "reverse" }[],
+  reverse: { card: Card; direction: "forward" | "reverse" }[]
+): { card: Card; direction: "forward" | "reverse" }[] {
+  const result: { card: Card; direction: "forward" | "reverse" }[] = [];
+  const maxLen = Math.max(forward.length, reverse.length);
+  for (let i = 0; i < maxLen; i++) {
+    if (i < forward.length) result.push(forward[i]);
+    if (i < reverse.length) result.push(reverse[i]);
+  }
+  return result;
+}
+
 export const startLearningSession = onCall(async (request) => {
   const validationResult = StartLearningSessionRequestSchema.safeParse(
     request.data || {}
@@ -888,6 +965,9 @@ export const startLearningSession = onCall(async (request) => {
       const newDeck = await copyUserDeck(userId, deckId);
       deck = newDeck;
     }
+
+    const bidirectional = deck.settings.bidirectional ?? false;
+
     const [dueCards, newCards] = await Promise.all([
       getUserDueDeckCardsLocal(userId, deckId),
       getUserNewDeckCardsLocal(userId, deckId),
@@ -914,34 +994,160 @@ export const startLearningSession = onCall(async (request) => {
 
     const userData = await getUserData(userId);
 
-    // Strip new cards if limit is exceeded
-
-    const settingsNewLimit = deck.settings.newCardsNumPerDay
+    // Item limit (study items per day, not physical cards)
+    const itemLimit = deck.settings.newCardsNumPerDay
       ? deck.settings.newCardsNumPerDay
       : userData?.settings?.dailyNew
-      ? userData?.settings?.dailyNew
-      : 50;
+        ? userData?.settings?.dailyNew
+        : 50;
 
+
+    // Normalize to ITEMS for comparison (bidirectional: each physical card = 2 items)
+    const newItemsNotStarted = bidirectional ? newCards.length * 2 : newCards.length;
     const newCardsTotal =
       (currentStats?.inProgressNewCards ?? 0) +
       (currentStats?.completedNewToday ?? 0) +
-      newCards.length;
+      newItemsNotStarted;
+
+    // How many item slots remain for new cards today
+    const remainingItemSlots = Math.max(
+      0,
+      itemLimit -
+      (currentStats?.inProgressNewCards ?? 0) -
+      (currentStats?.completedNewToday ?? 0)
+    );
+    const newCardSlots = bidirectional
+      ? Math.floor(remainingItemSlots / 2)
+      : remainingItemSlots;
 
     const newCardsStripped =
-      newCardsTotal > settingsNewLimit
-        ? newCards.slice(
-            0,
-            newCards.length - (newCardsTotal - settingsNewLimit)
-          )
-        : newCards;
+      newCardsTotal > itemLimit ? newCards.slice(0, newCardSlots) : newCards;
 
-    currentStats.newCardsRemaining = newCardsStripped.length;
+    let items: { card: Card; direction: "forward" | "reverse" }[];
+
+    if (bidirectional) {
+      // Lazy-init cardAlgoReverse / firstLearnReverse for cards that lack it
+      const batch = db.batch();
+      let batchOps = 0;
+      const DEFAULT_ALGO = {
+        difficulty: 2.5,
+        scheduled_days: 1,
+        due: new Date(),
+        reps: 0,
+        state: 0,
+        stability: 0,
+        elapsed_days: 0,
+        lapses: 0,
+      };
+      for (const card of newCardsStripped) {
+        if (!card.cardAlgoReverse || !card.firstLearnReverse) {
+          const cardRef = db.doc(
+            `users/${userId}/decks/${deckId}/cards/${card.id}`
+          );
+          const updateData: Record<string, unknown> = {};
+          if (!card.cardAlgoReverse) {
+            updateData.cardAlgoReverse = DEFAULT_ALGO;
+            (card as Card & { cardAlgoReverse?: CardAlgo }).cardAlgoReverse =
+              DEFAULT_ALGO as CardAlgo;
+          }
+          if (!card.firstLearnReverse) {
+            updateData.firstLearnReverse = { isNew: true };
+            (
+              card as Card & {
+                firstLearnReverse?: { isNew: boolean };
+              }
+            ).firstLearnReverse = { isNew: true };
+          }
+          batch.update(cardRef, updateData);
+          batchOps++;
+        }
+      }
+      // Bug 4: Lazy-init reverse data also for FSRS due forward cards missing it
+      for (const card of dueCards) {
+        if (!card.cardAlgoReverse || !card.firstLearnReverse) {
+          const cardRef = db.doc(
+            `users/${userId}/decks/${deckId}/cards/${card.id}`
+          );
+          const updateData: Record<string, unknown> = {};
+          if (!card.cardAlgoReverse) {
+            updateData.cardAlgoReverse = DEFAULT_ALGO;
+            (card as Card & { cardAlgoReverse?: CardAlgo }).cardAlgoReverse =
+              DEFAULT_ALGO as CardAlgo;
+          }
+          if (!card.firstLearnReverse) {
+            updateData.firstLearnReverse = { isNew: true };
+            (
+              card as Card & {
+                firstLearnReverse?: { isNew: boolean };
+              }
+            ).firstLearnReverse = { isNew: true };
+          }
+          batch.update(cardRef, updateData);
+          batchOps++;
+        }
+      }
+      if (batchOps > 0) await batch.commit();
+
+      // Query due reverse cards (firstLearnReverse.isFirst or cardAlgoReverse.due)
+      const dueReverseCards = await getUserDueReverseCardsLocal(userId, deckId);
+
+      // Bug 3: set dueCardsRemaining to include reverse due cards (only for fresh stats)
+      if (!dailyStatsToday) {
+        currentStats.dueCardsRemaining = dueCards.length + dueReverseCards.length;
+      }
+
+      // Bug 4: due forward cards with untouched reverse also get a reverse item
+      const dueCardsWithNewReverse = dueCards.filter(
+        (c) => (c as Card & { firstLearnReverse?: { isNew?: boolean } }).firstLearnReverse?.isNew
+      );
+      const reverseNewItems = [
+        ...newCardsStripped.map((card) => ({
+          card,
+          direction: "reverse" as const,
+        })),
+        ...dueCardsWithNewReverse.map((card) => ({
+          card,
+          direction: "reverse" as const,
+        })),
+      ];
+
+      const forwardDueItems = dueCards.map((card) => ({
+        card,
+        direction: "forward" as const,
+      }));
+      const forwardNewItems = newCardsStripped.map((card) => ({
+        card,
+        direction: "forward" as const,
+      }));
+      const reverseDueItems = dueReverseCards.map((card) => ({
+        card,
+        direction: "reverse" as const,
+      }));
+
+      items = interleaveItems(
+        [...forwardDueItems, ...forwardNewItems],
+        [...reverseDueItems, ...reverseNewItems]
+      );
+
+      // newCardsRemaining counts study items (2 per card in bidirectional)
+      currentStats.newCardsRemaining = newCardsStripped.length * 2;
+    } else {
+      items = [
+        ...dueCards.map((card) => ({ card, direction: "forward" as const })),
+        ...newCardsStripped.map((card) => ({
+          card,
+          direction: "forward" as const,
+        })),
+      ];
+      currentStats.newCardsRemaining = newCardsStripped.length;
+    }
+
     userDeckRef.update({
       dailyStats: currentStats,
     });
 
     const response = {
-      cards: [...dueCards, ...newCardsStripped],
+      items,
       dailyStats: currentStats,
       deck: deck,
     };
@@ -1389,9 +1595,11 @@ export const resetDeck = onCall(async (request) => {
       const cardRef = cardsRef.doc(doc.id);
       currentBatch.update(cardRef, {
         cardAlgo: FieldValue.delete(),
+        cardAlgoReverse: FieldValue.delete(),
         firstLearn: {
           isNew: true,
         },
+        firstLearnReverse: FieldValue.delete(),
         lastReviewDate: FieldValue.delete(),
       });
       cardsReset++;
@@ -1519,7 +1727,7 @@ export const updateDeckSettings = onCall(async (request) => {
     if (
       validatedDeck.tags !== undefined &&
       JSON.stringify(validatedDeck.tags || []) !==
-        JSON.stringify(validatedDeckData.tags || [])
+      JSON.stringify(validatedDeckData.tags || [])
     ) {
       updateData.tags = validatedDeck.tags;
     }
@@ -2804,8 +3012,7 @@ export const importAnkiDeck = onCall(async (request) => {
     }
     throw new HttpsError(
       "internal",
-      `Failed to import Anki deck: ${
-        error instanceof Error ? error.message : String(error)
+      `Failed to import Anki deck: ${error instanceof Error ? error.message : String(error)
       }`
     );
   }

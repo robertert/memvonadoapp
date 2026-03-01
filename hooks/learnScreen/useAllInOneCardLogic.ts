@@ -93,14 +93,29 @@ export function useAllInOneCardLogic(deckId: string) {
       const { cards, hasMore, lastDocId } =
         await cloudFunctions.getUserDeckCards(deckId, 100, nextCursor);
 
-      const newCards: AllInOneCard[] = cards.map((card: Card) => ({
-        cardId: card.id,
-        front: card.cardData.front,
-        back: card.cardData.back,
-        wrongCount: 0,
-        lastWrongAt: null,
-        isCompleted: false,
-      }));
+      const bidirectional = deck?.settings?.bidirectional ?? false;
+      const newCards: AllInOneCard[] = cards.flatMap((card: Card) => {
+        const forward: AllInOneCard = {
+          cardId: card.id,
+          front: card.cardData.front,
+          back: card.cardData.back,
+          direction: "forward",
+          wrongCount: 0,
+          lastWrongAt: null,
+          isCompleted: false,
+        };
+        if (!bidirectional) return [forward];
+        const reverse: AllInOneCard = {
+          cardId: card.id,
+          front: card.cardData.back,
+          back: card.cardData.front,
+          direction: "reverse",
+          wrongCount: 0,
+          lastWrongAt: null,
+          isCompleted: false,
+        };
+        return [forward, reverse];
+      });
 
       const updatedSession: AllInOneSession = {
         ...session,
@@ -146,22 +161,45 @@ export function useAllInOneCardLogic(deckId: string) {
           return;
         }
 
-        // Shuffle cards for new session
-        const shuffledCards = shuffleArray(cards);
+        const bidirectional = deckData?.settings?.bidirectional ?? false;
+
+        // Build AllInOneCard items (forward, and optionally reverse)
+        const buildItems = (cardList: Card[]): AllInOneCard[] => {
+          const items: AllInOneCard[] = cardList.flatMap((card) => {
+            const forward: AllInOneCard = {
+              cardId: card.id,
+              front: card.cardData.front,
+              back: card.cardData.back,
+              direction: "forward",
+              wrongCount: 0,
+              lastWrongAt: null,
+              isCompleted: false,
+            };
+            if (!bidirectional) return [forward];
+            const reverse: AllInOneCard = {
+              cardId: card.id,
+              front: card.cardData.back,
+              back: card.cardData.front,
+              direction: "reverse",
+              wrongCount: 0,
+              lastWrongAt: null,
+              isCompleted: false,
+            };
+            return [forward, reverse];
+          });
+          return shuffleArray(items);
+        };
+
+        const sessionCards = buildItems(cards);
 
         existingSession = {
           deckId,
-          cards: shuffledCards.map((card: Card) => ({
-            cardId: card.id,
-            front: card.cardData.front,
-            back: card.cardData.back,
-            wrongCount: 0,
-            lastWrongAt: null,
-            isCompleted: false,
-          })),
+          cards: sessionCards,
           startedAt: Date.now(),
           completedCards: 0,
-          totalCards: deckData?.cardsNum ?? cards.length,
+          totalCards: bidirectional
+            ? (deckData?.cardsNum ?? cards.length) * 2
+            : (deckData?.cardsNum ?? cards.length),
           wrongAttempts: 0,
         };
 
@@ -207,12 +245,15 @@ export function useAllInOneCardLogic(deckId: string) {
 
     let updatedSession: AllInOneSession;
 
+    const matchesCurrentCard = (c: AllInOneCard) =>
+      c.cardId === currentCard.cardId && c.direction === currentCard.direction;
+
     if (isCorrect) {
       // Mark card as completed
       updatedSession = {
         ...session,
         cards: session.cards.map((c) =>
-          c.cardId === currentCard.cardId ? { ...c, isCompleted: true } : c
+          matchesCurrentCard(c) ? { ...c, isCompleted: true } : c
         ),
         completedCards: session.completedCards + 1,
       };
@@ -221,7 +262,7 @@ export function useAllInOneCardLogic(deckId: string) {
       updatedSession = {
         ...session,
         cards: session.cards.map((c) =>
-          c.cardId === currentCard.cardId
+          matchesCurrentCard(c)
             ? {
                 ...c,
                 wrongCount: c.wrongCount + 1,
@@ -275,7 +316,9 @@ export function useAllInOneCardLogic(deckId: string) {
 
     // Recalculate completed count
     const updatedCards = session.cards.map((c) =>
-      c.cardId === restoredCard.cardId ? restoredCard : c
+      c.cardId === restoredCard.cardId && c.direction === restoredCard.direction
+        ? restoredCard
+        : c
     );
     const completedCount = updatedCards.filter((c) => c.isCompleted).length;
 
@@ -325,19 +368,23 @@ export function useAllInOneCardLogic(deckId: string) {
     // Update current card if it matches
     setCurrentCard((prev) => {
       if (!prev || prev.cardId !== edited.cardId) return prev;
-      return { ...prev, front: edited.front, back: edited.back };
+      // Swap front/back correctly depending on direction
+      return prev.direction === "reverse"
+        ? { ...prev, front: edited.back, back: edited.front }
+        : { ...prev, front: edited.front, back: edited.back };
     });
 
-    // Update session cards
+    // Update session cards (both forward and reverse items for this cardId)
     setSession((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
-        cards: prev.cards.map((c) =>
-          c.cardId === edited.cardId
-            ? { ...c, front: edited.front, back: edited.back }
-            : c
-        ),
+        cards: prev.cards.map((c) => {
+          if (c.cardId !== edited.cardId) return c;
+          return c.direction === "reverse"
+            ? { ...c, front: edited.back, back: edited.front }
+            : { ...c, front: edited.front, back: edited.back };
+        }),
       };
     });
   }, []);

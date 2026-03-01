@@ -146,10 +146,10 @@ export default function AllInOneLearnScreen({
     }
   };
 
-  // Reset rotation when card changes
+  // Reset rotation when card changes (include direction to handle bidirectional)
   useEffect(() => {
     rotateCard.value = 0;
-  }, [currentCard?.cardId]);
+  }, [currentCard?.cardId, currentCard?.direction]);
 
   function triggerHaptic(type: "success" | "error") {
     if (type === "success") {

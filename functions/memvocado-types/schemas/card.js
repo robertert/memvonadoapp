@@ -88,6 +88,8 @@ exports.CardLearningSchema = zod_1.z
     cardAlgo: exports.CardAlgoSchema.optional(),
     firstLearn: exports.FirstLearnSchema,
     grade: zod_1.z.nativeEnum(CardGrade).optional(), // -1: not graded, 0: wrong, 1: hard, 2: good, 3: easy
+    cardAlgoReverse: exports.CardAlgoSchema.optional(),
+    firstLearnReverse: exports.FirstLearnSchema.optional(),
 })
     .strict();
 /**

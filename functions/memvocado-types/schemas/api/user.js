@@ -25,6 +25,7 @@ exports.UpdateCardProgressRequestSchema = zod_1.z
     // scheduledTime w ms (client time, offset od „teraz”)
     scheduledTime: zod_1.z.number().int(),
     dailyStats: index_1.DailyStatsSchema.optional(),
+    direction: zod_1.z.enum(["forward", "reverse"]).optional(),
 })
     .strict();
 exports.GetUserProgressRequestSchema = zod_1.z
