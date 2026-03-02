@@ -7,8 +7,8 @@ import {
   Text,
   View,
   ActivityIndicator,
-  Image,
 } from "react-native";
+import AvocadoImage from "@/components/avocado/AvocadoImage";
 import { Colors, Fonts } from "../../constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -83,9 +83,14 @@ export default function VictoryScreen(): React.JSX.Element {
   const avocadoOpacity = useRef(new Animated.Value(0)).current;
   const avocadoTextOpacity = useRef(new Animated.Value(0)).current;
   const avocadoGlowOpacity = useRef(new Animated.Value(0)).current;
+  const avocadoShakeX = useRef(new Animated.Value(0)).current;
+  const avocadoFlashOpacity = useRef(new Animated.Value(0)).current;
+  const avocadoBadgeScale = useRef(new Animated.Value(1)).current;
 
   // Licznik dni do wyświetlenia
   const [displayStreak, setDisplayStreak] = useState(0);
+  const [displayPhase, setDisplayPhase] = useState(1);
+  const [displayDays, setDisplayDays] = useState(0);
 
   // 1. Fetchowanie danych przy starcie (tylko jeśli nie jest empty)
   useEffect(() => {
@@ -208,11 +213,34 @@ export default function VictoryScreen(): React.JSX.Element {
   const runAvocadoAnimation = () => {
     if (!streakData) return;
 
+    const currentPhase = streakData.avocadoCurrentPhase || 1;
+    const previousPhase = streakData.avocadoPreviousPhase || 1;
+    const consecutiveDays = streakData.avocadoConsecutiveDays || 0;
+    const phaseChanged = currentPhase > previousPhase;
+
     // Reset animations
     avocadoScale.setValue(0);
     avocadoOpacity.setValue(0);
     avocadoTextOpacity.setValue(0);
     avocadoGlowOpacity.setValue(0);
+    avocadoShakeX.setValue(0);
+    avocadoFlashOpacity.setValue(0);
+    avocadoBadgeScale.setValue(1);
+
+    // Start showing previous phase (or current if unchanged)
+    setDisplayPhase(phaseChanged ? previousPhase : currentPhase);
+    setDisplayDays(phaseChanged ? consecutiveDays - 1 : consecutiveDays);
+
+    const showTextAndFinish = () => {
+      Animated.timing(avocadoTextOpacity, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+      setTimeout(() => {
+        fadeOutAvocadoAndSwitch();
+      }, 3500);
+    };
 
     // Show avocado with bounce
     Animated.parallel([
@@ -228,45 +256,71 @@ export default function VictoryScreen(): React.JSX.Element {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      // Phase change effect - pulse and glow
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(avocadoGlowOpacity, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.timing(avocadoScale, {
-            toValue: 1.2,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.spring(avocadoScale, {
-            toValue: 1,
-            friction: 4,
-            useNativeDriver: true,
-          }),
-          Animated.timing(avocadoGlowOpacity, {
-            toValue: 0,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start();
+      if (phaseChanged) {
+        // Wait, then shake → flash → swap → reveal → glow
+        setTimeout(() => {
+          Animated.sequence([
+            Animated.timing(avocadoShakeX, { toValue: -14, duration: 55, useNativeDriver: true }),
+            Animated.timing(avocadoShakeX, { toValue: 14, duration: 55, useNativeDriver: true }),
+            Animated.timing(avocadoShakeX, { toValue: -10, duration: 55, useNativeDriver: true }),
+            Animated.timing(avocadoShakeX, { toValue: 10, duration: 55, useNativeDriver: true }),
+            Animated.timing(avocadoShakeX, { toValue: -6, duration: 55, useNativeDriver: true }),
+            Animated.timing(avocadoShakeX, { toValue: 6, duration: 55, useNativeDriver: true }),
+            Animated.timing(avocadoShakeX, { toValue: 0, duration: 55, useNativeDriver: true }),
+          ]).start(() => {
+            // Flash covers
+            Animated.timing(avocadoFlashOpacity, {
+              toValue: 1,
+              duration: 120,
+              useNativeDriver: true,
+            }).start(() => {
+              // Swap image while covered
+              setDisplayPhase(currentPhase);
+              setTimeout(() => {
+                // Flash fades out revealing new phase
+                Animated.timing(avocadoFlashOpacity, {
+                  toValue: 0,
+                  duration: 280,
+                  useNativeDriver: true,
+                }).start(() => {
+                  // Update days counter + bounce badge
+                  setDisplayDays(consecutiveDays);
+                  Animated.sequence([
+                    Animated.timing(avocadoBadgeScale, { toValue: 1.5, duration: 150, useNativeDriver: true }),
+                    Animated.spring(avocadoBadgeScale, { toValue: 1, friction: 4, useNativeDriver: true }),
+                  ]).start();
 
-      // Show text
-      Animated.timing(avocadoTextOpacity, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }).start();
-
-      // Wait and transition to stats
-      setTimeout(() => {
-        fadeOutAvocadoAndSwitch();
-      }, 3500);
+                  // Glow pulse on new phase
+                  Animated.sequence([
+                    Animated.parallel([
+                      Animated.timing(avocadoGlowOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+                      Animated.timing(avocadoScale, { toValue: 1.2, duration: 300, useNativeDriver: true }),
+                    ]),
+                    Animated.parallel([
+                      Animated.spring(avocadoScale, { toValue: 1, friction: 4, useNativeDriver: true }),
+                      Animated.timing(avocadoGlowOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+                    ]),
+                  ]).start();
+                  showTextAndFinish();
+                });
+              }, 80);
+            });
+          });
+        }, 800);
+      } else {
+        // No phase change — simple pulse
+        Animated.sequence([
+          Animated.parallel([
+            Animated.timing(avocadoGlowOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+            Animated.timing(avocadoScale, { toValue: 1.2, duration: 300, useNativeDriver: true }),
+          ]),
+          Animated.parallel([
+            Animated.spring(avocadoScale, { toValue: 1, friction: 4, useNativeDriver: true }),
+            Animated.timing(avocadoGlowOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+          ]),
+        ]).start();
+        showTextAndFinish();
+      }
     });
   };
 
@@ -359,34 +413,54 @@ export default function VictoryScreen(): React.JSX.Element {
 
     return (
       <View style={[styles.centerContent, { paddingTop: 60 }]}>
-        {/* Glow effect */}
-        <Animated.View
-          style={[
-            styles.avocadoGlow,
-            {
-              opacity: avocadoGlowOpacity,
-              transform: [{ scale: avocadoScale }],
-            },
-          ]}
-        />
-
         <Animated.View
           style={{
-            transform: [{ scale: avocadoScale }],
+            transform: [{ scale: avocadoScale }, { translateX: avocadoShakeX }],
             opacity: avocadoOpacity,
             alignItems: "center",
           }}
         >
-          <Image
-            source={require("@/assets/memvocadoicon.png")}
-            style={styles.avocadoImage}
-            resizeMode="contain"
-          />
-          <View style={styles.avocadoDaysBadge}>
-            <Text style={styles.avocadoDaysNumber}>
-              {consecutiveDays}/{AVOCADO_TOTAL_DAYS}
-            </Text>
+          <View style={{ width: 160, height: 160 }}>
+            {/* Glow effect — centered inside the image container */}
+            <Animated.View
+              style={[
+                styles.avocadoGlow,
+                {
+                  opacity: avocadoGlowOpacity,
+                  position: "absolute",
+                  top: -10,
+                  left: -10,
+                },
+              ]}
+              pointerEvents="none"
+            />
+            <AvocadoImage
+              phase={displayPhase as 1 | 2 | 3 | 4 | 5}
+              size="large"
+              showGlow={false}
+            />
+            {/* Flash overlay for phase transition */}
+            <Animated.View
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: 160,
+                height: 160,
+                borderRadius: 80,
+                backgroundColor: "white",
+                opacity: avocadoFlashOpacity,
+              }}
+              pointerEvents="none"
+            />
           </View>
+          <Animated.View
+            style={[styles.avocadoDaysBadge, { transform: [{ scale: avocadoBadgeScale }] }]}
+          >
+            <Text style={styles.avocadoDaysNumber}>
+              {displayDays}/{AVOCADO_TOTAL_DAYS}
+            </Text>
+          </Animated.View>
         </Animated.View>
 
         <Animated.View
@@ -872,10 +946,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   // --- Style Awokado ---
-  avocadoImage: {
-    width: 140,
-    height: 140,
-  },
   avocadoGlow: {
     position: "absolute",
     width: 180,
