@@ -6,13 +6,9 @@ import Toast from "react-native-toast-message";
 import { useQuickAdd, QuickAddSource } from "@/store/quickAdd-context";
 import { parseDeepLinkUrl, DeepLinkRoute } from "@/utils/deepLinks";
 import { cloudFunctions } from "@/services/cloudFunctions";
-const PENDING_DEEP_LINK_KEY = "PENDING_DEEP_LINK";
+import { useAuth } from "@/store/auth";
 
-interface DeepLinkConfig {
-  isAuthReady: boolean;
-  isAuthenticated: boolean;
-  isAppReady: boolean;
-}
+const PENDING_DEEP_LINK_KEY = "PENDING_DEEP_LINK";
 
 /**
  * Unified deep link router — handles all deep link types:
@@ -24,7 +20,11 @@ interface DeepLinkConfig {
  * Auth-aware: buffers URL until auth state is known, saves pending
  * route to AsyncStorage if user is not logged in.
  */
-export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLinkConfig) {
+export function useDeepLink() {
+  const { status } = useAuth();
+  const isAuthenticated = status === "ready";
+  const isReady = status !== "loading";
+
   const { showQuickAdd } = useQuickAdd();
   const initialUrlHandled = useRef(false);
   const [isResolvingDeepLink, setIsResolvingDeepLink] = useState(false);
@@ -39,6 +39,9 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
   // Dedup guard: prevent the same route from being processed twice in quick succession
   const lastProcessedRoute = useRef<{ key: string; time: number; url: string } | null>(null);
 
+  // Track if pending link was consumed on first mount
+  const pendingLinkConsumed = useRef(false);
+
   const getRouteKey = (route: DeepLinkRoute): string => {
     const keys = Object.keys(route.params).sort();
     const paramsKey = keys.map((k) => `${k}=${route.params[k] ?? ""}`).join("&");
@@ -46,7 +49,8 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
   };
 
   const navigateToRoute = useCallback(
-    async (route: DeepLinkRoute) => {
+    async (route: DeepLinkRoute, options?: { replace?: boolean }) => {
+      const replace = options?.replace ?? false;
       switch (route.type) {
         case "add": {
           const validSources: QuickAddSource[] = [
@@ -78,11 +82,10 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
           try {
             const result = await cloudFunctions.getUserByUsername(username);
             if (result.exists && result.userId) {
-              router.replace({
+              router.push({
                 pathname: "/stack/userProfileScreen",
-                params: { userId: result.userId! },
+                params: { userId: result.userId },
               });
-
             } else {
               Toast.show({
                 type: "error",
@@ -109,15 +112,28 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
           const { deckId } = route.params;
           if (!deckId) return;
 
-          router.push({
-            pathname: "/stack/deckDetails",
-            params: { deckId },
-          });
+          setIsResolvingDeepLink(true);
+          try {
+            await cloudFunctions.getDeckDetails(deckId);
+
+            router.push({
+              pathname: "/stack/deckDetails",
+              params: { deckId },
+            });
+          } catch {
+            Toast.show({
+              type: "error",
+              text1: "Nie znaleziono",
+              text2: "Talia nie istnieje lub jest prywatna",
+            });
+            router.replace("/tabs");
+          } finally {
+            setIsResolvingDeepLink(false);
+          }
           break;
         }
 
         case "leaderboard": {
-          // Navigate directly to rankings tab
           router.replace("/tabs/rankingsScreen");
           break;
         }
@@ -127,7 +143,7 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
           break;
       }
     },
-    [isAuthReady, isAuthenticated, showQuickAdd]
+    [showQuickAdd]
   );
 
   const handleDeepLink = useCallback(
@@ -140,8 +156,9 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
 
       const route = parseDeepLinkUrl(url);
       if (route.type === "unknown") return;
-      // If auth/app isn't ready yet, buffer the URL
-      if (!isAuthReady || !isAppReady) {
+
+      // If auth isn't ready yet, buffer the URL
+      if (!isReady) {
         bufferedUrl.current = url;
         return;
       }
@@ -160,9 +177,8 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
 
       isHandlingDeepLink.current = true;
       try {
-        // If authenticated, navigate directly
         if (isAuthenticated) {
-          await navigateToRoute(route);
+          await navigateToRoute(route, { replace: true });
         } else {
           // Not authenticated — save pending route for after login
           try {
@@ -179,29 +195,53 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
         if (queuedUrl.current) {
           const next = queuedUrl.current;
           queuedUrl.current = null;
-          // Defer to next tick to avoid re-entrancy issues
           setTimeout(() => {
             handleDeepLink(next);
           }, 0);
         }
       }
     },
-    [isAuthReady, isAppReady, isAuthenticated, navigateToRoute]
+    [isReady, isAuthenticated, navigateToRoute]
   );
 
   // Stable ref so the url listener always calls the latest handleDeepLink
-  // without needing to re-subscribe (which causes stale URL re-delivery).
   const handleDeepLinkRef = useRef(handleDeepLink);
   handleDeepLinkRef.current = handleDeepLink;
 
-  // Process buffered URL when auth + app become ready
+  // Process buffered URL when auth becomes ready
   useEffect(() => {
-    if (isAuthReady && isAppReady && bufferedUrl.current) {
+    if (isReady && bufferedUrl.current) {
       const url = bufferedUrl.current;
       bufferedUrl.current = null;
       handleDeepLink(url);
     }
-  }, [isAuthReady, isAppReady, handleDeepLink]);
+  }, [isReady, handleDeepLink]);
+
+  // Consume pending deep link from AsyncStorage when authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      // Reset on logout so next login can consume pending
+      pendingLinkConsumed.current = false;
+      return;
+    }
+    if (pendingLinkConsumed.current) return;
+    pendingLinkConsumed.current = true;
+
+    // 500ms delay: wait for tabs to mount after auth resolves
+    const timer = setTimeout(async () => {
+      try {
+        const pending = await AsyncStorage.getItem(PENDING_DEEP_LINK_KEY);
+        if (!pending) return;
+        await AsyncStorage.removeItem(PENDING_DEEP_LINK_KEY);
+        const route = JSON.parse(pending) as DeepLinkRoute;
+        await navigateToRoute(route);
+      } catch (error) {
+        console.error("Error consuming pending deep link:", error);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, navigateToRoute]);
 
   // Stable url event listener — registered once, uses ref to always
   // call the latest handleDeepLink without re-subscribing.
@@ -215,7 +255,6 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
   }, []);
 
   // Handle initial URL (app launched via deep link).
-  // Re-runs safely when auth/app state changes; guarded by initialUrlHandled.
   useEffect(() => {
     const handleInitialUrl = async () => {
       if (initialUrlHandled.current) return;
@@ -231,7 +270,7 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
         if (initialUrlHandled.current) return; // url event won the race
         initialUrlHandled.current = true;
 
-        if (!isAuthReady || !isAppReady) {
+        if (!isReady) {
           bufferedUrl.current = initialUrl;
           return;
         }
@@ -242,28 +281,9 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
     };
 
     handleInitialUrl();
-  }, [handleDeepLink, isAuthReady, isAppReady]);
+  }, [handleDeepLink, isReady]);
 
   return { isResolvingDeepLink };
-}
-
-/**
- * Consume and execute any pending deep link stored from before authentication.
- * Call this after successful auth + navigation to tabs.
- */
-export async function consumePendingDeepLink(): Promise<DeepLinkRoute | null> {
-  try {
-
-    const pending = await AsyncStorage.getItem(PENDING_DEEP_LINK_KEY);
-    if (pending) {
-      await AsyncStorage.removeItem(PENDING_DEEP_LINK_KEY);
-      return JSON.parse(pending) as DeepLinkRoute;
-    }
-    return null;
-  } catch (error) {
-    console.error("Error consuming pending deep link:", error);
-    return null;
-  }
 }
 
 export default useDeepLink;

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useContext } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -26,7 +26,7 @@ import Animated, {
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { cloudFunctions } from "../../services/cloudFunctions";
-import { UserContext } from "../../store/user-context";
+import { useAuth } from "../../store/auth";
 import { calculateTimeAgo } from "@/utils/date";
 
 interface NotificationItem {
@@ -135,25 +135,25 @@ function NotificationSwipeCard({
 
 export default function notificationsScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
-  const userCtx = useContext(UserContext);
+  const { userId } = useAuth();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const hasNotifications = notifications && notifications.length > 0;
 
   useEffect(() => {
-    if (userCtx.id) {
+    if (userId) {
       fetchNotifications();
     }
-  }, [userCtx.id]);
+  }, [userId]);
 
   async function fetchNotifications(): Promise<void> {
-    if (!userCtx.id) return;
+    if (!userId) return;
 
     try {
       setIsLoading(true);
 
       const result = await cloudFunctions.getNotifications(
-        userCtx.id || "",
+        userId || "",
         50
       );
 
@@ -182,12 +182,12 @@ export default function notificationsScreen(): React.JSX.Element {
   async function handleNotificationDismiss(
     notificationId: string
   ): Promise<void> {
-    if (!userCtx.id) return;
+    if (!userId) return;
 
     try {
       // Mark as read when dismissed
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
-      await cloudFunctions.markNotificationRead(userCtx.id, notificationId);
+      await cloudFunctions.markNotificationRead(userId, notificationId);
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }

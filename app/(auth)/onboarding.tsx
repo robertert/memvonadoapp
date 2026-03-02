@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,11 +10,10 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Colors, Fonts } from "../../constants/colors";
 import { auth } from "../../firebase";
-import { UserContext } from "../../store/user-context";
+import { useAuth } from "../../store/auth";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import Spinner from "react-native-loading-spinner-overlay";
 import {
@@ -38,7 +37,7 @@ interface OnboardingData {
 
 export default function OnboardingScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
-  const userCtx = useContext(UserContext);
+  const { refreshUser } = useAuth();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("username");
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<OnboardingData>({
@@ -161,11 +160,8 @@ export default function OnboardingScreen(): React.JSX.Element {
         interests: selectedInterests,
       });
 
-      // Zaktualizuj kontekst użytkownika
-      userCtx.getUser(data.username || username, user.uid);
-
-      // Przekieruj do głównej aplikacji
-      router.replace("../tabs");
+      // Zaktualizuj status auth — AuthLayout automatycznie przekieruje do tabs
+      await refreshUser();
     } catch (error: any) {
       console.error("Complete onboarding error:", error);
       Alert.alert("Error", "Failed to complete setup. Please try again.");

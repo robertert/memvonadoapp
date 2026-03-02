@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import {
 } from "react-native-heroicons/outline";
 import { CheckIcon } from "react-native-heroicons/solid";
 import { cloudFunctions } from "@/services/cloudFunctions";
-import { UserContext } from "@/store/user-context";
+import { useAuth } from "@/store/auth";
 import type { DeckLearningData } from "@/types";
 
 export interface SelectedDeck {
@@ -42,7 +42,7 @@ export default function DeckSelectorModal({
   onClose,
   showCloseButton = false,
 }: DeckSelectorModalProps): React.JSX.Element {
-  const { id: userId } = useContext(UserContext);
+  const { userId } = useAuth();
 
   const [decks, setDecks] = useState<DeckLearningData[]>([]);
   const [isLoading, setIsLoading] = useState(true);

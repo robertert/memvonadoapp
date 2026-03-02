@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import { Colors, Fonts } from "@/constants/colors";
 import { ChevronDownIcon, PlusIcon, FolderIcon } from "react-native-heroicons/outline";
 import { CheckIcon } from "react-native-heroicons/solid";
 import { cloudFunctions } from "@/services/cloudFunctions";
-import { UserContext } from "@/store/user-context";
+import { useAuth } from "@/store/auth";
 import { useQuickAdd } from "@/store/quickAdd-context";
 import type { DeckLearningData } from "@/types";
 
@@ -29,7 +29,7 @@ export default function DeckSelector({
   onCreateNew,
   onNoLanguages,
 }: DeckSelectorProps): React.JSX.Element {
-  const { id: userId } = useContext(UserContext);
+  const { userId } = useAuth();
   const { lastUsedDeckId } = useQuickAdd();
 
   const [decks, setDecks] = useState<DeckLearningData[]>([]);

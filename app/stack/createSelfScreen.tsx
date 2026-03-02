@@ -1,5 +1,4 @@
 import React, {
-  useContext,
   useEffect,
   useRef,
   useState,
@@ -29,7 +28,7 @@ import DeckSelectorModal, {
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { router, useLocalSearchParams } from "expo-router";
 
-import { UserContext } from "../../store/user-context";
+import { useAuth } from "../../store/auth";
 import {
   CardCoreSchema,
   CardCore,
@@ -145,7 +144,7 @@ export default function createSelfScreen(): React.JSX.Element {
     }
   }, [cards, focusTarget]);
 
-  const userCtx = useContext(UserContext);
+  const { userId } = useAuth();
 
   // Use draft hook (only for new deck mode)
   const {
@@ -478,7 +477,7 @@ export default function createSelfScreen(): React.JSX.Element {
           tags: [],
         } as DeckCore;
 
-        if (!userCtx.id) {
+        if (!userId) {
           throw new Error("User ID is required");
         }
 

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -14,7 +14,7 @@ import { AntDesign } from "@expo/vector-icons";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { router, useLocalSearchParams } from "expo-router";
 import { cloudFunctions } from "../../services/cloudFunctions";
-import { UserContext } from "../../store/user-context";
+import { useAuth } from "../../store/auth";
 import { Card, CardCore } from "@/types";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { setEditedCard } from "../../utils/editedCardStore";
@@ -28,7 +28,7 @@ export default function editCard(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const typedParams = params as unknown as EditCardParams;
-  const userCtx = useContext(UserContext);
+  const { userId, isAdmin } = useAuth();
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -45,7 +45,7 @@ export default function editCard(): React.JSX.Element {
   async function fetchCard(): Promise<void> {
     try {
       setIsLoading(true);
-      if (!typedParams.cardId || !typedParams.deckId || !userCtx.id) {
+      if (!typedParams.cardId || !typedParams.deckId || !userId) {
         throw new Error("cardId, deckId and userId are required");
       }
 
@@ -59,9 +59,9 @@ export default function editCard(): React.JSX.Element {
       }
 
       // Allow editing if user is the author, an editor, or an admin
-      const isOwner = deckData.createdBy === userCtx.id;
-      const isEditorUser = deckData.editors?.includes(userCtx.id!) ?? false;
-      if (!isOwner && !isEditorUser && !userCtx.isAdmin) {
+      const isOwner = deckData.createdBy === userId;
+      const isEditorUser = deckData.editors?.includes(userId!) ?? false;
+      if (!isOwner && !isEditorUser && !isAdmin) {
         alert(
           "Nie masz uprawnień do edycji tej karty. Tylko autor lub edytor decku może edytować karty."
         );
@@ -96,7 +96,7 @@ export default function editCard(): React.JSX.Element {
   async function saveHandler(): Promise<void> {
     try {
       setIsSaving(true);
-      if (!card || !userCtx.id) return;
+      if (!card || !userId) return;
 
       const updatedCardData: CardCore = {
         cardData: {

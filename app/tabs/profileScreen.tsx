@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -18,7 +18,7 @@ import { FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
 import ContributionHeatmap from "../../components/profileScreen/ContributionHeatmap";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { buildUserShareMessage } from "@/utils/deepLinks";
-import { UserContext } from "../../store/user-context";
+import { useAuth } from "../../store/auth";
 import type { User } from "@/types";
 import type { GetAvocadoStatusResponse, AvocadoSkin } from "@/types/schemas/avocado";
 import AvocadoImage from "@/components/avocado/AvocadoImage";
@@ -26,7 +26,7 @@ import { AVOCADO_RARITY_COLORS, DEFAULT_AVOCADO_CONFIG } from "@/constants/avoca
 
 export default function profileScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
-  const userCtx = useContext(UserContext);
+  const { userId } = useAuth();
   const weeks = 16; // zakres 16 tygodni wstecz
 
   const [heatmapData, setHeatmapData] = useState<
@@ -50,22 +50,22 @@ export default function profileScreen(): React.JSX.Element {
   const [avocadoSkins, setAvocadoSkins] = useState<AvocadoSkin[]>([]);
 
   useEffect(() => {
-    if (userCtx.id) {
+    if (userId) {
       fetchProfileData();
     }
-  }, [userCtx.id]);
+  }, [userId]);
 
   async function fetchProfileData(): Promise<void> {
-    if (!userCtx.id) return;
+    if (!userId) return;
 
     try {
       setIsLoading(true);
 
       const [profile, heatmap, awardsData, decks] = await Promise.all([
-        cloudFunctions.getUserProfile(userCtx.id!!),
-        cloudFunctions.getUserActivityHeatmap(userCtx.id!!, weeks),
-        cloudFunctions.getUserAwards(userCtx.id!!),
-        cloudFunctions.getUserDecks(userCtx.id!!),
+        cloudFunctions.getUserProfile(userId!!),
+        cloudFunctions.getUserActivityHeatmap(userId!!, weeks),
+        cloudFunctions.getUserAwards(userId!!),
+        cloudFunctions.getUserDecks(userId!!),
       ]);
 
       setProfileData(profile);

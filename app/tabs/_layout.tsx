@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Tabs, useLocalSearchParams } from "expo-router";
+import { Tabs, useLocalSearchParams, Redirect } from "expo-router";
 import { Colors } from "../../constants/colors";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, View } from "react-native";
@@ -22,8 +22,8 @@ import {
   AVOCADO_REFRESH_DASHBOARD_KEY,
 } from "@/constants/avocado";
 import { router } from "expo-router";
-import { consumePendingDeepLink } from "@/hooks/useDeepLink";
-import { useQuickAdd, QuickAddSource } from "@/store/quickAdd-context";
+import { useQuickAdd } from "@/store/quickAdd-context";
+import { useAuth } from "@/store/auth";
 
 const STREAK_RESET_KEY = "streak_reset_pending";
 
@@ -33,81 +33,42 @@ interface TabBarIconProps {
   size: number;
 }
 
-export default function TabsLayout(): React.JSX.Element {
+export default function TabsLayout(): React.JSX.Element | null {
+  const { status, userId } = useAuth();
+
+  // Auth guard — declarative redirect
+  if (status === "loading") return null;
+  if (status !== "ready") return <Redirect href="/(auth)/login" />;
+
+  return <TabsContent userId={userId!} />;
+}
+
+function TabsContent({ userId }: { userId: string }) {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ triggerHarvest?: string }>();
-
   const { showQuickAdd } = useQuickAdd();
 
-  // Consume pending deep link after auth + tabs mount
+  // Streak check — runs once per userId change (login)
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout | null = null;
-    let isMounted = true;
-
-    const handlePendingDeepLink = async () => {
+    const checkStreak = async () => {
       try {
-        const pendingRoute = await consumePendingDeepLink();
-        if (!pendingRoute || !isMounted) return;
-
-        timeoutId = setTimeout(async () => {
-          if (!isMounted) return;
-          switch (pendingRoute.type) {
-            case "add": {
-              const validSources: QuickAddSource[] = ["widget", "ocr", "deeplink", "manual"];
-              const source = validSources.includes(pendingRoute.params.source as QuickAddSource)
-                ? (pendingRoute.params.source as QuickAddSource)
-                : "deeplink";
-              showQuickAdd({
-                front: pendingRoute.params.term,
-                deckId: pendingRoute.params.deck,
-                source,
-                autoTranslate: pendingRoute.params.translate === "true",
-              });
-              break;
-            }
-            case "user": {
-              const { username } = pendingRoute.params;
-              if (!username) return;
-              try {
-                const result = await cloudFunctions.getUserByUsername(username);
-                if (result.exists && result.userId && isMounted) {
-                  router.push({
-                    pathname: "/stack/userProfileScreen",
-                    params: { userId: result.userId },
-                  });
-                }
-              } catch (error) {
-                console.error("Error resolving pending username:", error);
-              }
-              break;
-            }
-            case "deck": {
-              if (pendingRoute.params.deckId) {
-                router.push({
-                  pathname: "/stack/deckDetails",
-                  params: { deckId: pendingRoute.params.deckId },
-                });
-              }
-              break;
-            }
-            case "leaderboard": {
-              router.replace("/tabs/rankingsScreen");
-              break;
-            }
-          }
-        }, 500);
+        const streakResult = await cloudFunctions.updateUserStreakOnLogin();
+        if (streakResult.status === "streak_reset" && streakResult.updated) {
+          await AsyncStorage.setItem(
+            STREAK_RESET_KEY,
+            JSON.stringify({
+              previousStreak: streakResult.previousStreak,
+              timestamp: Date.now(),
+            })
+          );
+        }
       } catch (error) {
-        console.error("Error handling pending deep link:", error);
+        console.error("Error checking streak on login:", error);
       }
     };
 
-    handlePendingDeepLink();
-
-    return () => {
-      isMounted = false;
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, []);
+    checkStreak();
+  }, [userId]);
 
   // Streak modal state
   const [showStreakResetModal, setShowStreakResetModal] = useState(false);
@@ -159,14 +120,11 @@ export default function TabsLayout(): React.JSX.Element {
     setIsNewSkin(false);
     setHarvestError(null);
 
-    // Ustaw flagę do odświeżenia dashboardu
     await AsyncStorage.setItem(AVOCADO_REFRESH_DASHBOARD_KEY, "true");
-
-    // Wyczyść parametry i odśwież dashboard
     router.replace("/tabs/dashboardScreen");
   };
 
-  // Sprawdź czy jest pending streak reset przy mount tabsów
+  // Check for pending modals on mount
   useEffect(() => {
     const checkPendingModals = async () => {
       try {
@@ -326,7 +284,6 @@ export default function TabsLayout(): React.JSX.Element {
         onClose={() => setShowAvocadoResetModal(false)}
         previousDays={avocadoPreviousDays}
       />
-
     </>
   );
 }

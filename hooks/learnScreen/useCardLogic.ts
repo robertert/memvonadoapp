@@ -1,6 +1,6 @@
-import { useContext, useEffect, useReducer, useState, useCallback } from "react";
+import { useEffect, useReducer, useState, useCallback } from "react";
 import { router } from "expo-router";
-import { UserContext } from "../../store/user-context";
+import { useAuth } from "../../store/auth";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { consumeEditedCard } from "../../utils/editedCardStore";
 import {
@@ -17,7 +17,7 @@ import {
 import { useStreakTracking } from "./useStreakTracking";
 
 export function useCardLogic(id: string) {
-  const userCtx = useContext(UserContext);
+  const { userId } = useAuth();
   const [state, dispatch] = useReducer(sessionReducer, initialSessionState);
   const [isBack, setIsBack] = useState(false);
   const [tooltip, setTooltip] = useState<TooltipState>({ shown: false });
@@ -88,9 +88,9 @@ export function useCardLogic(id: string) {
     // Fire-and-forget API update
     void (async () => {
       try {
-        if (userCtx.id && currentItem.card.id) {
+        if (userId && currentItem.card.id) {
           await cloudFunctions.updateCardProgress(
-            userCtx.id,
+            userId,
             id,
             structuredClone(result.updatedItem.card),
             result.scheduledTimeDelta,

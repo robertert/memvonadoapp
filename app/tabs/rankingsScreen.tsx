@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useContext } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View, ScrollView, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Fonts } from "../../constants/colors";
@@ -7,7 +7,7 @@ import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { FireIcon, TrophyIcon } from "react-native-heroicons/solid";
 import { cloudFunctions } from "../../services/cloudFunctions";
-import { UserContext } from "../../store/user-context";
+import { useAuth } from "../../store/auth";
 import { WrenchScrewdriverIcon } from "react-native-heroicons/solid";
 
 interface RankingUser {
@@ -22,7 +22,7 @@ interface RankingUser {
 
 export default function rankingsScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
-  const userCtx = useContext(UserContext);
+  const { userId } = useAuth();
   const [activeTab, setActiveTab] = useState<"random" | "following">("random");
   const [leagueTitle, setLeagueTitle] = useState<string>("🏆 Bronze League");
   const [timeLeft, setTimeLeft] = useState<string>();
@@ -34,10 +34,10 @@ export default function rankingsScreen(): React.JSX.Element {
   const seasonEndRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (userCtx.id) {
+    if (userId) {
       //fetchRankings();
     }
-  }, [userCtx.id, activeTab]);
+  }, [userId, activeTab]);
 
   useEffect(() => {
     let interval: number | null = null;
@@ -91,15 +91,15 @@ export default function rankingsScreen(): React.JSX.Element {
   }, []);
 
   async function fetchRankings(): Promise<void> {
-    if (!userCtx.id) return;
+    if (!userId) return;
 
     try {
       setIsLoading(true);
 
       if (activeTab === "random") {
         // Get user's group leaderboard
-        if (!userCtx.id) return;
-        const leaderboard = await cloudFunctions.getLeaderboard(userCtx.id);
+        if (!userId) return;
+        const leaderboard = await cloudFunctions.getLeaderboard(userId);
 
         // Get league info to set title
         if (leaderboard.leagueNumber) {
@@ -125,8 +125,8 @@ export default function rankingsScreen(): React.JSX.Element {
         setRandomUsers(users);
       } else {
         // Get following rankings
-        if (!userCtx.id) return;
-        const following = await cloudFunctions.getFollowingRankings(userCtx.id);
+        if (!userId) return;
+        const following = await cloudFunctions.getFollowingRankings(userId);
 
         // Transform to RankingUser format
         const users: RankingUser[] = following.rankings.map(
@@ -179,7 +179,7 @@ export default function rankingsScreen(): React.JSX.Element {
     <Pressable
       key={user.userId}
       onPress={() => {
-        if (user.userId === userCtx.id) return;
+        if (user.userId === userId) return;
         router.push({
           pathname: "../stack/userProfileScreen",
           params: { userId: user.userId },

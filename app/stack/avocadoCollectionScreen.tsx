@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -14,7 +14,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { router } from "expo-router";
 import { ArrowLeftIcon } from "react-native-heroicons/solid";
 import { cloudFunctions } from "../../services/cloudFunctions";
-import { UserContext } from "../../store/user-context";
+import { useAuth } from "../../store/auth";
 import AvocadoImage from "@/components/avocado/AvocadoImage";
 import {
   AVOCADO_RARITY_COLORS,
@@ -29,7 +29,7 @@ import type {
 
 export default function AvocadoCollectionScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
-  const userCtx = useContext(UserContext);
+  const { userId } = useAuth();
 
   const [status, setStatus] = useState<GetAvocadoStatusResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +41,7 @@ export default function AvocadoCollectionScreen(): React.JSX.Element {
   }, []);
 
   const fetchAvocadoStatus = async () => {
-    if (!userCtx.id) return;
+    if (!userId) return;
 
     try {
       setError(null);

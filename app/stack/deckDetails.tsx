@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useContext, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -20,7 +20,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
 import { cloudFunctions } from "../../services/cloudFunctions";
-import { UserContext } from "../../store/user-context";
+import { useAuth } from "../../store/auth";
 import {
   ArrowLeftIcon,
   EyeIcon,
@@ -56,7 +56,7 @@ interface DeckParams {
 
 export default function deckDetails(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
-  const userCtx = useContext(UserContext);
+  const { userId, isAdmin } = useAuth();
 
   const params = useLocalSearchParams();
   const typedParams = params as unknown as DeckParams;
@@ -201,7 +201,7 @@ export default function deckDetails(): React.JSX.Element {
   }, [typedParams.deckId, isLiked, likeCount, likeScale]);
 
   async function checkForChanges(): Promise<void> {
-    if (!userCtx.id || !typedParams.deckId || isCheckingChanges) return;
+    if (!userId || !typedParams.deckId || isCheckingChanges) return;
 
     try {
       setIsCheckingChanges(true);
@@ -218,7 +218,7 @@ export default function deckDetails(): React.JSX.Element {
   }
 
   async function handleSyncAll(): Promise<void> {
-    if (!userCtx.id || !typedParams.deckId) return;
+    if (!userId || !typedParams.deckId) return;
 
     try {
       setIsLoading(true);
@@ -423,7 +423,7 @@ export default function deckDetails(): React.JSX.Element {
           }}
           onLongPress={() => {
             const canEditCards =
-              deck?.createdBy === userCtx.id || isEditor || userCtx.isAdmin;
+              deck?.createdBy === userId || isEditor || isAdmin;
             if (!canEditCards) return;
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             playSound("click");
@@ -572,9 +572,9 @@ export default function deckDetails(): React.JSX.Element {
                 router.push({
                   pathname: "./deckSettings",
                   params: {
-                    isOwner: (deck.createdBy === userCtx.id).toString(),
+                    isOwner: (deck.createdBy === userId).toString(),
                     isEditor: isEditor.toString(),
-                    isAdmin: userCtx.isAdmin.toString(),
+                    isAdmin: isAdmin.toString(),
                     deckId: deck.id,
                   },
                 });
@@ -642,7 +642,7 @@ export default function deckDetails(): React.JSX.Element {
             style={styles.userInfo}
             onPress={() => {
               if (!deck) return;
-              if (deck.createdBy === userCtx.id) return; // Don't navigate to own profile
+              if (deck.createdBy === userId) return; // Don't navigate to own profile
               router.push({
                 pathname: "./userProfileScreen",
                 params: { userId: deck.createdBy },

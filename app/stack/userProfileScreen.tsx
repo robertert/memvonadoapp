@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -16,7 +16,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
 import ContributionHeatmap from "../../components/profileScreen/ContributionHeatmap";
 import { cloudFunctions } from "../../services/cloudFunctions";
-import { UserContext } from "../../store/user-context";
+import { useAuth } from "../../store/auth";
 import type { User } from "@/types";
 import { buildUserShareMessage } from "@/utils/deepLinks";
 
@@ -28,7 +28,7 @@ export default function userProfileScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const typedParams = params as unknown as UserProfileParams;
-  const userCtx = useContext(UserContext);
+  const { userId: currentUserId } = useAuth();
   const weeks = 16;
 
   const [profileData, setProfileData] = useState<User>();
@@ -44,7 +44,7 @@ export default function userProfileScreen(): React.JSX.Element {
 
   useEffect(() => {
     // If viewing own profile, redirect to profile tab
-    if (typedParams.userId === userCtx.id) {
+    if (typedParams.userId === currentUserId) {
       router.back();
       return;
     }
@@ -275,7 +275,7 @@ export default function userProfileScreen(): React.JSX.Element {
                     key={deck.id}
                     onPress={() => {
                       router.push({
-                        pathname: "./deckDetails",
+                        pathname: "/stack/deckDetails",
                         params: { deckId: deck.id },
                       });
                     }}

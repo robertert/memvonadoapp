@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -17,7 +17,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ScrollView } from "react-native";
 import { router } from "expo-router";
-import { UserContext } from "../../store/user-context";
+import { useAuth } from "../../store/auth";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { BellIcon, FireIcon, LanguageIcon } from "react-native-heroicons/solid";
 import PieChart from "../../components/CustomPieChart";
@@ -45,13 +45,13 @@ export default function decksScreen(): React.JSX.Element {
   );
   const [avocadoStatus, setAvocadoStatus] = useState<GetAvocadoStatusResponse | null>(null);
   const [avocadoLoading, setAvocadoLoading] = useState<boolean>(false);
-  const userCtx = useContext(UserContext);
+  const { userId } = useAuth();
 
   useEffect(() => {
-    if (userCtx.id) {
+    if (userId) {
       fetchDecks();
     }
-  }, [userCtx.id]);
+  }, [userId]);
 
   // Sprawdź czy trzeba odświeżyć po zbiorze awokado
   useFocusEffect(
@@ -74,7 +74,7 @@ export default function decksScreen(): React.JSX.Element {
                 : null
             );
             // Odśwież dane z serwera w tle
-            if (userCtx.id) {
+            if (userId) {
               try {
                 const avocadoStatus = await cloudFunctions.getAvocadoStatus();
                 setAvocadoStatus(avocadoStatus);
@@ -88,7 +88,7 @@ export default function decksScreen(): React.JSX.Element {
         }
       };
       checkRefreshFlag();
-    }, [userCtx.id])
+    }, [userId])
   );
 
   async function fetchDecks(): Promise<void> {
@@ -97,8 +97,8 @@ export default function decksScreen(): React.JSX.Element {
       // Get user progress and statistics from Cloud Function
       const [fetchedUserProgress, fetchedUserDecks, fetchedDailyUserStats] =
         await Promise.all([
-          cloudFunctions.getUserProgress(userCtx.id),
-          cloudFunctions.getUserDecks(userCtx.id),
+          cloudFunctions.getUserProgress(userId || ""),
+          cloudFunctions.getUserDecks(userId || ""),
           cloudFunctions.getDailyUserStats(),
         ]);
       setUserProgress(fetchedUserProgress);

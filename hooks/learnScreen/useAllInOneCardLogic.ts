@@ -1,6 +1,6 @@
-import { useContext, useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { router } from "expo-router";
-import { UserContext } from "../../store/user-context";
+import { useAuth } from "../../store/auth";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { consumeEditedCard } from "../../utils/editedCardStore";
 import {
@@ -37,7 +37,7 @@ export interface AllInOneCardLogicState {
  * @param deckId - The deck ID for learning
  */
 export function useAllInOneCardLogic(deckId: string) {
-  const userCtx = useContext(UserContext);
+  const { userId } = useAuth();
 
   const [session, setSession] = useState<AllInOneSession | null>(null);
   const [currentCard, setCurrentCard] = useState<AllInOneCard | null>(null);

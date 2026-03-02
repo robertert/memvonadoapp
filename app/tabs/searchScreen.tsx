@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -16,7 +16,7 @@ import { CATEGORY_OPTIONS } from "../../constants/settings";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ClockIcon, MagnifyingGlassIcon } from "react-native-heroicons/solid";
 import { cloudFunctions } from "../../services/cloudFunctions";
-import { UserContext } from "../../store/user-context";
+import { useAuth } from "../../store/auth";
 
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { ScrollView } from "react-native";
@@ -34,7 +34,7 @@ export default function marketplaceScreen(): React.JSX.Element {
   const params = useLocalSearchParams();
   const category = params.category as string;
 
-  const userCtx = useContext(UserContext);
+  const { userId } = useAuth();
 
   const searchTimeout = useRef<NodeJS.Timeout | number | null>(null);
 
@@ -98,7 +98,7 @@ export default function marketplaceScreen(): React.JSX.Element {
         const result = await cloudFunctions.searchDecks(
           searchText.trim(),
           searchFilters,
-          userCtx.id || undefined
+          userId || undefined
         );
 
         const results = result.results.map(
@@ -145,7 +145,7 @@ export default function marketplaceScreen(): React.JSX.Element {
   async function fetchRecentSearch(): Promise<void> {
     try {
       setIsLoading(true);
-      const result = await cloudFunctions.getSearchLogs(userCtx.id || "");
+      const result = await cloudFunctions.getSearchLogs(userId || "");
       setRecentSearches(result.logs || []);
       setIsLoading(false);
     } catch (error) {

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -18,7 +18,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { ArrowLeftIcon } from "react-native-heroicons/solid";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { cloudFunctions } from "../../services/cloudFunctions";
-import { UserContext } from "@/store/user-context";
+import { useAuth } from "@/store/auth";
 import type { Deck, DeckLearningData, LearningMode } from "@/types";
 import { clearSession } from "@/utils/allInOneProgress";
 import { CalendarDaysIcon, BoltIcon } from "react-native-heroicons/solid";
@@ -70,7 +70,7 @@ export default function deckSettings(): React.JSX.Element {
   const [isSearchingEditors, setIsSearchingEditors] = useState<boolean>(false);
   const [isCustomPace, setIsCustomPace] = useState<boolean>(false);
 
-  const userCtx = useContext(UserContext);
+  const { userId, isAdmin } = useAuth();
 
   useEffect(() => {
     fetchDeckData();
@@ -80,7 +80,7 @@ export default function deckSettings(): React.JSX.Element {
     try {
       setIsLoading(true);
 
-      if (!userCtx?.id) throw new Error("No userCtx");
+      if (!userId) throw new Error("No userCtx");
 
       const canEditMetadata =
         params.isOwner === "true" || params.isAdmin === "true";
@@ -127,7 +127,7 @@ export default function deckSettings(): React.JSX.Element {
       setEditorSearchResults(
         users.filter(
           (u) =>
-            u.id !== userCtx.id &&
+            u.id !== userId &&
             !editors.some((e) => e.id === u.id)
         )
       );
@@ -176,7 +176,7 @@ export default function deckSettings(): React.JSX.Element {
     try {
       setIsLoading(true);
       if (!deck) throw new Error("No deck");
-      if (!userCtx.id) throw new Error("No userCtx");
+      if (!userId) throw new Error("No userCtx");
 
       const promises: Promise<unknown>[] = [
         cloudFunctions.updateUserDeckSettings(
@@ -205,7 +205,7 @@ export default function deckSettings(): React.JSX.Element {
   async function handleResetDeck(): Promise<void> {
     try {
       setIsResetting(true);
-      if (!userCtx.id) throw new Error("No userCtx");
+      if (!userId) throw new Error("No userCtx");
       await cloudFunctions.resetDeck(typedParams.deckId);
       Alert.alert("Sukces", "Postęp decku został zresetowany pomyślnie.", [
         {

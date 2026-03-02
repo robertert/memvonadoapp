@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -20,14 +20,14 @@ import {
 } from "react-native-heroicons/solid";
 
 import { cloudFunctions } from "../../services/cloudFunctions";
-import { UserContext } from "../../store/user-context";
+import { useAuth } from "../../store/auth";
 import type { DeckLearningData } from "@/types";
 import { CATEGORY_OPTIONS } from "../../constants/settings";
 import { calculateDailyStatsProgress } from "@/constants/dailyStats";
 
 export default function MyLibraryScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
-  const userCtx = useContext(UserContext);
+  const { userId } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [backendDecks, setBackendDecks] = useState<DeckLearningData[]>([]);
@@ -40,7 +40,7 @@ export default function MyLibraryScreen(): React.JSX.Element {
   ];
 
   useEffect(() => {
-    if (!userCtx.id) {
+    if (!userId) {
       return;
     }
 
@@ -50,7 +50,7 @@ export default function MyLibraryScreen(): React.JSX.Element {
       try {
         setIsLoading(true);
         setError(null);
-        const result = await cloudFunctions.getUserDecks(userCtx.id as string);
+        const result = await cloudFunctions.getUserDecks(userId as string);
         if (!isMounted) return;
         setBackendDecks(result.decks || []);
       } catch (e) {
@@ -70,7 +70,7 @@ export default function MyLibraryScreen(): React.JSX.Element {
     return () => {
       isMounted = false;
     };
-  }, [userCtx.id]);
+  }, [userId]);
 
   const filteredDecks = backendDecks.filter((deck) => {
     const matchesSearch = deck.title
