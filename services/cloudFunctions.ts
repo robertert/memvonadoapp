@@ -124,11 +124,6 @@ import {
 } from "@/types/schemas/api/notification";
 
 import {
-  AddPlaceholderDataRequest,
-  AddPlaceholderDataResponse,
-  AddPlaceholderDataResponseSchema,
-} from "@/types/schemas/api/placeholder";
-import {
   GetSearchLogsRequest,
   GetSearchLogsResponse,
   GetSearchLogsResponseSchema,
@@ -1105,23 +1100,6 @@ export const cloudFunctions = {
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from getUserGroup");
-    }
-    return validatedData.data;
-  },
-
-  // Add placeholder data for testing
-  addPlaceholderData: async (userId?: string, createUser?: boolean) => {
-    const addPlaceholderDataFunction = httpsCallable<
-      AddPlaceholderDataRequest,
-      AddPlaceholderDataResponse
-    >(functions, "addPlaceholderData");
-    const result = await addPlaceholderDataFunction({ userId, createUser });
-    const validatedData = AddPlaceholderDataResponseSchema.safeParse(
-      result.data
-    );
-    if (!validatedData.success) {
-      console.error(validatedData.error);
-      throw new Error("Invalid data returned from addPlaceholderData");
     }
     return validatedData.data;
   },

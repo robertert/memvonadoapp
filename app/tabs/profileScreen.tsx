@@ -19,13 +19,8 @@ import ContributionHeatmap from "../../components/profileScreen/ContributionHeat
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { buildUserShareMessage } from "@/utils/deepLinks";
 import { UserContext } from "../../store/user-context";
-import { PLACEHOLDER_MODE } from "../../constants/flags";
 import type { User } from "@/types";
 import type { GetAvocadoStatusResponse, AvocadoSkin } from "@/types/schemas/avocado";
-import {
-  placeholderUser,
-  placeholderDecks,
-} from "../../constants/placeholderData";
 import AvocadoImage from "@/components/avocado/AvocadoImage";
 import { AVOCADO_RARITY_COLORS, DEFAULT_AVOCADO_CONFIG } from "@/constants/avocado";
 
@@ -61,40 +56,10 @@ export default function profileScreen(): React.JSX.Element {
   }, [userCtx.id]);
 
   async function fetchProfileData(): Promise<void> {
-    if (!userCtx.id && !PLACEHOLDER_MODE) return;
+    if (!userCtx.id) return;
 
     try {
       setIsLoading(true);
-
-      if (PLACEHOLDER_MODE) {
-        setProfileData({
-          ...placeholderUser,
-        });
-        const today = new Date();
-        const heatmapData = Array.from({ length: 100 }, (_, i) => {
-          const date = new Date(today);
-          date.setDate(date.getDate() - i);
-          return {
-            date: date.toISOString().split("T")[0],
-            count: Math.floor(Math.random() * 6) + 1,
-          };
-        });
-        setHeatmapData(heatmapData);
-        setAwards([
-          { id: "a1", key: 1, name: "Liga 3" },
-          { id: "a2", key: 2, name: "Streak 5" },
-        ]);
-        setMyDecks(
-          placeholderDecks.slice(0, 3).map((deck, idx) => ({
-            id: deck.id,
-            key: idx + 1,
-            name: deck.title,
-            cards: deck.cardsNum || 10,
-          }))
-        );
-        setIsLoading(false);
-        return;
-      }
 
       const [profile, heatmap, awardsData, decks] = await Promise.all([
         cloudFunctions.getUserProfile(userCtx.id!!),
@@ -142,34 +107,6 @@ export default function profileScreen(): React.JSX.Element {
       }
     } catch (error) {
       console.error("Error fetching profile data:", error);
-      if (PLACEHOLDER_MODE) {
-        setProfileData({
-          ...placeholderUser,
-        });
-        const today = new Date();
-        const heatmapData = Array.from({ length: 40 }, (_, i) => {
-          const date = new Date(today);
-          date.setDate(date.getDate() - i);
-          return {
-            date: date.toISOString().split("T")[0],
-            count: Math.floor(Math.random() * 6) + 1,
-          };
-        });
-        setHeatmapData(heatmapData);
-        setAwards([
-          { id: "a1", key: 1, name: "Liga 3" },
-          { id: "a2", key: 2, name: "Streak 5" },
-        ]);
-
-        setMyDecks(
-          placeholderDecks.slice(0, 3).map((deck, idx) => ({
-            id: deck.id,
-            key: idx + 1,
-            name: deck.title,
-            cards: deck.cardsNum || 10,
-          }))
-        );
-      }
     } finally {
       setIsLoading(false);
     }

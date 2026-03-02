@@ -47,10 +47,6 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
 
   const navigateToRoute = useCallback(
     async (route: DeepLinkRoute) => {
-      console.log("route", route);
-      console.log("isAuthReady", isAuthReady);
-      console.log("isAuthenticated", isAuthenticated);
-      console.log("lastProcessedRoute", lastProcessedRoute.current);
       switch (route.type) {
         case "add": {
           const validSources: QuickAddSource[] = [
@@ -81,15 +77,12 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
           setIsResolvingDeepLink(true);
           try {
             const result = await cloudFunctions.getUserByUsername(username);
-            console.log("result", result);
             if (result.exists && result.userId) {
-              console.log("pushing to userProfileScreen");
               router.replace({
                 pathname: "/stack/userProfileScreen",
                 params: { userId: result.userId! },
               });
-              console.log("pushed to userProfileScreen");
-              console.log("router", router);
+
             } else {
               Toast.show({
                 type: "error",
@@ -147,11 +140,6 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
 
       const route = parseDeepLinkUrl(url);
       if (route.type === "unknown") return;
-
-      console.log("handling deep link");
-      console.log("isAuthReady", isAuthReady);
-      console.log("isAppReady", isAppReady);
-      console.log("url", url);
       // If auth/app isn't ready yet, buffer the URL
       if (!isAuthReady || !isAppReady) {
         bufferedUrl.current = url;
@@ -191,7 +179,6 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
         if (queuedUrl.current) {
           const next = queuedUrl.current;
           queuedUrl.current = null;
-          console.log("handling queued deep link");
           // Defer to next tick to avoid re-entrancy issues
           setTimeout(() => {
             handleDeepLink(next);
@@ -212,7 +199,6 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
     if (isAuthReady && isAppReady && bufferedUrl.current) {
       const url = bufferedUrl.current;
       bufferedUrl.current = null;
-      console.log("handling buffered deep link");
       handleDeepLink(url);
     }
   }, [isAuthReady, isAppReady, handleDeepLink]);
@@ -223,7 +209,6 @@ export function useDeepLink({ isAuthReady, isAuthenticated, isAppReady }: DeepLi
     const subscription = Linking.addEventListener("url", (event) => {
       initialUrlHandled.current = true;
       bufferedUrl.current = null;
-      console.log("handling url event");
       handleDeepLinkRef.current(event.url);
     });
     return () => subscription.remove();

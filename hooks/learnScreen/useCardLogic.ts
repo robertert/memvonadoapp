@@ -3,11 +3,6 @@ import { router } from "expo-router";
 import { UserContext } from "../../store/user-context";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { consumeEditedCard } from "../../utils/editedCardStore";
-import { PLACEHOLDER_MODE } from "../../constants/flags";
-import {
-  placeholderCards,
-  placeholderDecks,
-} from "../../constants/placeholderData";
 import {
   TooltipState,
   SessionItem,
@@ -63,39 +58,6 @@ export function useCardLogic(id: string) {
   async function fetchCards(): Promise<void> {
     dispatch({ type: "START_SESSION" });
     try {
-      if (PLACEHOLDER_MODE) {
-        const placeholderDeck = placeholderDecks[0];
-        const deckData = {
-          id: placeholderDeck.id,
-          title: placeholderDeck.title,
-          cardsNum: placeholderDeck.cardsNum,
-          settings: { zenMode: false, shuffleNewCards: false },
-        } as DeckLearningData;
-
-        const transformedItems: SessionItem[] = placeholderCards.map(
-          (card) =>
-            ({
-              card: {
-                id: card.id,
-                cardData: card.cardData,
-                firstLearn: {
-                  isNew: true,
-                  isFirst: true,
-                  due: new Date(),
-                  consecutiveGood: 0,
-                },
-              } as Card,
-              direction: "forward" as const,
-            })
-        );
-
-        dispatch({
-          type: "START_SESSION_SUCCESS",
-          payload: { cards: transformedItems, dailyStats: null, deck: deckData },
-        });
-        return;
-      }
-
       const { items, dailyStats, deck } =
         await cloudFunctions.startLearningSession(id);
 

@@ -98,7 +98,6 @@ export {
   updateUserLeague,
   getAllLeaguesInfo,
 } from "./leagueFunctions";
-export { addPlaceholderData } from "./placeholderFunctions";
 export {
   ensureUserDocument,
   completeOnboarding,

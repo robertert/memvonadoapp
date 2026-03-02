@@ -20,12 +20,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
 import { cloudFunctions } from "../../services/cloudFunctions";
-import { PLACEHOLDER_MODE } from "../../constants/flags";
 import { UserContext } from "../../store/user-context";
-import {
-  placeholderDecks,
-  placeholderCards,
-} from "../../constants/placeholderData";
 import {
   ArrowLeftIcon,
   EyeIcon,
@@ -44,9 +39,6 @@ import {
 } from "@/utils/likedDecksCache";
 
 import {
-  CardSchema,
-  safeValidateArray,
-  safeValidateDeck,
   type Card,
   type Deck,
   type DeckLearningData,
@@ -102,7 +94,7 @@ export default function deckDetails(): React.JSX.Element {
   // Check like status when deck loads
   useEffect(() => {
     async function checkLikeStatus() {
-      if (!typedParams.deckId || PLACEHOLDER_MODE) return;
+      if (!typedParams.deckId) return;
 
       // First check local cache for instant display
       const localLiked = await isLikedLocally(typedParams.deckId);
@@ -166,7 +158,7 @@ export default function deckDetails(): React.JSX.Element {
 
   // Like button handler with debounce
   const handleLikePress = useCallback(async () => {
-    if (!typedParams.deckId || PLACEHOLDER_MODE) return;
+    if (!typedParams.deckId) return;
 
     setIsLiked(!isLiked);
     setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
@@ -255,46 +247,26 @@ export default function deckDetails(): React.JSX.Element {
       setCards([]);
       setLastDocId(null);
       setHasMoreCards(true);
-      if (PLACEHOLDER_MODE) {
-        const pd = placeholderDecks[0];
+      const [
+        { deck: deckData, username: deckUsername, isEditor: deckIsEditor },
+        { deck: userDeckData, createdDeck: createdDeck },
+        { cards: deckCards, hasMore, lastDocId: newLastDocId },
+      ] = await Promise.all([
+        cloudFunctions.getDeckDetails(typedParams.deckId),
+        cloudFunctions.getUserDeckDetails(typedParams.deckId),
+        cloudFunctions.getDeckCards(typedParams.deckId, 20),
+      ]);
 
-        const resultDeck = safeValidateDeck(pd);
-        if (!resultDeck.success) {
-          console.error("Invalid deck data", resultDeck.error);
-          throw new Error("Invalid deck data");
-        }
-        const resultCards = safeValidateArray(placeholderCards, CardSchema);
-        if (!resultCards.success) {
-          console.error("Invalid cards data", resultCards.error);
-          throw new Error("Invalid cards data");
-        }
+      if (!deckData) throw new Error("Deck not found");
 
-        setDeck(resultDeck.data as Deck);
-        setCards(resultCards.data as Card[]);
-        setHasMoreCards(false);
-        setLastDocId(null);
-      } else {
-        const [
-          { deck: deckData, username: deckUsername, isEditor: deckIsEditor },
-          { deck: userDeckData, createdDeck: createdDeck },
-          { cards: deckCards, hasMore, lastDocId: newLastDocId },
-        ] = await Promise.all([
-          cloudFunctions.getDeckDetails(typedParams.deckId),
-          cloudFunctions.getUserDeckDetails(typedParams.deckId),
-          cloudFunctions.getDeckCards(typedParams.deckId, 20),
-        ]);
-
-        if (!deckData) throw new Error("Deck not found");
-
-        setDateAgo(calculateDateAgo(new Date(deckData.createdAt)));
-        setUsername(deckUsername);
-        setIsEditor(deckIsEditor ?? false);
-        setDeck(deckData);
-        setUserDeck(userDeckData ?? undefined);
-        setCards(deckCards);
-        setHasMoreCards(hasMore);
-        setLastDocId(newLastDocId);
-      }
+      setDateAgo(calculateDateAgo(new Date(deckData.createdAt)));
+      setUsername(deckUsername);
+      setIsEditor(deckIsEditor ?? false);
+      setDeck(deckData);
+      setUserDeck(userDeckData ?? undefined);
+      setCards(deckCards);
+      setHasMoreCards(hasMore);
+      setLastDocId(newLastDocId);
     } catch (error) {
       console.error("Error fetching deck:", error);
     } finally {
@@ -328,11 +300,9 @@ export default function deckDetails(): React.JSX.Element {
     if (!deck?.id) return;
 
     // Record view silently (fire-and-forget)
-    if (!PLACEHOLDER_MODE) {
-      cloudFunctions.recordDeckView(deck.id).catch((error) => {
-        console.error("Error recording deck view:", error);
-      });
-    }
+    cloudFunctions.recordDeckView(deck.id).catch((error) => {
+      console.error("Error recording deck view:", error);
+    });
 
     router.push({
       pathname: "./learnScreen",

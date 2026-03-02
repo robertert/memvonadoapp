@@ -21,11 +21,6 @@ import { UserContext } from "../../store/user-context";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { BellIcon, FireIcon, LanguageIcon } from "react-native-heroicons/solid";
 import PieChart from "../../components/CustomPieChart";
-import { PLACEHOLDER_MODE } from "../../constants/flags";
-import {
-  placeholderDecks,
-  placeholderDecksLearningData,
-} from "../../constants/placeholderData";
 import {
   DeckSchema,
   UserProgress,
@@ -53,7 +48,7 @@ export default function decksScreen(): React.JSX.Element {
   const userCtx = useContext(UserContext);
 
   useEffect(() => {
-    if (userCtx.id || PLACEHOLDER_MODE) {
+    if (userCtx.id) {
       fetchDecks();
     }
   }, [userCtx.id]);
@@ -99,42 +94,32 @@ export default function decksScreen(): React.JSX.Element {
   async function fetchDecks(): Promise<void> {
     try {
       setIsLoading(true);
-      if (PLACEHOLDER_MODE || !userCtx.id) {
-        // Tryb placeholder lub brak użytkownika: pokaż deki demo
-        setDecks(placeholderDecksLearningData);
-      } else if (userCtx.id) {
-        // Get user progress and statistics from Cloud Function
-        const [fetchedUserProgress, fetchedUserDecks, fetchedDailyUserStats] =
-          await Promise.all([
-            cloudFunctions.getUserProgress(userCtx.id),
-            cloudFunctions.getUserDecks(userCtx.id),
-            cloudFunctions.getDailyUserStats(),
-          ]);
-        setUserProgress(fetchedUserProgress);
-        setDecks(fetchedUserDecks.decks);
-        setDailyUserStats(fetchedDailyUserStats);
+      // Get user progress and statistics from Cloud Function
+      const [fetchedUserProgress, fetchedUserDecks, fetchedDailyUserStats] =
+        await Promise.all([
+          cloudFunctions.getUserProgress(userCtx.id),
+          cloudFunctions.getUserDecks(userCtx.id),
+          cloudFunctions.getDailyUserStats(),
+        ]);
+      setUserProgress(fetchedUserProgress);
+      setDecks(fetchedUserDecks.decks);
+      setDailyUserStats(fetchedDailyUserStats);
 
-        // Fetch avocado status separately (non-blocking)
-        try {
-          setAvocadoLoading(true);
-          const avocadoData = await cloudFunctions.getAvocadoStatus();
-          setAvocadoStatus(avocadoData);
-        } catch (avocadoErr) {
-          console.log("Failed to fetch avocado status:", avocadoErr);
-        } finally {
-          setAvocadoLoading(false);
-        }
+      // Fetch avocado status separately (non-blocking)
+      try {
+        setAvocadoLoading(true);
+        const avocadoData = await cloudFunctions.getAvocadoStatus();
+        setAvocadoStatus(avocadoData);
+      } catch (avocadoErr) {
+        console.log("Failed to fetch avocado status:", avocadoErr);
+      } finally {
+        setAvocadoLoading(false);
       }
 
       setIsLoading(false);
     } catch (e) {
       console.log(e);
-      // W trybie demo pokaż placeholdery zamiast błędu
-      if (PLACEHOLDER_MODE) {
-        setDecks(placeholderDecksLearningData);
-      } else {
-        Alert.alert("Error", "Try again later");
-      }
+      Alert.alert("Error", "Try again later");
       setIsLoading(false);
     }
   }

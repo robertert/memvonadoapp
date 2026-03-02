@@ -22,7 +22,6 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, connectEmulatorsIfNeeded, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { PLACEHOLDER_MODE, PLACEHOLDER_SEEDED_KEY } from "../constants/flags";
 import { cloudFunctions } from "../services/cloudFunctions";
 import { useDeepLink } from "../hooks/useDeepLink";
 
@@ -147,19 +146,6 @@ export default function RootLayout(): React.JSX.Element | null {
 
       try {
         if (user) {
-          // Jednorazowe zasilenie danych placeholder dla demo
-          if (PLACEHOLDER_MODE) {
-            try {
-              const seeded = await AsyncStorage.getItem(PLACEHOLDER_SEEDED_KEY);
-              if (!seeded) {
-                await cloudFunctions.addPlaceholderData(user.uid, true);
-                await AsyncStorage.setItem(PLACEHOLDER_SEEDED_KEY, "1");
-              }
-            } catch (e) {
-              console.error("Error seeding placeholder data:", e);
-            }
-          }
-
           // Sprawdź czy użytkownik uzupełnił profil
           try {
             const userRef = doc(db, "users", user.uid);

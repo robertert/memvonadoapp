@@ -8,8 +8,6 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { FireIcon, TrophyIcon } from "react-native-heroicons/solid";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { UserContext } from "../../store/user-context";
-import { PLACEHOLDER_MODE } from "../../constants/flags";
-import { placeholderRanking } from "../../constants/placeholderData";
 import { WrenchScrewdriverIcon } from "react-native-heroicons/solid";
 
 interface RankingUser {
@@ -93,43 +91,10 @@ export default function rankingsScreen(): React.JSX.Element {
   }, []);
 
   async function fetchRankings(): Promise<void> {
-    if (!userCtx.id && !PLACEHOLDER_MODE) return;
+    if (!userCtx.id) return;
 
     try {
       setIsLoading(true);
-
-      if (PLACEHOLDER_MODE) {
-        if (activeTab === "random") {
-          setLeagueTitle("🏆 Bronze League");
-          setGroupInfo(`Grupa ${placeholderRanking.length}/20`);
-          const users: RankingUser[] = placeholderRanking.map(
-            (entry, index) => ({
-              userId: entry.id,
-              name: entry.username || "Unknown",
-              username: entry.username,
-              avatar: "👤",
-              points: entry.points,
-              position: index + 1,
-            })
-          );
-          setRandomUsers(users);
-        } else {
-          // Following - użyj tych samych danych jako placeholder
-          const users: RankingUser[] = placeholderRanking.map(
-            (entry, index) => ({
-              userId: entry.id,
-              name: entry.username || "Unknown",
-              username: entry.username,
-              avatar: "👤",
-              points: entry.points,
-              position: index + 1,
-            })
-          );
-          setFollowingUsers(users);
-        }
-        setIsLoading(false);
-        return;
-      }
 
       if (activeTab === "random") {
         // Get user's group leaderboard
@@ -179,35 +144,6 @@ export default function rankingsScreen(): React.JSX.Element {
       }
     } catch (error) {
       console.error("Error fetching rankings:", error);
-      if (PLACEHOLDER_MODE) {
-        if (activeTab === "random") {
-          setLeagueTitle("🏆 Bronze League");
-          setGroupInfo(`Grupa ${placeholderRanking.length}/20`);
-          const users: RankingUser[] = placeholderRanking.map(
-            (entry, index) => ({
-              userId: entry.id,
-              name: entry.username || "Unknown",
-              username: entry.username,
-              avatar: "👤",
-              points: entry.points,
-              position: index + 1,
-            })
-          );
-          setRandomUsers(users);
-        } else {
-          const users: RankingUser[] = placeholderRanking.map(
-            (entry, index) => ({
-              userId: entry.id,
-              name: entry.username || "Unknown",
-              username: entry.username,
-              avatar: "👤",
-              points: entry.points,
-              position: index + 1,
-            })
-          );
-          setFollowingUsers(users);
-        }
-      }
     } finally {
       setIsLoading(false);
     }

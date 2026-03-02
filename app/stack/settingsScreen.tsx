@@ -1,6 +1,5 @@
-import React, { useState, useContext } from "react";
+import React, { useContext } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
@@ -16,8 +15,6 @@ import { ArrowLeftIcon } from "react-native-heroicons/solid";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebase";
-import { cloudFunctions } from "../../services/cloudFunctions";
-import { UserContext } from "../../store/user-context";
 import { SettingsContext } from "../../store/settings-context";
 import type { AvoLanguage } from "@/types/schemas/api/avoHelper";
 
@@ -31,51 +28,7 @@ const AVO_LANGUAGE_OPTIONS: { label: string; value: AvoLanguage }[] = [
 
 export default function settingsScreen(): React.JSX.Element {
   const safeArea = useSafeAreaInsets();
-  const { id: userId } = useContext(UserContext);
   const { avoLanguage, setAvoLanguage } = useContext(SettingsContext);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  async function handleAddPlaceholderData(): Promise<void> {
-    if (!userId) {
-      Alert.alert("Błąd", "Musisz być zalogowany, aby dodać dane testowe.");
-      return;
-    }
-
-    Alert.alert(
-      "Dodaj dane testowe",
-      "Czy chcesz dodać przykładowe talie i karty do swojej aplikacji?",
-      [
-        {
-          text: "Anuluj",
-          style: "cancel",
-        },
-        {
-          text: "Dodaj",
-          onPress: async () => {
-            try {
-              setIsLoading(true);
-              const result = await cloudFunctions.addPlaceholderData(userId);
-
-              Alert.alert(
-                "Sukces! 🎉",
-                `Dodano ${result.decksCreated} talii z ${result.totalCards} kartami.\n\nMożesz teraz rozpocząć naukę!`,
-                [{ text: "OK" }]
-              );
-            } catch (error: any) {
-              console.error("Error adding placeholder data:", error);
-              Alert.alert(
-                "Błąd",
-                error.message ||
-                  "Nie udało się dodać danych testowych. Spróbuj ponownie."
-              );
-            } finally {
-              setIsLoading(false);
-            }
-          },
-        },
-      ]
-    );
-  }
 
   function handleLogout(): void {
     Alert.alert(
@@ -151,41 +104,6 @@ export default function settingsScreen(): React.JSX.Element {
                 </Pressable>
               ))}
             </View>
-          </View>
-
-          {/* Sekcja - Narzędzia deweloperskie */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Narzędzia deweloperskie</Text>
-
-            <Pressable
-              onPress={handleAddPlaceholderData}
-              disabled={isLoading || !userId}
-              style={[
-                styles.actionButton,
-                (isLoading || !userId) && styles.actionButtonDisabled,
-              ]}
-            >
-              {isLoading ? (
-                <ActivityIndicator
-                  size="small"
-                  color={Colors.primary_100}
-                  style={{ marginRight: 8 }}
-                />
-              ) : (
-                <MaterialCommunityIcons
-                  name="database-plus"
-                  size={24}
-                  color={Colors.primary_100}
-                  style={{ marginRight: 8 }}
-                />
-              )}
-              <Text style={styles.actionButtonText}>Dodaj dane testowe</Text>
-            </Pressable>
-
-            <Text style={styles.helperText}>
-              Ta funkcja dodaje przykładowe talie z kartami do Twojej aplikacji
-              do celów testowych.
-            </Text>
           </View>
 
           {/* Sekcja - Konto */}

@@ -14,8 +14,6 @@ import { Colors, Fonts } from "../../constants/colors";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { PLACEHOLDER_MODE } from "../../constants/flags";
-import { placeholderDecks } from "../../constants/placeholderData";
 import {
   ArrowLeftIcon,
   MagnifyingGlassIcon,
@@ -42,7 +40,7 @@ export default function MyLibraryScreen(): React.JSX.Element {
   ];
 
   useEffect(() => {
-    if (PLACEHOLDER_MODE || !userCtx.id) {
+    if (!userCtx.id) {
       return;
     }
 
@@ -191,7 +189,7 @@ export default function MyLibraryScreen(): React.JSX.Element {
           Twoje decki ({filteredDecks.length})
         </Text>
 
-        {!PLACEHOLDER_MODE && isLoading && (
+        {isLoading && (
           <ActivityIndicator
             size="large"
             color={Colors.accent_500}

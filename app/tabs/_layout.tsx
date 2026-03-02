@@ -51,7 +51,6 @@ export default function TabsLayout(): React.JSX.Element {
 
         timeoutId = setTimeout(async () => {
           if (!isMounted) return;
-          console.log("handling pending deep link");
           switch (pendingRoute.type) {
             case "add": {
               const validSources: QuickAddSource[] = ["widget", "ocr", "deeplink", "manual"];
