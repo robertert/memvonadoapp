@@ -954,7 +954,10 @@ function NewCard({
                   onChangeText={(text: string) =>
                     textChangeHandler(text, false, card)
                   }
-                  onSubmitEditing={onEnter} 
+                  onSubmitEditing={() => {
+                    backInputRef.current?.blur();
+                    onEnter();
+                  }}
                   returnKeyType="next"
                   submitBehavior="submit"
                   multiline={true}

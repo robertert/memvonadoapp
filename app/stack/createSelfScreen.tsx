@@ -112,12 +112,36 @@ export default function createSelfScreen(): React.JSX.Element {
 
   // 3. Effect: Watch for changes in cards/focusTarget. If a target exists and is mounted, focus it.
   useEffect(() => {
-    if (focusTarget && focusRefs.current[focusTarget]) {
-      // Small timeout ensures the UI is fully ready (keyboard animation etc)
+    if (!focusTarget) return;
+
+    const index = cards.findIndex((c) => c.id === focusTarget);
+
+    if (focusRefs.current[focusTarget]) {
+      // Card is already rendered — focus it
       setTimeout(() => {
         focusRefs.current[focusTarget]?.focus();
-        setFocusTarget(null); // Reset target
+        if (index !== -1) {
+          flashListRef.current?.scrollToIndex({
+            index,
+            animated: true,
+            viewPosition: 0.5,
+          });
+        }
+        setFocusTarget(null);
       }, 100);
+    } else if (index !== -1) {
+      // Card not rendered yet (FlatList virtualization) — scroll to render it first
+      flashListRef.current?.scrollToIndex({
+        index,
+        animated: false,
+        viewPosition: 0.5,
+      });
+      // After scroll triggers render, focus
+      const timer = setTimeout(() => {
+        focusRefs.current[focusTarget]?.focus();
+        setFocusTarget(null);
+      }, 200);
+      return () => clearTimeout(timer);
     }
   }, [cards, focusTarget]);
 
