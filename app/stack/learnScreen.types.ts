@@ -1,4 +1,4 @@
-import type { Card, DeckLearningData, DailyStats } from "@/types";
+import type { Card, DeckLearningData, DailyStats, CardGrade } from "@/types";
 import { SharedValue, useAnimatedStyle } from "react-native-reanimated";
 
 export type SessionDirection = "forward" | "reverse";
@@ -35,11 +35,15 @@ export interface CardLogicState {
   isLoading: boolean;
   isBack: boolean;
   tooltip: TooltipState;
-  time: NodeJS.Timeout | number | undefined;
-  index: number;
   deck: DeckLearningData | undefined;
   progress: ProgressState;
   dailyStats: DailyStats | null;
+}
+
+export interface HistoryEntry {
+  item: SessionItem;
+  dailyStats: DailyStats | null;
+  grade: CardGrade;
 }
 
 export interface AnimationValues {

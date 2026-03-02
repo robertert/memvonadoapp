@@ -70,6 +70,7 @@ export default function AvocadoCollectionScreen(): React.JSX.Element {
     common: allSkins.filter((s) => s.rarity === "common"),
     rare: allSkins.filter((s) => s.rarity === "rare"),
     epic: allSkins.filter((s) => s.rarity === "epic"),
+    legendary: allSkins.filter((s) => s.rarity === "legendary"),
   };
 
   const formatDate = (date: Date) => {
@@ -212,7 +213,7 @@ export default function AvocadoCollectionScreen(): React.JSX.Element {
                             {
                               color:
                                 AVOCADO_RARITY_COLORS[
-                                  skinConfig?.rarity || "common"
+                                skinConfig?.rarity || "common"
                                 ],
                             },
                           ]}
