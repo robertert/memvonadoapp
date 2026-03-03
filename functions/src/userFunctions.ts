@@ -591,7 +591,7 @@ export const undoCard = onCall(async (request) => {
 async function updateDailyStats(
   userId: string,
   deckId: string,
-  dailyStats: DailyStats | undefined
+  dailyStats: DailyStats | null | undefined
 ) {
   try {
     const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
@@ -603,8 +603,10 @@ async function updateDailyStats(
 
       const dailyStatsBefore = deckData.data()?.dailyStats;
 
-      const validatedDailyStatsBefore =
-        DailyStatsSchema.parse(dailyStatsBefore);
+      const parsedBefore = DailyStatsSchema.safeParse(dailyStatsBefore);
+      const validatedDailyStatsBefore = parsedBefore.success
+        ? parsedBefore.data
+        : { completedNewToday: 0, completedDueToday: 0 };
 
       const validatedDailyStats = DailyStatsSchema.parse(dailyStats);
 
@@ -705,6 +707,22 @@ export const updateCardProgress = onCall(async (request) => {
 
   const { userId, deckId, card, scheduledTime, dailyStats, direction } =
     parsedRequest.data;
+  const auth = request.auth;
+  if (!auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+  if (auth.uid !== userId) {
+    throw new HttpsError(
+      "permission-denied",
+      "Cannot update progress for another user"
+    );
+  }
+  if (scheduledTime <= 0 || !Number.isFinite(scheduledTime)) {
+    throw new HttpsError(
+      "invalid-argument",
+      "scheduledTime must be a positive number of milliseconds"
+    );
+  }
 
   const isReverse = direction === "reverse";
   const validatedCard = CardSchema.parse(card);

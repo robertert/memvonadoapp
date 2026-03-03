@@ -874,6 +874,120 @@ describe("User Functions", () => {
       ).rejects.toThrow(HttpsError);
     });
 
+    it("should throw unauthenticated when auth is missing", async () => {
+      await createTestUser(testUserId);
+      await createTestDeck(testDeckId, testUserId);
+      await createTestUserCard(testUserId, testDeckId, testCardId);
+      await waitForFirestore();
+
+      const wrapped = testEnv.wrap(userFunctions.updateCardProgress);
+      await expect(
+        wrapped({
+          auth: null,
+          data: {
+            userId: testUserId,
+            deckId: testDeckId,
+            card: {
+              id: testCardId,
+              cardData: { front: "Q", back: "A" },
+              tags: [],
+              createdAt: new Date(),
+              firstLearn: { isNew: true },
+            },
+            scheduledTime: 1000,
+          },
+        } as any)
+      ).rejects.toThrow("Authentication required");
+    });
+
+    it("should throw permission-denied when auth.uid differs from userId", async () => {
+      await createTestUser(testUserId);
+      await createTestUser(mockUserId2);
+      await createTestDeck(testDeckId, testUserId);
+      await createTestUserCard(testUserId, testDeckId, testCardId);
+      await waitForFirestore();
+
+      const wrapped = testEnv.wrap(userFunctions.updateCardProgress);
+      await expect(
+        wrapped({
+          auth: { uid: mockUserId2 },
+          data: {
+            userId: testUserId,
+            deckId: testDeckId,
+            card: {
+              id: testCardId,
+              cardData: { front: "Q", back: "A" },
+              tags: [],
+              createdAt: new Date(),
+              firstLearn: { isNew: true },
+            },
+            scheduledTime: 1000,
+          },
+        } as any)
+      ).rejects.toThrow("Cannot update progress for another user");
+    });
+
+    it("should reject non-positive scheduledTime", async () => {
+      await createTestUser(testUserId);
+      await createTestDeck(testDeckId, testUserId);
+      await createTestUserCard(testUserId, testDeckId, testCardId);
+      await waitForFirestore();
+
+      const wrapped = testEnv.wrap(userFunctions.updateCardProgress);
+      await expect(
+        wrapped({
+          auth: { uid: testUserId },
+          data: {
+            userId: testUserId,
+            deckId: testDeckId,
+            card: {
+              id: testCardId,
+              cardData: { front: "Q", back: "A" },
+              tags: [],
+              createdAt: new Date(),
+              firstLearn: { isNew: true },
+            },
+            scheduledTime: 0,
+          },
+        } as any)
+      ).rejects.toThrow("scheduledTime must be a positive number of milliseconds");
+    });
+
+    it("should reject invalid dailyStats shape from client", async () => {
+      await createTestUser(testUserId);
+      await createTestDeck(testDeckId, testUserId);
+      await createTestUserCard(testUserId, testDeckId, testCardId);
+      await waitForFirestore();
+
+      const wrapped = testEnv.wrap(userFunctions.updateCardProgress);
+      await expect(
+        wrapped({
+          auth: { uid: testUserId },
+          data: {
+            userId: testUserId,
+            deckId: testDeckId,
+            card: {
+              id: testCardId,
+              cardData: { front: "Q", back: "A" },
+              tags: [],
+              createdAt: new Date(),
+              firstLearn: { isNew: true },
+            },
+            scheduledTime: 1000,
+            dailyStats: {
+              newCardsRemaining: -1,
+              dueCardsRemaining: 0,
+              inProgressDueCards: 0,
+              inProgressNewCards: 0,
+              completedNewToday: 0,
+              completedDueToday: 0,
+              lastUpdatedStats: new Date(),
+            },
+          },
+        } as any)
+      ).rejects.toThrow(HttpsError);
+    });
+
     it("should throw HttpsError for invalid CardSchema", async () => {
       await createTestUser(testUserId);
       await createTestDeck(testDeckId, testUserId);
@@ -944,6 +1058,192 @@ describe("User Functions", () => {
 
         expect(result.success).toBe(true);
       }
+    });
+
+    it("direction: reverse — updates firstLearnReverse.due when firstLearnReverse.isFirst=true", async () => {
+      await createTestUser(testUserId);
+      await createTestDeck(testDeckId, testUserId);
+      await createTestUserCard(testUserId, testDeckId, testCardId);
+      await waitForFirestore();
+
+      const scheduledTime = 600000; // 10 minutes
+      const beforeTime = Date.now();
+
+      const card = {
+        id: testCardId,
+        cardData: { front: "Question", back: "Answer" },
+        tags: [],
+        createdAt: new Date(),
+        firstLearn: { isNew: false },
+        firstLearnReverse: {
+          isNew: false,
+          isFirst: true,
+          consecutiveGood: 1,
+        },
+        cardAlgoReverse: {
+          difficulty: 2.5,
+          scheduled_days: 1,
+          due: new Date(),
+          reps: 0,
+          state: 0,
+          stability: 0,
+          elapsed_days: 0,
+          lapses: 0,
+        },
+        grade: CardGrade.Good,
+      };
+
+      const wrapped = testEnv.wrap(userFunctions.updateCardProgress);
+      await wrapped({
+        data: {
+          userId: testUserId,
+          deckId: testDeckId,
+          card,
+          scheduledTime,
+          direction: "reverse",
+        },
+      } as any);
+
+      const afterTime = Date.now();
+
+      const cardDoc = await db
+        .doc(`users/${testUserId}/decks/${testDeckId}/cards/${testCardId}`)
+        .get();
+      const cardData = cardDoc.data();
+      expect(cardData?.firstLearnReverse?.isFirst).toBe(true);
+      expect(cardData?.firstLearnReverse?.due).toBeDefined();
+
+      const dueTime = (
+        cardData?.firstLearnReverse?.due as admin.firestore.Timestamp
+      )
+        .toDate()
+        .getTime();
+      expect(dueTime).toBeGreaterThanOrEqual(beforeTime + scheduledTime);
+      expect(dueTime).toBeLessThanOrEqual(afterTime + scheduledTime);
+    });
+
+    it("direction: reverse — updates cardAlgoReverse.due when NOT isFirst", async () => {
+      await createTestUser(testUserId);
+      await createTestDeck(testDeckId, testUserId);
+      await createTestUserCard(testUserId, testDeckId, testCardId);
+      await waitForFirestore();
+
+      const scheduledTime = 172800000; // 2 days
+      const beforeTime = Date.now();
+
+      const card = {
+        id: testCardId,
+        cardData: { front: "Question", back: "Answer" },
+        tags: [],
+        createdAt: new Date(),
+        firstLearn: { isNew: false },
+        firstLearnReverse: {
+          isNew: false,
+          isFirst: false,
+        },
+        cardAlgoReverse: {
+          difficulty: 2.5,
+          scheduled_days: 1,
+          due: new Date(),
+          reps: 1,
+          state: 2,
+          stability: 2.5,
+          elapsed_days: 1,
+          lapses: 0,
+        },
+        grade: CardGrade.Easy,
+      };
+
+      const wrapped = testEnv.wrap(userFunctions.updateCardProgress);
+      await wrapped({
+        data: {
+          userId: testUserId,
+          deckId: testDeckId,
+          card,
+          scheduledTime,
+          direction: "reverse",
+        },
+      } as any);
+
+      const afterTime = Date.now();
+
+      const cardDoc = await db
+        .doc(`users/${testUserId}/decks/${testDeckId}/cards/${testCardId}`)
+        .get();
+      const cardData = cardDoc.data();
+      expect(cardData?.cardAlgoReverse?.due).toBeDefined();
+
+      const dueTime = (
+        cardData?.cardAlgoReverse?.due as admin.firestore.Timestamp
+      )
+        .toDate()
+        .getTime();
+      expect(dueTime).toBeGreaterThanOrEqual(beforeTime + scheduledTime);
+      expect(dueTime).toBeLessThanOrEqual(afterTime + scheduledTime);
+    });
+
+    it("direction: reverse — does NOT modify forward cardAlgo or firstLearn", async () => {
+      await createTestUser(testUserId);
+      await createTestDeck(testDeckId, testUserId);
+      const originalDue = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+      await createTestUserCard(testUserId, testDeckId, testCardId, {
+        firstLearn: { isNew: false },
+        cardAlgo: {
+          difficulty: 2.5,
+          stability: 2,
+          reps: 1,
+          lapses: 0,
+          scheduled_days: 7,
+          elapsed_days: 0,
+          state: 2,
+          due: originalDue,
+        },
+      });
+      await waitForFirestore();
+
+      const card = {
+        id: testCardId,
+        cardData: { front: "Question", back: "Answer" },
+        tags: [],
+        createdAt: new Date(),
+        firstLearn: { isNew: false },
+        firstLearnReverse: { isNew: false, isFirst: false },
+        cardAlgoReverse: {
+          difficulty: 2.5,
+          scheduled_days: 1,
+          due: new Date(),
+          reps: 0,
+          state: 0,
+          stability: 0,
+          elapsed_days: 0,
+          lapses: 0,
+        },
+        grade: CardGrade.Easy,
+      };
+
+      const wrapped = testEnv.wrap(userFunctions.updateCardProgress);
+      await wrapped({
+        data: {
+          userId: testUserId,
+          deckId: testDeckId,
+          card,
+          scheduledTime: 86400000,
+          direction: "reverse",
+        },
+      } as any);
+
+      const cardDoc = await db
+        .doc(`users/${testUserId}/decks/${testDeckId}/cards/${testCardId}`)
+        .get();
+      const cardData = cardDoc.data();
+
+      // Forward cardAlgo.due should remain untouched
+      const forwardDue = (
+        cardData?.cardAlgo?.due as admin.firestore.Timestamp
+      )
+        .toDate()
+        .getTime();
+      expect(forwardDue).toBeCloseTo(originalDue.getTime(), -3);
     });
   });
 

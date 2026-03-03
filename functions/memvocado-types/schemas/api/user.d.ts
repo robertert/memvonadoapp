@@ -220,7 +220,7 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
         hasChanges?: boolean | undefined;
     }>;
     scheduledTime: z.ZodNumber;
-    dailyStats: z.ZodOptional<z.ZodObject<{
+    dailyStats: z.ZodNullable<z.ZodOptional<z.ZodObject<{
         newCardsRemaining: z.ZodNumber;
         dueCardsRemaining: z.ZodNumber;
         inProgressDueCards: z.ZodNumber;
@@ -244,7 +244,7 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
         completedNewToday: number;
         completedDueToday: number;
         lastUpdatedStats?: unknown;
-    }>>;
+    }>>>;
     direction: z.ZodOptional<z.ZodEnum<["forward", "reverse"]>>;
 }, "strict", z.ZodTypeAny, {
     deckId: string;
@@ -304,7 +304,7 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
         completedNewToday: number;
         completedDueToday: number;
         lastUpdatedStats: Date;
-    } | undefined;
+    } | null | undefined;
     direction?: "reverse" | "forward" | undefined;
 }, {
     deckId: string;
@@ -364,7 +364,7 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
         completedNewToday: number;
         completedDueToday: number;
         lastUpdatedStats?: unknown;
-    } | undefined;
+    } | null | undefined;
     direction?: "reverse" | "forward" | undefined;
 }>;
 export type UpdateCardProgressRequest = z.infer<typeof UpdateCardProgressRequestSchema>;

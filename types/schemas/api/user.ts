@@ -42,7 +42,7 @@ export const UpdateCardProgressRequestSchema = z
     card: CardSchema,
     // scheduledTime w ms (client time, offset od „teraz”)
     scheduledTime: z.number().int(),
-    dailyStats: DailyStatsSchema.optional(),
+    dailyStats: DailyStatsSchema.optional().nullable(),
     direction: z.enum(["forward", "reverse"]).optional(),
   })
   .strict();

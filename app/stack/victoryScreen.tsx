@@ -103,7 +103,6 @@ export default function VictoryScreen(): React.JSX.Element {
     const fetchStreakData = async () => {
       try {
         const data = await cloudFunctions.updateUserStreakIfQualified();
-        console.log("Streak data:", data);     
         setStreakData(data);
         setDisplayStreak(
           data.updated ? data.currentStreak - 1 : data.currentStreak

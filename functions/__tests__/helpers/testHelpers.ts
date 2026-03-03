@@ -189,6 +189,27 @@ export async function clearAllLeagueGroups(
 }
 
 /**
+ * Clear all cards in a user deck subcollection (users/{userId}/decks/{deckId}/cards/*)
+ */
+export async function clearUserDeckCards(
+  userId: string,
+  deckId: string
+): Promise<void> {
+  try {
+    const db = admin.firestore();
+    const cardsRef = db.collection(`users/${userId}/decks/${deckId}/cards`);
+    const snapshot = await cardsRef.get();
+    if (snapshot.docs.length > 0) {
+      const batch = db.batch();
+      snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+      await batch.commit();
+    }
+  } catch (error) {
+    console.warn(`Error clearing user deck cards for ${userId}/${deckId}:`, error);
+  }
+}
+
+/**
  * Generate unique test ID
  */
 export function generateTestId(prefix: string = "test"): string {
@@ -564,6 +585,7 @@ export async function createTestUserDeck(
       dueCardsNumPerDay?: number;
       newCardsNumPerDay?: number;
       shuffleNewCards?: boolean;
+      bidirectional?: boolean;
     };
     updatedAt?: Date;
     lastReviewDate?: Date;
@@ -584,6 +606,9 @@ export async function createTestUserDeck(
       }
       if (data.settings?.newCardsNumPerDay !== undefined) {
         settings.newCardsNumPerDay = data.settings.newCardsNumPerDay;
+      }
+      if (data.settings?.bidirectional !== undefined) {
+        settings.bidirectional = data.settings.bidirectional;
       }
       return settings;
     })(),
@@ -690,4 +715,29 @@ export async function createTestUserCard(
   }
 
   await db.doc(`users/${userId}/decks/${deckId}/cards/${cardId}`).set(cardData);
+}
+
+export interface LearningStateSnapshot {
+  deckDailyStats: Record<string, unknown> | null;
+  cardCount: number;
+  studySessionCount: number;
+}
+
+/**
+ * Snapshot helper used by round/e2e tests.
+ * Captures deck stats + number of cards + number of study sessions.
+ */
+export async function getLearningStateSnapshot(
+  userId: string,
+  deckId: string
+): Promise<LearningStateSnapshot> {
+  const deckDoc = await db.doc(`users/${userId}/decks/${deckId}`).get();
+  const cardsSnap = await db.collection(`users/${userId}/decks/${deckId}/cards`).get();
+  const sessionsSnap = await db.collection(`users/${userId}/studySessions`).get();
+
+  return {
+    deckDailyStats: (deckDoc.data()?.dailyStats as Record<string, unknown>) ?? null,
+    cardCount: cardsSnap.size,
+    studySessionCount: sessionsSnap.size,
+  };
 }

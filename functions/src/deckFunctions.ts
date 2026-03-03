@@ -570,15 +570,19 @@ async function getUserDueDeckCardsLocal(
     .where("cardAlgo.due", "<=", nowEnd)
     .get();
 
-  const validatedRaw: Card[] = [
-    ...cardsSnapFirst.docs,
-    ...cardsSnapDue.docs,
-  ].map((doc) => {
-    return CardSchema.parse({
-      id: doc.id,
-      ...doc.data(),
-    });
-  });
+  const seen = new Set<string>();
+  const validatedRaw: Card[] = [];
+  for (const doc of [...cardsSnapFirst.docs, ...cardsSnapDue.docs]) {
+    if (!seen.has(doc.id)) {
+      seen.add(doc.id);
+      validatedRaw.push(
+        CardSchema.parse({
+          id: doc.id,
+          ...doc.data(),
+        })
+      );
+    }
+  }
 
   const dueFirst: Card[] = validatedRaw.filter(
     (c) => c.firstLearn?.isFirst && !c.firstLearn?.isNew
@@ -590,7 +594,14 @@ async function getUserDueDeckCardsLocal(
       !c.firstLearn?.isNew
   );
 
-  const validatedCards: Card[] = [...dueFirst, ...dueFSRS];
+  const dueSeen = new Set<string>();
+  const validatedCards: Card[] = [];
+  for (const card of [...dueFirst, ...dueFSRS]) {
+    if (!dueSeen.has(card.id)) {
+      dueSeen.add(card.id);
+      validatedCards.push(card);
+    }
+  }
 
   return validatedCards;
 }
@@ -1142,7 +1153,7 @@ export const startLearningSession = onCall(async (request) => {
       currentStats.newCardsRemaining = newCardsStripped.length;
     }
 
-    userDeckRef.update({
+    await userDeckRef.update({
       dailyStats: currentStats,
     });
 
