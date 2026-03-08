@@ -6,7 +6,6 @@ import { getStorage } from "firebase-admin/storage";
 import { z } from "zod";
 import {
   Card,
-  CardAlgo,
   CardCore,
   DeckLearningData,
   DeckSchema,
@@ -84,14 +83,25 @@ import {
 import { convertAnkiApkg } from "./ankiConverter";
 import {
   DailyStats,
-  DailyStatsSchema,
   DeckLearningDataUpdateSchema,
   NotificationSchema,
   User,
   UserDailyStats,
 } from "memvocado-types";
+import { FirestoreCardRepository } from "./repositories/firestore/FirestoreCardRepository";
+import { FirestoreDeckRepository } from "./repositories/firestore/FirestoreDeckRepository";
+import { FirestoreUserRepository } from "./repositories/firestore/FirestoreUserRepository";
+import { FirestoreStatsRepository } from "./repositories/firestore/FirestoreStatsRepository";
+import { formatYmdInTimeZone } from "./utils/dateUtils";
+import { LearnService } from "./services/LearnService";
 
 const db = getFirestore();
+
+const cardRepo = new FirestoreCardRepository();
+const deckRepo = new FirestoreDeckRepository();
+const userRepo = new FirestoreUserRepository();
+const statsRepo = new FirestoreStatsRepository();
+const learnService = new LearnService(cardRepo, deckRepo, userRepo, statsRepo);
 
 const handleZodError = (error: unknown, context: string) => {
   if (error instanceof z.ZodError) {
@@ -550,60 +560,7 @@ async function getUserDueDeckCardsLocal(
   userId: string,
   deckId: string
 ): Promise<Card[]> {
-  const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
-  const deckSnap = await deckRef.get();
-  if (!deckSnap.exists) {
-    throw new HttpsError("not-found", "Deck not found");
-  }
-  const now = Date.now();
-  const nowEnd = new Date(now);
-  nowEnd.setHours(23, 59, 59, 999);
-
-  const cardsSnapFirst = await deckRef
-    .collection("cards")
-    .where("firstLearn.isNew", "==", false)
-    .where("firstLearn.isFirst", "==", true)
-    .get();
-
-  const cardsSnapDue = await deckRef
-    .collection("cards")
-    .where("cardAlgo.due", "<=", nowEnd)
-    .get();
-
-  const seen = new Set<string>();
-  const validatedRaw: Card[] = [];
-  for (const doc of [...cardsSnapFirst.docs, ...cardsSnapDue.docs]) {
-    if (!seen.has(doc.id)) {
-      seen.add(doc.id);
-      validatedRaw.push(
-        CardSchema.parse({
-          id: doc.id,
-          ...doc.data(),
-        })
-      );
-    }
-  }
-
-  const dueFirst: Card[] = validatedRaw.filter(
-    (c) => c.firstLearn?.isFirst && !c.firstLearn?.isNew
-  );
-  const dueFSRS: Card[] = validatedRaw.filter(
-    (c) =>
-      c.cardAlgo?.due &&
-      c.cardAlgo.due.getTime() <= now &&
-      !c.firstLearn?.isNew
-  );
-
-  const dueSeen = new Set<string>();
-  const validatedCards: Card[] = [];
-  for (const card of [...dueFirst, ...dueFSRS]) {
-    if (!dueSeen.has(card.id)) {
-      dueSeen.add(card.id);
-      validatedCards.push(card);
-    }
-  }
-
-  return validatedCards;
+  return cardRepo.getDueCards(userId, deckId);
 }
 
 export const getUserDueDeckCards = onCall(async (request) => {
@@ -644,21 +601,6 @@ export const getUserDueDeckCards = onCall(async (request) => {
 });
 
 /**
- * Pomocniczo: formatuje datę na łańcuch w formacie YYYY-MM-DD w zadanej strefie czasowej.
- * @param {Date} date Data wejściowa
- * @param {string} timeZone Strefa czasowa IANA
- * @return {string} Data w formacie YYYY-MM-DD
- */
-function formatYmdInTimeZone(date: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
-}
-
-/**
  * @param {string} userId - User ID
  * @param {string} deckId - Deck ID
  * @return {Promise<Card[]>} New cards
@@ -667,63 +609,14 @@ async function getUserNewDeckCardsLocal(
   userId: string,
   deckId: string
 ): Promise<Card[]> {
-  const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
-  const userDeckSnap = await userDeckRef.get();
-  if (!userDeckSnap.exists) {
-    throw new HttpsError("not-found", "Deck not found");
-  }
-
-  // Get deck settings to check shuffleNewCards
-  const userDeckData = userDeckSnap.data() as DeckLearningData;
-  const shuffleNewCards =
-    (userDeckData.settings as DeckSettings)?.shuffleNewCards ?? false;
-
-  // Pobierz ustawienia użytkownika dla timeZone
-  const userRef = db.doc(`users/${userId}`);
-  const userSnap = await userRef.get();
-  const userData = userSnap.exists
-    ? UserSchema.parse({
-      id: userSnap.id,
-      ...userSnap.data(),
-    })
-    : null;
-
-  // Sprawdź dailyStats i użyj newCardsRemaining jeśli istnieje i jest z dzisiaj
-  const effectiveLimit = userDeckData.settings.newCardsNumPerDay
-    ? userDeckData.settings.newCardsNumPerDay
-    : userData?.settings?.dailyNew
-      ? userData?.settings?.dailyNew
-      : 50;
-
-  // Get new cards directly from user's collection (all cards are already copied)
-  const userCardsRef = userDeckRef.collection("cards");
-  let userCardsSnap;
-
-  if (shuffleNewCards) {
-    // Shuffle włączony: obecne zachowanie - limit bez sortowania
-    userCardsSnap = await userCardsRef
-      .where("firstLearn.isNew", "==", true)
-      .limit(effectiveLimit)
-      .get();
-  } else {
-    // Shuffle wyłączony: sortuj po createdAt ASC (najstarsze najpierw)
-    userCardsSnap = await userCardsRef
-      .where("firstLearn.isNew", "==", true)
-      .orderBy("createdAt", "asc")
-      .limit(effectiveLimit)
-      .get();
-  }
-
-  const cards = userCardsSnap.docs.map((doc) => {
-    return {
-      id: doc.id,
-      ...doc.data(),
-    } as Card;
-  });
-
-  const validatedCards: Card[] = cards.map((c) => CardSchema.parse(c));
-
-  return validatedCards;
+  const deck = await deckRepo.getUserDeck(userId, deckId);
+  if (!deck) throw new HttpsError("not-found", "Deck not found");
+  const user = await userRepo.getUser(userId);
+  const shuffleNewCards = (deck.settings as DeckSettings)?.shuffleNewCards ?? false;
+  const effectiveLimit = deck.settings.newCardsNumPerDay
+    ?? user?.settings?.dailyNew
+    ?? 50;
+  return cardRepo.getNewCards(userId, deckId, { effectiveLimit, shuffleNewCards });
 }
 
 export const getDeckDailyStats = onCall(async (request) => {
@@ -770,12 +663,7 @@ export const getDeckDailyStats = onCall(async (request) => {
  * @return {Promise<User | null>} User data
  */
 async function getUserData(userId: string): Promise<User | null> {
-  const userRef = db.doc(`users/${userId}`);
-  const userSnap = await userRef.get();
-  if (!userSnap.exists) {
-    return null;
-  }
-  return UserSchema.parse(userSnap.data());
+  return userRepo.getUser(userId);
 }
 
 /**
@@ -787,16 +675,7 @@ async function getDailyStats(
   userId: string,
   deckId: string
 ): Promise<DailyStats | null> {
-  const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
-  const userDeckSnap = await userDeckRef.get();
-  if (!userDeckSnap.exists) {
-    throw new HttpsError("not-found", "Deck not found");
-  }
-  const dailyStats = userDeckSnap.data()?.dailyStats;
-  if (!dailyStats) {
-    return null;
-  }
-  return DailyStatsSchema.parse(dailyStats);
+  return statsRepo.getDeckDailyStats(userId, deckId);
 }
 
 /**
@@ -861,316 +740,33 @@ export const getUserNewDeckCards = onCall(async (request) => {
   }
 });
 
-/**
- * @param {string} userId - User ID
- * @param {string} deckId - Deck ID
- * @return {Promise<DeckLearningData | null>} Deck
- */
-async function getUserDeckLocal(
-  userId: string,
-  deckId: string
-): Promise<DeckLearningData | null> {
-  const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
-  const userDeckSnap = await userDeckRef.get();
-  if (!userDeckSnap.exists) {
-    return null;
-  }
-  return DeckLearningDataSchema.parse(userDeckSnap.data());
-}
-
-/**
- * @param {string} userId - User ID
- * @param {string} deckId - Deck ID
- * @return {Promise<Card[]>} Due reverse-direction cards
- */
-async function getUserDueReverseCardsLocal(
-  userId: string,
-  deckId: string
-): Promise<Card[]> {
-  const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
-  const now = Date.now();
-  const nowEnd = new Date(now);
-  nowEnd.setHours(23, 59, 59, 999);
-
-  const [cardsSnapFirst, cardsSnapDue] = await Promise.all([
-    deckRef
-      .collection("cards")
-      .where("firstLearnReverse.isNew", "==", false)
-      .where("firstLearnReverse.isFirst", "==", true)
-      .get(),
-    deckRef
-      .collection("cards")
-      .where("cardAlgoReverse.due", "<=", nowEnd)
-      .get(),
-  ]);
-
-  const seen = new Set<string>();
-  const validatedRaw: Card[] = [];
-  for (const doc of [...cardsSnapFirst.docs, ...cardsSnapDue.docs]) {
-    if (!seen.has(doc.id)) {
-      seen.add(doc.id);
-      validatedRaw.push(CardSchema.parse({ id: doc.id, ...doc.data() }));
-    }
-  }
-
-  const dueFirst = validatedRaw.filter(
-    (c) => c.firstLearnReverse?.isFirst && !c.firstLearnReverse?.isNew
-  );
-  const dueFSRS = validatedRaw.filter(
-    (c) =>
-      c.cardAlgoReverse?.due &&
-      c.cardAlgoReverse.due.getTime() <= now &&
-      !c.firstLearnReverse?.isNew
-  );
-
-  return [...dueFirst, ...dueFSRS];
-}
-
-/**
- * @typedef {Object} InterleaveItem
- * @property {Card} card
- * @property {"forward" | "reverse"} direction
- */
-
-/**
- * Interleaves two arrays of card items (forward and reverse) into one array.
- * @param {InterleaveItem[]} forward - Forward items
- * @param {InterleaveItem[]} reverse - Reverse items
- * @return {InterleaveItem[]} Interleaved items
- */
-function interleaveItems(
-  forward: { card: Card; direction: "forward" | "reverse" }[],
-  reverse: { card: Card; direction: "forward" | "reverse" }[]
-): { card: Card; direction: "forward" | "reverse" }[] {
-  const result: { card: Card; direction: "forward" | "reverse" }[] = [];
-  const maxLen = Math.max(forward.length, reverse.length);
-  for (let i = 0; i < maxLen; i++) {
-    if (i < forward.length) result.push(forward[i]);
-    if (i < reverse.length) result.push(reverse[i]);
-  }
-  return result;
-}
-
 export const startLearningSession = onCall(async (request) => {
-  const validationResult = StartLearningSessionRequestSchema.safeParse(
-    request.data || {}
-  );
-  if (!validationResult.success) {
+  const parsed = StartLearningSessionRequestSchema.safeParse(request.data || {});
+  if (!parsed.success) {
     throw new HttpsError("invalid-argument", "Invalid request data", {
-      issues: validationResult.error.issues,
+      issues: parsed.error.issues,
     });
   }
-
-  const { deckId } = validationResult.data;
-  const auth = request.auth;
-
-  if (!auth) {
+  if (!request.auth) {
     throw new HttpsError("unauthenticated", "Authentication required");
   }
 
-  const userId = auth.uid;
+  const userId = request.auth.uid;
+  const { deckId } = parsed.data;
 
   try {
-    let deck = await getUserDeckLocal(userId, deckId);
+    const deck = await deckRepo.getUserDeck(userId, deckId);
     if (!deck) {
-      const newDeck = await copyUserDeck(userId, deckId);
-      deck = newDeck;
+      await copyUserDeck(userId, deckId);
     }
 
-    const bidirectional = deck.settings.bidirectional ?? false;
-
-    const [dueCards, newCards] = await Promise.all([
-      getUserDueDeckCardsLocal(userId, deckId),
-      getUserNewDeckCardsLocal(userId, deckId),
-    ]);
-
-    let currentStats;
-    const userDeckRef = db.doc(`users/${userId}/decks/${deckId}`);
-
-    const dailyStatsToday = await getDailyStatsToday(userId, deckId);
-
-    if (dailyStatsToday) {
-      currentStats = dailyStatsToday;
-    } else {
-      currentStats = {
-        newCardsRemaining: newCards.length,
-        dueCardsRemaining: dueCards.length,
-        inProgressDueCards: 0,
-        inProgressNewCards: 0,
-        completedNewToday: 0,
-        completedDueToday: 0,
-        lastUpdatedStats: new Date(),
-      };
-    }
-
-    const userData = await getUserData(userId);
-
-    // Item limit (study items per day, not physical cards)
-    const itemLimit = deck.settings.newCardsNumPerDay
-      ? deck.settings.newCardsNumPerDay
-      : userData?.settings?.dailyNew
-        ? userData?.settings?.dailyNew
-        : 50;
-
-
-    // Normalize to ITEMS for comparison (bidirectional: each physical card = 2 items)
-    const newItemsNotStarted = bidirectional ? newCards.length * 2 : newCards.length;
-    const newCardsTotal =
-      (currentStats?.inProgressNewCards ?? 0) +
-      (currentStats?.completedNewToday ?? 0) +
-      newItemsNotStarted;
-
-    // How many item slots remain for new cards today
-    const remainingItemSlots = Math.max(
-      0,
-      itemLimit -
-      (currentStats?.inProgressNewCards ?? 0) -
-      (currentStats?.completedNewToday ?? 0)
-    );
-    const newCardSlots = bidirectional
-      ? Math.floor(remainingItemSlots / 2)
-      : remainingItemSlots;
-
-    const newCardsStripped =
-      newCardsTotal > itemLimit ? newCards.slice(0, newCardSlots) : newCards;
-
-    let items: { card: Card; direction: "forward" | "reverse" }[];
-
-    if (bidirectional) {
-      // Lazy-init cardAlgoReverse / firstLearnReverse for cards that lack it
-      const batch = db.batch();
-      let batchOps = 0;
-      const DEFAULT_ALGO = {
-        difficulty: 2.5,
-        scheduled_days: 1,
-        due: new Date(),
-        reps: 0,
-        state: 0,
-        stability: 0,
-        elapsed_days: 0,
-        lapses: 0,
-      };
-      for (const card of newCardsStripped) {
-        if (!card.cardAlgoReverse || !card.firstLearnReverse) {
-          const cardRef = db.doc(
-            `users/${userId}/decks/${deckId}/cards/${card.id}`
-          );
-          const updateData: Record<string, unknown> = {};
-          if (!card.cardAlgoReverse) {
-            updateData.cardAlgoReverse = DEFAULT_ALGO;
-            (card as Card & { cardAlgoReverse?: CardAlgo }).cardAlgoReverse =
-              DEFAULT_ALGO as CardAlgo;
-          }
-          if (!card.firstLearnReverse) {
-            updateData.firstLearnReverse = { isNew: true };
-            (
-              card as Card & {
-                firstLearnReverse?: { isNew: boolean };
-              }
-            ).firstLearnReverse = { isNew: true };
-          }
-          batch.update(cardRef, updateData);
-          batchOps++;
-        }
-      }
-      // Bug 4: Lazy-init reverse data also for FSRS due forward cards missing it
-      for (const card of dueCards) {
-        if (!card.cardAlgoReverse || !card.firstLearnReverse) {
-          const cardRef = db.doc(
-            `users/${userId}/decks/${deckId}/cards/${card.id}`
-          );
-          const updateData: Record<string, unknown> = {};
-          if (!card.cardAlgoReverse) {
-            updateData.cardAlgoReverse = DEFAULT_ALGO;
-            (card as Card & { cardAlgoReverse?: CardAlgo }).cardAlgoReverse =
-              DEFAULT_ALGO as CardAlgo;
-          }
-          if (!card.firstLearnReverse) {
-            updateData.firstLearnReverse = { isNew: true };
-            (
-              card as Card & {
-                firstLearnReverse?: { isNew: boolean };
-              }
-            ).firstLearnReverse = { isNew: true };
-          }
-          batch.update(cardRef, updateData);
-          batchOps++;
-        }
-      }
-      if (batchOps > 0) await batch.commit();
-
-      // Query due reverse cards (firstLearnReverse.isFirst or cardAlgoReverse.due)
-      const dueReverseCards = await getUserDueReverseCardsLocal(userId, deckId);
-
-      // Bug 3: set dueCardsRemaining to include reverse due cards (only for fresh stats)
-      if (!dailyStatsToday) {
-        currentStats.dueCardsRemaining = dueCards.length + dueReverseCards.length;
-      }
-
-      // Bug 4: due forward cards with untouched reverse also get a reverse item
-      const dueCardsWithNewReverse = dueCards.filter(
-        (c) => (c as Card & { firstLearnReverse?: { isNew?: boolean } }).firstLearnReverse?.isNew
-      );
-      const reverseNewItems = [
-        ...newCardsStripped.map((card) => ({
-          card,
-          direction: "reverse" as const,
-        })),
-        ...dueCardsWithNewReverse.map((card) => ({
-          card,
-          direction: "reverse" as const,
-        })),
-      ];
-
-      const forwardDueItems = dueCards.map((card) => ({
-        card,
-        direction: "forward" as const,
-      }));
-      const forwardNewItems = newCardsStripped.map((card) => ({
-        card,
-        direction: "forward" as const,
-      }));
-      const reverseDueItems = dueReverseCards.map((card) => ({
-        card,
-        direction: "reverse" as const,
-      }));
-
-      items = interleaveItems(
-        [...forwardDueItems, ...forwardNewItems],
-        [...reverseDueItems, ...reverseNewItems]
-      );
-
-      // newCardsRemaining counts study items (2 per card in bidirectional)
-      currentStats.newCardsRemaining = newCardsStripped.length * 2;
-    } else {
-      items = [
-        ...dueCards.map((card) => ({ card, direction: "forward" as const })),
-        ...newCardsStripped.map((card) => ({
-          card,
-          direction: "forward" as const,
-        })),
-      ];
-      currentStats.newCardsRemaining = newCardsStripped.length;
-    }
-
-    await userDeckRef.update({
-      dailyStats: currentStats,
-    });
-
-    const response = {
-      items,
-      dailyStats: currentStats,
-      deck: deck,
-    };
-    const validatedResponse =
-      StartLearningSessionResponseSchema.parse(response);
-    return serializeTimestamps(validatedResponse);
-  } catch (error) {
-    logger.error("Error starting learning session", error);
-    handleZodError(error, "startLearningSession");
-    if (error instanceof HttpsError) {
-      throw error;
-    }
+    const result = await learnService.startSession({ userId, deckId });
+    const validated = StartLearningSessionResponseSchema.parse(result);
+    return serializeTimestamps(validated);
+  } catch (e) {
+    logger.error("Error starting learning session", e);
+    handleZodError(e, "startLearningSession");
+    if (e instanceof HttpsError) throw e;
     throw new HttpsError("internal", "Failed to start learning session");
   }
 });

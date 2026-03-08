@@ -11,6 +11,9 @@
  * @example
  *   formatYmdInTimeZone(new Date("2026-03-03T23:00:00Z"), "Europe/Warsaw")
  *   // → "2026-03-04"  (Warsaw is UTC+1 in winter)
+ * @param {Date} date - Date to format
+ * @param {string} timeZone - IANA timezone string
+ * @return {string} YYYY-MM-DD string
  */
 export function formatYmdInTimeZone(date: Date, timeZone: string): string {
   // en-CA locale produces the ISO-style yyyy-mm-dd format natively.

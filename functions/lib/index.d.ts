@@ -8,14 +8,12 @@
  */
 export { searchDecks } from "./searchFunctions";
 export { getSearchLogs } from "./searchFunctions";
-export { serverNow, getCurrentSeason, submitPoints, weeklyRollOver, updateCardProgressAllInOne, } from "./userFunctions";
+export { serverNow, getCurrentSeason, submitPoints, weeklyRollOver, updateCardProgressAllInOne, getUserDecks, updateCardProgress, getUserProgress, getUserSettings, updateUserStreakOnLogin, updateUserStreakIfQualified, updateUserSettings, undoCard, getUserProfile, getUserActivityHeatmap, getUserAwards, getPublicUserProfile, toggleFollow, isCurrentUserAdmin, getUserByUsername, } from "./handlers/userHandlers";
 export { scanDocument } from "./scanningFunctions";
-export { getUserDecks, updateCardProgress, getUserProgress, getUserSettings, updateUserStreakOnLogin, updateUserStreakIfQualified, updateUserSettings, undoCard, getUserProfile, getUserActivityHeatmap, getUserAwards, getPublicUserProfile, toggleFollow, isCurrentUserAdmin, getUserByUsername, } from "./userFunctions";
-export { createDeckWithCards, updateUserStats, syncDeckMetadataToUserCopies, getDeckDetails, getDeckCards, getPopularDecks, resetDeck, updateDeckSettings, updateUserDeckSettings, startLearningDeck, getUserDeckDetails, getUserDeckCards, startLearningSession, getUserDueDeckCards, getDailyUserStats, getDeckDailyStats, getUserNewDeckCards, deleteDeck, checkCardChanges, syncDeckCards, updateCardContent, updateDeck, importAnkiDeck, recordDeckView, toggleDeckLike, checkIfLiked, addCardToDeck, searchUsers, addDeckEditor, removeDeckEditor, getDeckEditors, } from "./deckFunctions";
+export { createDeckWithCards, updateUserStats, syncDeckMetadataToUserCopies, getDeckDetails, getDeckCards, getPopularDecks, resetDeck, updateDeckSettings, updateUserDeckSettings, startLearningDeck, getUserDeckDetails, getUserDeckCards, startLearningSession, getUserDueDeckCards, getDailyUserStats, getDeckDailyStats, getUserNewDeckCards, deleteDeck, checkCardChanges, syncDeckCards, updateCardContent, updateDeck, importAnkiDeck, recordDeckView, toggleDeckLike, checkIfLiked, addCardToDeck, searchUsers, addDeckEditor, removeDeckEditor, getDeckEditors, } from "./handlers/deckHandlers";
 export { getLeaderboard, getUserRanking, getFollowingRankings, assignUserToGroup, } from "./rankingFunctions";
 export { getNotifications, markNotificationRead, createNotification, notifyStreakBroken, notifySeasonEnd, onLeagueAdvance, } from "./notificationFunctions";
 export { getLeagueInfo, getUserGroup, updateUserLeague, getAllLeaguesInfo, } from "./leagueFunctions";
-export { addPlaceholderData } from "./placeholderFunctions";
 export { ensureUserDocument, completeOnboarding, checkUsernameAvailability, } from "./authHandlers";
 export { getAvocadoStatus, harvestAvocado, getAvocadoConfigFn as getAvocadoConfig, } from "./avocadoFunctions";
 export { translateText, getTranslationLimit, } from "./translationFunctions";

@@ -17,9 +17,9 @@ export interface UserRepository {
   addStudySession(userId: string, session: StudySessionCreate): Promise<string>;
 
   /**
-   * Delete the most recently written study session for this user.
+   * Delete the most recently written study session for this user and card.
    * Used by undoCard to roll back the last review.
-   * No-op if there are no study sessions.
+   * No-op if there are no matching study sessions.
    */
-  deleteLatestStudySession(userId: string): Promise<void>;
+  deleteLatestStudySession(userId: string, cardId: string): Promise<void>;
 }

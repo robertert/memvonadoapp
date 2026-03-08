@@ -46,7 +46,6 @@ import {
   GetCurrentSeasonResponseSchema,
   WeeklyRollOverResponseSchema as ApiWeeklyRollOverResponseSchema,
   DeckLearningData,
-  DailyStatsSchema,
   DailyStats,
   UndoCardRequestSchema,
   UndoCardResponseSchema,
@@ -69,6 +68,8 @@ import {
   updateAvocadoGrowthInternal,
   resetAvocadoGrowthInternal,
 } from "./avocadoFunctions";
+import { FirestoreStatsRepository } from "./repositories/firestore/FirestoreStatsRepository";
+import { formatYmdInTimeZone } from "./utils/dateUtils";
 
 const DEFAULT_CARD_ALGO: CardAlgo = {
   difficulty: 2.5,
@@ -82,6 +83,8 @@ const DEFAULT_CARD_ALGO: CardAlgo = {
 };
 
 const db = getFirestore();
+
+const statsRepo = new FirestoreStatsRepository();
 
 const handleZodError = (error: unknown, context: string) => {
   if (error instanceof z.ZodError) {
@@ -107,22 +110,6 @@ const UserLeagueUpdateSchema = UserSchema.pick({
   league: true,
   currentGroupId: true,
 }).partial();
-
-/**
- * Pomocniczo: formatuje datę na łańcuch w formacie YYYY-MM-DD w zadanej strefie czasowej.
- * @param {Date} date Data wejściowa w czasie UTC/systemowym
- * @param {string} timeZone Identyfikator strefy czasowej IANA, np. "Europe/Warsaw"
- * @return {string} Łańcuch daty w formacie YYYY-MM-DD dla kalendarzowego dnia w danej strefie
- */
-function formatYmdInTimeZone(date: Date, timeZone: string): string {
-  // en-CA daje format yyyy-mm-dd
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
-}
 
 /**
  * Wspólna logika aktualizacji streaka dla bieżącego dnia.
@@ -594,46 +581,12 @@ async function updateDailyStats(
   dailyStats: DailyStats | null | undefined
 ) {
   try {
-    const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
-
-    const userRef = db.doc(`users/${userId}`);
-
-    if (dailyStats) {
-      const deckData = await deckRef.get();
-
-      const dailyStatsBefore = deckData.data()?.dailyStats;
-
-      const parsedBefore = DailyStatsSchema.safeParse(dailyStatsBefore);
-      const validatedDailyStatsBefore = parsedBefore.success
-        ? parsedBefore.data
-        : { completedNewToday: 0, completedDueToday: 0 };
-
-      const validatedDailyStats = DailyStatsSchema.parse(dailyStats);
-
-      const completedNewDiff =
-        validatedDailyStats.completedNewToday -
-        validatedDailyStatsBefore.completedNewToday;
-      const completedDueDiff =
-        validatedDailyStats.completedDueToday -
-        validatedDailyStatsBefore.completedDueToday;
-
-      const batch = db.batch();
-      batch.update(deckRef, {
-        dailyStats: {
-          ...validatedDailyStats,
-          lastUpdatedStats: new Date(),
-        },
-      });
-      batch.update(userRef, {
-        "dailyStats.completedNewToday": FieldValue.increment(completedNewDiff),
-        "dailyStats.completedDueToday": FieldValue.increment(completedDueDiff),
-        "dailyStats.lastUpdatedStats": new Date(),
-      });
-      await batch.commit();
-    }
+    if (!dailyStats) return;
+    const previousStats = await statsRepo.getDeckDailyStats(userId, deckId);
+    await statsRepo.updateDailyStats(userId, deckId, dailyStats, previousStats);
   } catch (statsErr) {
     logger.warn("updateCardProgress: daily stats update failed", statsErr);
-    // Nie przerywaj głównej operacji – to tylko best-effort
+    // best-effort — main operation continues
   }
 }
 /**

@@ -26,9 +26,6 @@ export {
   submitPoints,
   weeklyRollOver,
   updateCardProgressAllInOne,
-} from "./userFunctions";
-export { scanDocument } from "./scanningFunctions";
-export {
   getUserDecks,
   updateCardProgress,
   getUserProgress,
@@ -44,7 +41,8 @@ export {
   toggleFollow,
   isCurrentUserAdmin,
   getUserByUsername,
-} from "./userFunctions";
+} from "./handlers/userHandlers";
+export { scanDocument } from "./scanningFunctions";
 export {
   createDeckWithCards,
   updateUserStats,
@@ -77,7 +75,7 @@ export {
   addDeckEditor,
   removeDeckEditor,
   getDeckEditors,
-} from "./deckFunctions";
+} from "./handlers/deckHandlers";
 export {
   getLeaderboard,
   getUserRanking,
