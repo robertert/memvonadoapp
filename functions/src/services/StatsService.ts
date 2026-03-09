@@ -57,4 +57,23 @@ export class StatsService {
 
     return statsYmd === todayYmd ? user.dailyStats : null;
   }
+
+  /**
+   * Recompute a user's aggregate stats from their deck list and write them
+   * (overwrite, not increment) to avoid the double-counting bug in the
+   * previous FieldValue.increment approach.
+   * @param {string} userId - User ID
+   * @return {Promise<void>}
+   */
+  async aggregateUserStats(userId: string): Promise<void> {
+    const decks = await this.userRepo.listUserDecks(userId);
+    let totalCards = 0;
+    for (const deck of decks) {
+      totalCards += deck.cardsNum ?? 0;
+    }
+    await this.userRepo.updateUser(userId, {
+      "stats.totalCards": totalCards,
+      "stats.totalDecks": decks.length,
+    });
+  }
 }

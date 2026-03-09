@@ -4,10 +4,12 @@ import {
   UserSettingsSchema,
   StudySessionCreateSchema,
   DeckLearningDataSchema,
+  NotificationCreateSchema,
   type User,
   type UserSettings,
   type StudySessionCreate,
   type DeckLearningData,
+  type NotificationCreate,
 } from "memvocado-types";
 import { formatYmdInTimeZone } from "../../utils/dateUtils";
 import * as logger from "firebase-functions/logger";
@@ -290,5 +292,16 @@ export class FirestoreUserRepository implements UserRepository {
   async getStreakThreshold(): Promise<number> {
     const snap = await db.doc("admin/settings").get();
     return (snap.data()?.streakThreshold ?? 50) as number;
+  }
+
+  async writeNotification(
+    targetUserId: string,
+    notification: NotificationCreate
+  ): Promise<string> {
+    const validated = NotificationCreateSchema.parse(notification);
+    const doc = await db
+      .collection(`users/${targetUserId}/notifications`)
+      .add(validated);
+    return doc.id;
   }
 }

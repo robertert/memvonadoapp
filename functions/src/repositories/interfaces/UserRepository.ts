@@ -3,6 +3,7 @@ import type {
   StudySessionCreate,
   DeckLearningData,
   UserSettings,
+  NotificationCreate,
 } from "memvocado-types";
 
 export interface UserRepository {
@@ -97,4 +98,7 @@ export interface UserRepository {
 
   /** Read streakThreshold from admin/settings (default 50) */
   getStreakThreshold(): Promise<number>;
+
+  /** Write a notification document to users/{targetUserId}/notifications and return its ID */
+  writeNotification(targetUserId: string, notification: NotificationCreate): Promise<string>;
 }

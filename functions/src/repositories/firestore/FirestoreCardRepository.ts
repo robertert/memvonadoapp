@@ -1,4 +1,4 @@
-import { getFirestore, type WriteBatch } from "firebase-admin/firestore";
+import { getFirestore, FieldValue, type WriteBatch } from "firebase-admin/firestore";
 import { CardSchema, type Card, type CardAlgo } from "memvocado-types";
 import type {
   CardRepository,
@@ -285,5 +285,241 @@ export class FirestoreCardRepository implements CardRepository {
     }
     if (batchCount > 0) batches.push(currentBatch);
     await Promise.all(batches.map((b) => b.commit()));
+  }
+
+  // ── New methods ─────────────────────────────────────────────────────────
+
+  async bulkResetCards(userId: string, deckId: string): Promise<void> {
+    const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
+    const cardsSnap = await deckRef.collection("cards").get();
+    if (cardsSnap.empty) return;
+
+    const CHUNK = 499;
+    let batch = db.batch();
+    let count = 0;
+
+    // Reset dailyStats on deck doc (counts as 1 op)
+    batch.update(deckRef, { dailyStats: null });
+    count++;
+
+    for (const doc of cardsSnap.docs) {
+      batch.update(doc.ref, {
+        cardAlgo: FieldValue.delete(),
+        cardAlgoReverse: FieldValue.delete(),
+        firstLearn: { isNew: true },
+        firstLearnReverse: FieldValue.delete(),
+        lastReviewDate: FieldValue.delete(),
+      });
+      count++;
+      if (count >= CHUNK) {
+        await batch.commit();
+        batch = db.batch();
+        count = 0;
+      }
+    }
+
+    if (count > 0) await batch.commit();
+  }
+
+  async bulkSyncUserCards(
+    userId: string,
+    deckId: string,
+    ops: {
+      upsert: Card[];
+      update: Array<{
+        id: string;
+        cardData: { front: string; back: string };
+        tags: string[];
+      }>;
+      delete: string[];
+    },
+    deckUpdate: Record<string, unknown>
+  ): Promise<void> {
+    const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
+    const cardsRef = deckRef.collection("cards");
+    const now = new Date();
+
+    const CHUNK = 450;
+    let batch = db.batch();
+    let count = 0;
+
+    const flush = async () => {
+      await batch.commit();
+      batch = db.batch();
+      count = 0;
+    };
+
+    const enqueue = async (mutate: (b: WriteBatch) => void) => {
+      mutate(batch);
+      count++;
+      if (count >= CHUNK) await flush();
+    };
+
+    for (const card of ops.upsert) {
+      await enqueue((b) => b.set(cardsRef.doc(card.id), card, { merge: true }));
+    }
+
+    for (const u of ops.update) {
+      await enqueue((b) =>
+        b.update(cardsRef.doc(u.id), {
+          cardData: u.cardData,
+          tags: u.tags,
+          updatedAt: now,
+        })
+      );
+    }
+
+    for (const id of ops.delete) {
+      await enqueue((b) => b.delete(cardsRef.doc(id)));
+    }
+
+    // Deck metadata update
+    await enqueue((b) => b.update(deckRef, deckUpdate));
+
+    if (count > 0) await flush();
+  }
+
+  async applySourceCardChanges(
+    deckId: string,
+    changes: {
+      created: Array<{
+        cardData: { front: string; back: string };
+        tags?: string[];
+      }>;
+      updated: Array<{
+        id: string;
+        cardData: { front: string; back: string };
+        tags?: string[];
+      }>;
+      deleted: string[];
+    }
+  ): Promise<void> {
+    const deckRef = db.doc(`decks/${deckId}`);
+    const cardsRef = deckRef.collection("cards");
+    const now = new Date();
+
+    const CHUNK = 499;
+    let batch = db.batch();
+    let count = 0;
+
+    const flush = async () => {
+      await batch.commit();
+      batch = db.batch();
+      count = 0;
+    };
+
+    const enqueue = async (mutate: (b: WriteBatch) => void) => {
+      mutate(batch);
+      count++;
+      if (count >= CHUNK) await flush();
+    };
+
+    for (const id of changes.deleted) {
+      await enqueue((b) => b.delete(cardsRef.doc(id)));
+    }
+
+    for (const u of changes.updated) {
+      await enqueue((b) =>
+        b.update(cardsRef.doc(u.id), {
+          cardData: u.cardData,
+          tags: u.tags || [],
+        })
+      );
+    }
+
+    for (const c of changes.created) {
+      const cardRef = cardsRef.doc();
+      const card = CardSchema.parse({
+        id: cardRef.id,
+        cardData: {
+          front: c.cardData.front || "",
+          back: c.cardData.back || "",
+        },
+        tags: c.tags || [],
+        createdAt: now,
+        firstLearn: { isNew: true },
+      });
+      await enqueue((b) => b.set(cardRef, card));
+    }
+
+    if (count > 0) await flush();
+  }
+
+  async updateSourceCard(
+    deckId: string,
+    cardId: string,
+    data: { cardData: { front: string; back: string }; tags: string[] }
+  ): Promise<void> {
+    const ref = db.doc(`decks/${deckId}/cards/${cardId}`);
+    const snap = await ref.get();
+    if (!snap.exists) throw new Error("not-found");
+    await ref.update({ cardData: data.cardData, tags: data.tags });
+  }
+
+  async updateUserCardIfExists(
+    userId: string,
+    deckId: string,
+    cardId: string,
+    data: { cardData: { front: string; back: string }; tags: string[] }
+  ): Promise<void> {
+    const ref = db.doc(`users/${userId}/decks/${deckId}/cards/${cardId}`);
+    const snap = await ref.get();
+    if (!snap.exists) return;
+    await ref.update({ cardData: data.cardData, tags: data.tags });
+  }
+
+  async getSourceDeckCardsPaginated(
+    deckId: string,
+    limit: number,
+    startAfterId?: string
+  ): Promise<{ cards: Card[]; hasMore: boolean; lastDocId: string | null }> {
+    const colRef = db.collection(`decks/${deckId}/cards`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query: any = colRef.limit(limit);
+    if (startAfterId) {
+      const cursor = await colRef.doc(startAfterId).get();
+      if (cursor.exists) query = query.startAfter(cursor);
+    }
+    const snap = await query.get();
+    let hasMore = false;
+    if (snap.docs.length === limit) {
+      const next = await colRef.startAfter(snap.docs[snap.docs.length - 1]).limit(1).get();
+      hasMore = next.docs.length > 0;
+    }
+    return {
+      cards: snap.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) =>
+        CardSchema.parse({ id: doc.id, ...doc.data() })
+      ),
+      hasMore,
+      lastDocId: snap.docs.length > 0 ? snap.docs[snap.docs.length - 1].id : null,
+    };
+  }
+
+  async getUserDeckCardsPaginated(
+    userId: string,
+    deckId: string,
+    limit: number,
+    startAfterId?: string
+  ): Promise<{ cards: Card[]; hasMore: boolean; lastDocId: string | null }> {
+    const colRef = db.collection(`users/${userId}/decks/${deckId}/cards`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query: any = colRef.limit(limit);
+    if (startAfterId) {
+      const cursor = await colRef.doc(startAfterId).get();
+      if (cursor.exists) query = query.startAfter(cursor);
+    }
+    const snap = await query.get();
+    let hasMore = false;
+    if (snap.docs.length === limit) {
+      const next = await colRef.startAfter(snap.docs[snap.docs.length - 1]).limit(1).get();
+      hasMore = next.docs.length > 0;
+    }
+    return {
+      cards: snap.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot) =>
+        CardSchema.parse({ id: doc.id, ...doc.data() })
+      ),
+      hasMore,
+      lastDocId: snap.docs.length > 0 ? snap.docs[snap.docs.length - 1].id : null,
+    };
   }
 }

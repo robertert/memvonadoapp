@@ -73,10 +73,10 @@ export default function StreakLostModal({
         }),
         // Efekt uderzenia X
         Animated.spring(crackScale, {
-            toValue: 1,
-            friction: 5,
-            tension: 100,
-            useNativeDriver: true
+          toValue: 1,
+          friction: 5,
+          tension: 100,
+          useNativeDriver: true
         })
       ]),
 
@@ -93,7 +93,7 @@ export default function StreakLostModal({
   // Interpolacja koloru: od Ognistego (#FF4500) do Szarego Popiołu (#4B5563)
   const fireColor = colorProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: ["#FF4500", "#4B5563"], 
+    outputRange: ["#FF4500", "#4B5563"],
   });
 
   // Interpolacja cienia (glow): od jasnego do braku
@@ -117,7 +117,7 @@ export default function StreakLostModal({
         />
 
         <View style={styles.contentContainer}>
-          
+
           {/* --- SEKCJA ANIMOWANEGO PŁOMIENIA --- */}
           <View style={styles.iconContainer}>
             <Animated.View
@@ -128,16 +128,10 @@ export default function StreakLostModal({
                 ],
               }}
             >
-              {/* Ponieważ nie można łatwo animować koloru SVG propsa w natywnym driverze,
-                  używamy triku: renderujemy dwa ikony jeden na drugim i zmieniamy opacity, 
-                  lub używamy Animated.Text jeśli to font-icon.
-                  Tutaj użyjemy podejścia z tintColor w Animated.View (działa dla niektórych bibliotek) 
-                  LUB bezpieczniejszego: Dwie ikony i crossfade.
-              */}
-              
+
               {/* Ikona Szara (Popiół) - domyślnie pod spodem, zawsze widoczna, ale przykryta pomarańczową */}
               <View style={styles.absoluteCenter}>
-                 <FireIcon size={140} color="#4B5563" />
+                <FireIcon size={140} color="#4B5563" />
               </View>
 
               {/* Ikona Pomarańczowa - zanika (opacity -> 0) */}
@@ -148,14 +142,14 @@ export default function StreakLostModal({
 
             {/* Ikona "Pęknięcia" / Krzyżyka pojawiająca się na wierzchu */}
             <Animated.View style={[styles.crackOverlay, { transform: [{ scale: crackScale }] }]}>
-                 <XMarkIcon size={80} color={Colors.primary_100} strokeWidth={4} />
+              <XMarkIcon size={80} color={Colors.primary_100} strokeWidth={4} />
             </Animated.View>
           </View>
 
           {/* --- TEKST I PRZYCISKI --- */}
           <Animated.View style={[styles.textContainer, { opacity: contentOpacity }]}>
             <Text style={styles.title}>Auć! Seria przerwana</Text>
-            
+
             <Text style={styles.subtitle}>
               Niestety, wczoraj nie udało się pouczyć.{"\n"}
               Straciłeś serię <Text style={styles.lostStreakNum}>{previousStreak} dni</Text>.
@@ -167,11 +161,11 @@ export default function StreakLostModal({
             </Text>
 
             <Pressable onPress={onClose} style={styles.button}>
-               <View style={styles.buttonInner}>
-                  <Text style={styles.buttonText}>Zaczynam od nowa</Text>
-               </View>
+              <View style={styles.buttonInner}>
+                <Text style={styles.buttonText}>Zaczynam od nowa</Text>
+              </View>
             </Pressable>
-            
+
             {/* Opcjonalnie: Przycisk "Użyj zamrażacza" jeśli masz taką funkcję */}
             {/* <Pressable style={styles.secondaryButton}><Text>Mam zamrażacz!</Text></Pressable> */}
 
