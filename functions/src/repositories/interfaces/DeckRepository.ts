@@ -32,4 +32,7 @@ export interface DeckRepository {
 
   /** Get the IDs of every user who has a learning copy of this deck */
   getLearnerIds(deckId: string): Promise<string[]>;
+
+  /** Get top N public decks ordered by views descending */
+  getPopularDecks(limit: number): Promise<Deck[]>;
 }

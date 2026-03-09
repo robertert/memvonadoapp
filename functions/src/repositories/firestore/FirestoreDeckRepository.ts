@@ -82,6 +82,20 @@ export class FirestoreDeckRepository implements DeckRepository {
   }
 
   /**
+   * @param {number} limit - Max number of decks to return
+   * @return {Promise<Deck[]>} Popular public decks ordered by views
+   */
+  async getPopularDecks(limit: number): Promise<Deck[]> {
+    const snap = await db.collection("decks")
+      .where("isPublic", "==", true)
+      .where("is_deleted", "==", false)
+      .orderBy("views", "desc")
+      .limit(limit)
+      .get();
+    return snap.docs.map((doc) => DeckSchema.parse({ ...doc.data(), id: doc.id }));
+  }
+
+  /**
    * @param {string} deckId - Source deck ID
    * @return {Promise<string[]>} Array of user IDs who have a copy of this deck
    */

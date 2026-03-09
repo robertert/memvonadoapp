@@ -81,7 +81,7 @@ export {
   getUserRanking,
   getFollowingRankings,
   assignUserToGroup,
-} from "./rankingFunctions";
+} from "./handlers/rankingHandlers";
 export {
   getNotifications,
   markNotificationRead,
@@ -95,12 +95,12 @@ export {
   getUserGroup,
   updateUserLeague,
   getAllLeaguesInfo,
-} from "./leagueFunctions";
+} from "./handlers/leagueHandlers";
 export {
   ensureUserDocument,
   completeOnboarding,
   checkUsernameAvailability,
-} from "./authHandlers";
+} from "./handlers/authHandlers";
 export {
   getAvocadoStatus,
   harvestAvocado,

@@ -1,6 +1,26 @@
 import type { UserRepository } from "../repositories/interfaces/UserRepository";
 import { formatYmdInTimeZone } from "../utils/dateUtils";
 
+export interface StreakQualifyResult {
+  qualified: boolean;
+  updated: boolean;
+  currentStreak: number;
+  longestStreak: number;
+  lastStreakDate: string | null;
+  threshold: number;
+  todayCount: number;
+  timeZone: string;
+}
+
+export interface StreakLoginResult {
+  updated: boolean;
+  currentStreak: number;
+  previousStreak?: number;
+  longestStreak?: number;
+  lastStreakDate: string | null;
+  status: "streak_safe" | "streak_reset";
+}
+
 /**
  * Business logic for streak updates.
  * Depends only on repository interfaces — no Firebase imports.
@@ -16,12 +36,12 @@ export class StreakService {
    * Idempotent — no-op if streak is already recorded for today.
    * @param {string} userId - User ID
    * @param {number} [threshold] - Daily card threshold (default 10)
-   * @return {Promise<void>}
+   * @return {Promise<StreakQualifyResult>}
    */
   async updateStreakIfQualified(
     userId: string,
     threshold?: number
-  ): Promise<void> {
+  ): Promise<StreakQualifyResult> {
     const dailyThreshold =
       typeof threshold === "number" && threshold > 0 ? threshold : 10;
 
@@ -37,34 +57,68 @@ export class StreakService {
       ? formatYmdInTimeZone(lastStreakDate, tz)
       : null;
 
-    if (lastStreakYmd === todayYmd) return;
+    const currentStreak = Number(user.stats?.currentStreak || 0);
+    const longestStreak = Number(user.stats?.longestStreak || 0);
 
     const dailyStats = user.dailyStats;
     const todayCount =
       (dailyStats?.completedNewToday ?? 0) +
       (dailyStats?.completedDueToday ?? 0);
 
-    if (todayCount < dailyThreshold) return;
+    if (lastStreakYmd === todayYmd) {
+      return {
+        qualified: true,
+        updated: false,
+        currentStreak,
+        longestStreak,
+        lastStreakDate: lastStreakYmd,
+        threshold: dailyThreshold,
+        todayCount,
+        timeZone: tz,
+      };
+    }
 
-    const current = Number(user.stats?.currentStreak || 0);
-    const longest = Number(user.stats?.longestStreak || 0);
-    const nextCurrent = current + 1;
-    const nextLongest = Math.max(longest, nextCurrent);
+    if (todayCount < dailyThreshold) {
+      return {
+        qualified: false,
+        updated: false,
+        currentStreak,
+        longestStreak,
+        lastStreakDate: lastStreakYmd,
+        threshold: dailyThreshold,
+        todayCount,
+        timeZone: tz,
+      };
+    }
+
+    const nextCurrent = currentStreak + 1;
+    const nextLongest = Math.max(longestStreak, nextCurrent);
 
     await this.userRepo.updateUser(userId, {
       "stats.currentStreak": nextCurrent,
       "stats.longestStreak": nextLongest,
       "stats.lastStreakDate": now,
     });
+
+    return {
+      qualified: true,
+      updated: true,
+      currentStreak: nextCurrent,
+      longestStreak: nextLongest,
+      lastStreakDate: todayYmd,
+      threshold: dailyThreshold,
+      todayCount,
+      timeZone: tz,
+    };
   }
 
   /**
    * Update streak on login — resets broken streak if last activity was
    * more than one day ago.
    * @param {string} userId - User ID
-   * @return {Promise<void>}
+   * @return {Promise<StreakLoginResult>}
    */
-  async updateStreakOnLogin(userId: string): Promise<void> {
+  async updateStreakOnLogin(userId: string): Promise<StreakLoginResult> {
     const user = await this.userRepo.getUser(userId);
     if (!user) throw new Error("User not found");
 
@@ -81,10 +135,38 @@ export class StreakService {
       ? formatYmdInTimeZone(lastStreakDate, tz)
       : null;
 
-    if (lastStreakYmd === todayYmd || lastStreakYmd === yesterdayYmd) return;
+    const currentStreak = Number(user.stats?.currentStreak || 0);
+    const longestStreak = Number(user.stats?.longestStreak || 0);
 
-    if (!user.stats?.currentStreak) return;
+    if (lastStreakYmd === todayYmd || lastStreakYmd === yesterdayYmd) {
+      return {
+        updated: false,
+        currentStreak,
+        longestStreak,
+        lastStreakDate: lastStreakYmd,
+        status: "streak_safe",
+      };
+    }
+
+    if (!user.stats?.currentStreak) {
+      return {
+        updated: false,
+        currentStreak: 0,
+        longestStreak,
+        lastStreakDate: lastStreakYmd,
+        status: "streak_safe",
+      };
+    }
 
     await this.userRepo.updateUser(userId, { "stats.currentStreak": 0 });
+
+    return {
+      updated: true,
+      currentStreak: 0,
+      previousStreak: currentStreak,
+      longestStreak,
+      lastStreakDate: lastStreakYmd,
+      status: "streak_reset",
+    };
   }
 }
