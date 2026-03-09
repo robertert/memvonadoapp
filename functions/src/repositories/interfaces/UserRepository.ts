@@ -4,6 +4,7 @@ import type {
   DeckLearningData,
   UserSettings,
   NotificationCreate,
+  SearchLog,
 } from "memvocado-types";
 
 export interface UserRepository {
@@ -101,4 +102,10 @@ export interface UserRepository {
 
   /** Write a notification document to users/{targetUserId}/notifications and return its ID */
   writeNotification(targetUserId: string, notification: NotificationCreate): Promise<string>;
+
+  /** Append a search log to users/{userId}/searchLogs */
+  addSearchLog(userId: string, log: Omit<SearchLog, "id">): Promise<void>;
+
+  /** Get search logs for a user, ordered by timestamp desc */
+  getSearchLogs(userId: string): Promise<SearchLog[]>;
 }

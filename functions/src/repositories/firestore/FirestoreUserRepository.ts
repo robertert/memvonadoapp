@@ -5,11 +5,13 @@ import {
   StudySessionCreateSchema,
   DeckLearningDataSchema,
   NotificationCreateSchema,
+  SearchLogSchema,
   type User,
   type UserSettings,
   type StudySessionCreate,
   type DeckLearningData,
   type NotificationCreate,
+  type SearchLog,
 } from "memvocado-types";
 import { formatYmdInTimeZone } from "../../utils/dateUtils";
 import * as logger from "firebase-functions/logger";
@@ -303,5 +305,18 @@ export class FirestoreUserRepository implements UserRepository {
       .collection(`users/${targetUserId}/notifications`)
       .add(validated);
     return doc.id;
+  }
+
+  async addSearchLog(userId: string, log: Omit<SearchLog, "id">): Promise<void> {
+    SearchLogSchema.omit({ id: true }).parse(log);
+    await db.collection(`users/${userId}/searchLogs`).add(log);
+  }
+
+  async getSearchLogs(userId: string): Promise<SearchLog[]> {
+    const snap = await db
+      .collection(`users/${userId}/searchLogs`)
+      .orderBy("timestamp", "desc")
+      .get();
+    return snap.docs.map((doc) => SearchLogSchema.parse({ id: doc.id, ...doc.data() }));
   }
 }

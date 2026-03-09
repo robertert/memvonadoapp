@@ -443,4 +443,30 @@ export class FirestoreDeckRepository implements DeckRepository {
     const snap = await db.doc(`users/${userId}/likedDecks/${deckId}`).get();
     return snap.exists;
   }
+
+  async searchDecks(
+    query: string,
+    filters?: import("memvocado-types").SearchFilters,
+    limit = 20
+  ): Promise<Deck[]> {
+    let q: import("firebase-admin/firestore").Query | import("firebase-admin/firestore").CollectionReference =
+      db.collection("decks");
+
+    if (query) {
+      const queryLower = query.toLowerCase();
+      q = q
+        .where("title_lower", ">=", queryLower)
+        .where("title_lower", "<=", queryLower + "\uf8ff")
+        .where("is_deleted", "==", false);
+    }
+
+    if (filters) {
+      const { category, tags } = filters;
+      if (category) q = q.where("category", "==", category);
+      if (Array.isArray(tags) && tags.length > 0) q = q.where("tags", "array-contains-any", tags);
+    }
+
+    const snap = await q.limit(limit).get();
+    return snap.docs.map((doc) => DeckSchema.parse({ id: doc.id, ...doc.data() }));
+  }
 }

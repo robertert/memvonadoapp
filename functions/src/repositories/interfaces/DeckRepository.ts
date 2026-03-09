@@ -1,4 +1,4 @@
-import type { Deck, DeckLearningData } from "memvocado-types";
+import type { Deck, DeckLearningData, SearchFilters } from "memvocado-types";
 
 export interface DeckRepository {
   /** Get a user's learning copy of a deck, or null if not started yet */
@@ -119,4 +119,10 @@ export interface DeckRepository {
 
   /** Return true if userId has liked deckId */
   isLikedByUser(userId: string, deckId: string): Promise<boolean>;
+
+  /**
+   * Search source decks by title_lower prefix + optional category/tag filters.
+   * Excludes soft-deleted decks. Limit defaults to 20.
+   */
+  searchDecks(query: string, filters?: SearchFilters, limit?: number): Promise<Deck[]>;
 }

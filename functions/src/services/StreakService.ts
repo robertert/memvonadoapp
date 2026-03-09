@@ -1,4 +1,5 @@
 import type { UserRepository } from "../repositories/interfaces/UserRepository";
+import type { AvocadoService, AvocadoUpdateGrowthResult, AvocadoResetGrowthResult } from "./AvocadoService";
 import { formatYmdInTimeZone } from "../utils/dateUtils";
 
 export interface StreakQualifyResult {
@@ -10,6 +11,7 @@ export interface StreakQualifyResult {
   threshold: number;
   todayCount: number;
   timeZone: string;
+  avocado?: AvocadoUpdateGrowthResult;
 }
 
 export interface StreakLoginResult {
@@ -19,6 +21,7 @@ export interface StreakLoginResult {
   longestStreak?: number;
   lastStreakDate: string | null;
   status: "streak_safe" | "streak_reset";
+  avocado?: AvocadoResetGrowthResult;
 }
 
 /**
@@ -28,8 +31,12 @@ export interface StreakLoginResult {
 export class StreakService {
   /**
    * @param {UserRepository} userRepo - User repository
+   * @param {AvocadoService} [avocadoService] - Optional avocado service for growth/reset side-effects
    */
-  constructor(protected readonly userRepo: UserRepository) {}
+  constructor(
+    protected readonly userRepo: UserRepository,
+    protected readonly avocadoService?: AvocadoService
+  ) {}
 
   /**
    * Update user streak if they have met the daily threshold today.
@@ -100,6 +107,17 @@ export class StreakService {
       "stats.lastStreakDate": now,
     });
 
+    let avocado: AvocadoUpdateGrowthResult | undefined;
+    if (this.avocadoService) {
+      try {
+        avocado = await this.avocadoService.updateGrowth(userId, tz);
+      } catch (err) {
+        // Non-critical — log and continue
+        const logger = await import("firebase-functions/logger");
+        logger.warn("StreakService: avocado growth update failed", err);
+      }
+    }
+
     return {
       qualified: true,
       updated: true,
@@ -109,6 +127,7 @@ export class StreakService {
       threshold: dailyThreshold,
       todayCount,
       timeZone: tz,
+      avocado,
     };
   }
 
@@ -160,6 +179,16 @@ export class StreakService {
 
     await this.userRepo.updateUser(userId, { "stats.currentStreak": 0 });
 
+    let avocado: AvocadoResetGrowthResult | undefined;
+    if (this.avocadoService) {
+      try {
+        avocado = await this.avocadoService.resetGrowth(userId);
+      } catch (err) {
+        const logger = await import("firebase-functions/logger");
+        logger.warn("StreakService: avocado reset failed", err);
+      }
+    }
+
     return {
       updated: true,
       currentStreak: 0,
@@ -167,6 +196,7 @@ export class StreakService {
       longestStreak,
       lastStreakDate: lastStreakYmd,
       status: "streak_reset",
+      avocado,
     };
   }
 }

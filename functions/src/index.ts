@@ -18,8 +18,7 @@ setGlobalOptions({ region: "europe-west1" });
 
 // Import functions that need to be used in triggers (after initialization)
 // Import all functions from modules
-export { searchDecks } from "./searchFunctions";
-export { getSearchLogs } from "./searchFunctions";
+export { searchDecks, getSearchLogs } from "./handlers/searchHandlers";
 export {
   serverNow,
   getCurrentSeason,
@@ -42,7 +41,7 @@ export {
   isCurrentUserAdmin,
   getUserByUsername,
 } from "./handlers/userHandlers";
-export { scanDocument } from "./scanningFunctions";
+export { scanDocument } from "./handlers/fileProcessingHandlers";
 export {
   createDeckWithCards,
   updateUserStats,
@@ -89,7 +88,7 @@ export {
   notifyStreakBroken,
   notifySeasonEnd,
   onLeagueAdvance,
-} from "./notificationFunctions";
+} from "./handlers/notificationHandlers";
 export {
   getLeagueInfo,
   getUserGroup,
@@ -104,15 +103,14 @@ export {
 export {
   getAvocadoStatus,
   harvestAvocado,
-  getAvocadoConfigFn as getAvocadoConfig,
-} from "./avocadoFunctions";
+  getAvocadoConfig,
+} from "./handlers/avocadoHandlers";
 export {
   translateText,
   getTranslationLimit,
-} from "./translationFunctions";
-export { extractTextFromImage } from "./ocrFunctions";
-export { processFile } from "./processFileFunctions";
+} from "./handlers/translationHandlers";
+export { extractTextFromImage, processFile } from "./handlers/fileProcessingHandlers";
 export {
   avoQuery,
   getAvoQueryLimit,
-} from "./avoHelperFunctions";
+} from "./handlers/avoQueryHandlers";

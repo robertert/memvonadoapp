@@ -46,26 +46,26 @@ import {
   GetUserByUsernameResponseSchema,
 } from "memvocado-types/schemas/api/user";
 import { serializeTimestamps } from "../utils/serialization";
-import {
-  updateAvocadoGrowthInternal,
-  resetAvocadoGrowthInternal,
-} from "../avocadoFunctions";
 import { FirestoreCardRepository } from "../repositories/firestore/FirestoreCardRepository";
 import { FirestoreUserRepository } from "../repositories/firestore/FirestoreUserRepository";
 import { FirestoreStatsRepository } from "../repositories/firestore/FirestoreStatsRepository";
 import { FirestoreSeasonRepository } from "../repositories/firestore/FirestoreSeasonRepository";
+import { FirestoreAvocadoRepository } from "../repositories/firestore/FirestoreAvocadoRepository";
 import { CardProgressService } from "../services/CardProgressService";
 import { StreakService } from "../services/StreakService";
 import { UserService } from "../services/UserService";
 import { SeasonService } from "../services/SeasonService";
+import { AvocadoService } from "../services/AvocadoService";
 
 const cardRepo = new FirestoreCardRepository();
 const userRepo = new FirestoreUserRepository();
 const statsRepo = new FirestoreStatsRepository();
 const seasonRepo = new FirestoreSeasonRepository();
+const avocadoRepo = new FirestoreAvocadoRepository();
 
+const avocadoService = new AvocadoService(avocadoRepo);
 const progressService = new CardProgressService(cardRepo, userRepo, statsRepo);
-const streakService = new StreakService(userRepo);
+const streakService = new StreakService(userRepo, avocadoService);
 const userService = new UserService(userRepo);
 const seasonService = new SeasonService(seasonRepo, userRepo);
 
@@ -118,16 +118,6 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
       }));
     }
 
-    let avocadoWasReset = false;
-    let avocadoHadPendingHarvest = false;
-    try {
-      const avocadoResult = await resetAvocadoGrowthInternal({ userId });
-      avocadoWasReset = avocadoResult.wasReset;
-      avocadoHadPendingHarvest = avocadoResult.hadPendingHarvest;
-    } catch (avocadoErr) {
-      logger.warn("updateUserStreakOnLogin: avocado reset check failed", avocadoErr);
-    }
-
     const validatedResponse = UpdateUserStreakOnLoginResponseSchema.parse({
       updated: true,
       currentStreak: 0,
@@ -135,8 +125,8 @@ export const updateUserStreakOnLogin = onCall(async (request) => {
       longestStreak: streakResult.longestStreak,
       lastStreakDate: streakResult.lastStreakDate,
       status: "streak_reset",
-      avocadoWasReset,
-      avocadoHadPendingHarvest,
+      avocadoWasReset: streakResult.avocado?.wasReset,
+      avocadoHadPendingHarvest: streakResult.avocado?.hadPendingHarvest,
     });
     return serializeTimestamps(validatedResponse);
   } catch (error) {
@@ -177,17 +167,7 @@ export const updateUserStreakIfQualified = onCall(async (request) => {
     const threshold = await userService.getStreakThreshold();
     const streakResult = await streakService.updateStreakIfQualified(userId, threshold);
 
-    let avocadoResult = null;
-    if (streakResult.updated) {
-      try {
-        avocadoResult = await updateAvocadoGrowthInternal({
-          userId,
-          timeZone: streakResult.timeZone,
-        });
-      } catch (avocadoErr) {
-        logger.warn("updateUserStreakIfQualified: avocado growth update failed", avocadoErr);
-      }
-    }
+    const avocadoResult = streakResult.avocado;
 
     const validatedResponse = UpdateUserStreakIfQualifiedResponseSchema.parse({
       ...streakResult,
