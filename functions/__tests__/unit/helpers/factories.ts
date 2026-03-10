@@ -2,10 +2,13 @@ import type {
   Card,
   CardAlgo,
   FirstLearn,
+  Deck,
   DeckLearningData,
   User,
   DailyStats,
+  Notification,
 } from "memvocado-types";
+import type { AvocadoUserData } from "../../../src/repositories/interfaces/AvocadoRepository";
 
 export function makeCardAlgo(overrides?: Partial<CardAlgo>): CardAlgo {
   return {
@@ -106,6 +109,27 @@ export function makeUser(overrides?: Partial<User>): User {
   } as User;
 }
 
+export function makeSourceDeck(id = "deck-src-1", overrides?: Partial<Deck>): Deck {
+  return {
+    id,
+    title: "Test Source Deck",
+    title_lower: "test source deck",
+    category: null,
+    icon: "cards",
+    cardsNum: 0,
+    createdBy: "user-1",
+    createdAt: new Date(),
+    isPublic: true,
+    is_deleted: false,
+    updatedAt: new Date(),
+    tags: [],
+    frontLanguage: null,
+    backLanguage: null,
+    editors: [],
+    ...overrides,
+  } as Deck;
+}
+
 export function makeDailyStats(overrides?: Partial<DailyStats>): DailyStats {
   return {
     newCardsRemaining: 0,
@@ -115,6 +139,60 @@ export function makeDailyStats(overrides?: Partial<DailyStats>): DailyStats {
     completedNewToday: 0,
     completedDueToday: 0,
     lastUpdatedStats: new Date(),
+    ...overrides,
+  };
+}
+
+export function makeFirstLearnCard(id: string, overrides?: Partial<Card>): Card {
+  return {
+    id,
+    cardData: { front: `Front ${id}`, back: `Back ${id}` },
+    tags: [],
+    createdAt: new Date(),
+    firstLearn: makeFirstLearn({ isNew: false, isFirst: true }),
+    ...overrides,
+  };
+}
+
+export function makeNotification(overrides?: Partial<Notification>): Notification {
+  return {
+    id: "notif-1",
+    title: "Test Notification",
+    body: "Test body",
+    type: "info",
+    read: false,
+    createdAt: new Date(),
+    linkTo: null,
+    ...overrides,
+  };
+}
+
+export function makeAvocadoGrowth(overrides?: Partial<import("memvocado-types").AvocadoGrowth>): import("memvocado-types").AvocadoGrowth {
+  return {
+    currentPhase: 1,
+    consecutiveDays: 0,
+    lastGrowthDate: null,
+    totalHarvests: 0,
+    collectedSkins: [],
+    harvestHistory: [],
+    ...overrides,
+  };
+}
+
+export function makeAvocadoUserData(overrides?: Partial<AvocadoUserData>): AvocadoUserData {
+  return {
+    avocadoGrowth: makeAvocadoGrowth(),
+    settings: {
+      theme: "light",
+      notificationsEnabled: true,
+      dailyGoal: 10,
+      language: "en",
+      timeZone: "UTC",
+    },
+    dailyStats: {
+      completedNewToday: 0,
+      completedDueToday: 0,
+    },
     ...overrides,
   };
 }
