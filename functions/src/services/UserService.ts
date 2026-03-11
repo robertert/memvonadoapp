@@ -3,9 +3,20 @@ import type { UserSettings, User } from "memvocado-types";
 import type { UserRepository } from "../repositories/interfaces/UserRepository";
 import { formatYmdInTimeZone } from "../utils/dateUtils";
 
+/**
+ * Service for user profile and settings management.
+ * @class
+ */
 export class UserService {
+  /**
+   * @param {UserRepository} userRepo - User repository
+   */
   constructor(private readonly userRepo: UserRepository) {}
 
+  /**
+   * @param {string} userId - User ID
+   * @return {Promise<string | null>} Archived date string or null
+   */
   async archiveDailyStatsIfNeeded(userId: string): Promise<string | null> {
     const user = await this.userRepo.getUser(userId);
     if (!user) return null;
@@ -13,11 +24,20 @@ export class UserService {
     return this.userRepo.archiveDailyStatsIfNeeded(userId, user.dailyStats ?? null, tz);
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @param {boolean} isIncrement - True to increment, false to decrement
+   * @return {Promise<void>}
+   */
   async updateAllInOneStats(userId: string, isIncrement: boolean): Promise<void> {
     const amount = isIncrement ? (1 as const) : (-1 as const);
     await this.userRepo.incrementAllInOneStats(userId, amount);
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @return {Promise<object>} User progress data
+   */
   async getUserProgress(userId: string): Promise<{
     stats: Record<string, unknown>;
     recentSessions: unknown[];
@@ -26,15 +46,29 @@ export class UserService {
     return this.userRepo.getUserProgress(userId);
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @return {Promise<UserSettings>} User settings
+   */
   async getUserSettings(userId: string): Promise<UserSettings> {
     return this.userRepo.getUserSettings(userId);
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @param {UserSettings} settings - Settings to save
+   * @return {Promise<void>}
+   */
   async updateUserSettings(userId: string, settings: UserSettings): Promise<void> {
     await this.userRepo.setUserSettings(userId, settings);
     logger.info("User settings updated", { userId });
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @param {number} weeks - Number of weeks to include
+   * @return {Promise<Array<*>>} Activity heatmap data
+   */
   async getActivityHeatmap(
     userId: string,
     weeks: number
@@ -81,10 +115,19 @@ export class UserService {
     return heatmapData;
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @return {Promise<Array<Record<string, unknown>>>} User awards
+   */
   async getUserAwards(userId: string): Promise<Array<Record<string, unknown>>> {
     return this.userRepo.getUserAwards(userId);
   }
 
+  /**
+   * @param {string} callerId - Caller user ID
+   * @param {string} targetUserId - Target user ID
+   * @return {Promise<object>} Public profile and follow state
+   */
   async getPublicUserProfile(
     callerId: string,
     targetUserId: string
@@ -97,6 +140,11 @@ export class UserService {
     return { user, isFollowing };
   }
 
+  /**
+   * @param {string} callerId - Caller user ID
+   * @param {string} targetUserId - Target user ID
+   * @return {Promise<{ isFollowing: boolean }>} New follow state
+   */
   async toggleFollow(
     callerId: string,
     targetUserId: string
@@ -108,15 +156,26 @@ export class UserService {
     return this.userRepo.toggleFollow(callerId, targetUserId);
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @return {Promise<boolean>} True if user is admin
+   */
   async isAdmin(userId: string): Promise<boolean> {
     return this.userRepo.isAdmin(userId);
   }
 
+  /**
+   * @param {string} username - Username to look up
+   * @return {Promise<string | null>} User ID or null
+   */
   async findByUsername(username: string): Promise<string | null> {
     const normalized = username.trim().toLowerCase();
     return this.userRepo.findByUsername(normalized);
   }
 
+  /**
+   * @return {Promise<number>} Streak threshold value
+   */
   async getStreakThreshold(): Promise<number> {
     return this.userRepo.getStreakThreshold();
   }

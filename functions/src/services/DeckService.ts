@@ -18,6 +18,11 @@ import type { UserRepository } from "../repositories/interfaces/UserRepository";
  * Depends only on repository interfaces — no Firebase imports.
  */
 export class DeckService {
+  /**
+   * @param {DeckRepository} deckRepo - Deck repository
+   * @param {CardRepository} cardRepo - Card repository
+   * @param {UserRepository} userRepo - User repository
+   */
   constructor(
     protected readonly deckRepo: DeckRepository,
     protected readonly cardRepo: CardRepository,
@@ -30,6 +35,10 @@ export class DeckService {
    * Throws Error("permission-denied: ...") if userId does not satisfy the
    * requested role on deck. Calls userRepo.isAdmin lazily (only when primary
    * check fails), so the extra Firestore read is avoided in the common case.
+   * @param {string} userId - User ID to check
+   * @param {Deck} deck - Source deck
+   * @param {"owner" | "editor" | "owner-or-editor"} role - Required role
+   * @return {Promise<void>}
    */
   private async checkDeckPermission(
     userId: string,
@@ -56,6 +65,9 @@ export class DeckService {
   /**
    * Copy a source deck into a user's learning collection.
    * Creates the DeckLearningData document and bulk-copies all cards.
+   * @param {string} userId - User ID
+   * @param {string} deckId - Source deck ID
+   * @return {Promise<DeckLearningData>} The user's deck learning data
    */
   async copyDeck(userId: string, deckId: string): Promise<DeckLearningData> {
     const srcDeck = await this.deckRepo.getSourceDeck(deckId);
@@ -88,6 +100,9 @@ export class DeckService {
    * Sync card changes from a source deck to a user's learning copy.
    * Adds new cards and updates existing card content.
    * @deprecated Use syncCards() for the full handler-level sync.
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @return {Promise<void>}
    */
   async syncDeck(userId: string, deckId: string): Promise<void> {
     const [sourceCards, userCards, srcDeck] = await Promise.all([
@@ -140,6 +155,9 @@ export class DeckService {
 
   /**
    * Reset all learning progress for a user's deck (clears card progress + dailyStats).
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @return {Promise<void>}
    */
   async resetDeck(userId: string, deckId: string): Promise<void> {
     await this.cardRepo.bulkResetCards(userId, deckId);
@@ -150,6 +168,10 @@ export class DeckService {
   /**
    * Create a source deck with its cards (batched).
    * Returns the new deck ID.
+   * @param {string} userId - User ID (deck creator)
+   * @param {object} deckData - Deck metadata
+   * @param {CardCore[]} inputCards - Initial card list
+   * @return {Promise<string>} ID of the created deck
    */
   async createDeckWithCards(
     userId: string,
@@ -199,6 +221,10 @@ export class DeckService {
   /**
    * Fan-out metadata changes from a source deck to all user copies.
    * Computes the diff of changed fields and delegates to the repo.
+   * @param {string} deckId - Source deck ID
+   * @param {Partial<Deck> | null | undefined} beforeData - Previous deck data
+   * @param {Deck} afterData - Updated deck data
+   * @return {Promise<void>}
    */
   async syncMetadata(
     deckId: string,
@@ -252,6 +278,10 @@ export class DeckService {
   /**
    * Update source deck settings (owner or admin only).
    * Writes only fields that actually changed.
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @param {Partial<Deck>} deckUpdate - Fields to update
+   * @return {Promise<void>}
    */
   async updateDeckSettings(
     userId: string,
@@ -307,6 +337,9 @@ export class DeckService {
   /**
    * Diff source deck cards against the user's local copy.
    * Returns the list of changes without modifying any data.
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @return {Promise<Array<*>>} List of card changes
    */
   async checkCardChanges(
     userId: string,
@@ -391,6 +424,10 @@ export class DeckService {
    * Sync source deck cards into a user's learning copy.
    * syncAll = true: add new, update existing, delete removed.
    * syncAll = false: update only the specified cardIds.
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @param {object} opts - Sync options
+   * @return {Promise<object>} Number of synced cards
    */
   async syncCards(
     userId: string,
@@ -483,6 +520,11 @@ export class DeckService {
   /**
    * Update a source deck's metadata and apply card changes.
    * Owner/editor/admin only; editors cannot change deck metadata.
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @param {object} deckData - Updated deck metadata
+   * @param {object} changes - Card create/update/delete operations
+   * @return {Promise<object>} Operation counts
    */
   async updateDeck(
     userId: string,
@@ -565,6 +607,11 @@ export class DeckService {
   /**
    * Update the content (cardData + tags) of a single source deck card.
    * Owner/editor/admin only. Also updates the user's own learning copy if it exists.
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @param {string} cardId - Card ID
+   * @param {object} data - Updated card data
+   * @return {Promise<void>}
    */
   async updateCardContent(
     userId: string,
@@ -600,6 +647,9 @@ export class DeckService {
   /**
    * Toggle like on a deck.
    * Sends a one-time notification to the deck creator when liked for the first time.
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @return {Promise<object>} Updated like state
    */
   async toggleLike(
     userId: string,
@@ -638,6 +688,10 @@ export class DeckService {
   /**
    * Add a single card to either the source deck (if owner/editor) or the user's learning copy.
    * Returns the generated card ID.
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @param {object} cardData - Card content
+   * @return {Promise<string>} ID of the created card
    */
   async addCard(
     userId: string,
@@ -672,6 +726,9 @@ export class DeckService {
 
   /**
    * Soft-delete a source deck and notify all users who are learning it.
+   * @param {string} userId - User ID (must be owner)
+   * @param {string} deckId - Deck ID to delete
+   * @return {Promise<object>} Number of notified users
    */
   async deleteDeck(
     userId: string,
@@ -706,6 +763,9 @@ export class DeckService {
 
   /**
    * Record a unique view for userId on the deck.
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @return {Promise<void>}
    */
   async recordView(userId: string, deckId: string): Promise<void> {
     await this.deckRepo.recordView(deckId, userId);
@@ -713,6 +773,10 @@ export class DeckService {
 
   /**
    * Add an editor to a deck (owner-only; verifies that the target user exists).
+   * @param {string} callerId - Caller user ID (must be owner)
+   * @param {string} deckId - Deck ID
+   * @param {string} editorId - User ID to add as editor
+   * @return {Promise<void>}
    */
   async addDeckEditor(
     callerId: string,
@@ -733,6 +797,10 @@ export class DeckService {
 
   /**
    * Remove an editor from a deck (owner-only).
+   * @param {string} callerId - Caller user ID (must be owner)
+   * @param {string} deckId - Deck ID
+   * @param {string} editorId - User ID to remove as editor
+   * @return {Promise<void>}
    */
   async removeDeckEditor(
     callerId: string,

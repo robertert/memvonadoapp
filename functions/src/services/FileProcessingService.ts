@@ -97,18 +97,30 @@ const TEXT_CHUNK_SIZE = 12000;
 const TEXT_CHUNK_OVERLAP = 500;
 
 // ── Helpers ───────────────────────────────────────────────────────────
+/**
+ * @param {string} storagePath - Storage path or full gs:// URI
+ * @return {string} Full gs:// URI
+ */
 function buildGsUri(storagePath: string): string {
   return storagePath.startsWith("gs://")
     ? storagePath
     : `gs://${process.env.GCLOUD_PROJECT}.appspot.com/${storagePath}`;
 }
 
+/**
+ * @param {string} storagePath - Storage path to download
+ * @return {Promise<Buffer>} File buffer
+ */
 async function downloadFile(storagePath: string): Promise<Buffer> {
   const bucket = admin.storage().bucket();
   const [fileBuffer] = await bucket.file(storagePath).download();
   return fileBuffer;
 }
 
+/**
+ * @param {string} text - Text to split
+ * @return {string[]} Array of overlapping text chunks
+ */
 function splitTextIntoChunks(text: string): string[] {
   const chunks: string[] = [];
   const step = TEXT_CHUNK_SIZE - TEXT_CHUNK_OVERLAP;
@@ -119,19 +131,31 @@ function splitTextIntoChunks(text: string): string[] {
   return chunks;
 }
 
+/**
+ * @param {GeminiResponseType[]} results - Array of chunk results to merge
+ * @return {GeminiResponseType} Merged result with deduplicated flashcards
+ */
 function mergeChunkResults(results: GeminiResponseType[]): GeminiResponseType {
   const allFlashcards: GeminiResponseType["flashcards"] = [];
   const seen = new Set<string>();
   for (const r of results) {
     for (const card of r.flashcards) {
       const key = card.front.trim().toLowerCase();
-      if (!seen.has(key)) { seen.add(key); allFlashcards.push(card); }
+      if (!seen.has(key)) {
+ seen.add(key); allFlashcards.push(card);
+}
     }
   }
   const lastMeta = results[results.length - 1]?.meta;
   return { meta: lastMeta || { detected_topic: "Dokument", detected_mode: "concept" }, flashcards: allFlashcards };
 }
 
+/**
+ * @param {string} sourceType - Source type label (e.g. "DOKUMENT_PDF")
+ * @param {DetailLevel} detail - Detail level for flashcard generation
+ * @param {string | null} [hint] - Optional user hint
+ * @return {string} Chain-of-thought prompt string
+ */
 function buildCoTPrompt(sourceType: string, detail: DetailLevel, hint?: string | null): string {
   return `
 Jesteś bezwzględnym "Ekstraktorem Wiedzy" do tworzenia fiszek (Anki). Twoim celem jest MAKSYMALIZACJA liczby fiszek przy zachowaniu wysokiej jakości. Twoim wrogiem jest streszczanie.
@@ -164,12 +188,25 @@ FORMAT WYJŚCIOWY — JSON:
 `.trim();
 }
 
+/**
+ * @param {string} responseText - Raw JSON response text from Gemini
+ * @return {GeminiResponseType} Parsed Gemini response
+ */
 function parseCoTResponse(responseText: string): GeminiResponseType {
   const parsed = GeminiCoTResponseSchema.parse(JSON.parse(responseText));
   logger.info("CoT planning", { mode: parsed.planning.detected_mode, topic: parsed.planning.detected_topic, targetCount: parsed.planning.target_count, actualCount: parsed.flashcards.length });
   return { meta: parsed.meta, flashcards: parsed.flashcards };
 }
 
+/**
+ * @param {string} text - Text chunk to process
+ * @param {string} sourceType - Source type label
+ * @param {DetailLevel} detail - Detail level
+ * @param {number} chunkIndex - Index of this chunk
+ * @param {number} totalChunks - Total number of chunks
+ * @param {string | null} [hint] - Optional user hint
+ * @return {Promise<GeminiResponseType>} Gemini response for this chunk
+ */
 async function processTextChunkWithGemini(text: string, sourceType: string, detail: DetailLevel, chunkIndex: number, totalChunks: number, hint?: string | null): Promise<GeminiResponseType> {
   const model = vertexAI.getGenerativeModel({ model: "gemini-2.0-flash-001", generationConfig: { responseMimeType: "application/json", temperature: 0.2, responseSchema: outputSchema } });
   const prompt = buildCoTPrompt(sourceType, detail, hint);
@@ -182,6 +219,13 @@ async function processTextChunkWithGemini(text: string, sourceType: string, deta
   return parseCoTResponse(responseText);
 }
 
+/**
+ * @param {string} text - Full text to process (may be chunked)
+ * @param {string} sourceType - Source type label
+ * @param {DetailLevel} [detail] - Detail level (default "medium")
+ * @param {string | null} [hint] - Optional user hint
+ * @return {Promise<GeminiResponseType>} Merged Gemini response
+ */
 async function processTextWithGemini(text: string, sourceType: string, detail: DetailLevel = "medium", hint?: string | null): Promise<GeminiResponseType> {
   if (text.length <= TEXT_CHUNK_SIZE) return processTextChunkWithGemini(text, sourceType, detail, 0, 1, hint);
   const chunks = splitTextIntoChunks(text);
@@ -190,6 +234,13 @@ async function processTextWithGemini(text: string, sourceType: string, detail: D
   return mergeChunkResults(results);
 }
 
+/**
+ * @param {object} filePart - File part for Gemini multimodal input
+ * @param {string} sourceType - Source type label
+ * @param {DetailLevel} detail - Detail level
+ * @param {string | null} [hint] - Optional user hint
+ * @return {Promise<GeminiResponseType>} Gemini response
+ */
 async function processMultimodalCoT(filePart: { fileData: { fileUri: string; mimeType: string } }, sourceType: string, detail: DetailLevel, hint?: string | null): Promise<GeminiResponseType> {
   const model = vertexAI.getGenerativeModel({ model: "gemini-2.0-flash-001", generationConfig: { responseMimeType: "application/json", temperature: 0.2, responseSchema: outputSchema } });
   const prompt = buildCoTPrompt(sourceType, detail, hint);
@@ -199,6 +250,15 @@ async function processMultimodalCoT(filePart: { fileData: { fileUri: string; mim
   return parseCoTResponse(responseText);
 }
 
+/**
+ * @param {Buffer} pdfBuffer - PDF chunk buffer
+ * @param {string} sourceType - Source type label
+ * @param {number} chunkIndex - Index of this chunk
+ * @param {number} totalChunks - Total number of chunks
+ * @param {DetailLevel} detail - Detail level
+ * @param {string | null} [hint] - Optional user hint
+ * @return {Promise<GeminiResponseType>} Gemini response for this PDF chunk
+ */
 async function processInlinePdfChunk(pdfBuffer: Buffer, sourceType: string, chunkIndex: number, totalChunks: number, detail: DetailLevel, hint?: string | null): Promise<GeminiResponseType> {
   const model = vertexAI.getGenerativeModel({ model: "gemini-2.0-flash-001", generationConfig: { responseMimeType: "application/json", temperature: 0.2, responseSchema: outputSchema } });
   const prompt = buildCoTPrompt(sourceType, detail, hint);
@@ -210,6 +270,10 @@ async function processInlinePdfChunk(pdfBuffer: Buffer, sourceType: string, chun
   return parseCoTResponse(responseText);
 }
 
+/**
+ * @param {Buffer} fileBuffer - Full PDF file buffer
+ * @return {Promise<object>} PDF chunks and total page count
+ */
 async function splitPdfIntoChunks(fileBuffer: Buffer): Promise<{ chunks: Buffer[]; pageCount: number }> {
   const { PDFDocument } = await import("pdf-lib");
   const srcDoc = await PDFDocument.load(fileBuffer);
@@ -230,7 +294,16 @@ async function splitPdfIntoChunks(fileBuffer: Buffer): Promise<{ chunks: Buffer[
 }
 
 // ── Service class ─────────────────────────────────────────────────────
+/**
+ * Service for processing uploaded files and generating flashcards via AI.
+ * @class
+ */
 export class FileProcessingService {
+  /**
+   * @param {string} mimeType - MIME type of the file
+   * @param {string} [fileName] - Optional file name for extension-based fallback
+   * @return {Promise<FileType>} Classified file type
+   */
   async classifyFile(mimeType: string, fileName?: string): Promise<FileType> {
     const mime = mimeType.toLowerCase();
     if (mime.startsWith("image/")) return "IMAGE";
@@ -241,11 +314,17 @@ export class FileProcessingService {
     if (fileName) {
       const ext = fileName.slice(fileName.lastIndexOf(".")).toLowerCase();
       const fromExt = EXTENSION_TO_FILE_TYPE[ext];
-      if (fromExt) { logger.info("classifyFile: MIME miss, matched by extension", { mimeType, fileName, resolvedType: fromExt }); return fromExt; }
+      if (fromExt) {
+ logger.info("classifyFile: MIME miss, matched by extension", { mimeType, fileName, resolvedType: fromExt }); return fromExt;
+}
     }
     throw new HttpsError("invalid-argument", `Nieobsługiwany typ pliku: ${mimeType}${fileName ? ` (${fileName})` : ""}. ${SUPPORTED_FORMATS_LABEL}`);
   }
 
+  /**
+   * @param {object} params - File processing parameters
+   * @return {Promise<object>} Extracted meta and flashcards
+   */
   async processFile(params: { storagePath: string; mimeType: string; hint?: string | null; fileName?: string; detail: DetailLevel }): Promise<{
     meta: { detected_topic: string; detected_mode: string; source_type: string };
     flashcards: Array<{ front: string; back: string; tags: string[] }>;
@@ -319,6 +398,10 @@ export class FileProcessingService {
     return { meta: { ...result.meta, source_type: fileType }, flashcards: result.flashcards };
   }
 
+  /**
+   * @param {object} params - Document scan parameters
+   * @return {Promise<object>} Extracted flashcards
+   */
   async scanDocument(params: { storagePath: string; mimeType?: string }): Promise<{ flashcards: Array<{ front: string; back: string }> }> {
     const { storagePath, mimeType = "application/pdf" } = params;
     const model = vertexAI.getGenerativeModel({ model: "gemini-2.0-flash-001", generationConfig: { responseMimeType: "application/json" } });
@@ -343,6 +426,10 @@ TRYB B: DOKUMENT OPISOWY / CIĄGŁY — głęboka ekstrakcja wiedzy, zasada atom
     return flashcardsSchema.parse(flashcardsData);
   }
 
+  /**
+   * @param {object} params - Image extraction parameters
+   * @return {Promise<object>} OCR result
+   */
   async extractTextFromImage(params: { storagePath: string; mimeType?: string }): Promise<{ success: boolean; text: string | null; error: string | null }> {
     const { storagePath, mimeType = "image/jpeg" } = params;
     try {

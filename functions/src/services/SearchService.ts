@@ -3,12 +3,24 @@ import type { Deck, SearchFilters, SearchLog } from "memvocado-types";
 import type { DeckRepository } from "../repositories/interfaces/DeckRepository";
 import type { UserRepository } from "../repositories/interfaces/UserRepository";
 
+/**
+ * Service for searching decks and logging search activity.
+ * @class
+ */
 export class SearchService {
+  /**
+   * @param {DeckRepository} deckRepo - Deck repository
+   * @param {UserRepository} userRepo - User repository
+   */
   constructor(
     private readonly deckRepo: DeckRepository,
     private readonly userRepo: UserRepository
   ) {}
 
+  /**
+   * @param {object} params - Search parameters
+   * @return {Promise<object>} Search results
+   */
   async searchDecks(params: {
     searchText?: string;
     filters?: SearchFilters;
@@ -30,6 +42,13 @@ export class SearchService {
     return { results, total: results.length };
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @param {string} searchText - Search query text
+   * @param {number} resultsCount - Number of results returned
+   * @param {SearchFilters} [filters] - Optional search filters
+   * @return {Promise<void>}
+   */
   async logSearch(
     userId: string,
     searchText: string,
@@ -46,6 +65,10 @@ export class SearchService {
     await this.userRepo.addSearchLog(userId, log);
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @return {Promise<SearchLog[]>} Search logs for the user
+   */
   async getSearchLogs(userId: string): Promise<SearchLog[]> {
     return this.userRepo.getSearchLogs(userId);
   }

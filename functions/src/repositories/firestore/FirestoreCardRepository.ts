@@ -289,6 +289,11 @@ export class FirestoreCardRepository implements CardRepository {
 
   // ── New methods ─────────────────────────────────────────────────────────
 
+  /**
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @return {Promise<void>}
+   */
   async bulkResetCards(userId: string, deckId: string): Promise<void> {
     const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
     const cardsSnap = await deckRef.collection("cards").get();
@@ -321,6 +326,13 @@ export class FirestoreCardRepository implements CardRepository {
     if (count > 0) await batch.commit();
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @param {object} ops - Upsert, update, and delete operations
+   * @param {Record<string, unknown>} deckUpdate - Deck metadata update
+   * @return {Promise<void>}
+   */
   async bulkSyncUserCards(
     userId: string,
     deckId: string,
@@ -379,6 +391,11 @@ export class FirestoreCardRepository implements CardRepository {
     if (count > 0) await flush();
   }
 
+  /**
+   * @param {string} deckId - Source deck ID
+   * @param {object} changes - Created, updated, and deleted card operations
+   * @return {Promise<void>}
+   */
   async applySourceCardChanges(
     deckId: string,
     changes: {
@@ -445,6 +462,12 @@ export class FirestoreCardRepository implements CardRepository {
     if (count > 0) await flush();
   }
 
+  /**
+   * @param {string} deckId - Source deck ID
+   * @param {string} cardId - Card ID
+   * @param {object} data - Updated card data
+   * @return {Promise<void>}
+   */
   async updateSourceCard(
     deckId: string,
     cardId: string,
@@ -456,6 +479,13 @@ export class FirestoreCardRepository implements CardRepository {
     await ref.update({ cardData: data.cardData, tags: data.tags });
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @param {string} cardId - Card ID
+   * @param {object} data - Updated card data
+   * @return {Promise<void>}
+   */
   async updateUserCardIfExists(
     userId: string,
     deckId: string,
@@ -468,6 +498,12 @@ export class FirestoreCardRepository implements CardRepository {
     await ref.update({ cardData: data.cardData, tags: data.tags });
   }
 
+  /**
+   * @param {string} deckId - Source deck ID
+   * @param {number} limit - Max cards per page
+   * @param {string} [startAfterId] - Cursor card ID for pagination
+   * @return {Promise<object>} Paginated cards with hasMore and lastDocId
+   */
   async getSourceDeckCardsPaginated(
     deckId: string,
     limit: number,
@@ -495,6 +531,13 @@ export class FirestoreCardRepository implements CardRepository {
     };
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @param {number} limit - Max cards per page
+   * @param {string} [startAfterId] - Cursor card ID for pagination
+   * @return {Promise<object>} Paginated cards with hasMore and lastDocId
+   */
   async getUserDeckCardsPaginated(
     userId: string,
     deckId: string,

@@ -7,10 +7,16 @@ const translationClient = new TranslationServiceClient();
 const PROJECT_ID = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || "memvocado";
 const LOCATION = "global";
 
+/**
+ * @return {string} Today's date as YYYY-MM-DD
+ */
 function getTodayDateString(): string {
   return new Date().toISOString().split("T")[0];
 }
 
+/**
+ * @return {string} ISO string of tomorrow midnight UTC
+ */
 function getTomorrowMidnightUTC(): string {
   const tomorrow = new Date();
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
@@ -18,9 +24,20 @@ function getTomorrowMidnightUTC(): string {
   return tomorrow.toISOString();
 }
 
+/**
+ * Service for text translation with daily usage limits.
+ * @class
+ */
 export class TranslationService {
+  /**
+   * @param {UsageRepository} usageRepo - Usage repository
+   */
   constructor(private readonly usageRepo: UsageRepository) {}
 
+  /**
+   * @param {string} userId - User ID
+   * @return {Promise<object>} Current translation limit status
+   */
   async getLimit(userId: string): Promise<{
     usedToday: number;
     remainingToday: number;
@@ -40,6 +57,10 @@ export class TranslationService {
     };
   }
 
+  /**
+   * @param {object} params - Translation parameters
+   * @return {Promise<object>} Translation result
+   */
   async translate(params: {
     userId: string;
     text: string;

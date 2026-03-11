@@ -53,9 +53,20 @@ export interface AvocadoResetGrowthResult {
   previousDays: number;
 }
 
+/**
+ * Service for avocado growth and harvest logic.
+ * @class
+ */
 export class AvocadoService {
+  /**
+   * @param {AvocadoRepository} repo - Avocado repository
+   */
   constructor(private readonly repo: AvocadoRepository) {}
 
+  /**
+   * @param {AvocadoSkinConfig[]} skins - Available skins with weights
+   * @return {AvocadoSkinConfig} Randomly selected skin
+   */
   private rollGacha(skins: AvocadoSkinConfig[]): AvocadoSkinConfig {
     const totalWeight = skins.reduce((sum, s) => sum + s.weight, 0);
     let random = Math.random() * totalWeight;
@@ -66,6 +77,9 @@ export class AvocadoService {
     return skins[0];
   }
 
+  /**
+   * @return {Promise<AvocadoConfig>} Avocado config, falling back to defaults
+   */
   async getConfig(): Promise<AvocadoConfig> {
     try {
       const config = await this.repo.getAvocadoConfig();
@@ -75,6 +89,10 @@ export class AvocadoService {
     }
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @return {Promise<object>} Current avocado growth status
+   */
   async getStatus(userId: string): Promise<{
     currentPhase: number;
     consecutiveDays: number;
@@ -128,6 +146,10 @@ export class AvocadoService {
     };
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @return {Promise<object>} Harvest result with awarded skin
+   */
   async harvest(userId: string): Promise<{
     success: boolean;
     awardedSkin: { id: string; name: string; rarity: string; obtainedAt: Date };
@@ -175,6 +197,11 @@ export class AvocadoService {
     };
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @param {string} timeZone - User's time zone
+   * @return {Promise<AvocadoUpdateGrowthResult>} Growth update result
+   */
   async updateGrowth(userId: string, timeZone: string): Promise<AvocadoUpdateGrowthResult> {
     const userData = await this.repo.getUser(userId);
     if (!userData) throw new Error("User not found");
@@ -214,6 +241,10 @@ export class AvocadoService {
     return { updated: true, previousPhase, currentPhase: newPhase, consecutiveDays: currentDays, canHarvest: currentDays >= AVOCADO_TOTAL_DAYS };
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @return {Promise<AvocadoResetGrowthResult>} Reset result
+   */
   async resetGrowth(userId: string): Promise<AvocadoResetGrowthResult> {
     const userData = await this.repo.getUser(userId);
     if (!userData) throw new Error("User not found");

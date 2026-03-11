@@ -8,10 +8,20 @@ const vertexAI = new VertexAI({
   location: "us-central1",
 });
 
+/**
+ * @return {string} Today's date as YYYY-MM-DD
+ */
 function getTodayDateString(): string {
   return new Date().toISOString().split("T")[0];
 }
 
+/**
+ * @param {string} chipType - Query chip type (e.g. "explain_answer", "mnemonic")
+ * @param {object} cardContext - Card context data
+ * @param {string} responseLanguage - Language code for the response
+ * @param {string | null} [customQuestion] - Optional custom question text
+ * @return {string} Prompt string for Gemini
+ */
 function buildAvoQueryPrompt(
   chipType: string,
   cardContext: { front: string; back: string; tags: string[]; deckName: string; frontLanguage?: string; backLanguage?: string },
@@ -59,14 +69,28 @@ Languages: Front=${cardContext.frontLanguage || "Auto"}, Back=${cardContext.back
   }
 }
 
+/**
+ * Service for AVO AI query functionality.
+ * @class
+ */
 export class AvoQueryService {
+  /**
+   * @param {UsageRepository} usageRepo - Usage repository
+   */
   constructor(private readonly usageRepo: UsageRepository) {}
 
+  /**
+   * @return {Promise<number>} Daily AVO query limit
+   */
   private async getDailyLimit(): Promise<number> {
     const limit = await this.usageRepo.getAdminLimit("dailyAVOQueryLimit");
     return limit || DAILY_AVO_QUERY_LIMIT;
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @return {Promise<object>} Limit info with usedToday, remainingToday, dailyLimit, and isLimitReached
+   */
   async getLimit(userId: string): Promise<{
     usedToday: number;
     remainingToday: number;
@@ -82,6 +106,10 @@ export class AvoQueryService {
     return { usedToday, remainingToday, dailyLimit, isLimitReached: remainingToday === 0 };
   }
 
+  /**
+   * @param {object} params - Query parameters
+   * @return {Promise<object>} Query result with answer, remainingToday, and isLimitReached
+   */
   async query(params: {
     userId: string;
     chipType: string;

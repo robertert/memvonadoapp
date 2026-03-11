@@ -15,6 +15,7 @@ const db = getFirestore();
 
 /**
  * Compute the current Monday-to-Sunday weekly window and derive a seasonId.
+ * @return {object} Season window with seasonId, startAt, endAt, and status
  */
 function computeWindow(): {
   seasonId: string;
@@ -45,13 +46,23 @@ const UserLeagueUpdateSchema = UserSchema.pick({
   currentGroupId: true,
 }).partial();
 
+/**
+ * Firestore-backed implementation of SeasonRepository.
+ * @class
+ */
 export class FirestoreSeasonRepository implements SeasonRepository {
+  /**
+   * @return {Promise<GetCurrentSeasonResponse | null>} Current season or null
+   */
   async getCurrentSeason(): Promise<GetCurrentSeasonResponse | null> {
     const snap = await db.doc("ranking/currentSeason").get();
     if (!snap.exists) return null;
     return GetCurrentSeasonResponseSchema.parse(snap.data() || {});
   }
 
+  /**
+   * @return {Promise<GetCurrentSeasonResponse>} Current or newly initialized season
+   */
   async getOrInitializeSeason(): Promise<GetCurrentSeasonResponse> {
     const seasonRef = db.doc("ranking/currentSeason");
     const snap = await seasonRef.get();
@@ -68,6 +79,11 @@ export class FirestoreSeasonRepository implements SeasonRepository {
     return GetCurrentSeasonResponseSchema.parse(snap.data() || {});
   }
 
+  /**
+   * @param {string} seasonId - Season ID
+   * @param {string} userId - User ID
+   * @return {Promise<SeasonUserPoints | null>} User season points or null
+   */
   async getUserSeasonPoints(
     seasonId: string,
     userId: string
@@ -79,6 +95,10 @@ export class FirestoreSeasonRepository implements SeasonRepository {
     return SeasonUserPointsSchema.parse(snap.data() || {});
   }
 
+  /**
+   * @param {object} params - Points submission params
+   * @return {Promise<void>}
+   */
   async submitPoints(params: {
     userId: string;
     delta: number;
@@ -214,6 +234,10 @@ export class FirestoreSeasonRepository implements SeasonRepository {
     logger.info("Points submitted", { userId, delta, seasonId, groupId });
   }
 
+  /**
+   * @param {string} seasonId - Season ID
+   * @return {Promise<void>}
+   */
   async publishLeaderboardSnapshot(seasonId: string): Promise<void> {
     const usersSnap = await db
       .collection(`seasonUserPoints/${seasonId}/users`)
@@ -237,6 +261,11 @@ export class FirestoreSeasonRepository implements SeasonRepository {
     );
   }
 
+  /**
+   * @param {string} currentSeasonId - Current season ID
+   * @param {Date} currentEndAt - End date of the current season
+   * @return {Promise<string>} New season ID
+   */
   async rollOverSeason(
     currentSeasonId: string,
     currentEndAt: Date

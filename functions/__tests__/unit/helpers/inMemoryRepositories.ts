@@ -4,6 +4,7 @@ import type {
   Deck,
   DeckLearningData,
   Following,
+  GetCurrentSeasonResponse,
   LeagueGroup,
   Notification,
   NotificationCreate,
@@ -29,6 +30,8 @@ import type {
   AvocadoRepository,
   AvocadoUserData,
 } from "../../../src/repositories/interfaces/AvocadoRepository";
+import type { UsageRepository } from "../../../src/repositories/interfaces/UsageRepository";
+import type { SeasonRepository } from "../../../src/repositories/interfaces/SeasonRepository";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -816,6 +819,107 @@ export class InMemoryNotificationRepository implements NotificationRepository {
       );
       this.notifications.set(userId, updated);
     }
+  }
+}
+
+// ── InMemoryUsageRepository ───────────────────────────────────────────────────
+
+export class InMemoryUsageRepository implements UsageRepository {
+  private data = new Map<string, number>(); // key: `${userId}/${date}`
+  private adminLimits = new Map<string, number>(); // key: limit key
+
+  seed(userId: string, date: string, count: number): void {
+    this.data.set(`${userId}/${date}`, count);
+  }
+
+  setAdminLimit(key: string, value: number): void {
+    this.adminLimits.set(key, value);
+  }
+
+  async getUsage(userId: string, date: string): Promise<number> {
+    return this.data.get(`${userId}/${date}`) ?? 0;
+  }
+
+  async incrementUsage(userId: string, date: string): Promise<number> {
+    const key = `${userId}/${date}`;
+    const current = this.data.get(key) ?? 0;
+    const newCount = current + 1;
+    this.data.set(key, newCount);
+    return newCount;
+  }
+
+  async getAdminLimit(key: string): Promise<number> {
+    return this.adminLimits.get(key) ?? 0;
+  }
+}
+
+// ── InMemorySeasonRepository ──────────────────────────────────────────────────
+
+export class InMemorySeasonRepository implements SeasonRepository {
+  private currentSeason: GetCurrentSeasonResponse | null = null;
+  private nextSeasonId = "season-next-1";
+  private userPoints = new Map<string, SeasonUserPoints>(); // key: `${seasonId}/${userId}`
+  snapshotsPublished: string[] = [];
+
+  seed(season: GetCurrentSeasonResponse): void {
+    this.currentSeason = season;
+  }
+
+  setNextSeasonId(id: string): void {
+    this.nextSeasonId = id;
+  }
+
+  seedUserPoints(seasonId: string, userId: string, points: SeasonUserPoints): void {
+    this.userPoints.set(`${seasonId}/${userId}`, points);
+  }
+
+  async getCurrentSeason(): Promise<GetCurrentSeasonResponse | null> {
+    return this.currentSeason;
+  }
+
+  async getOrInitializeSeason(): Promise<GetCurrentSeasonResponse> {
+    if (this.currentSeason) return this.currentSeason;
+    const now = new Date();
+    const end = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    this.currentSeason = {
+      seasonId: "season-auto-1",
+      startAt: now,
+      endAt: end,
+      status: "active",
+    };
+    return this.currentSeason;
+  }
+
+  async getUserSeasonPoints(seasonId: string, userId: string): Promise<SeasonUserPoints | null> {
+    return this.userPoints.get(`${seasonId}/${userId}`) ?? null;
+  }
+
+  async submitPoints(params: {
+    userId: string;
+    delta: number;
+    seasonId: string;
+    userLeague: number;
+  }): Promise<void> {
+    const key = `${params.seasonId}/${params.userId}`;
+    const existing = this.userPoints.get(key);
+    this.userPoints.set(key, {
+      points: (existing?.points ?? 0) + params.delta,
+      league: existing?.league ?? params.userLeague,
+      groupId: existing?.groupId,
+      lastActivityAt: new Date(),
+    });
+  }
+
+  async publishLeaderboardSnapshot(seasonId: string): Promise<void> {
+    this.snapshotsPublished.push(seasonId);
+  }
+
+  async rollOverSeason(_currentSeasonId: string, _currentEndAt: Date): Promise<string> {
+    const newId = this.nextSeasonId;
+    const now = new Date();
+    const end = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    this.currentSeason = { seasonId: newId, startAt: now, endAt: end, status: "active" };
+    return newId;
   }
 }
 

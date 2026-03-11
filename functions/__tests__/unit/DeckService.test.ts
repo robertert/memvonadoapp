@@ -413,4 +413,175 @@ describe("DeckService.addCard", () => {
       service.addCard("stranger", "d1", { front: "F", back: "B" })
     ).rejects.toThrow("permission-denied");
   });
+
+  it("allows editor on source deck to add cards", async () => {
+    const { service, deckRepo } = makeService();
+    deckRepo.seedSourceDeck("d1", makeSourceDeck("d1", { createdBy: "owner", editors: ["editor"] }));
+
+    const cardId = await service.addCard("editor", "d1", { front: "F", back: "B" });
+
+    expect(typeof cardId).toBe("string");
+    expect(cardId.length).toBeGreaterThan(0);
+  });
+});
+
+// ── checkCardChanges ─────────────────────────────────────────────────────────
+
+describe("DeckService.checkCardChanges", () => {
+  it("returns empty diff when source and user cards are identical", async () => {
+    const { service, deckRepo, cardRepo } = makeService();
+    const card = makeNewCard("c1", { cardData: { front: "Q", back: "A" } });
+    deckRepo.seedSourceDeck("d1", makeSourceDeck("d1"));
+    deckRepo.seed("u1", "d1", makeDeck({ id: "d1" }));
+    cardRepo.seedSourceCards("d1", [card]);
+    cardRepo.seed("u1", "d1", [{ ...card }]);
+
+    const diff = await service.checkCardChanges("u1", "d1");
+
+    expect(diff).toHaveLength(0);
+  });
+
+  it("returns modified entry when front differs between source and user copy", async () => {
+    const { service, deckRepo, cardRepo } = makeService();
+    const srcCard = makeNewCard("c1", { cardData: { front: "New Front", back: "A" } });
+    const userCard = makeNewCard("c1", { cardData: { front: "Old Front", back: "A" } });
+    deckRepo.seedSourceDeck("d1", makeSourceDeck("d1"));
+    deckRepo.seed("u1", "d1", makeDeck({ id: "d1" }));
+    cardRepo.seedSourceCards("d1", [srcCard]);
+    cardRepo.seed("u1", "d1", [userCard]);
+
+    const diff = await service.checkCardChanges("u1", "d1");
+
+    expect(diff).toHaveLength(1);
+    expect(diff[0].type).toBe("modified");
+    expect(diff[0].cardId).toBe("c1");
+  });
+
+  it("throws not-found when source deck does not exist", async () => {
+    const { service } = makeService();
+
+    await expect(service.checkCardChanges("u1", "missing")).rejects.toThrow("not-found");
+  });
+
+  it("throws not-found when user deck does not exist", async () => {
+    const { service, deckRepo } = makeService();
+    deckRepo.seedSourceDeck("d1", makeSourceDeck("d1"));
+    // No user deck seeded
+
+    await expect(service.checkCardChanges("u1", "d1")).rejects.toThrow("not-found");
+  });
+});
+
+// ── syncCards ─────────────────────────────────────────────────────────────────
+
+describe("DeckService.syncCards", () => {
+  it("returns { syncedCount: 0 } when user has no cards and no cardIds specified", async () => {
+    const { service, deckRepo } = makeService();
+    deckRepo.seedSourceDeck("d1", makeSourceDeck("d1"));
+
+    const result = await service.syncCards("u1", "d1", { syncAll: false, cardIds: [] });
+
+    expect(result.syncedCount).toBe(0);
+  });
+
+  it("throws not-found when source deck does not exist", async () => {
+    const { service } = makeService();
+
+    await expect(
+      service.syncCards("u1", "missing", { syncAll: false, cardIds: [] })
+    ).rejects.toThrow("not-found");
+  });
+});
+
+// ── createDeckWithCards ───────────────────────────────────────────────────────
+
+describe("DeckService.createDeckWithCards", () => {
+  it("returns a string deck ID", async () => {
+    const { service } = makeService();
+
+    const id = await service.createDeckWithCards(
+      "u1",
+      { title: "My Deck", isPublic: true },
+      [makeNewCard("c1")]
+    );
+
+    expect(typeof id).toBe("string");
+    expect(id.length).toBeGreaterThan(0);
+  });
+
+  it("creates a deck with multiple cards without throwing", async () => {
+    const { service } = makeService();
+
+    const id = await service.createDeckWithCards(
+      "u1",
+      { title: "French Basics", isPublic: false },
+      [makeNewCard("c1"), makeNewCard("c2"), makeNewCard("c3")]
+    );
+
+    expect(typeof id).toBe("string");
+  });
+});
+
+// ── resetDeck ─────────────────────────────────────────────────────────────────
+
+describe("DeckService.resetDeck", () => {
+  it("resolves without error", async () => {
+    const { service } = makeService();
+
+    await expect(service.resetDeck("u1", "d1")).resolves.toBeUndefined();
+  });
+});
+
+// ── recordView ────────────────────────────────────────────────────────────────
+
+describe("DeckService.recordView", () => {
+  it("resolves without error", async () => {
+    const { service, deckRepo } = makeService();
+    deckRepo.seedSourceDeck("d1", makeSourceDeck("d1"));
+
+    await expect(service.recordView("u1", "d1")).resolves.toBeUndefined();
+  });
+});
+
+// ── updateDeck — additional paths ─────────────────────────────────────────────
+
+describe("DeckService.updateDeck — additional paths", () => {
+  it("editor can update deck when metadata is unchanged (cards only)", async () => {
+    const { service, deckRepo } = makeService();
+    const deck = makeSourceDeck("d1", {
+      createdBy: "owner",
+      editors: ["editor"],
+      title: "My Deck",
+      icon: "cards",
+      isPublic: true,
+    });
+    deckRepo.seedSourceDeck("d1", deck);
+
+    // Same metadata values → no hasDeckDataChanges → editor allowed
+    const result = await service.updateDeck(
+      "editor",
+      "d1",
+      { title: "My Deck", icon: "cards", isPublic: true },
+      {
+        created: [{ cardData: { front: "New Q", back: "New A" } }],
+        updated: [],
+        deleted: [],
+      }
+    );
+
+    expect(result.createdCount).toBe(1);
+  });
+
+  it("throws not-found when deck does not exist", async () => {
+    const { service } = makeService();
+
+    await expect(
+      service.updateDeck(
+        "u1",
+        "nonexistent",
+        { title: "T", icon: "cards", isPublic: true },
+        { created: [], updated: [], deleted: [] }
+      )
+    ).rejects.toThrow("not-found");
+  });
 });

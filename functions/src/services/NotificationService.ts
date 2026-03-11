@@ -1,17 +1,39 @@
 import type { Notification } from "memvocado-types";
 import type { NotificationRepository } from "../repositories/interfaces/NotificationRepository";
 
+/**
+ * Service for managing user notifications.
+ * @class
+ */
 export class NotificationService {
+  /**
+   * @param {NotificationRepository} repo - Notification repository
+   */
   constructor(private readonly repo: NotificationRepository) {}
 
+  /**
+   * @param {string} userId - User ID
+   * @param {number} [limit] - Max notifications to return
+   * @return {Promise<Notification[]>} Unread notifications
+   */
   async getNotifications(userId: string, limit = 50): Promise<Notification[]> {
     return this.repo.getUnread(userId, limit);
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @param {string} notifId - Notification ID to mark as read
+   * @return {Promise<void>}
+   */
   async markRead(userId: string, notifId: string): Promise<void> {
     await this.repo.markRead(userId, notifId);
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @param {object} notification - Notification data
+   * @return {Promise<string>} ID of the created notification
+   */
   async create(
     userId: string,
     notification: { title: string; body: string; type: "info" | "success" | "warning" | "error"; linkTo?: string | null; read?: boolean }
@@ -25,6 +47,10 @@ export class NotificationService {
     });
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @return {Promise<void>}
+   */
   async notifyStreakBroken(userId: string): Promise<void> {
     await this.create(userId, {
       title: "Streak broken",
@@ -33,6 +59,10 @@ export class NotificationService {
     });
   }
 
+  /**
+   * @param {object} params - Season end params
+   * @return {Promise<void>}
+   */
   async notifySeasonEnd(params: {
     userId: string;
     finalPosition?: number;
@@ -47,6 +77,12 @@ export class NotificationService {
     await this.create(userId, { title: "Weekly League Reset!", body, type: "info" });
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @param {number} fromLeague - Previous league number
+   * @param {number} toLeague - New league number
+   * @return {Promise<void>}
+   */
   async notifyLeagueAdvance(userId: string, fromLeague: number, toLeague: number): Promise<void> {
     await this.create(userId, {
       title: "Ranking Up!",

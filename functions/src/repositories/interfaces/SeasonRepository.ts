@@ -1,5 +1,4 @@
-import type { GetCurrentSeasonResponse } from "memvocado-types";
-import type { SeasonUserPoints } from "memvocado-types";
+import type { GetCurrentSeasonResponse, SeasonUserPoints } from "memvocado-types";
 
 export interface SeasonRepository {
   /** Get the current season, or null if none exists */

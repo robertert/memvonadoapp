@@ -444,6 +444,12 @@ export class FirestoreDeckRepository implements DeckRepository {
     return snap.exists;
   }
 
+  /**
+   * @param {string} query - Search query string
+   * @param {object} [filters] - Optional search filters
+   * @param {number} [limit] - Max number of results
+   * @return {Promise<Deck[]>} Matching decks
+   */
   async searchDecks(
     query: string,
     filters?: import("memvocado-types").SearchFilters,
