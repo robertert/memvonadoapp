@@ -41,12 +41,12 @@ import { HttpsError } from "firebase-functions/v2/https";
 const db = admin.firestore();
 
 // Import funkcji - będziemy je opakowywać w testach
-let authHandlers: typeof import("../src/authHandlers");
+let authHandlers: typeof import("../src/handlers/authHandlers");
 
 describe("authHandlers - Callable Functions", () => {
   beforeEach(async () => {
     // Załaduj moduł funkcji
-    authHandlers = await import("../src/authHandlers");
+    authHandlers = await import("../src/handlers/authHandlers");
   });
 
   afterAll(() => {
@@ -84,7 +84,7 @@ describe("authHandlers - Callable Functions", () => {
       const result = await wrapped(mockRequest as any);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe("User document created successfully");
+      expect(result.message).toBe("User document ensured");
 
       // Sprawdź czy dokument został utworzony w Firestore
       await waitForFirestore();
@@ -109,6 +109,9 @@ describe("authHandlers - Callable Functions", () => {
         id: testUid,
         email: testEmail,
         username: "existing_user",
+        settings: {},
+        currentGroupId: null,
+        stats: {},
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -128,7 +131,7 @@ describe("authHandlers - Callable Functions", () => {
       const result = await wrapped(mockRequest as any);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe("User document already exists");
+      expect(result.message).toBe("User document ensured");
 
       // Sprawdź czy dokument nie został zmieniony
       const userDoc = await db.doc(`users/${testUid}`).get();
@@ -289,7 +292,7 @@ describe("authHandlers - Callable Functions", () => {
       expect(userData?.settings).toBeDefined();
       expect(userData?.settings.theme).toBe("light");
       expect(userData?.settings.notificationsEnabled).toBe(true);
-      expect(userData?.settings.dailyGoal).toBe(50);
+      expect(userData?.settings.dailyGoal).toBe(120);
       expect(userData?.settings.dailyNew).toBe(20);
       expect(userData?.settings.language).toBe("en");
       expect(userData?.settings.timeZone).toBe("UTC");
@@ -301,7 +304,7 @@ describe("authHandlers - Callable Functions", () => {
       expect(userData?.stats.currentStreak).toBe(0);
       expect(userData?.stats.longestStreak).toBe(0);
       expect(userData?.league).toBe(1);
-      expect(userData?.currentGroupId).toBe("unassigned");
+      expect(userData?.currentGroupId).toBe(null);
       expect(userData?.experiencePoints).toBe(0);
       expect(userData?.currencyCount).toBe(0);
       expect(userData?.followingCount).toBe(0);
@@ -575,6 +578,9 @@ describe("authHandlers - Callable Functions", () => {
         email: testEmail,
         username: "old_username",
         profileCompleted: false,
+        settings: {},
+        currentGroupId: null,
+        stats: {},
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -674,6 +680,9 @@ describe("authHandlers - Callable Functions", () => {
         email: testEmail,
         username: testUsername,
         profileCompleted: false,
+        settings: {},
+        currentGroupId: null,
+        stats: {},
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -841,6 +850,9 @@ describe("authHandlers - Callable Functions", () => {
         email: testEmail,
         username: "old_username",
         profileCompleted: false,
+        settings: {},
+        currentGroupId: null,
+        stats: {},
         createdAt: oldDate,
         updatedAt: oldDate,
       });

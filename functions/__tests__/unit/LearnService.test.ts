@@ -84,6 +84,20 @@ describe("_applyDailyLimit", () => {
     expect(newCardsStripped).toHaveLength(2);
   });
 
+  it("returns 0 new cards when limit is exactly exhausted (inProgress + completed = limit)", () => {
+    const newCards = Array.from({ length: 5 }, (_, i) => makeNewCard(`card-${i}`));
+    const todayStats = makeDailyStats({ inProgressNewCards: 3, completedNewToday: 2 });
+    // 3 + 2 = 5 = limit → 0 remaining slots
+    const { newCardsStripped } = service._applyDailyLimit({
+      newCards,
+      dueCards: [],
+      todayStats,
+      itemLimit: 5,
+      bidirectional: false,
+    });
+    expect(newCardsStripped).toHaveLength(0);
+  });
+
   it("accounts for completedNewToday", () => {
     const newCards = Array.from({ length: 10 }, (_, i) => makeNewCard(`card-${i}`));
     const todayStats = makeDailyStats({ completedNewToday: 4 });

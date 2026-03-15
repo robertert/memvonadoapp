@@ -307,8 +307,10 @@ export async function createTestDeck(
   userId: string,
   data: Partial<typeof import("./mockData").mockDeck> = {}
 ): Promise<void> {
+  const title = (data.title as string | undefined) || "Test Deck";
   await db.doc(`decks/${deckId}`).set({
-    title: "Test Deck",
+    title,
+    title_lower: title.toLowerCase(),
     cardsNum: 0,
     createdBy: userId,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),

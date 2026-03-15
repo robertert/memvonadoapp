@@ -41,13 +41,13 @@ import { runLearningRoundScenario } from "./helpers/learningRoundRunner";
 
 const db = admin.firestore();
 
-let deckFunctions: typeof import("../src/deckFunctions");
-let userFunctions: typeof import("../src/userFunctions");
+let deckFunctions: typeof import("../src/handlers/deckHandlers");
+let userFunctions: typeof import("../src/handlers/userHandlers");
 
 describe("Learning flow (E2E)", () => {
   beforeEach(async () => {
-    deckFunctions = await import("../src/deckFunctions");
-    userFunctions = await import("../src/userFunctions");
+    deckFunctions = await import("../src/handlers/deckHandlers");
+    userFunctions = await import("../src/handlers/userHandlers");
   });
 
   afterAll(() => {
@@ -408,7 +408,7 @@ describe("Learning flow (E2E)", () => {
       const newItems = result.items.filter(
         (i: any) => i.card.firstLearn?.isNew === true
       );
-      expect(newItems.length).toBeLessThanOrEqual(3);
+      expect(newItems.length).toBe(3);
     });
   });
 
@@ -507,6 +507,9 @@ describe("Learning flow (E2E)", () => {
       expect(afterForwardData?.firstLearn?.isFirst).toBe(true);
       expect(afterForwardData?.firstLearnReverse?.isNew).toBe(true);
 
+      // Capture time before reverse update to assert due is set after this point
+      const beforeReverseUpdate = Date.now();
+
       // Reverse update
       const reverseCard = {
         id: cardId,
@@ -551,6 +554,10 @@ describe("Learning flow (E2E)", () => {
       // firstLearnReverse.due should now be updated; forward should be unchanged
       expect(afterReverseData?.firstLearnReverse?.isFirst).toBe(true);
       expect(afterReverseData?.firstLearn?.isFirst).toBe(true);
+      // Verify firstLearnReverse.due was actually set (not just isFirst flag)
+      const reverseDue = (afterReverseData?.firstLearnReverse?.due as admin.firestore.Timestamp)?.toDate();
+      expect(reverseDue).toBeDefined();
+      expect(reverseDue.getTime()).toBeGreaterThan(beforeReverseUpdate);
     });
   });
 

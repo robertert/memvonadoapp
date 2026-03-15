@@ -15,7 +15,7 @@ import {
 
 const db = admin.firestore();
 
-let searchFunctions: typeof import("../src/searchFunctions");
+let searchFunctions: typeof import("../src/handlers/searchHandlers");
 
 /**
  * Helper to create test deck with additional fields like is_deleted, category, tags
@@ -47,7 +47,7 @@ async function createTestDeckWithFields(
 
 describe("Search Functions", () => {
   beforeEach(async () => {
-    searchFunctions = await import("../src/searchFunctions");
+    searchFunctions = await import("../src/handlers/searchHandlers");
   });
 
   afterAll(() => {
@@ -198,8 +198,8 @@ describe("Search Functions", () => {
           createMockCallableRequest({ data: { searchText: "JavaScript" } })
         );
 
-        expect((result as any).results.length).toBeGreaterThan(0);
-        expect((result as any).results[0].title).toContain("JavaScript");
+        const titles = (result as any).results.map((d: any) => d.title);
+        expect(titles).toContain("JavaScript Basics");
       });
 
       it("should handle empty searchText when filters are provided", async () => {

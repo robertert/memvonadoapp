@@ -680,7 +680,7 @@ export const updateDeckSettings = onCall(async (request) => {
     await deckService.updateDeckSettings(
       request.auth.uid,
       deckId,
-      DeckSchema.parse(deck) as Partial<Deck>
+      deck as Partial<Deck>
     );
     logger.info("Deck settings updated successfully", { deckId, userId: request.auth.uid });
     return serializeTimestamps(SuccessResponseSchema.parse({ success: true }));

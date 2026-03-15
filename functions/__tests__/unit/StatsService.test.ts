@@ -69,6 +69,61 @@ describe("StatsService.getDeckDailyStatsToday", () => {
   });
 });
 
+// ── getUserDailyStatsToday ────────────────────────────────────────────────────
+
+describe("StatsService.getUserDailyStatsToday", () => {
+  it("returns null when user has no dailyStats", async () => {
+    const { service, userRepo } = makeService();
+    userRepo.seed("u1", makeUser({ id: "u1" }));
+
+    const result = await service.getUserDailyStatsToday("u1");
+
+    expect(result).toBeNull();
+  });
+
+  it("returns null when user dailyStats were written yesterday", async () => {
+    const { service, userRepo } = makeService();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    userRepo.seed(
+      "u1",
+      makeUser({
+        id: "u1",
+        dailyStats: {
+          completedNewToday: 3,
+          completedDueToday: 2,
+          lastUpdatedStats: yesterday,
+        },
+      })
+    );
+
+    const result = await service.getUserDailyStatsToday("u1");
+
+    expect(result).toBeNull();
+  });
+
+  it("returns dailyStats when last update was today", async () => {
+    const { service, userRepo } = makeService();
+    userRepo.seed(
+      "u1",
+      makeUser({
+        id: "u1",
+        dailyStats: {
+          completedNewToday: 7,
+          completedDueToday: 4,
+          lastUpdatedStats: new Date(),
+        },
+      })
+    );
+
+    const result = await service.getUserDailyStatsToday("u1");
+
+    expect(result).not.toBeNull();
+    expect(result?.completedNewToday).toBe(7);
+    expect(result?.completedDueToday).toBe(4);
+  });
+});
+
 // ── aggregateUserStats ────────────────────────────────────────────────────────
 
 describe("StatsService.aggregateUserStats", () => {

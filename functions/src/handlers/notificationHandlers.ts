@@ -67,6 +67,9 @@ export const markNotificationRead = onCall(async (request) => {
     logger.error("Error marking notification as read", error);
     handleZodError(error, "markNotificationRead");
     if (error instanceof HttpsError) throw error;
+    if ((error as { code?: string }).code === "not-found") {
+      throw new HttpsError("not-found", "Notification not found");
+    }
     throw new HttpsError("internal", "Failed to mark notification as read");
   }
 });

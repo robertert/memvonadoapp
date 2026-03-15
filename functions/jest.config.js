@@ -16,7 +16,7 @@ module.exports = {
       preset: "ts-jest",
       testEnvironment: "node",
       testMatch: ["**/__tests__/unit/**/*.test.ts"],
-      transform: { "^.+\\.ts$": "ts-jest" },
+      transform: { "^.+\\.ts$": ["ts-jest", { tsconfig: "tsconfig.test.json" }] },
     },
     {
       displayName: "integration",
@@ -26,7 +26,7 @@ module.exports = {
         "**/__tests__/integration/**/*.test.ts",
         "**/__tests__/*.test.ts",
       ],
-      transform: { "^.+\\.ts$": "ts-jest" },
+      transform: { "^.+\\.ts$": ["ts-jest", { tsconfig: "tsconfig.test.json" }] },
       setupFilesAfterEnv: ["<rootDir>/__tests__/setup.ts"],
     },
   ],

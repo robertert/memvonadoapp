@@ -49,7 +49,12 @@ export class FirestoreNotificationRepository implements NotificationRepository {
    * @return {Promise<void>}
    */
   async markRead(userId: string, notifId: string): Promise<void> {
-    await db.doc(`users/${userId}/notifications/${notifId}`).update({
+    const ref = db.doc(`users/${userId}/notifications/${notifId}`);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      throw Object.assign(new Error("Notification not found"), { code: "not-found" });
+    }
+    await ref.update({
       read: true,
       readAt: FieldValue.serverTimestamp(),
     });

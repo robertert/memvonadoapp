@@ -117,6 +117,47 @@ describe("CardProgressService._computeUpdatedCard", () => {
     expect(dueMs).toBeLessThanOrEqual(Date.now() + ONE_MINUTE_MS);
   });
 
+  it("forward + isFirst: preserves consecutiveGood unchanged", () => {
+    const card = makeNewCard("c8", {
+      firstLearn: makeFirstLearn({ isNew: false, isFirst: true, consecutiveGood: 2 }),
+    });
+
+    const updated = service._computeUpdatedCard(card, ONE_MINUTE_MS, "forward");
+
+    expect(updated.firstLearn?.consecutiveGood).toBe(2);
+  });
+
+  it("forward + isFirst: due is set to approximately now + scheduledTime", () => {
+    const before = Date.now();
+    const SCHEDULED = 5 * 60_000; // 5 minutes
+    const card = makeNewCard("c9", {
+      firstLearn: makeFirstLearn({ isNew: false, isFirst: true }),
+    });
+
+    const updated = service._computeUpdatedCard(card, SCHEDULED, "forward");
+
+    const dueMs = updated.firstLearn!.due!.getTime();
+    const after = Date.now();
+    expect(dueMs).toBeGreaterThanOrEqual(before + SCHEDULED);
+    expect(dueMs).toBeLessThanOrEqual(after + SCHEDULED);
+  });
+
+  it("reverse + isFirst: due is set to approximately now + scheduledTime", () => {
+    const before = Date.now();
+    const SCHEDULED = 10 * 60_000; // 10 minutes
+    const card = makeNewCard("c10", {
+      firstLearn: makeFirstLearn({ isNew: false }),
+      firstLearnReverse: makeFirstLearn({ isNew: false, isFirst: true }),
+    });
+
+    const updated = service._computeUpdatedCard(card, SCHEDULED, "reverse");
+
+    const dueMs = updated.firstLearnReverse!.due!.getTime();
+    const after = Date.now();
+    expect(dueMs).toBeGreaterThanOrEqual(before + SCHEDULED);
+    expect(dueMs).toBeLessThanOrEqual(after + SCHEDULED);
+  });
+
   it("scheduledTime applied correctly — larger offset produces later due date", () => {
     const card = makeNewCard("c6", {
       firstLearn: makeFirstLearn({ isNew: false, isFirst: false }),

@@ -28,11 +28,11 @@ import { HttpsError } from "firebase-functions/v2/https";
 
 const db = admin.firestore();
 
-let notificationFunctions: typeof import("../src/notificationFunctions");
+let notificationFunctions: typeof import("../src/handlers/notificationHandlers");
 
 describe("Notification Functions", () => {
   beforeEach(async () => {
-    notificationFunctions = await import("../src/notificationFunctions");
+    notificationFunctions = await import("../src/handlers/notificationHandlers");
   });
 
   // Note: Notifications tests clear data in afterEach to prevent interference

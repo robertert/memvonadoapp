@@ -83,9 +83,9 @@ export class DeckService {
       cardsNum: srcDeck.cardsNum,
       settings: { zenMode: false, shuffleNewCards: false } as DeckSettings,
       updatedAt: srcDeck.updatedAt,
-      category: srcDeck.category,
-      icon: srcDeck.icon,
-      tags: srcDeck.tags,
+      category: srcDeck.category ?? null,
+      icon: srcDeck.icon ?? null,
+      tags: srcDeck.tags ?? [],
       frontLanguage: srcDeck.frontLanguage ?? null,
       backLanguage: srcDeck.backLanguage ?? null,
     });

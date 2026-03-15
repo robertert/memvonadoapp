@@ -3,6 +3,7 @@ import {
   Animated,
   Easing,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -763,7 +764,7 @@ export default function VictoryScreen(): React.JSX.Element {
       style={styles.background}
       colors={[Colors.primary_100, Colors.primary_100]}
     >
-      <View style={[styles.container, { paddingTop: safeArea.top + 8 }]}>
+      <View style={[styles.container, { paddingTop: safeArea.top + 8, paddingBottom: safeArea.bottom + 8 }]}>
         {loading ? (
           <View
             style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
@@ -784,7 +785,13 @@ export default function VictoryScreen(): React.JSX.Element {
         ) : viewState === "avocado" ? (
           renderAvocadoContent()
         ) : (
-          renderStatsContent()
+          <ScrollView
+            style={{ flex: 1, width: "100%" }}
+            contentContainerStyle={{ flexGrow: 1 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {renderStatsContent()}
+          </ScrollView>
         )}
       </View>
     </LinearGradient>

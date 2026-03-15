@@ -1,4 +1,8 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["__tests__/**/*.ts"]
+  "compilerOptions": {
+    "rootDir": ".",
+    "noUnusedLocals": false
+  },
+  "include": ["src", "__tests__/**/*.ts"]
 }

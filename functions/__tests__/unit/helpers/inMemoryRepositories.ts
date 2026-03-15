@@ -8,6 +8,7 @@ import type {
   LeagueGroup,
   Notification,
   NotificationCreate,
+  SearchLog,
   SeasonUserPoints,
   StudySessionCreate,
   User,
@@ -563,7 +564,7 @@ export class InMemoryUserRepository implements UserRepository {
 
   async addSearchLog(_userId: string, _log: unknown): Promise<void> {}
 
-  async getSearchLogs(_userId: string): Promise<[]> {
+  async getSearchLogs(_userId: string): Promise<SearchLog[]> {
     return [];
   }
 }
