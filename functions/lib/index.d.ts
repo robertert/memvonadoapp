@@ -15,6 +15,6 @@ export { getNotifications, markNotificationRead, createNotification, notifyStrea
 export { getLeagueInfo, getUserGroup, updateUserLeague, getAllLeaguesInfo, } from "./handlers/leagueHandlers";
 export { ensureUserDocument, completeOnboarding, checkUsernameAvailability, } from "./handlers/authHandlers";
 export { getAvocadoStatus, harvestAvocado, getAvocadoConfig, } from "./handlers/avocadoHandlers";
-export { translateText, getTranslationLimit, } from "./handlers/translationHandlers";
+export { translateText, getTranslationLimit, getTranslationSuggestions, } from "./handlers/translationHandlers";
 export { extractTextFromImage, processFile } from "./handlers/fileProcessingHandlers";
 export { avoQuery, getAvoQueryLimit, } from "./handlers/avoQueryHandlers";

@@ -108,6 +108,7 @@ export {
 export {
   translateText,
   getTranslationLimit,
+  getTranslationSuggestions,
 } from "./handlers/translationHandlers";
 export { extractTextFromImage, processFile } from "./handlers/fileProcessingHandlers";
 export {

@@ -778,6 +778,7 @@ export default function createSelfScreen(): React.JSX.Element {
         onUpdate={updateCard}
         onDelete={deleteCard}
         deckLanguage={frontLanguage}
+        backLanguage={backLanguage}
         onEnter={addAndFocusCard}
         isDuplicate={duplicateCardIds.has(card.id)}
         focusRef={(ref: TextInput | null) => {
@@ -789,7 +790,7 @@ export default function createSelfScreen(): React.JSX.Element {
         }}
       />
     ),
-    [updateCard, deleteCard, frontLanguage, duplicateCardIds]
+    [updateCard, deleteCard, frontLanguage, backLanguage, duplicateCardIds]
   );
 
   return (
@@ -820,6 +821,7 @@ export default function createSelfScreen(): React.JSX.Element {
             <FlatList
               ref={flashListRef}
               data={cards}
+              keyboardShouldPersistTaps="handled"
               onViewableItemsChanged={handleViewableItemsChanged}
               renderItem={renderItem}
               keyExtractor={(item) => item.id}

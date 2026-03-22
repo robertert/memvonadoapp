@@ -62,3 +62,22 @@ export const TranslationUsageSchema = z.object({
   lastUsedAt: z.date(),
 });
 export type TranslationUsage = z.infer<typeof TranslationUsageSchema>;
+
+// ===========================
+// Translation suggestions schemas
+// ===========================
+
+export const GetTranslationSuggestionsRequestSchema = z.object({
+  text: z.string().min(1).max(500),
+  fromLanguage: SupportedLanguageSchema,
+  toLanguage: SupportedLanguageSchema,
+}).refine(d => d.fromLanguage !== d.toLanguage, {
+  message: "Source and target languages must be different",
+});
+export type GetTranslationSuggestionsRequest = z.infer<typeof GetTranslationSuggestionsRequestSchema>;
+
+export const GetTranslationSuggestionsResponseSchema = z.object({
+  suggestions: z.array(z.string()).max(3),
+  cached: z.boolean(),
+});
+export type GetTranslationSuggestionsResponse = z.infer<typeof GetTranslationSuggestionsResponseSchema>;

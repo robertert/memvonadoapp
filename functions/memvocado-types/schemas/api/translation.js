@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TranslationUsageSchema = exports.GetTranslationLimitResponseSchema = exports.TranslateTextResponseSchema = exports.GetTranslationLimitRequestSchema = exports.TranslateTextRequestSchema = exports.DAILY_TRANSLATION_LIMIT = exports.SupportedLanguageSchema = exports.SUPPORTED_LANGUAGES = void 0;
+exports.GetTranslationSuggestionsResponseSchema = exports.GetTranslationSuggestionsRequestSchema = exports.TranslationUsageSchema = exports.GetTranslationLimitResponseSchema = exports.TranslateTextResponseSchema = exports.GetTranslationLimitRequestSchema = exports.TranslateTextRequestSchema = exports.DAILY_TRANSLATION_LIMIT = exports.SupportedLanguageSchema = exports.SUPPORTED_LANGUAGES = void 0;
 const zod_1 = require("zod");
 // Supported languages for translation
 exports.SUPPORTED_LANGUAGES = ["en", "pl", "de", "es", "fr", "it", "pt"];
@@ -47,4 +47,18 @@ exports.TranslationUsageSchema = zod_1.z.object({
     date: zod_1.z.string(), // YYYY-MM-DD format
     count: zod_1.z.number().min(0),
     lastUsedAt: zod_1.z.date(),
+});
+// ===========================
+// Translation suggestions schemas
+// ===========================
+exports.GetTranslationSuggestionsRequestSchema = zod_1.z.object({
+    text: zod_1.z.string().min(1).max(500),
+    fromLanguage: exports.SupportedLanguageSchema,
+    toLanguage: exports.SupportedLanguageSchema,
+}).refine(d => d.fromLanguage !== d.toLanguage, {
+    message: "Source and target languages must be different",
+});
+exports.GetTranslationSuggestionsResponseSchema = zod_1.z.object({
+    suggestions: zod_1.z.array(zod_1.z.string()).max(3),
+    cached: zod_1.z.boolean(),
 });

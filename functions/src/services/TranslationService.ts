@@ -1,4 +1,5 @@
 import { TranslationServiceClient } from "@google-cloud/translate";
+import { VertexAI } from "@google-cloud/vertexai";
 import * as logger from "firebase-functions/logger";
 import { DAILY_TRANSLATION_LIMIT } from "memvocado-types/schemas/api/translation";
 import type { UsageRepository } from "../repositories/interfaces/UsageRepository";
@@ -6,6 +7,11 @@ import type { UsageRepository } from "../repositories/interfaces/UsageRepository
 const translationClient = new TranslationServiceClient();
 const PROJECT_ID = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || "memvocado";
 const LOCATION = "global";
+
+const vertexAI = new VertexAI({
+  project: process.env.GCLOUD_PROJECT,
+  location: "us-central1",
+});
 
 /**
  * @return {string} Today's date as YYYY-MM-DD
@@ -108,5 +114,37 @@ export class TranslationService {
       const remaining = Math.max(0, DAILY_TRANSLATION_LIMIT - (await this.usageRepo.getUsage(userId, today)));
       return { success: false, translatedText: null, fromLanguage, toLanguage, remainingToday: remaining, isLimitReached: false };
     }
+  }
+
+  /**
+   * @param {object} params - Suggestion parameters
+   * @return {Promise<string[]>} Up to 3 translation suggestions from Gemini
+   */
+  async getSuggestions(params: {
+    text: string;
+    fromLanguage: string;
+    toLanguage: string;
+  }): Promise<string[]> {
+    const model = vertexAI.getGenerativeModel({
+      model: "gemini-2.0-flash-001",
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.1,
+        maxOutputTokens: 128,
+      },
+    });
+
+    const prompt = `Translate the word or phrase from ${params.fromLanguage} to ${params.toLanguage}.
+Provide up to 3 different natural translation options (e.g. formal, informal, colloquial where applicable).
+Return ONLY a valid JSON array of strings, max 3 elements, no explanation.
+Text: "${params.text}"`;
+
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    });
+
+    const raw = result.response.candidates?.[0]?.content?.parts?.[0]?.text ?? "[]";
+    const parsed = JSON.parse(raw) as string[];
+    return parsed.filter((s) => typeof s === "string" && s.trim()).slice(0, 3);
   }
 }

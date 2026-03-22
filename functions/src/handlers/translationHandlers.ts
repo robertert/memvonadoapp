@@ -5,6 +5,8 @@ import {
   TranslateTextRequestSchema,
   TranslateTextResponseSchema,
   GetTranslationLimitResponseSchema,
+  GetTranslationSuggestionsRequestSchema,
+  GetTranslationSuggestionsResponseSchema,
 } from "memvocado-types/schemas/api/translation";
 import { serializeTimestamps } from "../utils/serialization";
 import { FirestoreUsageRepository } from "../repositories/firestore/FirestoreUsageRepository";
@@ -60,3 +62,21 @@ export const getTranslationLimit = onCall(async (request) => {
     throw new HttpsError("internal", "Failed to get translation limit");
   }
 });
+
+export const getTranslationSuggestions = onCall(async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Authentication required");
+
+    const parsed = GetTranslationSuggestionsRequestSchema.safeParse(request.data);
+    if (!parsed.success) throw new HttpsError("invalid-argument", "Invalid request data");
+
+    const { text, fromLanguage, toLanguage } = parsed.data;
+
+    try {
+      const suggestions = await translationService.getSuggestions({ text, fromLanguage, toLanguage });
+      return GetTranslationSuggestionsResponseSchema.parse({ suggestions, cached: false });
+    } catch (error) {
+      logger.error("getSuggestions error", error);
+      throw new HttpsError("internal", "Translation failed");
+    }
+  }
+);

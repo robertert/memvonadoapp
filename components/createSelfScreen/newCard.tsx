@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Pressable, StyleSheet, Text, TextInput } from "react-native";
 import { Colors, Fonts } from "../../constants/colors";
 import { View } from "react-native";
+import TranslationSuggestionsInput from "@/components/TranslationSuggestionsInput";
+import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "@/types/schemas/api/translation";
 import { Image } from "expo-image";
 import { AntDesign } from "@expo/vector-icons";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -40,6 +42,7 @@ interface NewCardProps {
   onUpdate: (cardId: string, updates: Partial<EditableCard>) => void;
   onDelete: (cardId: string) => void;
   deckLanguage?: string;
+  backLanguage?: string;
   onEnter: () => void;
   focusRef: (ref: TextInput | null) => void;
   isDuplicate?: boolean;
@@ -52,66 +55,24 @@ interface ActiveFields {
   formula: boolean;
 }
 
-// proste mocki słowników (lokalnie)
-const DICTIONARIES: Record<string, string[]> = {
-  en: [
-    "example",
-    "excellent",
-    "exercise",
-    "explain",
-    "expand",
-    "word",
-    "world",
-    "work",
-    "worry",
-    "write",
-    "writer",
-    "wrong",
-  ],
-  pl: [
-    "przykład",
-    "przyjaciel",
-    "przyjemny",
-    "przepis",
-    "przyjaźń",
-    "słowo",
-    "słownik",
-    "słuch",
-  ],
-  es: [
-    "hola",
-    "hablar",
-    "hacer",
-    "hecho",
-    "hermano",
-    "mujer",
-    "mucho",
-    "mundo",
-  ],
-  de: ["hallo", "hand", "haus", "heute", "helfen", "machen", "mutter"],
-};
-
 type Side = "front" | "back";
-
-
-function getSuggestions(lang: string | undefined, query: string): string[] {
-  if (!lang || !query || query.length < 2) return [];
-  const list = DICTIONARIES[lang] || [];
-  const q = query.toLowerCase();
-  return list.filter((w) => w.toLowerCase().startsWith(q)).slice(0, 6);
-}
 
 function NewCard({
   card,
   onUpdate,
   onDelete,
   deckLanguage,
+  backLanguage,
   onEnter,
   focusRef,
   isDuplicate = false,
 }: NewCardProps): React.JSX.Element {
+  const isValidLang = (l: string | undefined): l is SupportedLanguage =>
+    !!l && (SUPPORTED_LANGUAGES as readonly string[]).includes(l);
+  const canSuggest = isValidLang(deckLanguage) && isValidLang(backLanguage) && deckLanguage !== backLanguage;
 
-
+  const [cardFocused, setCardFocused] = useState(false);
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const translateX = useSharedValue(0);
   const opacity = useSharedValue(1);
@@ -172,7 +133,7 @@ function NewCard({
       }
     });
 
-      // Missing helpers reintroduced
+  // Missing helpers reintroduced
   function textChangeHandler(
     text: string,
     isFront: boolean,
@@ -523,49 +484,19 @@ function NewCard({
                   }
                   value={card.cardData.front}
                   ref={focusRef}
-                  onSubmitEditing={()=>backInputRef.current?.focus()} 
+                  onFocus={() => {
+                    if (blurTimer.current) clearTimeout(blurTimer.current);
+                    setCardFocused(true);
+                  }}
+                  onBlur={() => {
+                    blurTimer.current = setTimeout(() => setCardFocused(false), 150);
+                  }}
+                  onSubmitEditing={() => backInputRef.current?.focus()}
                   returnKeyType="next"
                   submitBehavior="submit"
                   multiline={true}
                 />
               </View>
-              {/* Podpowiedzi słownikowe */}
-              {deckLanguage &&
-                getSuggestions(deckLanguage, card.cardData.front).length >
-                  0 && (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      flexWrap: "wrap",
-                      gap: 6,
-                      marginTop: 6,
-                    }}
-                  >
-                    {getSuggestions(deckLanguage, card.cardData.front).map(
-                      (sug) => (
-                        <Pressable
-                          key={sug}
-                          onPress={() => applySuggestion("front", sug)}
-                          style={{
-                            backgroundColor: Colors.accent_500_30,
-                            paddingHorizontal: 10,
-                            paddingVertical: 6,
-                            borderRadius: 12,
-                          }}
-                        >
-                          <Text
-                            style={{
-                              color: Colors.primary_700,
-                              fontFamily: Fonts.primary,
-                            }}
-                          >
-                            {sug}
-                          </Text>
-                        </Pressable>
-                      )
-                    )}
-                  </View>
-                )}
               {/* Panel rozwijany strzałką: ikony */}
               {/*
               <Animated.View
@@ -954,6 +885,13 @@ function NewCard({
                   onChangeText={(text: string) =>
                     textChangeHandler(text, false, card)
                   }
+                  onFocus={() => {
+                    if (blurTimer.current) clearTimeout(blurTimer.current);
+                    setCardFocused(true);
+                  }}
+                  onBlur={() => {
+                    blurTimer.current = setTimeout(() => setCardFocused(false), 150);
+                  }}
                   onSubmitEditing={() => {
                     backInputRef.current?.blur();
                     onEnter();
@@ -963,41 +901,20 @@ function NewCard({
                   multiline={true}
                 />
               </View>
-              {deckLanguage &&
-                getSuggestions(deckLanguage, card.cardData.back).length > 0 && (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      flexWrap: "wrap",
-                      gap: 6,
-                      marginTop: 6,
-                    }}
-                  >
-                    {getSuggestions(deckLanguage, card.cardData.back).map(
-                      (sug) => (
-                        <Pressable
-                          key={sug}
-                          onPress={() => applySuggestion("back", sug)}
-                          style={{
-                            backgroundColor: Colors.accent_500_30,
-                            paddingHorizontal: 10,
-                            paddingVertical: 6,
-                            borderRadius: 12,
-                          }}
-                        >
-                          <Text
-                            style={{
-                              color: Colors.primary_700,
-                              fontFamily: Fonts.primary,
-                            }}
-                          >
-                            {sug}
-                          </Text>
-                        </Pressable>
-                      )
-                    )}
-                  </View>
-                )}
+              {canSuggest && (
+                <TranslationSuggestionsInput
+                  visible={cardFocused}
+                  query={card.cardData.front}
+                  filterValue={card.cardData.back}
+                  fromLanguage={deckLanguage as SupportedLanguage}
+                  toLanguage={backLanguage as SupportedLanguage}
+                  onSelect={(s) => {
+                    if (blurTimer.current) clearTimeout(blurTimer.current);
+                    setCardFocused(false);
+                    applySuggestion("back", s);
+                  }}
+                />
+              )}
               {/*
               <Animated.View
                 style={[advancedStyleBack]}

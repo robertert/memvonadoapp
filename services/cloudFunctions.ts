@@ -257,6 +257,9 @@ import {
   GetTranslationLimitRequest,
   GetTranslationLimitResponse,
   GetTranslationLimitResponseSchema,
+  GetTranslationSuggestionsRequest,
+  GetTranslationSuggestionsResponse,
+  GetTranslationSuggestionsResponseSchema,
   SupportedLanguage,
 } from "@/types/schemas/api/translation";
 import {
@@ -1326,6 +1329,25 @@ export const cloudFunctions = {
       throw new Error("Invalid data returned from getTranslationLimit");
     }
     return validatedData.data;
+  },
+
+  // Get up to 3 translation suggestions via DeepL (with Firestore cache)
+  getTranslationSuggestions: async (params: {
+    text: string;
+    fromLanguage: SupportedLanguage;
+    toLanguage: SupportedLanguage;
+  }) => {
+    const fn = httpsCallable<GetTranslationSuggestionsRequest, GetTranslationSuggestionsResponse>(
+      functions,
+      "getTranslationSuggestions"
+    );
+    const result = await fn(params);
+    const validated = GetTranslationSuggestionsResponseSchema.safeParse(result.data);
+    if (!validated.success) {
+      console.error(validated.error);
+      throw new Error("Invalid data returned from getTranslationSuggestions");
+    }
+    return validated.data;
   },
 
   // ============================================================================

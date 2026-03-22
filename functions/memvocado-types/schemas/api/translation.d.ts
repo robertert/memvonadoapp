@@ -87,3 +87,36 @@ export declare const TranslationUsageSchema: z.ZodObject<{
     lastUsedAt: Date;
 }>;
 export type TranslationUsage = z.infer<typeof TranslationUsageSchema>;
+export declare const GetTranslationSuggestionsRequestSchema: z.ZodEffects<z.ZodObject<{
+    text: z.ZodString;
+    fromLanguage: z.ZodEnum<["en", "pl", "de", "es", "fr", "it", "pt"]>;
+    toLanguage: z.ZodEnum<["en", "pl", "de", "es", "fr", "it", "pt"]>;
+}, "strip", z.ZodTypeAny, {
+    text: string;
+    fromLanguage: "en" | "pl" | "de" | "es" | "fr" | "it" | "pt";
+    toLanguage: "en" | "pl" | "de" | "es" | "fr" | "it" | "pt";
+}, {
+    text: string;
+    fromLanguage: "en" | "pl" | "de" | "es" | "fr" | "it" | "pt";
+    toLanguage: "en" | "pl" | "de" | "es" | "fr" | "it" | "pt";
+}>, {
+    text: string;
+    fromLanguage: "en" | "pl" | "de" | "es" | "fr" | "it" | "pt";
+    toLanguage: "en" | "pl" | "de" | "es" | "fr" | "it" | "pt";
+}, {
+    text: string;
+    fromLanguage: "en" | "pl" | "de" | "es" | "fr" | "it" | "pt";
+    toLanguage: "en" | "pl" | "de" | "es" | "fr" | "it" | "pt";
+}>;
+export type GetTranslationSuggestionsRequest = z.infer<typeof GetTranslationSuggestionsRequestSchema>;
+export declare const GetTranslationSuggestionsResponseSchema: z.ZodObject<{
+    suggestions: z.ZodArray<z.ZodString, "many">;
+    cached: z.ZodBoolean;
+}, "strip", z.ZodTypeAny, {
+    suggestions: string[];
+    cached: boolean;
+}, {
+    suggestions: string[];
+    cached: boolean;
+}>;
+export type GetTranslationSuggestionsResponse = z.infer<typeof GetTranslationSuggestionsResponseSchema>;
