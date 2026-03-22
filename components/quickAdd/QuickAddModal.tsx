@@ -20,6 +20,7 @@ import Toast from "react-native-toast-message";
 import { router } from "expo-router";
 
 import DeckSelector from "./DeckSelector";
+import TranslationSuggestionsInput from "@/components/TranslationSuggestionsInput";
 import { useQuickAdd, QuickAddSource } from "@/store/quickAdd-context";
 import { cloudFunctions } from "@/services/cloudFunctions";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -79,6 +80,10 @@ export default function QuickAddModal({
 
   // Loading states
   const [isSaving, setIsSaving] = useState(false);
+
+  // Suggestions focus state
+  const [cardFocused, setCardFocused] = useState(false);
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track if we've auto-translated for this session
   const autoTranslatedRef = useRef(false);
@@ -281,6 +286,10 @@ export default function QuickAddModal({
 
   const canTranslate =
     front.trim().length > 0 && frontLang && backLang && !isLimitReached;
+
+  const isValidLang = (l: string | null): l is SupportedLanguage =>
+    !!l && (SUPPORTED_LANGUAGES as readonly string[]).includes(l);
+  const canSuggest = isValidLang(frontLang) && isValidLang(backLang) && frontLang !== backLang;
   return (
     <Modal
       animationType="fade"
@@ -329,6 +338,13 @@ export default function QuickAddModal({
                 onChangeText={(text) =>
                   setFront(text.slice(0, MAX_CHARS))
                 }
+                onFocus={() => {
+                  if (blurTimer.current) clearTimeout(blurTimer.current);
+                  setCardFocused(true);
+                }}
+                onBlur={() => {
+                  blurTimer.current = setTimeout(() => setCardFocused(false), 150);
+                }}
                 placeholder="Wpisz tekst..."
                 placeholderTextColor={Colors.primary_700_50}
                 multiline
@@ -351,11 +367,33 @@ export default function QuickAddModal({
                 onChangeText={(text) =>
                   setBack(text.slice(0, MAX_CHARS))
                 }
+                onFocus={() => {
+                  if (blurTimer.current) clearTimeout(blurTimer.current);
+                  setCardFocused(true);
+                }}
+                onBlur={() => {
+                  blurTimer.current = setTimeout(() => setCardFocused(false), 150);
+                }}
                 placeholder="Wpisz tlumaczenie lub odpowiedz..."
                 placeholderTextColor={Colors.primary_700_50}
                 multiline
                 maxLength={MAX_CHARS}
               />
+
+              {canSuggest && (
+                <TranslationSuggestionsInput
+                  visible={cardFocused}
+                  query={front}
+                  filterValue={back}
+                  fromLanguage={frontLang as SupportedLanguage}
+                  toLanguage={backLang as SupportedLanguage}
+                  onSelect={(s) => {
+                    if (blurTimer.current) clearTimeout(blurTimer.current);
+                    setCardFocused(false);
+                    setBack(s);
+                  }}
+                />
+              )}
 
               {/* Language selectors + Translate */}
               <View style={styles.languageRow}>
