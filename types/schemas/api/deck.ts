@@ -435,7 +435,7 @@ export const CheckDuplicateCardFrontRequestSchema = z
   .object({
     deckId: z.string(),
     front: z.string(),
-    excludeCardId: z.string().optional(),
+    excludeCardId: z.string().optional().nullable(),
   })
   .strict();
 export type CheckDuplicateCardFrontRequest = z.infer<

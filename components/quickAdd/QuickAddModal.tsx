@@ -323,276 +323,276 @@ export default function QuickAddModal({
       >
         <Pressable style={styles.modalOverlay}>
           <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Szybkie dodawanie</Text>
-            <Pressable onPress={onClose} hitSlop={8}>
-              <XMarkIcon size={24} color={Colors.primary_700} />
-            </Pressable>
-          </View>
-
-          <ScrollView
-            style={styles.scrollView}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Deck Selector */}
-            <DeckSelector
-              selectedDeckId={initialDeckId || null}
-              onDeckSelect={handleDeckSelect}
-              onCreateNew={handleCreateNew}
-              onNoLanguages={handleNoLanguages}
-            />
-
-            {/* Front Input */}
-            <View style={styles.inputContainer}>
-              <View style={styles.inputHeader}>
-                <Text style={styles.inputLabel}>Przod</Text>
-                <Text style={styles.charCount}>
-                  {front.length}/{MAX_CHARS}
-                </Text>
-              </View>
-              {isDuplicateFront && (
-                <View style={styles.duplicateBadge}>
-                  <AntDesign name="warning" size={13} color={Colors.primary_100} />
-                  <Text style={styles.duplicateBadgeText}>Duplikat</Text>
-                </View>
-              )}
-              <TextInput
-                style={styles.textInput}
-                value={front}
-                onChangeText={(text) => {
-                  const trimmed = text.slice(0, MAX_CHARS);
-                  setFront(trimmed);
-                  if (frontCheckTimer.current) clearTimeout(frontCheckTimer.current);
-                  if (!trimmed.trim() || !selectedDeck) {
-                    setIsDuplicateFront(false);
-                    return;
-                  }
-                  frontCheckTimer.current = setTimeout(async () => {
-                    try {
-                      const result = await cloudFunctions.checkDuplicateCardFront(
-                        selectedDeck.id,
-                        trimmed
-                      );
-                      setIsDuplicateFront(result.isDuplicate);
-                    } catch {
-                      // silent fail
-                    }
-                  }, 500);
-                }}
-                onFocus={() => {
-                  if (blurTimer.current) clearTimeout(blurTimer.current);
-                  setCardFocused(true);
-                }}
-                onBlur={() => {
-                  blurTimer.current = setTimeout(() => setCardFocused(false), 150);
-                }}
-                placeholder="Wpisz tekst..."
-                placeholderTextColor={Colors.primary_700_50}
-                multiline
-                maxLength={MAX_CHARS}
-                autoFocus={!initialFront}
-              />
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Szybkie dodawanie</Text>
+              <Pressable onPress={onClose} hitSlop={8}>
+                <XMarkIcon size={24} color={Colors.primary_700} />
+              </Pressable>
             </View>
 
-            {/* Back Input */}
-            <View style={styles.inputContainer}>
-              <View style={styles.inputHeader}>
-                <Text style={styles.inputLabel}>Tyl</Text>
-                <Text style={styles.charCount}>
-                  {back.length}/{MAX_CHARS}
-                </Text>
-              </View>
-              <TextInput
-                style={styles.textInput}
-                value={back}
-                onChangeText={(text) =>
-                  setBack(text.slice(0, MAX_CHARS))
-                }
-                onFocus={() => {
-                  if (blurTimer.current) clearTimeout(blurTimer.current);
-                  setCardFocused(true);
-                }}
-                onBlur={() => {
-                  blurTimer.current = setTimeout(() => setCardFocused(false), 150);
-                }}
-                placeholder="Wpisz tlumaczenie lub odpowiedz..."
-                placeholderTextColor={Colors.primary_700_50}
-                multiline
-                maxLength={MAX_CHARS}
-              />
-
-              {canSuggest && (
-                <TranslationSuggestionsInput
-                  visible={cardFocused}
-                  query={front}
-                  filterValue={back}
-                  fromLanguage={frontLang as SupportedLanguage}
-                  toLanguage={backLang as SupportedLanguage}
-                  onSelect={(s) => {
-                    if (blurTimer.current) clearTimeout(blurTimer.current);
-                    setCardFocused(false);
-                    setBack(s);
-                  }}
-                />
-              )}
-
-              {/* Language selectors + Translate */}
-              <View style={styles.languageRow}>
-                <Pressable
-                  style={styles.langSelector}
-                  onPress={() => setShowLangPicker("front")}
-                >
-                  <Text style={styles.langSelectorLabel}>Z:</Text>
-                  <Text style={styles.langSelectorValue} numberOfLines={1}>
-                    {frontLang ? LANGUAGE_LABELS[frontLang] || frontLang : "Wybierz"}
-                  </Text>
-                  <ChevronDownIcon size={14} color={Colors.primary_700_50} />
-                </Pressable>
-
-                <Text style={styles.langArrow}>→</Text>
-
-                <Pressable
-                  style={styles.langSelector}
-                  onPress={() => setShowLangPicker("back")}
-                >
-                  <Text style={styles.langSelectorLabel}>Na:</Text>
-                  <Text style={styles.langSelectorValue} numberOfLines={1}>
-                    {backLang ? LANGUAGE_LABELS[backLang] || backLang : "Wybierz"}
-                  </Text>
-                  <ChevronDownIcon size={14} color={Colors.primary_700_50} />
-                </Pressable>
-              </View>
-
-              <View style={styles.translateRow}>
-                <Pressable
-                  style={[
-                    styles.translateButton,
-                    (!canTranslate || isTranslating) && styles.translateButtonDisabled,
-                  ]}
-                  onPress={handleTranslate}
-                  disabled={isTranslating || !canTranslate}
-                >
-                  {isTranslating ? (
-                    <ActivityIndicator size="small" color={Colors.primary_500} />
-                  ) : (
-                    <>
-                      <LanguageIcon
-                        size={16}
-                        color={canTranslate ? Colors.primary_500 : Colors.primary_700_50}
-                      />
-                      <Text
-                        style={[
-                          styles.translateButtonText,
-                          !canTranslate && styles.translateButtonTextDisabled,
-                        ]}
-                      >
-                        Przetlumacz
-                      </Text>
-                    </>
-                  )}
-                </Pressable>
-
-                {/* Translation limit indicator */}
-                {frontLang && backLang && (
-                  <Text
-                    style={[
-                      styles.limitText,
-                      isLimitReached && styles.limitTextReached,
-                    ]}
-                  >
-                    {isLimitReached
-                      ? "Limit osiagniety"
-                      : `${remainingToday} pozostalo`}
-                  </Text>
-                )}
-              </View>
-            </View>
-          </ScrollView>
-
-          {/* Language picker modal */}
-          <Modal
-            visible={showLangPicker !== null}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setShowLangPicker(null)}
-          >
-            <Pressable
-              style={styles.langPickerOverlay}
-              onPress={() => setShowLangPicker(null)}
+            <ScrollView
+              style={styles.scrollView}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
             >
-              <View style={styles.langPickerContent}>
-                <Text style={styles.langPickerTitle}>
-                  {showLangPicker === "front" ? "Jezyk zrodlowy" : "Jezyk docelowy"}
-                </Text>
-                <FlatList
-                  data={[...SUPPORTED_LANGUAGES]}
-                  keyExtractor={(item) => item}
-                  renderItem={({ item }) => {
-                    const isSelected = showLangPicker === "front"
-                      ? frontLang === item
-                      : backLang === item;
-                    return (
-                      <Pressable
-                        style={[
-                          styles.langItem,
-                          isSelected && styles.langItemSelected,
-                        ]}
-                        onPress={() => {
-                          if (showLangPicker === "front") {
-                            setFrontLang(item);
-                          } else {
-                            setBackLang(item);
-                          }
-                          setShowLangPicker(null);
-                        }}
-                      >
+              {/* Deck Selector */}
+              <DeckSelector
+                selectedDeckId={initialDeckId || null}
+                onDeckSelect={handleDeckSelect}
+                onCreateNew={handleCreateNew}
+                onNoLanguages={handleNoLanguages}
+              />
+
+              {/* Front Input */}
+              <View style={styles.inputContainer}>
+                <View style={styles.inputHeader}>
+                  <Text style={styles.inputLabel}>Przod</Text>
+                  <Text style={styles.charCount}>
+                    {front.length}/{MAX_CHARS}
+                  </Text>
+                </View>
+                {isDuplicateFront && (
+                  <View style={styles.duplicateBadge}>
+                    <AntDesign name="warning" size={13} color={Colors.primary_100} />
+                    <Text style={styles.duplicateBadgeText}>Duplikat</Text>
+                  </View>
+                )}
+                <TextInput
+                  style={styles.textInput}
+                  value={front}
+                  onChangeText={(text) => {
+                    const trimmed = text.slice(0, MAX_CHARS);
+                    setFront(trimmed);
+                    if (frontCheckTimer.current) clearTimeout(frontCheckTimer.current);
+                    if (!trimmed.trim() || !selectedDeck) {
+                      setIsDuplicateFront(false);
+                      return;
+                    }
+                    frontCheckTimer.current = setTimeout(async () => {
+                      try {
+                        const result = await cloudFunctions.checkDuplicateCardFront(
+                          selectedDeck.id,
+                          trimmed
+                        );
+                        setIsDuplicateFront(result.isDuplicate);
+                      } catch {
+                        // silent fail
+                      }
+                    }, 500);
+                  }}
+                  onFocus={() => {
+                    if (blurTimer.current) clearTimeout(blurTimer.current);
+                    setCardFocused(true);
+                  }}
+                  onBlur={() => {
+                    blurTimer.current = setTimeout(() => setCardFocused(false), 150);
+                  }}
+                  placeholder="Wpisz tekst..."
+                  placeholderTextColor={Colors.primary_700_50}
+                  multiline
+                  maxLength={MAX_CHARS}
+                  autoFocus={!initialFront}
+                />
+              </View>
+
+              {/* Back Input */}
+              <View style={styles.inputContainer}>
+                <View style={styles.inputHeader}>
+                  <Text style={styles.inputLabel}>Tyl</Text>
+                  <Text style={styles.charCount}>
+                    {back.length}/{MAX_CHARS}
+                  </Text>
+                </View>
+                <TextInput
+                  style={styles.textInput}
+                  value={back}
+                  onChangeText={(text) =>
+                    setBack(text.slice(0, MAX_CHARS))
+                  }
+                  onFocus={() => {
+                    if (blurTimer.current) clearTimeout(blurTimer.current);
+                    setCardFocused(true);
+                  }}
+                  onBlur={() => {
+                    blurTimer.current = setTimeout(() => setCardFocused(false), 150);
+                  }}
+                  placeholder="Wpisz tlumaczenie lub odpowiedz..."
+                  placeholderTextColor={Colors.primary_700_50}
+                  multiline
+                  maxLength={MAX_CHARS}
+                />
+
+                {canSuggest && (
+                  <TranslationSuggestionsInput
+                    visible={cardFocused}
+                    query={front}
+                    filterValue={back}
+                    fromLanguage={frontLang as SupportedLanguage}
+                    toLanguage={backLang as SupportedLanguage}
+                    onSelect={(s) => {
+                      if (blurTimer.current) clearTimeout(blurTimer.current);
+                      setCardFocused(false);
+                      setBack(s);
+                    }}
+                  />
+                )}
+
+                {/* Language selectors + Translate */}
+                <View style={styles.languageRow}>
+                  <Pressable
+                    style={styles.langSelector}
+                    onPress={() => setShowLangPicker("front")}
+                  >
+                    <Text style={styles.langSelectorLabel}>Z:</Text>
+                    <Text style={styles.langSelectorValue} numberOfLines={1}>
+                      {frontLang ? LANGUAGE_LABELS[frontLang] || frontLang : "Wybierz"}
+                    </Text>
+                    <ChevronDownIcon size={14} color={Colors.primary_700_50} />
+                  </Pressable>
+
+                  <Text style={styles.langArrow}>→</Text>
+
+                  <Pressable
+                    style={styles.langSelector}
+                    onPress={() => setShowLangPicker("back")}
+                  >
+                    <Text style={styles.langSelectorLabel}>Na:</Text>
+                    <Text style={styles.langSelectorValue} numberOfLines={1}>
+                      {backLang ? LANGUAGE_LABELS[backLang] || backLang : "Wybierz"}
+                    </Text>
+                    <ChevronDownIcon size={14} color={Colors.primary_700_50} />
+                  </Pressable>
+                </View>
+
+                <View style={styles.translateRow}>
+                  <Pressable
+                    style={[
+                      styles.translateButton,
+                      (!canTranslate || isTranslating) && styles.translateButtonDisabled,
+                    ]}
+                    onPress={handleTranslate}
+                    disabled={isTranslating || !canTranslate}
+                  >
+                    {isTranslating ? (
+                      <ActivityIndicator size="small" color={Colors.primary_500} />
+                    ) : (
+                      <>
+                        <LanguageIcon
+                          size={16}
+                          color={canTranslate ? Colors.primary_500 : Colors.primary_700_50}
+                        />
                         <Text
                           style={[
-                            styles.langItemText,
-                            isSelected && styles.langItemTextSelected,
+                            styles.translateButtonText,
+                            !canTranslate && styles.translateButtonTextDisabled,
                           ]}
                         >
-                          {LANGUAGE_LABELS[item] || item}
+                          Przetlumacz
                         </Text>
-                        {isSelected && (
-                          <CheckIcon size={18} color={Colors.primary_500} />
-                        )}
-                      </Pressable>
-                    );
-                  }}
-                />
+                      </>
+                    )}
+                  </Pressable>
+
+                  {/* Translation limit indicator */}
+                  {frontLang && backLang && (
+                    <Text
+                      style={[
+                        styles.limitText,
+                        isLimitReached && styles.limitTextReached,
+                      ]}
+                    >
+                      {isLimitReached
+                        ? "Limit osiagniety"
+                        : `${remainingToday} pozostalo`}
+                    </Text>
+                  )}
+                </View>
               </View>
-            </Pressable>
-          </Modal>
+            </ScrollView>
 
-          {/* Action Buttons */}
-          <View style={styles.actions}>
-            <Pressable
-              style={styles.cancelButton}
-              onPress={onClose}
-              disabled={isSaving}
+            {/* Language picker modal */}
+            <Modal
+              visible={showLangPicker !== null}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setShowLangPicker(null)}
             >
-              <Text style={styles.cancelButtonText}>Anuluj</Text>
-            </Pressable>
+              <Pressable
+                style={styles.langPickerOverlay}
+                onPress={() => setShowLangPicker(null)}
+              >
+                <View style={styles.langPickerContent}>
+                  <Text style={styles.langPickerTitle}>
+                    {showLangPicker === "front" ? "Jezyk zrodlowy" : "Jezyk docelowy"}
+                  </Text>
+                  <FlatList
+                    data={[...SUPPORTED_LANGUAGES]}
+                    keyExtractor={(item) => item}
+                    renderItem={({ item }) => {
+                      const isSelected = showLangPicker === "front"
+                        ? frontLang === item
+                        : backLang === item;
+                      return (
+                        <Pressable
+                          style={[
+                            styles.langItem,
+                            isSelected && styles.langItemSelected,
+                          ]}
+                          onPress={() => {
+                            if (showLangPicker === "front") {
+                              setFrontLang(item);
+                            } else {
+                              setBackLang(item);
+                            }
+                            setShowLangPicker(null);
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.langItemText,
+                              isSelected && styles.langItemTextSelected,
+                            ]}
+                          >
+                            {LANGUAGE_LABELS[item] || item}
+                          </Text>
+                          {isSelected && (
+                            <CheckIcon size={18} color={Colors.primary_500} />
+                          )}
+                        </Pressable>
+                      );
+                    }}
+                  />
+                </View>
+              </Pressable>
+            </Modal>
 
-            <Pressable
-              style={[
-                styles.saveButton,
-                (!front.trim() || !selectedDeck || isSaving) &&
+            {/* Action Buttons */}
+            <View style={styles.actions}>
+              <Pressable
+                style={styles.cancelButton}
+                onPress={onClose}
+                disabled={isSaving}
+              >
+                <Text style={styles.cancelButtonText}>Anuluj</Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.saveButton,
+                  (!front.trim() || !selectedDeck || isSaving) &&
                   styles.saveButtonDisabled,
-              ]}
-              onPress={handleSave}
-              disabled={!front.trim() || !selectedDeck || isSaving}
-            >
-              {isSaving ? (
-                <ActivityIndicator size="small" color={Colors.white} />
-              ) : (
-                <Text style={styles.saveButtonText}>Dodaj karte</Text>
-              )}
-            </Pressable>
-          </View>
+                ]}
+                onPress={handleSave}
+                disabled={!front.trim() || !selectedDeck || isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator size="small" color={Colors.white} />
+                ) : (
+                  <Text style={styles.saveButtonText}>Dodaj karte</Text>
+                )}
+              </Pressable>
+            </View>
           </Pressable>
         </Pressable>
         <Toast />

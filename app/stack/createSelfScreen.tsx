@@ -218,13 +218,11 @@ export default function createSelfScreen(): React.JSX.Element {
         cardId,
         setTimeout(async () => {
           try {
-            console.log("checking duplicate card front", typedParams.deckId, front, cardId);
             const result = await cloudFunctions.checkDuplicateCardFront(
               typedParams.deckId!,
               front,
               cardId
             );
-            console.log("result", result);
             setBackendDuplicateIds((prev) => {
               const next = new Set(prev);
               if (result.isDuplicate) {

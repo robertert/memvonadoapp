@@ -4023,15 +4023,15 @@ export type AddCardToDeckResponse = z.infer<typeof AddCardToDeckResponseSchema>;
 export declare const CheckDuplicateCardFrontRequestSchema: z.ZodObject<{
     deckId: z.ZodString;
     front: z.ZodString;
-    excludeCardId: z.ZodOptional<z.ZodString>;
+    excludeCardId: z.ZodNullable<z.ZodOptional<z.ZodString>>;
 }, "strict", z.ZodTypeAny, {
     deckId: string;
     front: string;
-    excludeCardId?: string | undefined;
+    excludeCardId?: string | null | undefined;
 }, {
     deckId: string;
     front: string;
-    excludeCardId?: string | undefined;
+    excludeCardId?: string | null | undefined;
 }>;
 export type CheckDuplicateCardFrontRequest = z.infer<typeof CheckDuplicateCardFrontRequestSchema>;
 export declare const CheckDuplicateCardFrontResponseSchema: z.ZodObject<{

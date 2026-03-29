@@ -264,7 +264,7 @@ exports.CheckDuplicateCardFrontRequestSchema = zod_1.z
     .object({
     deckId: zod_1.z.string(),
     front: zod_1.z.string(),
-    excludeCardId: zod_1.z.string().optional(),
+    excludeCardId: zod_1.z.string().optional().nullable(),
 })
     .strict();
 exports.CheckDuplicateCardFrontResponseSchema = zod_1.z.object({
