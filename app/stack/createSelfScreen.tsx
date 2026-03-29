@@ -102,6 +102,10 @@ export default function createSelfScreen(): React.JSX.Element {
   const initialCardIdsRef = useRef<Set<string>>(new Set());
   const [deletedCardIds, setDeletedCardIds] = useState<Set<string>>(new Set());
 
+  // Backend duplicate check state (covers cards not yet paginated)
+  const [backendDuplicateIds, setBackendDuplicateIds] = useState<Set<string>>(new Set());
+  const frontCheckTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
   const focusRefs = useRef<Record<string, TextInput | null>>({});
   const flashListRef = useRef<FlatList<EditableCard>>(null);
   const lastVisibleIndexRef = useRef<number>(0);
@@ -205,6 +209,40 @@ export default function createSelfScreen(): React.JSX.Element {
     return { created, updated, deleted };
   }, [cards, deletedCardIds]);
 
+  const scheduleBackendDuplicateCheck = useCallback(
+    (cardId: string, front: string) => {
+      if (!typedParams.deckId) return; // only needed in edit mode
+      const existing = frontCheckTimers.current.get(cardId);
+      if (existing) clearTimeout(existing);
+      frontCheckTimers.current.set(
+        cardId,
+        setTimeout(async () => {
+          try {
+            console.log("checking duplicate card front", typedParams.deckId, front, cardId);
+            const result = await cloudFunctions.checkDuplicateCardFront(
+              typedParams.deckId!,
+              front,
+              cardId
+            );
+            console.log("result", result);
+            setBackendDuplicateIds((prev) => {
+              const next = new Set(prev);
+              if (result.isDuplicate) {
+                next.add(cardId);
+              } else {
+                next.delete(cardId);
+              }
+              return next;
+            });
+          } catch {
+            // silent fail — falls back to in-memory check only
+          }
+        }, 500)
+      );
+    },
+    [typedParams.deckId]
+  );
+
   // Update card callback (memoized for performance)
   const updateCard = useCallback(
     (cardId: string, updates: Partial<EditableCard>) => {
@@ -218,12 +256,27 @@ export default function createSelfScreen(): React.JSX.Element {
           return card;
         })
       );
+      if (updates.cardData?.front !== undefined) {
+        scheduleBackendDuplicateCheck(cardId, updates.cardData.front);
+      }
     },
-    []
+    [scheduleBackendDuplicateCheck]
   );
 
   // Delete card handler
   const deleteCard = useCallback((cardId: string) => {
+    // Clear any pending duplicate check timer and remove from results
+    const timer = frontCheckTimers.current.get(cardId);
+    if (timer) {
+      clearTimeout(timer);
+      frontCheckTimers.current.delete(cardId);
+    }
+    setBackendDuplicateIds((prev) => {
+      if (!prev.has(cardId)) return prev;
+      const next = new Set(prev);
+      next.delete(cardId);
+      return next;
+    });
     setCards((prev) => {
       const card = prev.find((c) => c.id === cardId);
       if (card?.isNew) {
@@ -676,74 +729,74 @@ export default function createSelfScreen(): React.JSX.Element {
             {["English", "Spanish", "French", "German"].includes(
               deckCategory
             ) && (
-              <View style={styles.languageSection}>
-                <Text style={styles.sectionTitle}>Języki fiszek</Text>
+                <View style={styles.languageSection}>
+                  <Text style={styles.sectionTitle}>Języki fiszek</Text>
 
-                <View style={styles.languageRow}>
-                  <Text style={styles.languageLabel}>Przód</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.languageScrollContent}
-                  >
-                    {LANGUAGE_OPTIONS.map((lang) => {
-                      const isActive = lang.code === frontLanguage;
-                      return (
-                        <Pressable
-                          key={`front-${lang.code}`}
-                          onPress={() => setFrontLanguage(lang.code)}
-                          style={[
-                            styles.languageChip,
-                            isActive && styles.languageChipActive,
-                          ]}
-                        >
-                          <Text
+                  <View style={styles.languageRow}>
+                    <Text style={styles.languageLabel}>Przód</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.languageScrollContent}
+                    >
+                      {LANGUAGE_OPTIONS.map((lang) => {
+                        const isActive = lang.code === frontLanguage;
+                        return (
+                          <Pressable
+                            key={`front-${lang.code}`}
+                            onPress={() => setFrontLanguage(lang.code)}
                             style={[
-                              styles.languageChipText,
-                              isActive && styles.languageChipTextActive,
+                              styles.languageChip,
+                              isActive && styles.languageChipActive,
                             ]}
                           >
-                            {lang.label}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
+                            <Text
+                              style={[
+                                styles.languageChipText,
+                                isActive && styles.languageChipTextActive,
+                              ]}
+                            >
+                              {lang.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
 
-                <View style={styles.languageRow}>
-                  <Text style={styles.languageLabel}>Tył</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.languageScrollContent}
-                  >
-                    {LANGUAGE_OPTIONS.map((lang) => {
-                      const isActive = lang.code === backLanguage;
-                      return (
-                        <Pressable
-                          key={`back-${lang.code}`}
-                          onPress={() => setBackLanguage(lang.code)}
-                          style={[
-                            styles.languageChip,
-                            isActive && styles.languageChipActive,
-                          ]}
-                        >
-                          <Text
+                  <View style={styles.languageRow}>
+                    <Text style={styles.languageLabel}>Tył</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.languageScrollContent}
+                    >
+                      {LANGUAGE_OPTIONS.map((lang) => {
+                        const isActive = lang.code === backLanguage;
+                        return (
+                          <Pressable
+                            key={`back-${lang.code}`}
+                            onPress={() => setBackLanguage(lang.code)}
                             style={[
-                              styles.languageChipText,
-                              isActive && styles.languageChipTextActive,
+                              styles.languageChip,
+                              isActive && styles.languageChipActive,
                             ]}
                           >
-                            {lang.label}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </ScrollView>
+                            <Text
+                              style={[
+                                styles.languageChipText,
+                                isActive && styles.languageChipTextActive,
+                              ]}
+                            >
+                              {lang.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
                 </View>
-              </View>
-            )}
+              )}
           </>
         )}
 
@@ -780,7 +833,7 @@ export default function createSelfScreen(): React.JSX.Element {
         deckLanguage={frontLanguage}
         backLanguage={backLanguage}
         onEnter={addAndFocusCard}
-        isDuplicate={duplicateCardIds.has(card.id)}
+        isDuplicate={duplicateCardIds.has(card.id) || backendDuplicateIds.has(card.id)}
         focusRef={(ref: TextInput | null) => {
           if (ref) {
             focusRefs.current[card.id] = ref;
@@ -790,7 +843,7 @@ export default function createSelfScreen(): React.JSX.Element {
         }}
       />
     ),
-    [updateCard, deleteCard, frontLanguage, backLanguage, duplicateCardIds]
+    [updateCard, deleteCard, frontLanguage, backLanguage, duplicateCardIds, backendDuplicateIds]
   );
 
   return (
@@ -830,7 +883,7 @@ export default function createSelfScreen(): React.JSX.Element {
                 typedParams.edit === "true" ? loadMoreCards : undefined
               }
               onEndReachedThreshold={0.5}
-              onScrollToIndexFailed={() => {}}
+              onScrollToIndexFailed={() => { }}
               ListFooterComponent={
                 <>
                   {isLoadingMoreCards ? (

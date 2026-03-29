@@ -25,30 +25,49 @@ export declare enum CardGrade {
      */
     Easy = 3
 }
-/**
- * Podstawowe dane karty (edytowalne w formularzu)
- */
-export declare const CardDataSchema: z.ZodObject<{
+export declare const CardDataSchema: z.ZodEffects<z.ZodObject<{
     front: z.ZodString;
     back: z.ZodString;
-}, "strict", z.ZodTypeAny, {
+    frontLower: z.ZodOptional<z.ZodString>;
+    backLower: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
     front: string;
     back: string;
+    frontLower?: string | undefined;
+    backLower?: string | undefined;
 }, {
     front: string;
     back: string;
+    frontLower?: string | undefined;
+    backLower?: string | undefined;
+}>, {
+    front: string;
+    back: string;
+    frontLower: string;
+    backLower: string;
+}, {
+    front: string;
+    back: string;
+    frontLower?: string | undefined;
+    backLower?: string | undefined;
 }>;
 export type CardData = z.infer<typeof CardDataSchema>;
 export declare const CardCoreSchema: z.ZodObject<{
     cardData: z.ZodObject<{
         front: z.ZodString;
         back: z.ZodString;
-    }, "strict", z.ZodTypeAny, {
+        frontLower: z.ZodOptional<z.ZodString>;
+        backLower: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     }, {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     }>;
     tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
 }, "strict", z.ZodTypeAny, {
@@ -56,11 +75,15 @@ export declare const CardCoreSchema: z.ZodObject<{
     cardData: {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     };
 }, {
     cardData: {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     };
     tags?: string[] | undefined;
 }>;
@@ -328,12 +351,18 @@ export declare const CardSchema: z.ZodObject<{
     cardData: z.ZodObject<{
         front: z.ZodString;
         back: z.ZodString;
-    }, "strict", z.ZodTypeAny, {
+        frontLower: z.ZodOptional<z.ZodString>;
+        backLower: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     }, {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     }>;
     tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
 } & {
@@ -445,6 +474,8 @@ export declare const CardSchema: z.ZodObject<{
     cardData: {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     };
     firstLearn: {
         isNew: boolean;
@@ -488,6 +519,8 @@ export declare const CardSchema: z.ZodObject<{
     cardData: {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     };
     firstLearn: {
         due?: unknown;
@@ -536,12 +569,18 @@ export type Card = z.infer<typeof CardSchema>;
 export declare const CardDataUpdateSchema: z.ZodObject<{
     front: z.ZodOptional<z.ZodString>;
     back: z.ZodOptional<z.ZodString>;
-}, "strict", z.ZodTypeAny, {
+    frontLower: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    backLower: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+}, "strip", z.ZodTypeAny, {
     front?: string | undefined;
     back?: string | undefined;
+    frontLower?: string | undefined;
+    backLower?: string | undefined;
 }, {
     front?: string | undefined;
     back?: string | undefined;
+    frontLower?: string | undefined;
+    backLower?: string | undefined;
 }>;
 export type CardDataUpdate = z.infer<typeof CardDataUpdateSchema>;
 /**
@@ -551,12 +590,18 @@ export declare const CardCoreUpdateSchema: z.ZodObject<{
     cardData: z.ZodOptional<z.ZodObject<{
         front: z.ZodString;
         back: z.ZodString;
-    }, "strict", z.ZodTypeAny, {
+        frontLower: z.ZodOptional<z.ZodString>;
+        backLower: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     }, {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     }>>;
     tags: z.ZodOptional<z.ZodDefault<z.ZodArray<z.ZodString, "many">>>;
 }, "strict", z.ZodTypeAny, {
@@ -564,12 +609,16 @@ export declare const CardCoreUpdateSchema: z.ZodObject<{
     cardData?: {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     } | undefined;
 }, {
     tags?: string[] | undefined;
     cardData?: {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     } | undefined;
 }>;
 export type CardCoreUpdate = z.infer<typeof CardCoreUpdateSchema>;
@@ -809,12 +858,18 @@ export declare const CardUpdateSchema: z.ZodObject<{
     cardData: z.ZodOptional<z.ZodObject<{
         front: z.ZodString;
         back: z.ZodString;
-    }, "strict", z.ZodTypeAny, {
+        frontLower: z.ZodOptional<z.ZodString>;
+        backLower: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     }, {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     }>>;
     tags: z.ZodOptional<z.ZodDefault<z.ZodArray<z.ZodString, "many">>>;
 } & {
@@ -918,6 +973,8 @@ export declare const CardUpdateSchema: z.ZodObject<{
     cardData?: {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     } | undefined;
     cardAlgo?: {
         difficulty: number;
@@ -959,6 +1016,8 @@ export declare const CardUpdateSchema: z.ZodObject<{
     cardData?: {
         front: string;
         back: string;
+        frontLower?: string | undefined;
+        backLower?: string | undefined;
     } | undefined;
     cardAlgo?: {
         difficulty: number;

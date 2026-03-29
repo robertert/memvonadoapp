@@ -13,6 +13,7 @@ import {
   FlatList,
 } from "react-native";
 import { Colors, Fonts } from "@/constants/colors";
+import { AntDesign } from "@expo/vector-icons";
 import { XMarkIcon, ChevronDownIcon } from "react-native-heroicons/outline";
 import { LanguageIcon, CheckIcon } from "react-native-heroicons/solid";
 import * as Haptics from "expo-haptics";
@@ -78,6 +79,10 @@ export default function QuickAddModal({
   const [backLang, setBackLang] = useState<string | null>(null);
   const [showLangPicker, setShowLangPicker] = useState<"front" | "back" | null>(null);
 
+  // Duplicate detection state
+  const [isDuplicateFront, setIsDuplicateFront] = useState(false);
+  const frontCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Loading states
   const [isSaving, setIsSaving] = useState(false);
 
@@ -95,11 +100,12 @@ export default function QuickAddModal({
       setBack(initialBack);
       setFrontLang(null);
       setBackLang(null);
+      setIsDuplicateFront(false);
       autoTranslatedRef.current = false;
     }
   }, [visible, initialFront, initialBack]);
 
-  // Sync language state from deck
+  // Sync language state from deck; reset duplicate check when deck changes
   useEffect(() => {
     if (selectedDeck) {
       if (selectedDeck.frontLanguage && !frontLang) {
@@ -108,6 +114,20 @@ export default function QuickAddModal({
       if (selectedDeck.backLanguage && !backLang) {
         setBackLang(selectedDeck.backLanguage);
       }
+    }
+    // Clear any pending timer (stale closure from previous deck) and reset badge
+    if (frontCheckTimer.current) clearTimeout(frontCheckTimer.current);
+    setIsDuplicateFront(false);
+    // If front is already filled, schedule a fresh check against the new deck
+    if (selectedDeck && front.trim()) {
+      frontCheckTimer.current = setTimeout(async () => {
+        try {
+          const result = await cloudFunctions.checkDuplicateCardFront(selectedDeck.id, front);
+          setIsDuplicateFront(result.isDuplicate);
+        } catch {
+          // silent fail
+        }
+      }, 500);
     }
   }, [selectedDeck]);
 
@@ -332,12 +352,35 @@ export default function QuickAddModal({
                   {front.length}/{MAX_CHARS}
                 </Text>
               </View>
+              {isDuplicateFront && (
+                <View style={styles.duplicateBadge}>
+                  <AntDesign name="warning" size={13} color={Colors.primary_100} />
+                  <Text style={styles.duplicateBadgeText}>Duplikat</Text>
+                </View>
+              )}
               <TextInput
                 style={styles.textInput}
                 value={front}
-                onChangeText={(text) =>
-                  setFront(text.slice(0, MAX_CHARS))
-                }
+                onChangeText={(text) => {
+                  const trimmed = text.slice(0, MAX_CHARS);
+                  setFront(trimmed);
+                  if (frontCheckTimer.current) clearTimeout(frontCheckTimer.current);
+                  if (!trimmed.trim() || !selectedDeck) {
+                    setIsDuplicateFront(false);
+                    return;
+                  }
+                  frontCheckTimer.current = setTimeout(async () => {
+                    try {
+                      const result = await cloudFunctions.checkDuplicateCardFront(
+                        selectedDeck.id,
+                        trimmed
+                      );
+                      setIsDuplicateFront(result.isDuplicate);
+                    } catch {
+                      // silent fail
+                    }
+                  }, 500);
+                }}
                 onFocus={() => {
                   if (blurTimer.current) clearTimeout(blurTimer.current);
                   setCardFocused(true);
@@ -599,6 +642,23 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     marginBottom: 16,
+  },
+  duplicateBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: Colors.red,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 8,
+    gap: 5,
+  },
+  duplicateBadgeText: {
+    color: Colors.primary_100,
+    fontSize: 12,
+    fontFamily: Fonts.primary,
+    fontWeight: "700",
   },
   inputHeader: {
     flexDirection: "row",

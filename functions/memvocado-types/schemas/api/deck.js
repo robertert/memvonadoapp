@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SearchUsersRequestSchema = exports.AddCardToDeckResponseSchema = exports.AddCardToDeckRequestSchema = exports.CheckIfLikedResponseSchema = exports.CheckIfLikedRequestSchema = exports.ToggleDeckLikeResponseSchema = exports.ToggleDeckLikeRequestSchema = exports.RecordDeckViewResponseSchema = exports.RecordDeckViewRequestSchema = exports.GetDailyUserStatsResponseSchema = exports.GetDeckDailyStatsResponseSchema = exports.StartLearningSessionResponseSchema = exports.SessionItemSchema = exports.ImportAnkiDeckResponseSchema = exports.ImportAnkiDeckRequestSchema = exports.UpdateDeckResponseSchema = exports.UpdateCardContentResponseSchema = exports.SyncDeckCardsResponseSchema = exports.CheckCardChangesResponseSchema = exports.GetUserNewDeckCardsResponseSchema = exports.GetUserDueDeckCardsResponseSchema = exports.GetUserDeckCardsResponseSchema = exports.GetUserDeckDetailsResponseSchema = exports.DeleteDeckResponseSchema = exports.StartLearningDeckResponseSchema = exports.GetPopularDecksResponseSchema = exports.CreateDeckWithCardsResponseSchema = exports.GetUserDecksResponseSchema = exports.GetDeckCardsResponseSchema = exports.GetDeckDetailsResponseSchema = exports.GetDailyUserStatsRequestSchema = exports.GetDeckDailyStatsRequestSchema = exports.StartLearningSessionRequestSchema = exports.UpdateDeckRequestSchema = exports.UpdateCardContentRequestSchema = exports.SyncDeckCardsRequestSchema = exports.CheckCardChangesRequestSchema = exports.DeleteDeckRequestSchema = exports.StartLearningDeckRequestSchema = exports.UpdateUserDeckSettingsRequestSchema = exports.UpdateDeckSettingsRequestSchema = exports.ResetDeckRequestSchema = exports.GetUserNewDeckCardsRequestSchema = exports.GetUserDueDeckCardsRequestSchema = exports.GetUserDeckCardsRequestSchema = exports.GetUserDeckDetailsRequestSchema = exports.GetPopularDecksRequestSchema = exports.GetDeckCardsRequestSchema = exports.GetDeckDetailsRequestSchema = exports.CreateDeckWithCardsRequestSchema = void 0;
-exports.GetDeckEditorsResponseSchema = exports.GetDeckEditorsRequestSchema = exports.RemoveDeckEditorResponseSchema = exports.RemoveDeckEditorRequestSchema = exports.AddDeckEditorResponseSchema = exports.AddDeckEditorRequestSchema = exports.SearchUsersResponseSchema = void 0;
+exports.CheckDuplicateCardFrontRequestSchema = exports.AddCardToDeckResponseSchema = exports.AddCardToDeckRequestSchema = exports.CheckIfLikedResponseSchema = exports.CheckIfLikedRequestSchema = exports.ToggleDeckLikeResponseSchema = exports.ToggleDeckLikeRequestSchema = exports.RecordDeckViewResponseSchema = exports.RecordDeckViewRequestSchema = exports.GetDailyUserStatsResponseSchema = exports.GetDeckDailyStatsResponseSchema = exports.StartLearningSessionResponseSchema = exports.SessionItemSchema = exports.ImportAnkiDeckResponseSchema = exports.ImportAnkiDeckRequestSchema = exports.UpdateDeckResponseSchema = exports.UpdateCardContentResponseSchema = exports.SyncDeckCardsResponseSchema = exports.CheckCardChangesResponseSchema = exports.GetUserNewDeckCardsResponseSchema = exports.GetUserDueDeckCardsResponseSchema = exports.GetUserDeckCardsResponseSchema = exports.GetUserDeckDetailsResponseSchema = exports.DeleteDeckResponseSchema = exports.StartLearningDeckResponseSchema = exports.GetPopularDecksResponseSchema = exports.CreateDeckWithCardsResponseSchema = exports.GetUserDecksResponseSchema = exports.GetDeckCardsResponseSchema = exports.GetDeckDetailsResponseSchema = exports.GetDailyUserStatsRequestSchema = exports.GetDeckDailyStatsRequestSchema = exports.StartLearningSessionRequestSchema = exports.UpdateDeckRequestSchema = exports.UpdateCardContentRequestSchema = exports.SyncDeckCardsRequestSchema = exports.CheckCardChangesRequestSchema = exports.DeleteDeckRequestSchema = exports.StartLearningDeckRequestSchema = exports.UpdateUserDeckSettingsRequestSchema = exports.UpdateDeckSettingsRequestSchema = exports.ResetDeckRequestSchema = exports.GetUserNewDeckCardsRequestSchema = exports.GetUserDueDeckCardsRequestSchema = exports.GetUserDeckCardsRequestSchema = exports.GetUserDeckDetailsRequestSchema = exports.GetPopularDecksRequestSchema = exports.GetDeckCardsRequestSchema = exports.GetDeckDetailsRequestSchema = exports.CreateDeckWithCardsRequestSchema = void 0;
+exports.GetDeckEditorsResponseSchema = exports.GetDeckEditorsRequestSchema = exports.RemoveDeckEditorResponseSchema = exports.RemoveDeckEditorRequestSchema = exports.AddDeckEditorResponseSchema = exports.AddDeckEditorRequestSchema = exports.SearchUsersResponseSchema = exports.SearchUsersRequestSchema = exports.CheckDuplicateCardFrontResponseSchema = void 0;
 const zod_1 = require("zod");
 const index_1 = require("../index");
 // ===========================
@@ -256,6 +256,20 @@ exports.AddCardToDeckRequestSchema = zod_1.z
 exports.AddCardToDeckResponseSchema = zod_1.z.object({
     success: zod_1.z.boolean(),
     cardId: zod_1.z.string(),
+});
+// ===========================
+// Duplicate check schemas
+// ===========================
+exports.CheckDuplicateCardFrontRequestSchema = zod_1.z
+    .object({
+    deckId: zod_1.z.string(),
+    front: zod_1.z.string(),
+    excludeCardId: zod_1.z.string().optional(),
+})
+    .strict();
+exports.CheckDuplicateCardFrontResponseSchema = zod_1.z.object({
+    isDuplicate: zod_1.z.boolean(),
+    conflictCardId: zod_1.z.string().nullable(),
 });
 // ===========================
 // Search Users schemas

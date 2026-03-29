@@ -8,6 +8,7 @@ import {
 } from "memvocado-types";
 import * as logger from "firebase-functions/logger";
 import type { DeckRepository } from "../interfaces/DeckRepository";
+import { normalizeCardData } from "../../utils/cardUtils";
 
 const db = getFirestore();
 
@@ -149,10 +150,10 @@ export class FirestoreDeckRepository implements DeckRepository {
       ids.push(cardRef.id);
       const card = CardSchema.parse({
         id: cardRef.id,
-        cardData: {
+        cardData: normalizeCardData({
           front: c.cardData.front || "",
           back: c.cardData.back || "",
-        },
+        }),
         tags: c.tags || [],
         createdAt: now,
         firstLearn: { isNew: true },
@@ -364,7 +365,7 @@ export class FirestoreDeckRepository implements DeckRepository {
     const now = new Date();
     const card = CardSchema.parse({
       id: cardRef.id,
-      cardData: { front: cardData.front, back: cardData.back || "" },
+      cardData: normalizeCardData({ front: cardData.front, back: cardData.back || "" }),
       tags: tags || [],
       createdAt: now,
       firstLearn: { isNew: true },
@@ -397,7 +398,7 @@ export class FirestoreDeckRepository implements DeckRepository {
     const now = new Date();
     const card = CardSchema.parse({
       id: cardRef.id,
-      cardData: { front: cardData.front, back: cardData.back || "" },
+      cardData: normalizeCardData({ front: cardData.front, back: cardData.back || "" }),
       tags: tags || [],
       createdAt: now,
       firstLearn: { isNew: true },

@@ -428,6 +428,29 @@ export const AddCardToDeckResponseSchema = z.object({
 export type AddCardToDeckResponse = z.infer<typeof AddCardToDeckResponseSchema>;
 
 // ===========================
+// Duplicate check schemas
+// ===========================
+
+export const CheckDuplicateCardFrontRequestSchema = z
+  .object({
+    deckId: z.string(),
+    front: z.string(),
+    excludeCardId: z.string().optional(),
+  })
+  .strict();
+export type CheckDuplicateCardFrontRequest = z.infer<
+  typeof CheckDuplicateCardFrontRequestSchema
+>;
+
+export const CheckDuplicateCardFrontResponseSchema = z.object({
+  isDuplicate: z.boolean(),
+  conflictCardId: z.string().nullable(),
+});
+export type CheckDuplicateCardFrontResponse = z.infer<
+  typeof CheckDuplicateCardFrontResponseSchema
+>;
+
+// ===========================
 // Search Users schemas
 // ===========================
 

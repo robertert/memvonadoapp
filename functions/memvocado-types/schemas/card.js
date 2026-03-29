@@ -33,15 +33,21 @@ var CardGrade;
 /**
  * Podstawowe dane karty (edytowalne w formularzu)
  */
-exports.CardDataSchema = zod_1.z
-    .object({
+const _CardDataBaseSchema = zod_1.z.object({
     front: zod_1.z.string(),
     back: zod_1.z.string(),
-})
-    .strict();
+    frontLower: zod_1.z.string().optional(),
+    backLower: zod_1.z.string().optional(),
+});
+exports.CardDataSchema = _CardDataBaseSchema.transform((data) => ({
+    front: data.front,
+    back: data.back,
+    frontLower: data.front.trim().toLowerCase(),
+    backLower: data.back.trim().toLowerCase(),
+}));
 exports.CardCoreSchema = zod_1.z
     .object({
-    cardData: exports.CardDataSchema,
+    cardData: _CardDataBaseSchema,
     tags: zod_1.z.array(zod_1.z.string()).default([]),
 })
     .strict();
@@ -114,7 +120,7 @@ exports.CardSchema = exports.CardCoreSchema.merge(exports.CardLearningSchema)
 /**
  * Częściowa aktualizacja danych karty (tylko cardData)
  */
-exports.CardDataUpdateSchema = exports.CardDataSchema.partial().strict();
+exports.CardDataUpdateSchema = _CardDataBaseSchema.partial();
 /**
  * Częściowa aktualizacja core karty
  */

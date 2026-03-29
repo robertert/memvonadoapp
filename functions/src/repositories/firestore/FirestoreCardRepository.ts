@@ -4,6 +4,7 @@ import type {
   CardRepository,
   GetNewCardsOptions,
 } from "../interfaces/CardRepository";
+import { normalizeCardData } from "../../utils/cardUtils";
 
 const db = getFirestore();
 
@@ -267,10 +268,10 @@ export class FirestoreCardRepository implements CardRepository {
       const src = sourceDoc.data() as Card;
       const card = CardSchema.parse({
         id: sourceDoc.id,
-        cardData: {
+        cardData: normalizeCardData({
           front: src.cardData?.front || "",
           back: src.cardData?.back || "",
-        },
+        }),
         tags: src.tags || [],
         createdAt: src.createdAt || new Date(),
         firstLearn: { isNew: true, due: new Date() },
@@ -374,7 +375,7 @@ export class FirestoreCardRepository implements CardRepository {
     for (const u of ops.update) {
       await enqueue((b) =>
         b.update(cardsRef.doc(u.id), {
-          cardData: u.cardData,
+          cardData: normalizeCardData(u.cardData),
           tags: u.tags,
           updatedAt: now,
         })
@@ -438,7 +439,7 @@ export class FirestoreCardRepository implements CardRepository {
     for (const u of changes.updated) {
       await enqueue((b) =>
         b.update(cardsRef.doc(u.id), {
-          cardData: u.cardData,
+          cardData: normalizeCardData(u.cardData),
           tags: u.tags || [],
         })
       );
@@ -448,10 +449,10 @@ export class FirestoreCardRepository implements CardRepository {
       const cardRef = cardsRef.doc();
       const card = CardSchema.parse({
         id: cardRef.id,
-        cardData: {
+        cardData: normalizeCardData({
           front: c.cardData.front || "",
           back: c.cardData.back || "",
-        },
+        }),
         tags: c.tags || [],
         createdAt: now,
         firstLearn: { isNew: true },
@@ -476,7 +477,7 @@ export class FirestoreCardRepository implements CardRepository {
     const ref = db.doc(`decks/${deckId}/cards/${cardId}`);
     const snap = await ref.get();
     if (!snap.exists) throw new Error("not-found");
-    await ref.update({ cardData: data.cardData, tags: data.tags });
+    await ref.update({ cardData: normalizeCardData(data.cardData), tags: data.tags });
   }
 
   /**
@@ -495,7 +496,7 @@ export class FirestoreCardRepository implements CardRepository {
     const ref = db.doc(`users/${userId}/decks/${deckId}/cards/${cardId}`);
     const snap = await ref.get();
     if (!snap.exists) return;
-    await ref.update({ cardData: data.cardData, tags: data.tags });
+    await ref.update({ cardData: normalizeCardData(data.cardData), tags: data.tags });
   }
 
   /**

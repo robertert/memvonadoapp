@@ -397,6 +397,7 @@ export function useAllInOneCardLogic(deckId: string) {
   // Navigate to victory screen when finished
   useEffect(() => {
     if (isFinished && session) {
+      clearSession(deckId); // ensure session is always cleared on completion
       router.replace({
         pathname: "./victoryScreen",
         params: {

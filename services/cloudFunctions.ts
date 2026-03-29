@@ -217,6 +217,9 @@ import {
   GetDeckEditorsRequest,
   GetDeckEditorsResponse,
   GetDeckEditorsResponseSchema,
+  CheckDuplicateCardFrontRequest,
+  CheckDuplicateCardFrontResponse,
+  CheckDuplicateCardFrontResponseSchema,
 } from "@/types/schemas/api/deck";
 import {
   CheckUsernameAvailabilityRequest,
@@ -1291,6 +1294,27 @@ export const cloudFunctions = {
     return validatedData.data;
   },
 
+  // Check if a card with the given front text already exists in a source deck
+  checkDuplicateCardFront: async (
+    deckId: string,
+    front: string,
+    excludeCardId?: string
+  ) => {
+    const fn = httpsCallable<
+      CheckDuplicateCardFrontRequest,
+      CheckDuplicateCardFrontResponse
+    >(functions, "checkDuplicateCardFront");
+    const result = await fn({ deckId, front, excludeCardId });
+    const validatedData = CheckDuplicateCardFrontResponseSchema.safeParse(
+      result.data
+    );
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from checkDuplicateCardFront");
+    }
+    return validatedData.data;
+  },
+
   // ============================================================================
   // Translation Functions
   // ============================================================================
@@ -1331,7 +1355,7 @@ export const cloudFunctions = {
     return validatedData.data;
   },
 
-  // Get up to 3 translation suggestions via DeepL (with Firestore cache)
+  // Get up to 3 translation suggestions
   getTranslationSuggestions: async (params: {
     text: string;
     fromLanguage: SupportedLanguage;

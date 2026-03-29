@@ -32,18 +32,25 @@ export enum CardGrade {
 /**
  * Podstawowe dane karty (edytowalne w formularzu)
  */
-export const CardDataSchema = z
-  .object({
-    front: z.string(),
-    back: z.string(),
-  })
-  .strict();
+const _CardDataBaseSchema = z.object({
+  front: z.string(),
+  back: z.string(),
+  frontLower: z.string().optional(),
+  backLower: z.string().optional(),
+});
+
+export const CardDataSchema = _CardDataBaseSchema.transform((data) => ({
+  front: data.front,
+  back: data.back,
+  frontLower: data.front.trim().toLowerCase(),
+  backLower: data.back.trim().toLowerCase(),
+}));
 
 export type CardData = z.infer<typeof CardDataSchema>;
 
 export const CardCoreSchema = z
   .object({
-    cardData: CardDataSchema,
+    cardData: _CardDataBaseSchema,
     tags: z.array(z.string()).default([]),
   })
   .strict();
@@ -138,7 +145,7 @@ export type Card = z.infer<typeof CardSchema>;
 /**
  * Częściowa aktualizacja danych karty (tylko cardData)
  */
-export const CardDataUpdateSchema = CardDataSchema.partial().strict();
+export const CardDataUpdateSchema = _CardDataBaseSchema.partial();
 
 export type CardDataUpdate = z.infer<typeof CardDataUpdateSchema>;
 

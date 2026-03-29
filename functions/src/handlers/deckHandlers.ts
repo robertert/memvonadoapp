@@ -31,6 +31,7 @@ import {
   UpdateDeckResponseSchema,
 } from "../types/common";
 import { serializeTimestamps } from "../utils/serialization";
+import { normalizeCardData } from "../utils/cardUtils";
 import {
   CreateDeckWithCardsRequestSchema,
   GetDeckDetailsRequestSchema,
@@ -74,6 +75,8 @@ import {
   RemoveDeckEditorResponseSchema,
   GetDeckEditorsRequestSchema,
   GetDeckEditorsResponseSchema,
+  CheckDuplicateCardFrontRequestSchema,
+  CheckDuplicateCardFrontResponseSchema,
 } from "memvocado-types/schemas/api/deck";
 import { convertAnkiApkg } from "../ankiConverter";
 import {
@@ -1015,10 +1018,10 @@ export const importAnkiDeck = onCall(async (request) => {
 
       const mainCard = {
         id: cardRef.id,
-        cardData: {
+        cardData: normalizeCardData({
           front: card.cardData.front,
           back: card.cardData.back,
-        },
+        }),
         tags: card.tags || [],
         firstLearn: {
           isNew: true,
@@ -1033,6 +1036,10 @@ export const importAnkiDeck = onCall(async (request) => {
       const validatedCard = CardSchema.parse({
         ...card,
         id: cardRef.id,
+        cardData: normalizeCardData({
+          front: card.cardData.front,
+          back: card.cardData.back,
+        }),
       });
       currentBatch.set(cardUserRef, validatedCard);
       batchCount++;
@@ -1340,6 +1347,39 @@ export const getDeckEditors = onCall(async (request) => {
       throw error;
     }
     throw new HttpsError("internal", "Failed to get deck editors");
+  }
+});
+
+/**
+ * Check if a card with the given front text already exists in a source deck.
+ * Uses cardData.frontLower for case-insensitive matching.
+ */
+export const checkDuplicateCardFront = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+  const parsed = CheckDuplicateCardFrontRequestSchema.safeParse(request.data);
+  if (!parsed.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsed.error.issues,
+    });
+  }
+  const { deckId, front, excludeCardId } = parsed.data;
+  const norm = front.trim().toLowerCase();
+  try {
+    const snap = await db
+      .collection(`decks/${deckId}/cards`)
+      .where("cardData.frontLower", "==", norm)
+      .limit(2)
+      .get();
+    const conflict = snap.docs.find((d) => d.id !== excludeCardId);
+    return CheckDuplicateCardFrontResponseSchema.parse({
+      isDuplicate: !!conflict,
+      conflictCardId: conflict?.id ?? null,
+    });
+  } catch (error) {
+    logger.error("Error checking duplicate card front", error);
+    throw new HttpsError("internal", "Failed to check duplicate");
   }
 });
 

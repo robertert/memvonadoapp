@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -38,9 +38,29 @@ export default function editCard(): React.JSX.Element {
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState<string>("");
 
+  // Duplicate detection state
+  const [isDuplicate, setIsDuplicate] = useState(false);
+  const frontCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     fetchCard();
   }, []);
+
+  function scheduleDuplicateCheck(text: string, deckId: string, excludeCardId: string): void {
+    if (frontCheckTimer.current) clearTimeout(frontCheckTimer.current);
+    if (!text.trim()) {
+      setIsDuplicate(false);
+      return;
+    }
+    frontCheckTimer.current = setTimeout(async () => {
+      try {
+        const result = await cloudFunctions.checkDuplicateCardFront(deckId, text, excludeCardId);
+        setIsDuplicate(result.isDuplicate);
+      } catch {
+        // silent fail
+      }
+    }, 500);
+  }
 
   async function fetchCard(): Promise<void> {
     try {
@@ -85,6 +105,13 @@ export default function editCard(): React.JSX.Element {
       setFront(foundCard.cardData.front);
       setBack(foundCard.cardData.back);
       setTags(foundCard.tags || []);
+
+      // Check for duplicates on initial load
+      scheduleDuplicateCheck(
+        foundCard.cardData.front,
+        typedParams.deckId,
+        typedParams.cardId
+      );
     } catch (error) {
       console.error("Error fetching card:", error);
       router.back();
@@ -188,10 +215,19 @@ export default function editCard(): React.JSX.Element {
             {/* Front Section */}
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Front</Text>
+              {isDuplicate && (
+                <View style={styles.duplicateBadge}>
+                  <AntDesign name="warning" size={13} color={Colors.primary_100} />
+                  <Text style={styles.duplicateBadgeText}>Duplikat</Text>
+                </View>
+              )}
               <View style={styles.inputContainer}>
                 <TextInput
                   style={styles.input}
-                  onChangeText={setFront}
+                  onChangeText={(text) => {
+                    setFront(text);
+                    scheduleDuplicateCheck(text, typedParams.deckId, typedParams.cardId);
+                  }}
                   value={front}
                   placeholder="Wprowadź treść frontu..."
                   placeholderTextColor={Colors.primary_700_50}
@@ -347,6 +383,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     minHeight: 100,
+  },
+  duplicateBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: Colors.red,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 12,
+    gap: 5,
+  },
+  duplicateBadgeText: {
+    color: Colors.primary_100,
+    fontSize: 12,
+    fontFamily: Fonts.primary,
+    fontWeight: "700",
   },
   input: {
     color: Colors.primary_700,

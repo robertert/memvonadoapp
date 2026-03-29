@@ -29,12 +29,18 @@ export declare const CreateDeckWithCardsRequestSchema: z.ZodObject<{
         cardData: z.ZodObject<{
             front: z.ZodString;
             back: z.ZodString;
-        }, "strict", z.ZodTypeAny, {
+            frontLower: z.ZodOptional<z.ZodString>;
+            backLower: z.ZodOptional<z.ZodString>;
+        }, "strip", z.ZodTypeAny, {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         }, {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         }>;
         tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     }, "strict", z.ZodTypeAny, {
@@ -42,11 +48,15 @@ export declare const CreateDeckWithCardsRequestSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
     }, {
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         tags?: string[] | undefined;
     }>, "many">;
@@ -56,6 +66,8 @@ export declare const CreateDeckWithCardsRequestSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
     }[];
     deckData: {
@@ -72,6 +84,8 @@ export declare const CreateDeckWithCardsRequestSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         tags?: string[] | undefined;
     }[];
@@ -367,12 +381,18 @@ export declare const UpdateCardContentRequestSchema: z.ZodObject<{
         cardData: z.ZodObject<{
             front: z.ZodString;
             back: z.ZodString;
-        }, "strict", z.ZodTypeAny, {
+            frontLower: z.ZodOptional<z.ZodString>;
+            backLower: z.ZodOptional<z.ZodString>;
+        }, "strip", z.ZodTypeAny, {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         }, {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         }>;
         tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     }, "strict", z.ZodTypeAny, {
@@ -380,11 +400,15 @@ export declare const UpdateCardContentRequestSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
     }, {
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         tags?: string[] | undefined;
     }>;
@@ -395,6 +419,8 @@ export declare const UpdateCardContentRequestSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
     };
     cardId: string;
@@ -404,6 +430,8 @@ export declare const UpdateCardContentRequestSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         tags?: string[] | undefined;
     };
@@ -442,12 +470,18 @@ export declare const UpdateDeckRequestSchema: z.ZodObject<{
             cardData: z.ZodObject<{
                 front: z.ZodString;
                 back: z.ZodString;
-            }, "strict", z.ZodTypeAny, {
+                frontLower: z.ZodOptional<z.ZodString>;
+                backLower: z.ZodOptional<z.ZodString>;
+            }, "strip", z.ZodTypeAny, {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             }, {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             }>;
             tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
         }, "strict", z.ZodTypeAny, {
@@ -455,11 +489,15 @@ export declare const UpdateDeckRequestSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
         }, {
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
             tags?: string[] | undefined;
         }>, "many">;
@@ -467,12 +505,18 @@ export declare const UpdateDeckRequestSchema: z.ZodObject<{
             cardData: z.ZodObject<{
                 front: z.ZodString;
                 back: z.ZodString;
-            }, "strict", z.ZodTypeAny, {
+                frontLower: z.ZodOptional<z.ZodString>;
+                backLower: z.ZodOptional<z.ZodString>;
+            }, "strip", z.ZodTypeAny, {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             }, {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             }>;
             tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
         } & {
@@ -483,12 +527,16 @@ export declare const UpdateDeckRequestSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
         }, {
             id: string;
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
             tags?: string[] | undefined;
         }>, "many">;
@@ -500,6 +548,8 @@ export declare const UpdateDeckRequestSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
         }[];
         updated: {
@@ -508,6 +558,8 @@ export declare const UpdateDeckRequestSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
         }[];
     }, {
@@ -516,6 +568,8 @@ export declare const UpdateDeckRequestSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
             tags?: string[] | undefined;
         }[];
@@ -524,6 +578,8 @@ export declare const UpdateDeckRequestSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
             tags?: string[] | undefined;
         }[];
@@ -537,6 +593,8 @@ export declare const UpdateDeckRequestSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
         }[];
         updated: {
@@ -545,6 +603,8 @@ export declare const UpdateDeckRequestSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
         }[];
     };
@@ -565,6 +625,8 @@ export declare const UpdateDeckRequestSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
             tags?: string[] | undefined;
         }[];
@@ -573,6 +635,8 @@ export declare const UpdateDeckRequestSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
             tags?: string[] | undefined;
         }[];
@@ -722,12 +786,18 @@ export declare const GetDeckCardsResponseSchema: z.ZodObject<{
         cardData: z.ZodObject<{
             front: z.ZodString;
             back: z.ZodString;
-        }, "strict", z.ZodTypeAny, {
+            frontLower: z.ZodOptional<z.ZodString>;
+            backLower: z.ZodOptional<z.ZodString>;
+        }, "strip", z.ZodTypeAny, {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         }, {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         }>;
         tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     } & {
@@ -839,6 +909,8 @@ export declare const GetDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             isNew: boolean;
@@ -882,6 +954,8 @@ export declare const GetDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             due?: unknown;
@@ -933,6 +1007,8 @@ export declare const GetDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             isNew: boolean;
@@ -980,6 +1056,8 @@ export declare const GetDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             due?: unknown;
@@ -1733,12 +1811,18 @@ export declare const GetUserDeckCardsResponseSchema: z.ZodObject<{
         cardData: z.ZodObject<{
             front: z.ZodString;
             back: z.ZodString;
-        }, "strict", z.ZodTypeAny, {
+            frontLower: z.ZodOptional<z.ZodString>;
+            backLower: z.ZodOptional<z.ZodString>;
+        }, "strip", z.ZodTypeAny, {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         }, {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         }>;
         tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     } & {
@@ -1850,6 +1934,8 @@ export declare const GetUserDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             isNew: boolean;
@@ -1893,6 +1979,8 @@ export declare const GetUserDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             due?: unknown;
@@ -1944,6 +2032,8 @@ export declare const GetUserDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             isNew: boolean;
@@ -1991,6 +2081,8 @@ export declare const GetUserDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             due?: unknown;
@@ -2041,12 +2133,18 @@ export declare const GetUserDueDeckCardsResponseSchema: z.ZodObject<{
         cardData: z.ZodObject<{
             front: z.ZodString;
             back: z.ZodString;
-        }, "strict", z.ZodTypeAny, {
+            frontLower: z.ZodOptional<z.ZodString>;
+            backLower: z.ZodOptional<z.ZodString>;
+        }, "strip", z.ZodTypeAny, {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         }, {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         }>;
         tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     } & {
@@ -2158,6 +2256,8 @@ export declare const GetUserDueDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             isNew: boolean;
@@ -2201,6 +2301,8 @@ export declare const GetUserDueDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             due?: unknown;
@@ -2250,6 +2352,8 @@ export declare const GetUserDueDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             isNew: boolean;
@@ -2295,6 +2399,8 @@ export declare const GetUserDueDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             due?: unknown;
@@ -2343,12 +2449,18 @@ export declare const GetUserNewDeckCardsResponseSchema: z.ZodObject<{
         cardData: z.ZodObject<{
             front: z.ZodString;
             back: z.ZodString;
-        }, "strict", z.ZodTypeAny, {
+            frontLower: z.ZodOptional<z.ZodString>;
+            backLower: z.ZodOptional<z.ZodString>;
+        }, "strip", z.ZodTypeAny, {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         }, {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         }>;
         tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     } & {
@@ -2460,6 +2572,8 @@ export declare const GetUserNewDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             isNew: boolean;
@@ -2503,6 +2617,8 @@ export declare const GetUserNewDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             due?: unknown;
@@ -2552,6 +2668,8 @@ export declare const GetUserNewDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             isNew: boolean;
@@ -2597,6 +2715,8 @@ export declare const GetUserNewDeckCardsResponseSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             due?: unknown;
@@ -2759,12 +2879,18 @@ export declare const SessionItemSchema: z.ZodObject<{
         cardData: z.ZodObject<{
             front: z.ZodString;
             back: z.ZodString;
-        }, "strict", z.ZodTypeAny, {
+            frontLower: z.ZodOptional<z.ZodString>;
+            backLower: z.ZodOptional<z.ZodString>;
+        }, "strip", z.ZodTypeAny, {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         }, {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         }>;
         tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     } & {
@@ -2876,6 +3002,8 @@ export declare const SessionItemSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             isNew: boolean;
@@ -2919,6 +3047,8 @@ export declare const SessionItemSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             due?: unknown;
@@ -2969,6 +3099,8 @@ export declare const SessionItemSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             isNew: boolean;
@@ -3015,6 +3147,8 @@ export declare const SessionItemSchema: z.ZodObject<{
         cardData: {
             front: string;
             back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
         };
         firstLearn: {
             due?: unknown;
@@ -3065,12 +3199,18 @@ export declare const StartLearningSessionResponseSchema: z.ZodObject<{
             cardData: z.ZodObject<{
                 front: z.ZodString;
                 back: z.ZodString;
-            }, "strict", z.ZodTypeAny, {
+                frontLower: z.ZodOptional<z.ZodString>;
+                backLower: z.ZodOptional<z.ZodString>;
+            }, "strip", z.ZodTypeAny, {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             }, {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             }>;
             tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
         } & {
@@ -3182,6 +3322,8 @@ export declare const StartLearningSessionResponseSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
             firstLearn: {
                 isNew: boolean;
@@ -3225,6 +3367,8 @@ export declare const StartLearningSessionResponseSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
             firstLearn: {
                 due?: unknown;
@@ -3275,6 +3419,8 @@ export declare const StartLearningSessionResponseSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
             firstLearn: {
                 isNew: boolean;
@@ -3321,6 +3467,8 @@ export declare const StartLearningSessionResponseSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
             firstLearn: {
                 due?: unknown;
@@ -3562,6 +3710,8 @@ export declare const StartLearningSessionResponseSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
             firstLearn: {
                 isNew: boolean;
@@ -3650,6 +3800,8 @@ export declare const StartLearningSessionResponseSchema: z.ZodObject<{
             cardData: {
                 front: string;
                 back: string;
+                frontLower?: string | undefined;
+                backLower?: string | undefined;
             };
             firstLearn: {
                 due?: unknown;
@@ -3868,6 +4020,31 @@ export declare const AddCardToDeckResponseSchema: z.ZodObject<{
     cardId: string;
 }>;
 export type AddCardToDeckResponse = z.infer<typeof AddCardToDeckResponseSchema>;
+export declare const CheckDuplicateCardFrontRequestSchema: z.ZodObject<{
+    deckId: z.ZodString;
+    front: z.ZodString;
+    excludeCardId: z.ZodOptional<z.ZodString>;
+}, "strict", z.ZodTypeAny, {
+    deckId: string;
+    front: string;
+    excludeCardId?: string | undefined;
+}, {
+    deckId: string;
+    front: string;
+    excludeCardId?: string | undefined;
+}>;
+export type CheckDuplicateCardFrontRequest = z.infer<typeof CheckDuplicateCardFrontRequestSchema>;
+export declare const CheckDuplicateCardFrontResponseSchema: z.ZodObject<{
+    isDuplicate: z.ZodBoolean;
+    conflictCardId: z.ZodNullable<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    isDuplicate: boolean;
+    conflictCardId: string | null;
+}, {
+    isDuplicate: boolean;
+    conflictCardId: string | null;
+}>;
+export type CheckDuplicateCardFrontResponse = z.infer<typeof CheckDuplicateCardFrontResponseSchema>;
 export declare const SearchUsersRequestSchema: z.ZodObject<{
     query: z.ZodString;
 }, "strict", z.ZodTypeAny, {

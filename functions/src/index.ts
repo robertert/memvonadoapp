@@ -74,6 +74,7 @@ export {
   addDeckEditor,
   removeDeckEditor,
   getDeckEditors,
+  checkDuplicateCardFront,
 } from "./handlers/deckHandlers";
 export {
   getLeaderboard,

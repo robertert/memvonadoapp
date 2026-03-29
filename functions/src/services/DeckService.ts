@@ -12,6 +12,7 @@ import {
 import type { CardRepository } from "../repositories/interfaces/CardRepository";
 import type { DeckRepository } from "../repositories/interfaces/DeckRepository";
 import type { UserRepository } from "../repositories/interfaces/UserRepository";
+import { normalizeCardData } from "../utils/cardUtils";
 
 /**
  * Business logic for deck management.
@@ -122,10 +123,10 @@ export class DeckService {
       if (!src) continue;
       await this.cardRepo.setCard(userId, deckId, {
         ...userCard,
-        cardData: {
+        cardData: normalizeCardData({
           front: src.cardData.front || "",
           back: src.cardData.back || "",
-        },
+        }),
         tags: src.tags ?? [],
       });
     }
@@ -135,10 +136,10 @@ export class DeckService {
       const newCard = CardSchema.parse({
         ...src,
         id: cardId,
-        cardData: {
+        cardData: normalizeCardData({
           front: src.cardData.front || "",
           back: src.cardData.back || "",
-        },
+        }),
         tags: src.tags ?? [],
         createdAt: src.createdAt || now,
         firstLearn: { isNew: true, due: now },
@@ -489,7 +490,7 @@ export class DeckService {
         const newCard = CardSchema.parse({
           ...src,
           id: cardId,
-          cardData: sanitized.cardData ?? { front: src.cardData.front || "", back: src.cardData.back || "" },
+          cardData: normalizeCardData(sanitized.cardData ?? { front: src.cardData.front || "", back: src.cardData.back || "" }),
           tags: sanitized.tags,
           createdAt: src.createdAt || now,
           firstLearn: { isNew: true, due: now, consecutiveGood: 0 },
