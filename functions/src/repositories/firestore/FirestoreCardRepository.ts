@@ -217,6 +217,20 @@ export class FirestoreCardRepository implements CardRepository {
   }
 
   /**
+   * @param {string} deckId - Source deck ID
+   * @param {string} cardId - Card ID
+   * @return {Promise<Card | null>} Card or null
+   */
+  async getSourceDeckCard(
+    deckId: string,
+    cardId: string
+  ): Promise<Card | null> {
+    const snap = await db.doc(`decks/${deckId}/cards/${cardId}`).get();
+    if (!snap.exists) return null;
+    return CardSchema.parse({ id: snap.id, ...snap.data() });
+  }
+
+  /**
    * @param {string} userId - User ID
    * @param {string} deckId - Deck ID
    * @return {Promise<Card[]>} All cards in the user's deck copy

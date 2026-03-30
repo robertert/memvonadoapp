@@ -46,6 +46,7 @@ interface NewCardProps {
   onEnter: () => void;
   focusRef: (ref: TextInput | null) => void;
   isDuplicate?: boolean;
+  onFocus?: (ref: TextInput) => void;
 }
 
 interface ActiveFields {
@@ -66,6 +67,7 @@ function NewCard({
   onEnter,
   focusRef,
   isDuplicate = false,
+  onFocus,
 }: NewCardProps): React.JSX.Element {
   const isValidLang = (l: string | undefined): l is SupportedLanguage =>
     !!l && (SUPPORTED_LANGUAGES as readonly string[]).includes(l);
@@ -81,6 +83,7 @@ function NewCard({
   // Animacje dla paneli advanced
 
 
+  const frontInputRef = useRef<TextInput>(null);
   const backInputRef = useRef<TextInput>(null);
 
 
@@ -483,10 +486,11 @@ function NewCard({
                     textChangeHandler(text, true, card)
                   }
                   value={card.cardData.front}
-                  ref={focusRef}
+                  ref={(r) => { frontInputRef.current = r; focusRef(r); }}
                   onFocus={() => {
                     if (blurTimer.current) clearTimeout(blurTimer.current);
                     setCardFocused(true);
+                    if (frontInputRef.current) onFocus?.(frontInputRef.current);
                   }}
                   onBlur={() => {
                     blurTimer.current = setTimeout(() => setCardFocused(false), 150);
@@ -888,6 +892,7 @@ function NewCard({
                   onFocus={() => {
                     if (blurTimer.current) clearTimeout(blurTimer.current);
                     setCardFocused(true);
+                    if (backInputRef.current) onFocus?.(backInputRef.current);
                   }}
                   onBlur={() => {
                     blurTimer.current = setTimeout(() => setCardFocused(false), 150);

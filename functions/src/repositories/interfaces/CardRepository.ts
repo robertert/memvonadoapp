@@ -49,6 +49,9 @@ export interface CardRepository {
   /** Get a single card, or null if the document does not exist */
   getCard(userId: string, deckId: string, cardId: string): Promise<Card | null>;
 
+  /** Get a single card from the source deck, or null if not found */
+  getSourceDeckCard(deckId: string, cardId: string): Promise<Card | null>;
+
   /** Get every card in a user's deck copy */
   getAllUserCards(userId: string, deckId: string): Promise<Card[]>;
 

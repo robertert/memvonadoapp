@@ -8,6 +8,8 @@ import {
   FlatList,
   ActivityIndicator,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Colors, Fonts } from "@/constants/colors";
 import {
@@ -98,10 +100,14 @@ export default function DeckSelectorModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Pressable
+      <KeyboardAvoidingView
         style={styles.modalOverlay}
-        onPress={showCloseButton ? onClose : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
+        <Pressable
+          style={styles.backdropPressable}
+          onPress={showCloseButton ? onClose : undefined}
+        />
         <View style={styles.modalContent}>
           {/* Header */}
           <View style={styles.header}>
@@ -200,7 +206,7 @@ export default function DeckSelectorModal({
             />
           )}
         </View>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -212,6 +218,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
+  },
+  backdropPressable: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   modalContent: {
     backgroundColor: Colors.primary_100,

@@ -77,6 +77,8 @@ import {
   GetDeckEditorsResponseSchema,
   CheckDuplicateCardFrontRequestSchema,
   CheckDuplicateCardFrontResponseSchema,
+  GetSourceDeckCardRequestSchema,
+  GetSourceDeckCardResponseSchema,
 } from "memvocado-types/schemas/api/deck";
 import { convertAnkiApkg } from "../ankiConverter";
 import {
@@ -1380,6 +1382,27 @@ export const checkDuplicateCardFront = onCall(async (request) => {
   } catch (error) {
     logger.error("Error checking duplicate card front", error);
     throw new HttpsError("internal", "Failed to check duplicate");
+  }
+});
+
+export const getSourceDeckCard = onCall(async (request) => {
+  const parsed = GetSourceDeckCardRequestSchema.safeParse(request.data || {});
+  if (!parsed.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsed.error.issues,
+    });
+  }
+  const { deckId, cardId } = parsed.data;
+  try {
+    const card = await cardRepo.getSourceDeckCard(deckId, cardId);
+    if (!card) throw new HttpsError("not-found", "Card not found");
+    const validatedResponse = GetSourceDeckCardResponseSchema.parse({ card });
+    return serializeTimestamps(validatedResponse);
+  } catch (error) {
+    logger.error("Error getting source deck card", error);
+    handleZodError(error, "getSourceDeckCard");
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Failed to get card");
   }
 });
 

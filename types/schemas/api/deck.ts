@@ -523,3 +523,20 @@ export const GetDeckEditorsResponseSchema = z.object({
 export type GetDeckEditorsResponse = z.infer<
   typeof GetDeckEditorsResponseSchema
 >;
+
+export const GetSourceDeckCardRequestSchema = z
+  .object({
+    deckId: z.string(),
+    cardId: z.string(),
+  })
+  .strict();
+export type GetSourceDeckCardRequest = z.infer<
+  typeof GetSourceDeckCardRequestSchema
+>;
+
+export const GetSourceDeckCardResponseSchema = z.object({
+  card: CardSchema,
+});
+export type GetSourceDeckCardResponse = z.infer<
+  typeof GetSourceDeckCardResponseSchema
+>;

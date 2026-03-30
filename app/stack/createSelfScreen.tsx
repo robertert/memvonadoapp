@@ -7,7 +7,11 @@ import React, {
 } from "react";
 import {
   ActivityIndicator,
+  findNodeHandle,
   FlatList,
+  Keyboard,
+  KeyboardAvoidingView,
+  UIManager,
   Modal,
   Pressable,
   StyleSheet,
@@ -109,6 +113,9 @@ export default function createSelfScreen(): React.JSX.Element {
   const focusRefs = useRef<Record<string, TextInput | null>>({});
   const flashListRef = useRef<FlatList<EditableCard>>(null);
   const lastVisibleIndexRef = useRef<number>(0);
+  const focusedCardId = useRef<string | null>(null);
+  const focusedInputRef = useRef<TextInput | null>(null);
+  const cardsRef = useRef(cards);
 
   // 2. State to track which card ID should be focused next
   const [focusTarget, setFocusTarget] = useState<string | null>(null);
@@ -159,6 +166,24 @@ export default function createSelfScreen(): React.JSX.Element {
     handleContinueDraft: handleContinueDraftHook,
     handleStartFresh,
   } = useDeckDraft(cards, title, deckCategory, frontLanguage, backLanguage);
+
+  // Keep cardsRef in sync for keyboard listener
+  useEffect(() => { cardsRef.current = cards; }, [cards]);
+
+  // Scroll focused input into view when keyboard appears, accounting for bottom buttons
+  useEffect(() => {
+    const event = "keyboardDidShow";
+    const sub = Keyboard.addListener(event, () => {
+      const listRef = flashListRef.current;
+      if (!listRef) return;
+      const index = cardsRef.current.findIndex((c) => c.id === focusedCardId.current);
+      console.log("index", index);
+      if (index !== -1) {
+        listRef.scrollToIndex({ index, animated: true, viewOffset: 0, viewPosition: 0 });
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   // Show deck selector on mount (unless edit mode)
   useEffect(() => {
@@ -839,6 +864,7 @@ export default function createSelfScreen(): React.JSX.Element {
             delete focusRefs.current[card.id];
           }
         }}
+        onFocus={(ref) => { focusedCardId.current = card.id; focusedInputRef.current = ref; }}
       />
     ),
     [updateCard, deleteCard, frontLanguage, backLanguage, duplicateCardIds, backendDuplicateIds]
@@ -856,7 +882,10 @@ export default function createSelfScreen(): React.JSX.Element {
         <View style={styles.headerSpacer} />
       </View>
 
-      <View style={styles.contentContainer}>
+      <KeyboardAvoidingView
+        style={styles.contentContainer}
+        behavior="height"
+      >
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size={"large"} color={Colors.accent_500} />
@@ -907,7 +936,7 @@ export default function createSelfScreen(): React.JSX.Element {
             </Pressable>
           </>
         )}
-      </View>
+      </KeyboardAvoidingView>
 
       {/* Deck Selector Modal - shown on entry (not in edit mode) */}
       <DeckSelectorModal

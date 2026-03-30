@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -90,16 +92,10 @@ export default function editCard(): React.JSX.Element {
       }
 
       // Get card from source deck
-      const { cards: deckCards } = await cloudFunctions.getDeckCards(
+      const { card: foundCard } = await cloudFunctions.getSourceDeckCard(
         typedParams.deckId,
-        1000
+        typedParams.cardId
       );
-      const foundCard =
-        deckCards.find((c) => c.id === typedParams.cardId) || null;
-
-      if (!foundCard) {
-        throw new Error("Card not found");
-      }
 
       setCard(foundCard);
       setFront(foundCard.cardData.front);
@@ -206,7 +202,10 @@ export default function editCard(): React.JSX.Element {
           <View style={styles.headerSpacer} />
         </View>
 
-        <View style={styles.contentContainer}>
+        <KeyboardAvoidingView
+          style={styles.contentContainer}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
@@ -303,7 +302,7 @@ export default function editCard(): React.JSX.Element {
           {/* Save Button */}
           <Pressable
             onPress={saveHandler}
-            style={styles.saveButton}
+            style={[styles.saveButton, { marginBottom: safeArea.bottom + 12 }]}
             disabled={isSaving || !front.trim() || !back.trim()}
           >
             {isSaving ? (
@@ -312,7 +311,7 @@ export default function editCard(): React.JSX.Element {
               <Text style={styles.saveText}>Zapisz zmiany</Text>
             )}
           </Pressable>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </GestureHandlerRootView>
   );
@@ -362,7 +361,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 120,
+    paddingBottom: 20,
   },
   section: {
     marginTop: 20,
@@ -483,11 +482,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     alignItems: "center",
     justifyContent: "center",
-    position: "absolute",
-    bottom: 0,
-    left: 15,
-    right: 15,
-    marginBottom: 40,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,

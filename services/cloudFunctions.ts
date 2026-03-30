@@ -220,6 +220,9 @@ import {
   CheckDuplicateCardFrontRequest,
   CheckDuplicateCardFrontResponse,
   CheckDuplicateCardFrontResponseSchema,
+  GetSourceDeckCardRequest,
+  GetSourceDeckCardResponse,
+  GetSourceDeckCardResponseSchema,
 } from "@/types/schemas/api/deck";
 import {
   CheckUsernameAvailabilityRequest,
@@ -1311,6 +1314,21 @@ export const cloudFunctions = {
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from checkDuplicateCardFront");
+    }
+    return validatedData.data;
+  },
+
+  // Fetch a single card from a source deck by ID
+  getSourceDeckCard: async (deckId: string, cardId: string) => {
+    const fn = httpsCallable<GetSourceDeckCardRequest, GetSourceDeckCardResponse>(
+      functions,
+      "getSourceDeckCard"
+    );
+    const result = await fn({ deckId, cardId });
+    const validatedData = GetSourceDeckCardResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getSourceDeckCard");
     }
     return validatedData.data;
   },

@@ -4145,3 +4145,330 @@ export declare const GetDeckEditorsResponseSchema: z.ZodObject<{
     }[];
 }>;
 export type GetDeckEditorsResponse = z.infer<typeof GetDeckEditorsResponseSchema>;
+export declare const GetSourceDeckCardRequestSchema: z.ZodObject<{
+    deckId: z.ZodString;
+    cardId: z.ZodString;
+}, "strict", z.ZodTypeAny, {
+    deckId: string;
+    cardId: string;
+}, {
+    deckId: string;
+    cardId: string;
+}>;
+export type GetSourceDeckCardRequest = z.infer<typeof GetSourceDeckCardRequestSchema>;
+export declare const GetSourceDeckCardResponseSchema: z.ZodObject<{
+    card: z.ZodObject<{
+        cardData: z.ZodObject<{
+            front: z.ZodString;
+            back: z.ZodString;
+            frontLower: z.ZodOptional<z.ZodString>;
+            backLower: z.ZodOptional<z.ZodString>;
+        }, "strip", z.ZodTypeAny, {
+            front: string;
+            back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
+        }, {
+            front: string;
+            back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
+        }>;
+        tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+    } & {
+        cardAlgo: z.ZodOptional<z.ZodObject<{
+            difficulty: z.ZodNumber;
+            scheduled_days: z.ZodNumber;
+            due: z.ZodEffects<z.ZodDate, Date, unknown>;
+            last_review: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+            reps: z.ZodNumber;
+            state: z.ZodNumber;
+            stability: z.ZodNumber;
+            elapsed_days: z.ZodNumber;
+            lapses: z.ZodNumber;
+        }, "strict", z.ZodTypeAny, {
+            difficulty: number;
+            scheduled_days: number;
+            due: Date;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            last_review?: Date | undefined;
+        }, {
+            difficulty: number;
+            scheduled_days: number;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            due?: unknown;
+            last_review?: unknown;
+        }>>;
+        firstLearn: z.ZodObject<{
+            isNew: z.ZodDefault<z.ZodBoolean>;
+            isFirst: z.ZodOptional<z.ZodBoolean>;
+            due: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+            consecutiveGood: z.ZodOptional<z.ZodNumber>;
+        }, "strict", z.ZodTypeAny, {
+            isNew: boolean;
+            due?: Date | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        }, {
+            due?: unknown;
+            isNew?: boolean | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        }>;
+        grade: z.ZodOptional<z.ZodNativeEnum<typeof import("../card").CardGrade>>;
+        cardAlgoReverse: z.ZodOptional<z.ZodObject<{
+            difficulty: z.ZodNumber;
+            scheduled_days: z.ZodNumber;
+            due: z.ZodEffects<z.ZodDate, Date, unknown>;
+            last_review: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+            reps: z.ZodNumber;
+            state: z.ZodNumber;
+            stability: z.ZodNumber;
+            elapsed_days: z.ZodNumber;
+            lapses: z.ZodNumber;
+        }, "strict", z.ZodTypeAny, {
+            difficulty: number;
+            scheduled_days: number;
+            due: Date;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            last_review?: Date | undefined;
+        }, {
+            difficulty: number;
+            scheduled_days: number;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            due?: unknown;
+            last_review?: unknown;
+        }>>;
+        firstLearnReverse: z.ZodOptional<z.ZodObject<{
+            isNew: z.ZodDefault<z.ZodBoolean>;
+            isFirst: z.ZodOptional<z.ZodBoolean>;
+            due: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+            consecutiveGood: z.ZodOptional<z.ZodNumber>;
+        }, "strict", z.ZodTypeAny, {
+            isNew: boolean;
+            due?: Date | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        }, {
+            due?: unknown;
+            isNew?: boolean | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        }>>;
+    } & {
+        createdAt: z.ZodEffects<z.ZodDate, Date, unknown>;
+    } & {
+        id: z.ZodString;
+        hasChanges: z.ZodOptional<z.ZodBoolean>;
+        updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+    }, "strict", z.ZodTypeAny, {
+        id: string;
+        tags: string[];
+        createdAt: Date;
+        cardData: {
+            front: string;
+            back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
+        };
+        firstLearn: {
+            isNew: boolean;
+            due?: Date | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        };
+        updatedAt?: Date | undefined;
+        cardAlgo?: {
+            difficulty: number;
+            scheduled_days: number;
+            due: Date;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            last_review?: Date | undefined;
+        } | undefined;
+        grade?: import("../card").CardGrade | undefined;
+        cardAlgoReverse?: {
+            difficulty: number;
+            scheduled_days: number;
+            due: Date;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            last_review?: Date | undefined;
+        } | undefined;
+        firstLearnReverse?: {
+            isNew: boolean;
+            due?: Date | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        } | undefined;
+        hasChanges?: boolean | undefined;
+    }, {
+        id: string;
+        cardData: {
+            front: string;
+            back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
+        };
+        firstLearn: {
+            due?: unknown;
+            isNew?: boolean | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        };
+        tags?: string[] | undefined;
+        createdAt?: unknown;
+        updatedAt?: unknown;
+        cardAlgo?: {
+            difficulty: number;
+            scheduled_days: number;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            due?: unknown;
+            last_review?: unknown;
+        } | undefined;
+        grade?: import("../card").CardGrade | undefined;
+        cardAlgoReverse?: {
+            difficulty: number;
+            scheduled_days: number;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            due?: unknown;
+            last_review?: unknown;
+        } | undefined;
+        firstLearnReverse?: {
+            due?: unknown;
+            isNew?: boolean | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        } | undefined;
+        hasChanges?: boolean | undefined;
+    }>;
+}, "strip", z.ZodTypeAny, {
+    card: {
+        id: string;
+        tags: string[];
+        createdAt: Date;
+        cardData: {
+            front: string;
+            back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
+        };
+        firstLearn: {
+            isNew: boolean;
+            due?: Date | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        };
+        updatedAt?: Date | undefined;
+        cardAlgo?: {
+            difficulty: number;
+            scheduled_days: number;
+            due: Date;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            last_review?: Date | undefined;
+        } | undefined;
+        grade?: import("../card").CardGrade | undefined;
+        cardAlgoReverse?: {
+            difficulty: number;
+            scheduled_days: number;
+            due: Date;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            last_review?: Date | undefined;
+        } | undefined;
+        firstLearnReverse?: {
+            isNew: boolean;
+            due?: Date | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        } | undefined;
+        hasChanges?: boolean | undefined;
+    };
+}, {
+    card: {
+        id: string;
+        cardData: {
+            front: string;
+            back: string;
+            frontLower?: string | undefined;
+            backLower?: string | undefined;
+        };
+        firstLearn: {
+            due?: unknown;
+            isNew?: boolean | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        };
+        tags?: string[] | undefined;
+        createdAt?: unknown;
+        updatedAt?: unknown;
+        cardAlgo?: {
+            difficulty: number;
+            scheduled_days: number;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            due?: unknown;
+            last_review?: unknown;
+        } | undefined;
+        grade?: import("../card").CardGrade | undefined;
+        cardAlgoReverse?: {
+            difficulty: number;
+            scheduled_days: number;
+            reps: number;
+            state: number;
+            stability: number;
+            elapsed_days: number;
+            lapses: number;
+            due?: unknown;
+            last_review?: unknown;
+        } | undefined;
+        firstLearnReverse?: {
+            due?: unknown;
+            isNew?: boolean | undefined;
+            isFirst?: boolean | undefined;
+            consecutiveGood?: number | undefined;
+        } | undefined;
+        hasChanges?: boolean | undefined;
+    };
+}>;
+export type GetSourceDeckCardResponse = z.infer<typeof GetSourceDeckCardResponseSchema>;

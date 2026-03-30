@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -860,7 +862,10 @@ export default function deckSettings(): React.JSX.Element {
           animationType="slide"
           onRequestClose={() => setShowEditorModal(false)}
         >
-          <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView
+            style={styles.modalOverlay}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          >
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Dodaj edytora</Text>
               <View style={{ flexDirection: "row", marginBottom: 12 }}>
@@ -937,7 +942,7 @@ export default function deckSettings(): React.JSX.Element {
                 <Text style={styles.modalCloseText}>Zamknij</Text>
               </Pressable>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
       </View>
     </LinearGradient>
