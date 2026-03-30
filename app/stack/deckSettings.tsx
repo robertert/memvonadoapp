@@ -70,6 +70,7 @@ export default function deckSettings(): React.JSX.Element {
     { id: string; username: string }[]
   >([]);
   const [isSearchingEditors, setIsSearchingEditors] = useState<boolean>(false);
+  const [addingEditorId, setAddingEditorId] = useState<string | null>(null);
   const [isCustomPace, setIsCustomPace] = useState<boolean>(false);
 
   const { userId, isAdmin } = useAuth();
@@ -141,6 +142,8 @@ export default function deckSettings(): React.JSX.Element {
   }
 
   async function handleAddEditor(userId: string, username: string): Promise<void> {
+    if (addingEditorId) return;
+    setAddingEditorId(userId);
     try {
       await cloudFunctions.addDeckEditor(typedParams.deckId, userId);
       setEditors((prev) => [...prev, { id: userId, username }]);
@@ -148,6 +151,8 @@ export default function deckSettings(): React.JSX.Element {
     } catch (error) {
       console.error("Error adding editor:", error);
       Alert.alert("Błąd", "Nie udało się dodać edytora.");
+    } finally {
+      setAddingEditorId(null);
     }
   }
 
@@ -909,12 +914,17 @@ export default function deckSettings(): React.JSX.Element {
                     <Text style={styles.modalItemText}>{user.username}</Text>
                     <Pressable
                       onPress={() => handleAddEditor(user.id, user.username)}
+                      disabled={!!addingEditorId}
                     >
-                      <MaterialCommunityIcons
-                        name="plus-circle"
-                        size={24}
-                        color={Colors.primary_700}
-                      />
+                      {addingEditorId === user.id ? (
+                        <ActivityIndicator size="small" color={Colors.primary_700} />
+                      ) : (
+                        <MaterialCommunityIcons
+                          name="plus-circle"
+                          size={24}
+                          color={addingEditorId ? Colors.primary_700_50 : Colors.primary_700}
+                        />
+                      )}
                     </Pressable>
                   </View>
                 ))}

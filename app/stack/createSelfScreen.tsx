@@ -177,7 +177,6 @@ export default function createSelfScreen(): React.JSX.Element {
       const listRef = flashListRef.current;
       if (!listRef) return;
       const index = cardsRef.current.findIndex((c) => c.id === focusedCardId.current);
-      console.log("index", index);
       if (index !== -1) {
         listRef.scrollToIndex({ index, animated: true, viewOffset: 0, viewPosition: 0 });
       }
