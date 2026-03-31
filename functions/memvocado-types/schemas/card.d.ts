@@ -334,14 +334,17 @@ export declare const CardMetaSchema: z.ZodObject<{
     id: z.ZodString;
     hasChanges: z.ZodOptional<z.ZodBoolean>;
     updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+    randomSort: z.ZodOptional<z.ZodNumber>;
 }, "strict", z.ZodTypeAny, {
     id: string;
     updatedAt?: Date | undefined;
     hasChanges?: boolean | undefined;
+    randomSort?: number | undefined;
 }, {
     id: string;
     updatedAt?: unknown;
     hasChanges?: boolean | undefined;
+    randomSort?: number | undefined;
 }>;
 export type CardMeta = z.infer<typeof CardMetaSchema>;
 /**
@@ -467,6 +470,7 @@ export declare const CardSchema: z.ZodObject<{
     id: z.ZodString;
     hasChanges: z.ZodOptional<z.ZodBoolean>;
     updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+    randomSort: z.ZodOptional<z.ZodNumber>;
 }, "strict", z.ZodTypeAny, {
     id: string;
     tags: string[];
@@ -514,6 +518,7 @@ export declare const CardSchema: z.ZodObject<{
         consecutiveGood?: number | undefined;
     } | undefined;
     hasChanges?: boolean | undefined;
+    randomSort?: number | undefined;
 }, {
     id: string;
     cardData: {
@@ -561,6 +566,7 @@ export declare const CardSchema: z.ZodObject<{
         consecutiveGood?: number | undefined;
     } | undefined;
     hasChanges?: boolean | undefined;
+    randomSort?: number | undefined;
 }>;
 export type Card = z.infer<typeof CardSchema>;
 /**

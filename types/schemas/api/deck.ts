@@ -540,3 +540,33 @@ export const GetSourceDeckCardResponseSchema = z.object({
 export type GetSourceDeckCardResponse = z.infer<
   typeof GetSourceDeckCardResponseSchema
 >;
+
+// ===========================
+// AIO Session schemas
+// ===========================
+
+export const StartAIOSessionRequestSchema = z
+  .object({
+    deckId: z.string(),
+  })
+  .strict();
+export type StartAIOSessionRequest = z.infer<typeof StartAIOSessionRequestSchema>;
+
+export const StartAIOSessionResponseSchema = z.object({
+  shuffledCardIds: z.array(z.string()),
+  cards: z.array(CardSchema),
+});
+export type StartAIOSessionResponse = z.infer<typeof StartAIOSessionResponseSchema>;
+
+export const GetCardsByIdsRequestSchema = z
+  .object({
+    deckId: z.string(),
+    cardIds: z.array(z.string()).min(1).max(100),
+  })
+  .strict();
+export type GetCardsByIdsRequest = z.infer<typeof GetCardsByIdsRequestSchema>;
+
+export const GetCardsByIdsResponseSchema = z.object({
+  cards: z.array(CardSchema),
+});
+export type GetCardsByIdsResponse = z.infer<typeof GetCardsByIdsResponseSchema>;

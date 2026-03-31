@@ -175,6 +175,20 @@
       ]
     },
     {
+      "collectionGroup": "cards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "firstLearn.isNew",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "randomSort",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "notifications",
       "queryScope": "COLLECTION",
       "fields": [

@@ -124,6 +124,7 @@ export const CardMetaSchema = z
     id: z.string(),
     hasChanges: z.boolean().optional(),
     updatedAt: TimestampSchema.optional(),
+    randomSort: z.number().optional(),
   })
   .strict();
 

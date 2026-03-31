@@ -25,6 +25,8 @@ export interface AllInOneSession {
   completedCards: number;
   totalCards: number;
   wrongAttempts: number; // total wrong swipes for victory stats
+  shuffledCardIds: string[]; // full shuffled order for this session
+  cardFetchIndex: number; // how many IDs have been fetched so far
 }
 
 /**

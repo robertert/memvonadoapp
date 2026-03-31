@@ -10,7 +10,6 @@ import {
   saveSession,
   clearSession,
   getNextCard,
-  shuffleArray,
 } from "../../utils/allInOneProgress";
 import type { Card, DeckLearningData } from "@/types/schemas";
 import { playSound } from "@/utils/soundTrigger";
@@ -47,9 +46,7 @@ export function useAllInOneCardLogic(deckId: string) {
   const [totalCardsInDeck, setTotalCardsInDeck] = useState<number>(0);
   const [deck, setDeck] = useState<DeckLearningData | null>(null);
 
-  // Pagination state
-  const [hasMoreCards, setHasMoreCards] = useState<boolean>(true);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  // Pagination — no cursor state needed; index into session.shuffledCardIds manages pages
 
   // Undo history
   const [history, setHistory] = useState<
@@ -84,14 +81,16 @@ export function useAllInOneCardLogic(deckId: string) {
   }, []);
 
   /**
-   * Fetch more cards when needed (pagination)
+   * Fetch the next batch of cards using the stored shuffled ID order
    */
   const fetchMoreCards = useCallback(async (): Promise<void> => {
-    if (!hasMoreCards || !nextCursor || !session) return;
+    if (!session) return;
+    const { shuffledCardIds, cardFetchIndex } = session;
+    if (cardFetchIndex >= shuffledCardIds.length) return;
 
     try {
-      const { cards, hasMore, lastDocId } =
-        await cloudFunctions.getUserDeckCards(deckId, 100, nextCursor);
+      const nextIds = shuffledCardIds.slice(cardFetchIndex, cardFetchIndex + 100);
+      const { cards } = await cloudFunctions.getCardsByIds(deckId, nextIds);
 
       const bidirectional = deck?.settings?.bidirectional ?? false;
       const newCards: AllInOneCard[] = cards.flatMap((card: Card) => {
@@ -119,17 +118,16 @@ export function useAllInOneCardLogic(deckId: string) {
 
       const updatedSession: AllInOneSession = {
         ...session,
-        cards: [...session.cards, ...shuffleArray(newCards)],
+        cards: [...session.cards, ...newCards],
+        cardFetchIndex: cardFetchIndex + nextIds.length,
       };
 
       setSession(updatedSession);
-      setHasMoreCards(hasMore);
-      setNextCursor(lastDocId);
       await saveSession(updatedSession);
     } catch (err) {
       console.error("Error fetching more cards:", err);
     }
-  }, [hasMoreCards, nextCursor, session, deckId]);
+  }, [session, deckId, deck]);
 
   /**
    * Initialize or resume the learning session
@@ -140,22 +138,23 @@ export function useAllInOneCardLogic(deckId: string) {
       setError(null);
 
       // Get deck data for total card count
-      const { deck: deckData } = await cloudFunctions.getUserDeckDetails(
-        deckId
-      );
+      const { deck: deckData } = await cloudFunctions.getUserDeckDetails(deckId);
       setDeck(deckData);
       setTotalCardsInDeck(deckData?.cardsNum ?? 0);
 
       let existingSession = await getSession(deckId);
 
+      // Clear legacy sessions that predate shuffledCardIds/cardFetchIndex fields
+      if (existingSession && !existingSession.shuffledCardIds) {
+        await clearSession(deckId);
+        existingSession = null;
+      }
 
       if (!existingSession) {
-        // Fetch cards with pagination (100 at a time)
-        const { cards, hasMore, lastDocId } =
-          await cloudFunctions.getUserDeckCards(deckId, 100);
+        // Start a new session — backend shuffles all card IDs and returns first 100 cards
+        const { shuffledCardIds, cards } = await cloudFunctions.startAIOSession(deckId);
 
-        if (cards.length === 0) {
-          // No cards in deck
+        if (shuffledCardIds.length === 0) {
           setIsFinished(true);
           setIsLoading(false);
           return;
@@ -163,34 +162,28 @@ export function useAllInOneCardLogic(deckId: string) {
 
         const bidirectional = deckData?.settings?.bidirectional ?? false;
 
-        // Build AllInOneCard items (forward, and optionally reverse)
-        const buildItems = (cardList: Card[]): AllInOneCard[] => {
-          const items: AllInOneCard[] = cardList.flatMap((card) => {
-            const forward: AllInOneCard = {
-              cardId: card.id,
-              front: card.cardData.front,
-              back: card.cardData.back,
-              direction: "forward",
-              wrongCount: 0,
-              lastWrongAt: null,
-              isCompleted: false,
-            };
-            if (!bidirectional) return [forward];
-            const reverse: AllInOneCard = {
-              cardId: card.id,
-              front: card.cardData.back,
-              back: card.cardData.front,
-              direction: "reverse",
-              wrongCount: 0,
-              lastWrongAt: null,
-              isCompleted: false,
-            };
-            return [forward, reverse];
-          });
-          return shuffleArray(items);
-        };
-
-        const sessionCards = buildItems(cards);
+        const sessionCards: AllInOneCard[] = cards.flatMap((card) => {
+          const forward: AllInOneCard = {
+            cardId: card.id,
+            front: card.cardData.front,
+            back: card.cardData.back,
+            direction: "forward",
+            wrongCount: 0,
+            lastWrongAt: null,
+            isCompleted: false,
+          };
+          if (!bidirectional) return [forward];
+          const reverse: AllInOneCard = {
+            cardId: card.id,
+            front: card.cardData.back,
+            back: card.cardData.front,
+            direction: "reverse",
+            wrongCount: 0,
+            lastWrongAt: null,
+            isCompleted: false,
+          };
+          return [forward, reverse];
+        });
 
         existingSession = {
           deckId,
@@ -198,15 +191,13 @@ export function useAllInOneCardLogic(deckId: string) {
           startedAt: Date.now(),
           completedCards: 0,
           totalCards: bidirectional
-            ? (deckData?.cardsNum ?? cards.length) * 2
-            : (deckData?.cardsNum ?? cards.length),
+            ? (deckData?.cardsNum ?? shuffledCardIds.length) * 2
+            : (deckData?.cardsNum ?? shuffledCardIds.length),
           wrongAttempts: 0,
+          shuffledCardIds,
+          cardFetchIndex: cards.length,
         };
 
-        
-
-        setHasMoreCards(hasMore);
-        setNextCursor(lastDocId);
         await saveSession(existingSession);
       }
 
@@ -281,14 +272,15 @@ export function useAllInOneCardLogic(deckId: string) {
     const remainingIncomplete = updatedSession.cards.filter(
       (c) => !c.isCompleted
     );
-    if (remainingIncomplete.length < 10 && hasMoreCards) {
+    const hasMoreToFetch = updatedSession.cardFetchIndex < updatedSession.shuffledCardIds.length;
+    if (remainingIncomplete.length < 10 && hasMoreToFetch) {
       await fetchMoreCards();
     }
 
     // Check if session complete
     if (
       updatedSession.completedCards === updatedSession.totalCards &&
-      !hasMoreCards
+      !hasMoreToFetch
     ) {
       setIsFinished(true);
       await clearSession(deckId); // Auto-clear on completion

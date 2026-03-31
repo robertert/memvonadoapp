@@ -79,6 +79,10 @@ import {
   CheckDuplicateCardFrontResponseSchema,
   GetSourceDeckCardRequestSchema,
   GetSourceDeckCardResponseSchema,
+  StartAIOSessionRequestSchema,
+  StartAIOSessionResponseSchema,
+  GetCardsByIdsRequestSchema,
+  GetCardsByIdsResponseSchema,
 } from "memvocado-types/schemas/api/deck";
 import { convertAnkiApkg } from "../ankiConverter";
 import {
@@ -1001,6 +1005,7 @@ export const importAnkiDeck = onCall(async (request) => {
     const batches: WriteBatch[] = [];
     let currentBatch = db.batch();
     let batchCount = 0;
+    const userCardIds: string[] = [];
 
     // Add deck to first batch
     currentBatch.set(deckRef, validatedDeck);
@@ -1042,8 +1047,10 @@ export const importAnkiDeck = onCall(async (request) => {
           front: card.cardData.front,
           back: card.cardData.back,
         }),
+        randomSort: Math.random(),
       });
       currentBatch.set(cardUserRef, validatedCard);
+      userCardIds.push(cardRef.id);
       batchCount++;
 
       // Firestore batch limit is 500 operations
@@ -1061,6 +1068,11 @@ export const importAnkiDeck = onCall(async (request) => {
 
     // Commit all batches
     await Promise.all(batches.map((batch) => batch.commit()));
+
+    // Set cardIds on user deck in ONE update (after all card batches committed)
+    if (userCardIds.length > 0) {
+      await userDeckRef.update({ cardIds: userCardIds });
+    }
 
     logger.info("Deck created from Anki import", {
       deckId: deckRef.id,
@@ -1408,3 +1420,74 @@ export const getSourceDeckCard = onCall(async (request) => {
 
 // Suppress unused variable warning for getUserData - it may be used by future functions
 void (getUserData as unknown);
+
+/**
+ * Start a new All-in-One learning session.
+ * Shuffles all card IDs in the deck and returns the shuffled order + first 100 cards.
+ */
+export const startAIOSession = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+  const parsed = StartAIOSessionRequestSchema.safeParse(request.data);
+  if (!parsed.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsed.error.issues,
+    });
+  }
+  const { deckId } = parsed.data;
+  const userId = request.auth.uid;
+
+  try {
+    const deck = await deckRepo.getUserDeck(userId, deckId);
+    if (!deck) throw new HttpsError("not-found", "Deck not found");
+
+    const cardIds: string[] = deck.cardIds ?? [];
+
+    // Fisher-Yates shuffle
+    const shuffled = [...cardIds];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    const firstBatch = shuffled.slice(0, 100);
+    const cards = await cardRepo.getCardsByIds(userId, deckId, firstBatch);
+
+    const response = StartAIOSessionResponseSchema.parse({ shuffledCardIds: shuffled, cards });
+    return serializeTimestamps(response);
+  } catch (error) {
+    logger.error("Error starting AIO session", error);
+    handleZodError(error, "startAIOSession");
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Failed to start AIO session");
+  }
+});
+
+/**
+ * Fetch specific cards by ID (used for AIO session pagination).
+ */
+export const getCardsByIds = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+  const parsed = GetCardsByIdsRequestSchema.safeParse(request.data);
+  if (!parsed.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsed.error.issues,
+    });
+  }
+  const { deckId, cardIds } = parsed.data;
+  const userId = request.auth.uid;
+
+  try {
+    const cards = await cardRepo.getCardsByIds(userId, deckId, cardIds);
+    const response = GetCardsByIdsResponseSchema.parse({ cards });
+    return serializeTimestamps(response);
+  } catch (error) {
+    logger.error("Error getting cards by IDs", error);
+    handleZodError(error, "getCardsByIds");
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Failed to get cards");
+  }
+});

@@ -223,6 +223,12 @@ import {
   GetSourceDeckCardRequest,
   GetSourceDeckCardResponse,
   GetSourceDeckCardResponseSchema,
+  StartAIOSessionRequest,
+  StartAIOSessionResponse,
+  StartAIOSessionResponseSchema,
+  GetCardsByIdsRequest,
+  GetCardsByIdsResponse,
+  GetCardsByIdsResponseSchema,
 } from "@/types/schemas/api/deck";
 import {
   CheckUsernameAvailabilityRequest,
@@ -1556,6 +1562,38 @@ export const cloudFunctions = {
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from getDeckEditors");
+    }
+    return validatedData.data;
+  },
+
+  // ============================================================================
+  // AIO Session Functions
+  // ============================================================================
+
+  startAIOSession: async (deckId: string) => {
+    const fn = httpsCallable<StartAIOSessionRequest, StartAIOSessionResponse>(
+      functions,
+      "startAIOSession"
+    );
+    const result = await fn({ deckId });
+    const validatedData = StartAIOSessionResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from startAIOSession");
+    }
+    return validatedData.data;
+  },
+
+  getCardsByIds: async (deckId: string, cardIds: string[]) => {
+    const fn = httpsCallable<GetCardsByIdsRequest, GetCardsByIdsResponse>(
+      functions,
+      "getCardsByIds"
+    );
+    const result = await fn({ deckId, cardIds });
+    const validatedData = GetCardsByIdsResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from getCardsByIds");
     }
     return validatedData.data;
   },

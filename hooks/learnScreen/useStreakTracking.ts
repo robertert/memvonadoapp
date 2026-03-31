@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { CardGrade } from "@/types/schemas";
 import { playSound } from "@/utils/soundTrigger";
 import {
@@ -39,11 +39,13 @@ export function useStreakTracking() {
     }
   }
 
+  const clearStreakAchieved = useCallback(() => setStreakAchieved(false), []);
+
   return {
     currentStreak,
     streakAchieved,
     streakLost,
     handleAnswer,
-    clearStreakAchieved: () => setStreakAchieved(false),
+    clearStreakAchieved,
   };
 }

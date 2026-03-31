@@ -402,12 +402,14 @@ export class FirestoreDeckRepository implements DeckRepository {
       tags: tags || [],
       createdAt: now,
       firstLearn: { isNew: true },
+      randomSort: Math.random(),
     });
     const batch = db.batch();
     batch.set(cardRef, card);
     batch.update(deckRef, {
       cardsNum: FieldValue.increment(1),
       updatedAt: FieldValue.serverTimestamp(),
+      cardIds: FieldValue.arrayUnion(cardRef.id),
     });
     await batch.commit();
     return cardRef.id;

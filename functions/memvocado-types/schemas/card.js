@@ -106,6 +106,7 @@ exports.CardMetaSchema = zod_1.z
     id: zod_1.z.string(),
     hasChanges: zod_1.z.boolean().optional(),
     updatedAt: base_1.TimestampSchema.optional(),
+    randomSort: zod_1.z.number().optional(),
 })
     .strict();
 /**

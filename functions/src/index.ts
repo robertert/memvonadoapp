@@ -76,6 +76,8 @@ export {
   getDeckEditors,
   checkDuplicateCardFront,
   getSourceDeckCard,
+  startAIOSession,
+  getCardsByIds,
 } from "./handlers/deckHandlers";
 export {
   getLeaderboard,

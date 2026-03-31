@@ -271,6 +271,7 @@ export declare const DeckLearningMetaSchema: z.ZodObject<{
     frontLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     backLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     title_lower: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    cardIds: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
 }, "strict", z.ZodTypeAny, {
     id: string;
     cardsNum: number;
@@ -281,6 +282,7 @@ export declare const DeckLearningMetaSchema: z.ZodObject<{
     frontLanguage?: string | null | undefined;
     backLanguage?: string | null | undefined;
     title_lower?: string | null | undefined;
+    cardIds?: string[] | undefined;
 }, {
     id: string;
     cardsNum: number;
@@ -291,6 +293,7 @@ export declare const DeckLearningMetaSchema: z.ZodObject<{
     frontLanguage?: string | null | undefined;
     backLanguage?: string | null | undefined;
     title_lower?: string | null | undefined;
+    cardIds?: string[] | undefined;
 }>;
 export type DeckLearningMeta = z.infer<typeof DeckLearningMetaSchema>;
 export declare const DeckLearningDataSchema: z.ZodObject<{
@@ -303,6 +306,7 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
     frontLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     backLanguage: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     title_lower: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    cardIds: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
 } & {
     title: z.ZodString;
     settings: z.ZodObject<{
@@ -377,6 +381,7 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
     backLanguage?: string | null | undefined;
     title_lower?: string | null | undefined;
     lastReviewDate?: Date | undefined;
+    cardIds?: string[] | undefined;
     dailyStats?: {
         newCardsRemaining: number;
         dueCardsRemaining: number;
@@ -407,6 +412,7 @@ export declare const DeckLearningDataSchema: z.ZodObject<{
     updatedAt?: unknown;
     title_lower?: string | null | undefined;
     lastReviewDate?: unknown;
+    cardIds?: string[] | undefined;
     dailyStats?: {
         newCardsRemaining: number;
         dueCardsRemaining: number;

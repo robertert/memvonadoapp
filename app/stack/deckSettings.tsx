@@ -763,13 +763,16 @@ export default function deckSettings(): React.JSX.Element {
             </Pressable>
           </View>
 
-          {/* Przycisk zapisu */}
+        </ScrollView>
+
+        {/* Przycisk zapisu */}
+        <View style={styles.saveButtonContainer}>
           <Pressable onPress={saveSettings} style={styles.saveButton}>
             <View style={styles.saveButtonGradient}>
               <Text style={styles.saveButtonText}>Zapisz zmiany</Text>
             </View>
           </Pressable>
-        </ScrollView>
+        </View>
         {/* Modal wyboru ikony */}
         <Modal
           visible={showIconModal}
@@ -987,7 +990,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 30,
+    paddingBottom: 16,
   },
   section: {
     backgroundColor: Colors.primary_500,
@@ -1130,11 +1133,15 @@ const styles = StyleSheet.create({
     color: Colors.primary_700,
     fontFamily: Fonts.primary,
   },
+  saveButtonContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    paddingBottom: 24,
+    backgroundColor: Colors.primary_100,
+  },
   saveButton: {
     alignSelf: "center",
     width: "80%",
-    marginTop: 20,
-    marginBottom: 30,
     borderRadius: 25,
     overflow: "hidden",
   },

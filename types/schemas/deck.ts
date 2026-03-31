@@ -134,6 +134,7 @@ export const DeckLearningMetaSchema = z
     frontLanguage: z.string().nullable().optional(),
     backLanguage: z.string().nullable().optional(),
     title_lower: z.string().nullable().optional(),
+    cardIds: z.array(z.string()).optional(),
   })
   .strict();
 

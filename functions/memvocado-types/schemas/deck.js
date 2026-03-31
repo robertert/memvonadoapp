@@ -108,6 +108,7 @@ exports.DeckLearningMetaSchema = zod_1.z
     frontLanguage: zod_1.z.string().nullable().optional(),
     backLanguage: zod_1.z.string().nullable().optional(),
     title_lower: zod_1.z.string().nullable().optional(),
+    cardIds: zod_1.z.array(zod_1.z.string()).optional(),
 })
     .strict();
 exports.DeckLearningDataSchema = exports.DeckLearningMetaSchema.merge(exports.DeckLearningCoreSchema)

@@ -1,4 +1,4 @@
-import { getFirestore, FieldValue, type WriteBatch } from "firebase-admin/firestore";
+import { getFirestore, FieldValue, FieldPath, type WriteBatch } from "firebase-admin/firestore";
 import { CardSchema, type Card, type CardAlgo } from "memvocado-types";
 import type {
   CardRepository,
@@ -122,26 +122,74 @@ export class FirestoreCardRepository implements CardRepository {
     options: GetNewCardsOptions
   ): Promise<Card[]> {
     const { effectiveLimit, shuffleNewCards } = options;
-    const deckRef = db.doc(`users/${userId}/decks/${deckId}`);
-    const userCardsRef = deckRef.collection("cards");
+    const colRef = db.collection(`users/${userId}/decks/${deckId}/cards`);
 
-    let userCardsSnap;
-    if (shuffleNewCards) {
-      userCardsSnap = await userCardsRef
-        .where("firstLearn.isNew", "==", true)
-        .limit(effectiveLimit)
-        .get();
-    } else {
-      userCardsSnap = await userCardsRef
+    if (!shuffleNewCards) {
+      const snap = await colRef
         .where("firstLearn.isNew", "==", true)
         .orderBy("createdAt", "asc")
         .limit(effectiveLimit)
         .get();
+      return snap.docs.map((doc) => CardSchema.parse({ id: doc.id, ...doc.data() }));
     }
 
-    return userCardsSnap.docs.map((doc) =>
-      CardSchema.parse({ id: doc.id, ...doc.data() })
+    // Shuffled path: randomSort seed + wrap-around
+    const seed = Math.random();
+
+    const snap1 = await colRef
+      .where("firstLearn.isNew", "==", true)
+      .where("randomSort", ">=", seed)
+      .orderBy("randomSort", "asc")
+      .limit(effectiveLimit)
+      .get();
+
+    let docs = snap1.docs;
+
+    if (docs.length < effectiveLimit) {
+      const snap2 = await colRef
+        .where("firstLearn.isNew", "==", true)
+        .where("randomSort", "<", seed)
+        .orderBy("randomSort", "asc")
+        .limit(effectiveLimit - docs.length)
+        .get();
+      docs = [...docs, ...snap2.docs];
+    }
+
+    const cards = docs.map((doc) => CardSchema.parse({ id: doc.id, ...doc.data() }));
+
+    // Final in-memory shuffle to remove sequential bias from nearby seeds
+    for (let i = cards.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [cards[i], cards[j]] = [cards[j], cards[i]];
+    }
+
+    return cards;
+  }
+
+  /**
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @param {string[]} cardIds - Card IDs to fetch (order is preserved)
+   * @return {Promise<Card[]>} Cards in the same order as cardIds
+   */
+  async getCardsByIds(userId: string, deckId: string, cardIds: string[]): Promise<Card[]> {
+    if (cardIds.length === 0) return [];
+    const colRef = db.collection(`users/${userId}/decks/${deckId}/cards`);
+    const CHUNK = 30;
+    const chunks: string[][] = [];
+    for (let i = 0; i < cardIds.length; i += CHUNK) {
+      chunks.push(cardIds.slice(i, i + CHUNK));
+    }
+    const snapshots = await Promise.all(
+      chunks.map((chunk) => colRef.where(FieldPath.documentId(), "in", chunk.map((id) => colRef.doc(id))).get())
     );
+    const cardMap = new Map<string, Card>();
+    for (const snap of snapshots) {
+      for (const doc of snap.docs) {
+        cardMap.set(doc.id, CardSchema.parse({ id: doc.id, ...doc.data() }));
+      }
+    }
+    return cardIds.flatMap((id) => (cardMap.has(id) ? [cardMap.get(id)!] : []));
   }
 
   /**
@@ -277,6 +325,7 @@ export class FirestoreCardRepository implements CardRepository {
     const batches: WriteBatch[] = [];
     let currentBatch = db.batch();
     let batchCount = 0;
+    const copiedIds: string[] = [];
 
     for (const sourceDoc of sourceSnap.docs) {
       const src = sourceDoc.data() as Card;
@@ -289,8 +338,10 @@ export class FirestoreCardRepository implements CardRepository {
         tags: src.tags || [],
         createdAt: src.createdAt || new Date(),
         firstLearn: { isNew: true, due: new Date() },
+        randomSort: Math.random(),
       });
       currentBatch.set(userCardsRef.doc(sourceDoc.id), card, { merge: true });
+      copiedIds.push(sourceDoc.id);
       batchCount++;
       if (batchCount >= 500) {
         batches.push(currentBatch);
@@ -300,6 +351,10 @@ export class FirestoreCardRepository implements CardRepository {
     }
     if (batchCount > 0) batches.push(currentBatch);
     await Promise.all(batches.map((b) => b.commit()));
+
+    if (copiedIds.length > 0) {
+      await db.doc(`users/${userId}/decks/${userDeckId}`).update({ cardIds: copiedIds });
+    }
   }
 
   // ── New methods ─────────────────────────────────────────────────────────
@@ -404,6 +459,14 @@ export class FirestoreCardRepository implements CardRepository {
     await enqueue((b) => b.update(deckRef, deckUpdate));
 
     if (count > 0) await flush();
+
+    // Maintain cardIds array separately (arrayUnion and arrayRemove can't share a batch op)
+    if (ops.upsert.length > 0) {
+      await deckRef.update({ cardIds: FieldValue.arrayUnion(...ops.upsert.map((c) => c.id)) });
+    }
+    if (ops.delete.length > 0) {
+      await deckRef.update({ cardIds: FieldValue.arrayRemove(...ops.delete) });
+    }
   }
 
   /**

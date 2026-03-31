@@ -134,6 +134,7 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
         id: z.ZodString;
         hasChanges: z.ZodOptional<z.ZodBoolean>;
         updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+        randomSort: z.ZodOptional<z.ZodNumber>;
     }, "strict", z.ZodTypeAny, {
         id: string;
         tags: string[];
@@ -181,6 +182,7 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
             consecutiveGood?: number | undefined;
         } | undefined;
         hasChanges?: boolean | undefined;
+        randomSort?: number | undefined;
     }, {
         id: string;
         cardData: {
@@ -228,6 +230,7 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
             consecutiveGood?: number | undefined;
         } | undefined;
         hasChanges?: boolean | undefined;
+        randomSort?: number | undefined;
     }>;
     scheduledTime: z.ZodNumber;
     dailyStats: z.ZodNullable<z.ZodOptional<z.ZodObject<{
@@ -306,6 +309,7 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
             consecutiveGood?: number | undefined;
         } | undefined;
         hasChanges?: boolean | undefined;
+        randomSort?: number | undefined;
     };
     scheduledTime: number;
     dailyStats?: {
@@ -368,6 +372,7 @@ export declare const UpdateCardProgressRequestSchema: z.ZodObject<{
             consecutiveGood?: number | undefined;
         } | undefined;
         hasChanges?: boolean | undefined;
+        randomSort?: number | undefined;
     };
     scheduledTime: number;
     dailyStats?: {
@@ -512,6 +517,7 @@ export declare const UndoCardRequestSchema: z.ZodObject<{
         id: z.ZodString;
         hasChanges: z.ZodOptional<z.ZodBoolean>;
         updatedAt: z.ZodOptional<z.ZodEffects<z.ZodDate, Date, unknown>>;
+        randomSort: z.ZodOptional<z.ZodNumber>;
     }, "strict", z.ZodTypeAny, {
         id: string;
         tags: string[];
@@ -559,6 +565,7 @@ export declare const UndoCardRequestSchema: z.ZodObject<{
             consecutiveGood?: number | undefined;
         } | undefined;
         hasChanges?: boolean | undefined;
+        randomSort?: number | undefined;
     }, {
         id: string;
         cardData: {
@@ -606,6 +613,7 @@ export declare const UndoCardRequestSchema: z.ZodObject<{
             consecutiveGood?: number | undefined;
         } | undefined;
         hasChanges?: boolean | undefined;
+        randomSort?: number | undefined;
     }>;
     dailyStats: z.ZodObject<{
         newCardsRemaining: z.ZodNumber;
@@ -690,6 +698,7 @@ export declare const UndoCardRequestSchema: z.ZodObject<{
             consecutiveGood?: number | undefined;
         } | undefined;
         hasChanges?: boolean | undefined;
+        randomSort?: number | undefined;
     };
 }, {
     dailyStats: {
@@ -749,6 +758,7 @@ export declare const UndoCardRequestSchema: z.ZodObject<{
             consecutiveGood?: number | undefined;
         } | undefined;
         hasChanges?: boolean | undefined;
+        randomSort?: number | undefined;
     };
 }>;
 export type UndoCardRequest = z.infer<typeof UndoCardRequestSchema>;
@@ -857,11 +867,11 @@ export declare const UpdateUserStreakIfQualifiedResponseSchema: z.ZodObject<{
     threshold: z.ZodNumber;
     todayCount: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
     updated: z.ZodBoolean;
-    avocadoGrew: z.ZodOptional<z.ZodBoolean>;
-    avocadoPreviousPhase: z.ZodOptional<z.ZodNumber>;
-    avocadoCurrentPhase: z.ZodOptional<z.ZodNumber>;
-    avocadoConsecutiveDays: z.ZodOptional<z.ZodNumber>;
-    avocadoCanHarvest: z.ZodOptional<z.ZodBoolean>;
+    avocadoGrew: z.ZodOptional<z.ZodNullable<z.ZodBoolean>>;
+    avocadoPreviousPhase: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
+    avocadoCurrentPhase: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
+    avocadoConsecutiveDays: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
+    avocadoCanHarvest: z.ZodOptional<z.ZodNullable<z.ZodBoolean>>;
 }, "strip", z.ZodTypeAny, {
     currentStreak: number;
     longestStreak: number;
@@ -870,11 +880,11 @@ export declare const UpdateUserStreakIfQualifiedResponseSchema: z.ZodObject<{
     qualified: boolean;
     threshold: number;
     todayCount?: number | null | undefined;
-    avocadoGrew?: boolean | undefined;
-    avocadoPreviousPhase?: number | undefined;
-    avocadoCurrentPhase?: number | undefined;
-    avocadoConsecutiveDays?: number | undefined;
-    avocadoCanHarvest?: boolean | undefined;
+    avocadoGrew?: boolean | null | undefined;
+    avocadoPreviousPhase?: number | null | undefined;
+    avocadoCurrentPhase?: number | null | undefined;
+    avocadoConsecutiveDays?: number | null | undefined;
+    avocadoCanHarvest?: boolean | null | undefined;
 }, {
     currentStreak: number;
     longestStreak: number;
@@ -883,11 +893,11 @@ export declare const UpdateUserStreakIfQualifiedResponseSchema: z.ZodObject<{
     qualified: boolean;
     threshold: number;
     todayCount?: number | null | undefined;
-    avocadoGrew?: boolean | undefined;
-    avocadoPreviousPhase?: number | undefined;
-    avocadoCurrentPhase?: number | undefined;
-    avocadoConsecutiveDays?: number | undefined;
-    avocadoCanHarvest?: boolean | undefined;
+    avocadoGrew?: boolean | null | undefined;
+    avocadoPreviousPhase?: number | null | undefined;
+    avocadoCurrentPhase?: number | null | undefined;
+    avocadoConsecutiveDays?: number | null | undefined;
+    avocadoCanHarvest?: boolean | null | undefined;
 }>;
 export type UpdateUserStreakIfQualifiedResponse = z.infer<typeof UpdateUserStreakIfQualifiedResponseSchema>;
 export declare const UpdateUserStreakOnLoginResponseSchema: z.ZodObject<{

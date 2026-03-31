@@ -163,4 +163,10 @@ export interface CardRepository {
     limit: number,
     startAfterId?: string
   ): Promise<{ cards: Card[]; hasMore: boolean; lastDocId: string | null }>;
+
+  /**
+   * Fetch specific cards by ID from a user's deck copy.
+   * Returns cards in the same order as cardIds. Missing cards are silently skipped.
+   */
+  getCardsByIds(userId: string, deckId: string, cardIds: string[]): Promise<Card[]>;
 }

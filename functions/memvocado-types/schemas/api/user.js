@@ -85,11 +85,11 @@ exports.UpdateUserStreakIfQualifiedResponseSchema = zod_1.z.object({
     todayCount: zod_1.z.number().nullish(),
     updated: zod_1.z.boolean(),
     // Avocado growth data
-    avocadoGrew: zod_1.z.boolean().optional(),
-    avocadoPreviousPhase: zod_1.z.number().min(1).max(5).optional(),
-    avocadoCurrentPhase: zod_1.z.number().min(1).max(5).optional(),
-    avocadoConsecutiveDays: zod_1.z.number().optional(),
-    avocadoCanHarvest: zod_1.z.boolean().optional(),
+    avocadoGrew: zod_1.z.boolean().nullish(),
+    avocadoPreviousPhase: zod_1.z.number().min(1).max(5).nullish(),
+    avocadoCurrentPhase: zod_1.z.number().min(1).max(5).nullish(),
+    avocadoConsecutiveDays: zod_1.z.number().nullish(),
+    avocadoCanHarvest: zod_1.z.boolean().nullish(),
 });
 exports.UpdateUserStreakOnLoginResponseSchema = zod_1.z.object({
     currentStreak: zod_1.z.number(),
