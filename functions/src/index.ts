@@ -119,3 +119,4 @@ export {
   avoQuery,
   getAvoQueryLimit,
 } from "./handlers/avoQueryHandlers";
+export { keepFunctionsWarm } from "./handlers/schedulerHandlers";

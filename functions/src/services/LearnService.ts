@@ -133,6 +133,7 @@ export class LearnService {
     }
 
     await this.statsRepo.setDeckDailyStats(userId, deckId, currentStats);
+    await this.deckRepo.updateUserDeck(userId, deckId, { lastReviewDate: new Date() });
 
     return { items, dailyStats: currentStats, deck };
   }

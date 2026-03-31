@@ -110,9 +110,14 @@ export class FirestoreUserRepository implements UserRepository {
    */
   async listUserDecks(userId: string): Promise<DeckLearningData[]> {
     const snap = await db.collection(`users/${userId}/decks`).get();
-    return snap.docs.map((doc) =>
+    const decks = snap.docs.map((doc) =>
       DeckLearningDataSchema.parse({ id: doc.id, ...doc.data() })
     );
+    return decks.sort((a, b) => {
+      const aTime = a.lastReviewDate?.getTime() ?? 0;
+      const bTime = b.lastReviewDate?.getTime() ?? 0;
+      return bTime - aTime;
+    });
   }
 
   /**
