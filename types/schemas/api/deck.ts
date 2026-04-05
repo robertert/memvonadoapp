@@ -89,6 +89,13 @@ export const ResetDeckRequestSchema = z
   .strict();
 export type ResetDeckRequest = z.infer<typeof ResetDeckRequestSchema>;
 
+export const FlipDeckCardsRequestSchema = z
+  .object({
+    deckId: z.string(),
+  })
+  .strict();
+export type FlipDeckCardsRequest = z.infer<typeof FlipDeckCardsRequestSchema>;
+
 export const UpdateDeckSettingsRequestSchema = z
   .object({
     deckId: z.string(),

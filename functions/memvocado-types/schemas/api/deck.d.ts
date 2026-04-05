@@ -176,6 +176,14 @@ export declare const ResetDeckRequestSchema: z.ZodObject<{
     deckId: string;
 }>;
 export type ResetDeckRequest = z.infer<typeof ResetDeckRequestSchema>;
+export declare const FlipDeckCardsRequestSchema: z.ZodObject<{
+    deckId: z.ZodString;
+}, "strict", z.ZodTypeAny, {
+    deckId: string;
+}, {
+    deckId: string;
+}>;
+export type FlipDeckCardsRequest = z.infer<typeof FlipDeckCardsRequestSchema>;
 export declare const UpdateDeckSettingsRequestSchema: z.ZodObject<{
     deckId: z.ZodString;
     deck: z.ZodObject<{

@@ -399,6 +399,40 @@ export class FirestoreCardRepository implements CardRepository {
   /**
    * @param {string} userId - User ID
    * @param {string} deckId - Deck ID
+   * @return {Promise<void>}
+   */
+  async bulkFlipCards(userId: string, deckId: string): Promise<void> {
+    const cardsSnap = await db
+      .collection(`users/${userId}/decks/${deckId}/cards`)
+      .get();
+    if (cardsSnap.empty) return;
+
+    const CHUNK = 499;
+    let batch = db.batch();
+    let count = 0;
+
+    for (const doc of cardsSnap.docs) {
+      const { cardData } = doc.data();
+      batch.update(doc.ref, {
+        "cardData.front": cardData?.back ?? "",
+        "cardData.back": cardData?.front ?? "",
+        "cardData.frontLower": (cardData?.back ?? "").trim().toLowerCase(),
+        "cardData.backLower": (cardData?.front ?? "").trim().toLowerCase(),
+      });
+      count++;
+      if (count >= CHUNK) {
+        await batch.commit();
+        batch = db.batch();
+        count = 0;
+      }
+    }
+
+    if (count > 0) await batch.commit();
+  }
+
+  /**
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
    * @param {object} ops - Upsert, update, and delete operations
    * @param {Record<string, unknown>} deckUpdate - Deck metadata update
    * @return {Promise<void>}

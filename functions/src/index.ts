@@ -50,6 +50,7 @@ export {
   getDeckCards,
   getPopularDecks,
   resetDeck,
+  flipDeckCards,
   updateDeckSettings,
   updateUserDeckSettings,
   startLearningDeck,

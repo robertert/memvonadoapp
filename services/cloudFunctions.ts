@@ -157,6 +157,7 @@ import {
   GetUserDueDeckCardsRequest,
   GetUserNewDeckCardsRequest,
   ResetDeckRequest,
+  FlipDeckCardsRequest,
   UpdateDeckSettingsRequest,
   UpdateUserDeckSettingsRequest,
   StartLearningDeckRequest,
@@ -680,6 +681,21 @@ export const cloudFunctions = {
     if (!validatedData.success) {
       console.error(validatedData.error);
       throw new Error("Invalid data returned from resetDeck");
+    }
+    return validatedData.data;
+  },
+
+  // Flip all cards in a deck (permanently swap front ↔ back)
+  flipDeckCards: async (deckId: string) => {
+    const fn = httpsCallable<FlipDeckCardsRequest, SuccessResponse>(
+      functions,
+      "flipDeckCards"
+    );
+    const result = await fn({ deckId });
+    const validatedData = SuccessResponseSchema.safeParse(result.data);
+    if (!validatedData.success) {
+      console.error(validatedData.error);
+      throw new Error("Invalid data returned from flipDeckCards");
     }
     return validatedData.data;
   },

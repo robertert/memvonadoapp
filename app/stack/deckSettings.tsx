@@ -61,6 +61,7 @@ export default function deckSettings(): React.JSX.Element {
   const [showIconModal, setShowIconModal] = useState<boolean>(false);
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [isResetting, setIsResetting] = useState<boolean>(false);
+  const [isFlipping, setIsFlipping] = useState<boolean>(false);
 
   // Editor management state
   const [editors, setEditors] = useState<{ id: string; username: string }[]>([]);
@@ -225,6 +226,22 @@ export default function deckSettings(): React.JSX.Element {
       Alert.alert("Błąd", "Nie udało się zresetować decku. Spróbuj ponownie.");
     } finally {
       setIsResetting(false);
+    }
+  }
+
+  async function handleFlipDeckCards(): Promise<void> {
+    try {
+      setIsFlipping(true);
+      if (!userId) throw new Error("No userCtx");
+      await cloudFunctions.flipDeckCards(typedParams.deckId);
+      Alert.alert("Sukces", "Karty zostały odwrócone pomyślnie.", [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+    } catch (error) {
+      console.error("Error flipping deck cards:", error);
+      Alert.alert("Błąd", "Nie udało się odwrócić kart. Spróbuj ponownie.");
+    } finally {
+      setIsFlipping(false);
     }
   }
 
@@ -754,6 +771,45 @@ export default function deckSettings(): React.JSX.Element {
                 {isResetting ? "Resetowanie..." : "Resetuj postęp decku"}
               </Text>
               {!isResetting && (
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={24}
+                  color={Colors.red}
+                />
+              )}
+            </Pressable>
+          </View>
+
+          {/* Odwróć karty */}
+          <View style={styles.section}>
+            <Pressable
+              onPress={() => {
+                if (isFlipping) return;
+                Alert.alert(
+                  "Odwróć karty",
+                  "Czy na pewno chcesz zamienić przód i tył wszystkich kart? Ta operacja jest nieodwracalna.",
+                  [
+                    { text: "Anuluj", style: "cancel" },
+                    { text: "Odwróć", style: "destructive", onPress: handleFlipDeckCards },
+                  ]
+                );
+              }}
+              style={[styles.settingRow, styles.resetButton]}
+              disabled={isFlipping}
+            >
+              {isFlipping ? (
+                <ActivityIndicator size="small" color={Colors.red} />
+              ) : (
+                <MaterialCommunityIcons
+                  name="swap-horizontal"
+                  size={24}
+                  color={Colors.red}
+                />
+              )}
+              <Text style={styles.resetButtonText}>
+                {isFlipping ? "Odwracanie..." : "Odwróć karty (przód ↔ tył)"}
+              </Text>
+              {!isFlipping && (
                 <MaterialCommunityIcons
                   name="chevron-right"
                   size={24}

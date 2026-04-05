@@ -164,6 +164,17 @@ export class DeckService {
     await this.cardRepo.bulkResetCards(userId, deckId);
   }
 
+  /**
+   * @param {string} userId - User ID
+   * @param {string} deckId - Deck ID
+   * @return {Promise<void>}
+   */
+  async flipDeckCards(userId: string, deckId: string): Promise<void> {
+    const userDeck = await this.deckRepo.getUserDeck(userId, deckId);
+    if (!userDeck) throw new Error("not-found");
+    await this.cardRepo.bulkFlipCards(userId, deckId);
+  }
+
   // ── New public methods ────────────────────────────────────────────────────
 
   /**

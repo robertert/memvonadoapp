@@ -78,6 +78,12 @@ export interface CardRepository {
   bulkResetCards(userId: string, deckId: string): Promise<void>;
 
   /**
+   * Swap front ↔ back (and frontLower ↔ backLower) for all cards
+   * in a user's deck copy. Does not touch any learning progress fields.
+   */
+  bulkFlipCards(userId: string, deckId: string): Promise<void>;
+
+  /**
    * Apply a bulk sync from source deck to user's learning copy.
    * - upsert: new cards to set (with merge)
    * - update: existing cards whose content should be overwritten

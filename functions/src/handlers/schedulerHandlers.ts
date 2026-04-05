@@ -7,13 +7,12 @@ import { logger } from "firebase-functions";
 // A ping to an onCall function will return 400 (wrong format), but that's enough
 // to keep the container warm — the runtime had to start to handle the request.
 const WARM_URLS: string[] = [
-  // TODO: Fill in after first deployment
-  // "https://startlearningsession-XXXX-ew.a.run.app",
-  // "https://getuserdecks-XXXX-ew.a.run.app",
-  // "https://getdeckdetails-XXXX-ew.a.run.app",
-  // "https://updatecardprogress-XXXX-ew.a.run.app",
-  // "https://getdailyuserstats-XXXX-ew.a.run.app",
-  // "https://getuserprogress-XXXX-ew.a.run.app",
+  "https://startlearningsession-cnusrvmxsa-ew.a.run.app",
+  "https://getuserdecks-cnusrvmxsa-ew.a.run.app",
+  "https://getdeckdetails-cnusrvmxsa-ew.a.run.app",
+  "https://updatecardprogress-cnusrvmxsa-ew.a.run.app",
+  "https://getdailyuserstats-cnusrvmxsa-ew.a.run.app",
+  "https://getuserprogress-cnusrvmxsa-ew.a.run.app",
 ];
 
 export const keepFunctionsWarm = onSchedule(

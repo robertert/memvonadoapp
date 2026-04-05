@@ -42,6 +42,7 @@ import {
   GetUserDueDeckCardsRequestSchema,
   GetUserNewDeckCardsRequestSchema,
   ResetDeckRequestSchema,
+  FlipDeckCardsRequestSchema,
   UpdateDeckSettingsRequestSchema,
   UpdateUserDeckSettingsRequestSchema,
   StartLearningDeckRequestSchema,
@@ -668,6 +669,29 @@ export const resetDeck = onCall(async (request) => {
     return serializeTimestamps(SuccessResponseSchema.parse({ success: true }));
   } catch (error) {
     mapServiceError(error, "resetDeck");
+  }
+});
+
+/**
+ * Permanently flip all cards in a user's deck (swap front ↔ back)
+ */
+export const flipDeckCards = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Authentication required");
+  }
+  const parsed = FlipDeckCardsRequestSchema.safeParse(request.data || {});
+  if (!parsed.success) {
+    throw new HttpsError("invalid-argument", "Invalid request data", {
+      issues: parsed.error.issues,
+    });
+  }
+  const { deckId } = parsed.data;
+  try {
+    await deckService.flipDeckCards(request.auth.uid, deckId);
+    logger.info("Deck cards flipped successfully", { deckId, userId: request.auth.uid });
+    return serializeTimestamps(SuccessResponseSchema.parse({ success: true }));
+  } catch (error) {
+    mapServiceError(error, "flipDeckCards");
   }
 });
 
