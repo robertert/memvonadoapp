@@ -13,6 +13,12 @@ const WARM_URLS: string[] = [
   "https://updatecardprogress-cnusrvmxsa-ew.a.run.app",
   "https://getdailyuserstats-cnusrvmxsa-ew.a.run.app",
   "https://getuserprogress-cnusrvmxsa-ew.a.run.app",
+  "https://updateuserstreakonlogin-cnusrvmxsa-ew.a.run.app",
+  "https://getavocadostatus-cnusrvmxsa-ew.a.run.app",
+  "https://getuserdeckdetails-cnusrvmxsa-ew.a.run.app",
+  "https://getdeckcards-cnusrvmxsa-ew.a.run.app",
+  "https://getpopulardecks-cnusrvmxsa-ew.a.run.app",
+  "https://searchdecks-cnusrvmxsa-ew.a.run.app",
 ];
 
 export const keepFunctionsWarm = onSchedule(

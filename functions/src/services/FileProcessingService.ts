@@ -142,8 +142,8 @@ function mergeChunkResults(results: GeminiResponseType[]): GeminiResponseType {
     for (const card of r.flashcards) {
       const key = card.front.trim().toLowerCase();
       if (!seen.has(key)) {
- seen.add(key); allFlashcards.push(card);
-}
+        seen.add(key); allFlashcards.push(card);
+      }
     }
   }
   const lastMeta = results[results.length - 1]?.meta;
@@ -208,7 +208,7 @@ function parseCoTResponse(responseText: string): GeminiResponseType {
  * @return {Promise<GeminiResponseType>} Gemini response for this chunk
  */
 async function processTextChunkWithGemini(text: string, sourceType: string, detail: DetailLevel, chunkIndex: number, totalChunks: number, hint?: string | null): Promise<GeminiResponseType> {
-  const model = vertexAI.getGenerativeModel({ model: "gemini-2.0-flash-001", generationConfig: { responseMimeType: "application/json", temperature: 0.2, responseSchema: outputSchema } });
+  const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json", temperature: 0.2, responseSchema: outputSchema } });
   const prompt = buildCoTPrompt(sourceType, detail, hint);
   const fragmentLabel = totalChunks > 1 ? `\n\n(Fragment ${chunkIndex + 1} z ${totalChunks})` : "";
   const result = await model.generateContent({
@@ -242,7 +242,7 @@ async function processTextWithGemini(text: string, sourceType: string, detail: D
  * @return {Promise<GeminiResponseType>} Gemini response
  */
 async function processMultimodalCoT(filePart: { fileData: { fileUri: string; mimeType: string } }, sourceType: string, detail: DetailLevel, hint?: string | null): Promise<GeminiResponseType> {
-  const model = vertexAI.getGenerativeModel({ model: "gemini-2.0-flash-001", generationConfig: { responseMimeType: "application/json", temperature: 0.2, responseSchema: outputSchema } });
+  const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json", temperature: 0.2, responseSchema: outputSchema } });
   const prompt = buildCoTPrompt(sourceType, detail, hint);
   const result = await model.generateContent({ contents: [{ role: "user", parts: [filePart, { text: prompt }] }] });
   const responseText = result.response.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -260,7 +260,7 @@ async function processMultimodalCoT(filePart: { fileData: { fileUri: string; mim
  * @return {Promise<GeminiResponseType>} Gemini response for this PDF chunk
  */
 async function processInlinePdfChunk(pdfBuffer: Buffer, sourceType: string, chunkIndex: number, totalChunks: number, detail: DetailLevel, hint?: string | null): Promise<GeminiResponseType> {
-  const model = vertexAI.getGenerativeModel({ model: "gemini-2.0-flash-001", generationConfig: { responseMimeType: "application/json", temperature: 0.2, responseSchema: outputSchema } });
+  const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json", temperature: 0.2, responseSchema: outputSchema } });
   const prompt = buildCoTPrompt(sourceType, detail, hint);
   const result = await model.generateContent({
     contents: [{ role: "user", parts: [{ inlineData: { data: pdfBuffer.toString("base64"), mimeType: "application/pdf" } }, { text: `${prompt}\n\n(Fragment ${chunkIndex + 1} z ${totalChunks})` }] }],
@@ -315,8 +315,8 @@ export class FileProcessingService {
       const ext = fileName.slice(fileName.lastIndexOf(".")).toLowerCase();
       const fromExt = EXTENSION_TO_FILE_TYPE[ext];
       if (fromExt) {
- logger.info("classifyFile: MIME miss, matched by extension", { mimeType, fileName, resolvedType: fromExt }); return fromExt;
-}
+        logger.info("classifyFile: MIME miss, matched by extension", { mimeType, fileName, resolvedType: fromExt }); return fromExt;
+      }
     }
     throw new HttpsError("invalid-argument", `Nieobsługiwany typ pliku: ${mimeType}${fileName ? ` (${fileName})` : ""}. ${SUPPORTED_FORMATS_LABEL}`);
   }
@@ -404,10 +404,11 @@ export class FileProcessingService {
    */
   async scanDocument(params: { storagePath: string; mimeType?: string }): Promise<{ flashcards: Array<{ front: string; back: string }> }> {
     const { storagePath, mimeType = "application/pdf" } = params;
-    const model = vertexAI.getGenerativeModel({ model: "gemini-2.0-flash-001", generationConfig: { responseMimeType: "application/json" } });
+    const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { responseMimeType: "application/json" } });
 
     const filePart = { fileData: { fileUri: buildGsUri(storagePath), mimeType } };
-    const textPart = { text: `
+    const textPart = {
+      text: `
 Jesteś ekspertem w dziedzinie inżynierii dydaktycznej i tworzenia profesjonalnych materiałów do nauki. Twoim zadaniem jest przeanalizowanie dostarczonego dokumentu i przekształcenie go w wysokiej jakości zestaw fiszek w formacie JSON.
 
 ### INSTRUKCJA ANALIZY (PRIORYTETOWA):
@@ -416,7 +417,8 @@ TRYB B: DOKUMENT OPISOWY / CIĄGŁY — głęboka ekstrakcja wiedzy, zasada atom
 
 ### FORMAT WYJŚCIOWY:
 { "flashcards": [{ "front": "...", "back": "..." }] }
-`.trim() };
+`.trim()
+    };
 
     const result = await model.generateContent({ contents: [{ role: "user", parts: [filePart, textPart] }] });
     const responseText = result.response.candidates?.[0].content.parts[0].text;
@@ -433,7 +435,7 @@ TRYB B: DOKUMENT OPISOWY / CIĄGŁY — głęboka ekstrakcja wiedzy, zasada atom
   async extractTextFromImage(params: { storagePath: string; mimeType?: string }): Promise<{ success: boolean; text: string | null; error: string | null }> {
     const { storagePath, mimeType = "image/jpeg" } = params;
     try {
-      const model = vertexAI.getGenerativeModel({ model: "gemini-2.0-flash-001" });
+      const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const filePart = { fileData: { fileUri: buildGsUri(storagePath), mimeType } };
       const textPart = { text: "Extract all visible text from this image. Return ONLY the extracted text, nothing else. If no text is visible, return an empty string. Do not add any explanations or formatting." };
       const result = await model.generateContent({ contents: [{ role: "user", parts: [filePart, textPart] }] });

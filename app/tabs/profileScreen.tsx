@@ -6,7 +6,6 @@ import {
   ScrollView,
   Pressable,
   Share,
-  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Fonts } from "../../constants/colors";
@@ -16,6 +15,7 @@ import { router } from "expo-router";
 import { FireIcon } from "react-native-heroicons/solid";
 import { FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
 import ContributionHeatmap from "../../components/profileScreen/ContributionHeatmap";
+import ProfileSkeleton from "../../components/profileScreen/ProfileSkeleton";
 import { cloudFunctions } from "../../services/cloudFunctions";
 import { buildUserShareMessage } from "@/utils/deepLinks";
 import { useAuth } from "../../store/auth";
@@ -144,218 +144,214 @@ export default function profileScreen(): React.JSX.Element {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.topContainer}>
-          <View style={styles.avatarContainer}>
-            <MaterialCommunityIcons
-              name="penguin"
-              size={100}
-              color={Colors.primary_700}
-            />
-          </View>
-          <View style={styles.infoContainer}>
-            <View style={styles.userInfo}>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoNum}>
-                  {profileData?.followersCount ?? 0}
-                </Text>
-                <Text style={styles.infoText}>Followers</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoNum}>
-                  {profileData?.followingCount ?? 0}
-                </Text>
-                <Text style={styles.infoText}>Following</Text>
+        {isLoading ? (
+          <ProfileSkeleton />
+        ) : (
+          <View style={styles.topContainer}>
+            <View style={styles.avatarContainer}>
+              <MaterialCommunityIcons
+                name="penguin"
+                size={100}
+                color={Colors.primary_700}
+              />
+            </View>
+            <View style={styles.infoContainer}>
+              <View style={styles.userInfo}>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoNum}>
+                    {profileData?.followersCount ?? 0}
+                  </Text>
+                  <Text style={styles.infoText}>Followers</Text>
+                </View>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoNum}>
+                    {profileData?.followingCount ?? 0}
+                  </Text>
+                  <Text style={styles.infoText}>Following</Text>
+                </View>
               </View>
             </View>
           </View>
-        </View>
-        <View style={styles.statsContainer}>
-          <Text style={styles.subTitle}>Twoje statystyki</Text>
-          {isLoading ? (
-            <ActivityIndicator size="small" color={Colors.accent_500} />
-          ) : (
-            <>
-              <View style={styles.statsItemsContainer}>
-                <View style={styles.statsItem}>
-                  <MaterialCommunityIcons
-                    name="card"
-                    size={24}
-                    color={Colors.primary_700}
-                    style={styles.statsItemIcon}
-                  />
-                  <Text style={styles.statsItemValue}>
-                    {profileData?.stats?.totalDecks ?? 0}
-                  </Text>
-                </View>
-                <View style={styles.statsItem}>
-                  <FireIcon
-                    size={24}
-                    color={Colors.accent_500}
-                    style={styles.statsItemIcon}
-                  />
-                  <Text style={styles.statsItemValue}>
-                    {profileData?.stats?.currentStreak ?? 0} dni
-                  </Text>
-                </View>
+        )}
+        {!isLoading && (
+          <View style={styles.statsContainer}>
+            <Text style={styles.subTitle}>Twoje statystyki</Text>
+            <View style={styles.statsItemsContainer}>
+              <View style={styles.statsItem}>
+                <MaterialCommunityIcons
+                  name="card"
+                  size={24}
+                  color={Colors.primary_700}
+                  style={styles.statsItemIcon}
+                />
+                <Text style={styles.statsItemValue}>
+                  {profileData?.stats?.totalDecks ?? 0}
+                </Text>
               </View>
-              <View style={styles.statsItemsContainer}>
-                <View style={styles.statsItem}>
-                  <MaterialCommunityIcons
-                    name="cards"
-                    size={24}
-                    color={Colors.primary_700}
-                    style={styles.statsItemIcon}
-                  />
-                  <Text style={styles.statsItemValue}>
-                    {profileData?.stats?.totalCards ?? 0}
-                  </Text>
-                </View>
-                <View style={styles.statsItem}>
-                  <FontAwesome6
-                    name="ranking-star"
-                    size={24}
-                    color={Colors.primary_700}
-                    style={styles.statsItemIcon}
-                  />
-                  <Text style={styles.statsItemValue}>
-                    {profileData?.stats?.totalReviews ?? 0}
-                  </Text>
-                </View>
+              <View style={styles.statsItem}>
+                <FireIcon
+                  size={24}
+                  color={Colors.accent_500}
+                  style={styles.statsItemIcon}
+                />
+                <Text style={styles.statsItemValue}>
+                  {profileData?.stats?.currentStreak ?? 0} dni
+                </Text>
               </View>
-            </>
-          )}
+            </View>
+            <View style={styles.statsItemsContainer}>
+              <View style={styles.statsItem}>
+                <MaterialCommunityIcons
+                  name="cards"
+                  size={24}
+                  color={Colors.primary_700}
+                  style={styles.statsItemIcon}
+                />
+                <Text style={styles.statsItemValue}>
+                  {profileData?.stats?.totalCards ?? 0}
+                </Text>
+              </View>
+              <View style={styles.statsItem}>
+                <FontAwesome6
+                  name="ranking-star"
+                  size={24}
+                  color={Colors.primary_700}
+                  style={styles.statsItemIcon}
+                />
+                <Text style={styles.statsItemValue}>
+                  {profileData?.stats?.totalReviews ?? 0}
+                </Text>
+              </View>
+            </View>
 
-          {/* Awards */}
-          {/*
-          <View style={styles.sectionContainer}>
-            <Text style={styles.subTitle}>Your awards</Text>
-            <ScrollView
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-              style={styles.horizontalScroll}
-            >
-              {awards.length > 0 ? (
-                awards.map((award) => (
-                  <View key={award.key || award.id} style={styles.awardItem}>
-                    <MaterialCommunityIcons
-                      name="medal"
-                      size={24}
-                      color={Colors.primary_700}
-                    />
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.emptyText}>No awards yet</Text>
-              )}
-            </ScrollView>
-          </View>
-          */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.subTitle}>Aktywność nauki</Text>
-            {isLoading ? (
-              <ActivityIndicator size="small" color={Colors.accent_500} />
-            ) : (
-              <ContributionHeatmap
-                weeks={weeks}
-                data={heatmapData.length > 0 ? heatmapData : []}
-                title="Ostatnie tygodnie"
-              />
-            )}
-          </View>
-          {/* Avocado Collection Preview */}
-          {avocadoSkins.length > 0 && (
+            {/* Awards */}
+            {/*
             <View style={styles.sectionContainer}>
-              <Text style={styles.subTitle}>Twoja kolekcja</Text>
+              <Text style={styles.subTitle}>Your awards</Text>
               <ScrollView
                 horizontal={true}
                 showsHorizontalScrollIndicator={false}
                 style={styles.horizontalScroll}
               >
-                {avocadoSkins.map((skin, idx) => {
-                  const skinConfig = DEFAULT_AVOCADO_CONFIG.skins.find(s => s.id === skin.id);
-                  return (
-                    <View
-                      key={skin.id || idx}
-                      style={[
-                        styles.avocadoSkinItem,
-                        { borderColor: AVOCADO_RARITY_COLORS[skin.rarity] },
-                      ]}
-                    >
-                      <AvocadoImage skinId={skin.id} size="small" />
-                      <Text style={styles.avocadoSkinName}>{skinConfig?.name || skin.name}</Text>
+                {awards.length > 0 ? (
+                  awards.map((award) => (
+                    <View key={award.key || award.id} style={styles.awardItem}>
+                      <MaterialCommunityIcons
+                        name="medal"
+                        size={24}
+                        color={Colors.primary_700}
+                      />
                     </View>
-                  );
-                })}
+                  ))
+                ) : (
+                  <Text style={styles.emptyText}>No awards yet</Text>
+                )}
+              </ScrollView>
+            </View>
+            */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.subTitle}>Aktywność nauki</Text>
+              <ContributionHeatmap
+                weeks={weeks}
+                data={heatmapData.length > 0 ? heatmapData : []}
+                title="Ostatnie tygodnie"
+              />
+            </View>
+            {/* Avocado Collection Preview */}
+            {avocadoSkins.length > 0 && (
+              <View style={styles.sectionContainer}>
+                <Text style={styles.subTitle}>Twoja kolekcja</Text>
+                <ScrollView
+                  horizontal={true}
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.horizontalScroll}
+                >
+                  {avocadoSkins.map((skin, idx) => {
+                    const skinConfig = DEFAULT_AVOCADO_CONFIG.skins.find(s => s.id === skin.id);
+                    return (
+                      <View
+                        key={skin.id || idx}
+                        style={[
+                          styles.avocadoSkinItem,
+                          { borderColor: AVOCADO_RARITY_COLORS[skin.rarity] },
+                        ]}
+                      >
+                        <AvocadoImage skinId={skin.id} size="small" />
+                        <Text style={styles.avocadoSkinName}>{skinConfig?.name || skin.name}</Text>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+                <Pressable
+                  style={styles.collectionButton}
+                  onPress={() => {
+                    router.push("/stack/avocadoCollectionScreen");
+                  }}
+                >
+                  <Text style={styles.collectionButtonText}>Zobacz wszystkie</Text>
+                  <MaterialCommunityIcons
+                    name="arrow-right"
+                    size={20}
+                    color={Colors.primary_700}
+                  />
+                </Pressable>
+              </View>
+            )}
+
+            <View style={styles.sectionContainer}>
+              <Text style={styles.subTitle}>Twoje decki</Text>
+              <ScrollView
+                horizontal={true}
+                showsHorizontalScrollIndicator={false}
+                style={styles.horizontalScroll}
+              >
+                {myDecks.length > 0 ? (
+                  myDecks.map((deck) => (
+                    <Pressable key={deck.key || deck.id} onPress={() => {
+                      router.push({
+                        pathname: "../stack/deckDetails",
+                        params: { deckId: deck.id },
+                      });
+                    }}>
+                      <View style={styles.deckItem}>
+                        <MaterialCommunityIcons
+                          name="cards"
+                          size={24}
+                          color={Colors.primary_700}
+                          style={styles.deckIcon}
+                        />
+                        <Text style={styles.deckName}>{deck.name}</Text>
+                        <Text style={styles.deckCards}>{deck.cards} kart</Text>
+                        {deck.lastStudied && (
+                          <Text style={styles.deckLastStudied}>
+                            {deck.lastStudied}
+                          </Text>
+                        )}
+                      </View>
+                    </Pressable>
+                  ))
+                ) : (
+                  <Text style={styles.emptyText}>No decks yet</Text>
+                )}
               </ScrollView>
               <Pressable
-                style={styles.collectionButton}
+                style={styles.libraryButton}
                 onPress={() => {
-                  router.push("/stack/avocadoCollectionScreen");
+                  router.push("../stack/myLibraryScreen");
                 }}
               >
-                <Text style={styles.collectionButtonText}>Zobacz wszystkie</Text>
+                <Text style={styles.libraryButtonText}>
+                  Przejdź do biblioteki
+                </Text>
                 <MaterialCommunityIcons
                   name="arrow-right"
                   size={20}
-                  color={Colors.primary_700}
+                  color={Colors.primary_100}
                 />
               </Pressable>
             </View>
-          )}
-
-          <View style={styles.sectionContainer}>
-            <Text style={styles.subTitle}>Twoje decki</Text>
-            <ScrollView
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-              style={styles.horizontalScroll}
-            >
-              {myDecks.length > 0 ? (
-                myDecks.map((deck) => (
-                  <Pressable key={deck.key || deck.id} onPress={() => {
-                    router.push({
-                      pathname: "../stack/deckDetails",
-                      params: { deckId: deck.id },
-                    });
-                  }}>
-                    <View style={styles.deckItem}>
-                      <MaterialCommunityIcons
-                        name="cards"
-                        size={24}
-                        color={Colors.primary_700}
-                        style={styles.deckIcon}
-                      />
-                      <Text style={styles.deckName}>{deck.name}</Text>
-                      <Text style={styles.deckCards}>{deck.cards} kart</Text>
-                      {deck.lastStudied && (
-                        <Text style={styles.deckLastStudied}>
-                          {deck.lastStudied}
-                        </Text>
-                      )}
-                    </View>
-                  </Pressable>
-                ))
-              ) : (
-                <Text style={styles.emptyText}>No decks yet</Text>
-              )}
-            </ScrollView>
-            <Pressable
-              style={styles.libraryButton}
-              onPress={() => {
-                router.push("../stack/myLibraryScreen");
-              }}
-            >
-              <Text style={styles.libraryButtonText}>
-                Przejdź do biblioteki
-              </Text>
-              <MaterialCommunityIcons
-                name="arrow-right"
-                size={20}
-                color={Colors.primary_100}
-              />
-            </Pressable>
           </View>
-        </View>
+        )}
       </ScrollView>
     </GestureHandlerRootView>
   );

@@ -554,7 +554,13 @@ export default function deckDetails(): React.JSX.Element {
           >
             <ArrowLeftIcon color={Colors.primary_700} size={30} />
           </Pressable>
-          <Text style={styles.headerTitle}>{deck?.title}</Text>
+          <Text
+            style={styles.headerTitle}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {deck?.title}
+          </Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <Pressable
               onPress={() => {
@@ -829,6 +835,8 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerTitle: {
+    flex: 1,
+    marginHorizontal: 8,
     fontSize: 24,
     fontWeight: "bold",
     color: Colors.primary_700,

@@ -77,7 +77,7 @@ export class AvoQueryService {
   /**
    * @param {UsageRepository} usageRepo - Usage repository
    */
-  constructor(private readonly usageRepo: UsageRepository) {}
+  constructor(private readonly usageRepo: UsageRepository) { }
 
   /**
    * @return {Promise<number>} Daily AVO query limit
@@ -138,7 +138,7 @@ export class AvoQueryService {
     }
 
     const prompt = buildAvoQueryPrompt(chipType, cardContext, responseLanguage, customQuestion);
-    const model = vertexAI.getGenerativeModel({ model: "gemini-2.0-flash-001" });
+    const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: { temperature: 0.7, maxOutputTokens: 512 },

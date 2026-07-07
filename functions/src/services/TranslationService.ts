@@ -38,7 +38,7 @@ export class TranslationService {
   /**
    * @param {UsageRepository} usageRepo - Usage repository
    */
-  constructor(private readonly usageRepo: UsageRepository) {}
+  constructor(private readonly usageRepo: UsageRepository) { }
 
   /**
    * @param {string} userId - User ID
@@ -126,7 +126,7 @@ export class TranslationService {
     toLanguage: string;
   }): Promise<string[]> {
     const model = vertexAI.getGenerativeModel({
-      model: "gemini-2.0-flash-001",
+      model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0.1,
