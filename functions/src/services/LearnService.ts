@@ -96,10 +96,6 @@ export class LearnService {
       ]);
       const dueReverseCards = await this.cardRepo.getDueReverseCards(userId, deckId);
 
-      if (!todayStats) {
-        currentStats.dueCardsRemaining = dueCards.length + dueReverseCards.length;
-      }
-
       const dueCardsWithNewReverse = dueCards.filter(
         (c) => c.firstLearnReverse?.isNew
       );
@@ -132,10 +128,60 @@ export class LearnService {
       ];
     }
 
-    await this.statsRepo.setDeckDailyStats(userId, deckId, currentStats);
+    // Reconcile display counters against the actually-built queue so that
+    // (newCardsRemaining + dueCardsRemaining + inProgressNewCards + inProgressDueCards)
+    // === items.length. This drops orphaned in-progress counters on resume and fixes
+    // the bidirectional new-card undercount.
+    const reconciledStats = this._computeRemainingFromItems(items, currentStats);
+
+    await this.statsRepo.setDeckDailyStats(userId, deckId, reconciledStats);
     await this.deckRepo.updateUserDeck(userId, deckId, { lastReviewDate: new Date() });
 
-    return { items, dailyStats: currentStats, deck };
+    return { items, dailyStats: reconciledStats, deck };
+  }
+
+  /**
+   * Pure function: derives the display counters (remaining / in-progress) directly
+   * from the composition of the built session queue, guaranteeing that
+   * newCardsRemaining + dueCardsRemaining + inProgressNewCards + inProgressDueCards
+   * equals items.length. Preserves completed counters and lastUpdatedStats from currentStats.
+   *
+   * inProgressDueCards resets to 0 at session start: it only arises from answering a
+   * due card "Wrong" mid-session, and any such card from a previous sitting whose
+   * persisted due moved into the future is simply absent from `items` (correctly dropped).
+   * @param {SessionItem[]} items - Built session queue
+   * @param {DailyStats} currentStats - Stats carrying completed counters + lastUpdatedStats
+   * @return {DailyStats} Reconciled stats
+   */
+  _computeRemainingFromItems(
+    items: SessionItem[],
+    currentStats: DailyStats
+  ): DailyStats {
+    let newCardsRemaining = 0;
+    let inProgressNewCards = 0;
+    let dueCardsRemaining = 0;
+
+    for (const item of items) {
+      const fl =
+        item.direction === "reverse"
+          ? item.card.firstLearnReverse
+          : item.card.firstLearn;
+      if (fl?.isNew ?? true) {
+        newCardsRemaining += 1;
+      } else if (fl?.isFirst) {
+        inProgressNewCards += 1;
+      } else {
+        dueCardsRemaining += 1;
+      }
+    }
+
+    return {
+      ...currentStats,
+      newCardsRemaining,
+      dueCardsRemaining,
+      inProgressNewCards,
+      inProgressDueCards: 0,
+    };
   }
 
   /**

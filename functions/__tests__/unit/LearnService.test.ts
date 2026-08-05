@@ -335,3 +335,92 @@ describe("startSession (in-memory)", () => {
     expect(saved!.dueCardsRemaining).toBe(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// startSession — counter reconciliation (buckets must match the built queue)
+// ---------------------------------------------------------------------------
+
+describe("startSession — counter reconciliation", () => {
+  const USER_ID = "user-1";
+  const DECK_ID = "deck-1";
+
+  const bucketSum = (s: {
+    newCardsRemaining: number;
+    dueCardsRemaining: number;
+    inProgressNewCards: number;
+    inProgressDueCards: number;
+  }) =>
+    s.newCardsRemaining +
+    s.dueCardsRemaining +
+    s.inProgressNewCards +
+    s.inProgressDueCards;
+
+  it("fresh session: remaining+inProgress buckets sum to items.length", async () => {
+    const { service, cardRepo, deckRepo, userRepo } = makeService();
+    deckRepo.seed(USER_ID, DECK_ID, makeDeck({ id: DECK_ID }));
+    userRepo.seed(USER_ID, makeUser({ id: USER_ID }));
+    cardRepo.seed(USER_ID, DECK_ID, [
+      makeNewCard("n1"),
+      makeNewCard("n2"),
+      makeDueCard("d1"),
+      makeDueCard("d2"),
+    ]);
+
+    const result = await service.startSession({ userId: USER_ID, deckId: DECK_ID });
+
+    expect(bucketSum(result.dailyStats)).toBe(result.items.length);
+    expect(result.dailyStats.newCardsRemaining).toBe(2);
+    expect(result.dailyStats.dueCardsRemaining).toBe(2);
+  });
+
+  it("resume: drops orphaned inProgressDueCards and preserves completed", async () => {
+    const { service, cardRepo, deckRepo, userRepo, statsRepo } = makeService();
+    deckRepo.seed(USER_ID, DECK_ID, makeDeck({ id: DECK_ID }));
+    userRepo.seed(USER_ID, makeUser({ id: USER_ID }));
+    // Queue holds only a new + a due card — no in-progress-due card is fetchable.
+    cardRepo.seed(USER_ID, DECK_ID, [makeNewCard("n1"), makeDueCard("d1")]);
+
+    // Stored stats from an earlier sitting today: 2 cards answered "Wrong" earlier were
+    // rescheduled into the future and are no longer in the queue.
+    await statsRepo.setDeckDailyStats(
+      USER_ID,
+      DECK_ID,
+      makeDailyStats({
+        inProgressDueCards: 2,
+        completedNewToday: 1,
+        completedDueToday: 3,
+        lastUpdatedStats: new Date(),
+      })
+    );
+
+    const result = await service.startSession({ userId: USER_ID, deckId: DECK_ID });
+
+    expect(result.dailyStats.inProgressDueCards).toBe(0);
+    expect(bucketSum(result.dailyStats)).toBe(result.items.length);
+    expect(result.dailyStats.completedNewToday).toBe(1);
+    expect(result.dailyStats.completedDueToday).toBe(3);
+  });
+
+  it("bidirectional: counts the reverse-new side of due cards", async () => {
+    const { service, cardRepo, deckRepo, userRepo } = makeService();
+    deckRepo.seed(
+      USER_ID,
+      DECK_ID,
+      makeDeck({
+        id: DECK_ID,
+        settings: { zenMode: false, shuffleNewCards: false, bidirectional: true },
+      })
+    );
+    userRepo.seed(USER_ID, makeUser({ id: USER_ID }));
+    // A single due card → forward (due) + reverse (new) once reverse fields are inited.
+    cardRepo.seed(USER_ID, DECK_ID, [makeDueCard("d1")]);
+
+    const result = await service.startSession({ userId: USER_ID, deckId: DECK_ID });
+
+    expect(result.items).toHaveLength(2);
+    expect(bucketSum(result.dailyStats)).toBe(result.items.length);
+    // Reverse-new item is counted (previously undercounted to 0).
+    expect(result.dailyStats.newCardsRemaining).toBe(1);
+    expect(result.dailyStats.dueCardsRemaining).toBe(1);
+  });
+});

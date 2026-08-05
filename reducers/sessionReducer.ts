@@ -96,6 +96,7 @@ export function sessionReducer(
       const historyEntry: HistoryEntry = {
         item: originalItem,
         dailyStats: state.dailyStats,
+        progress: state.progress,
         grade,
       };
 
@@ -127,9 +128,10 @@ export function sessionReducer(
       const lastEntry = state.history[state.history.length - 1];
       return {
         ...state,
-        cards: [lastEntry.item, ...state.cards],
+        cards: [lastEntry.item, ...state.cards].sort(compDueDate),
         history: state.history.slice(0, -1),
         dailyStats: lastEntry.dailyStats,
+        progress: lastEntry.progress,
         status: "active",
       };
     }

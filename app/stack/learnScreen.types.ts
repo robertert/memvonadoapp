@@ -43,6 +43,7 @@ export interface CardLogicState {
 export interface HistoryEntry {
   item: SessionItem;
   dailyStats: DailyStats | null;
+  progress: ProgressState;
   grade: CardGrade;
 }
 

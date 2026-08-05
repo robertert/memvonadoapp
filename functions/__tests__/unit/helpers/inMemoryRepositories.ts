@@ -68,6 +68,25 @@ export class InMemoryCardRepository implements CardRepository {
     this.sourceCards.set(deckId, [...cards]);
   }
 
+  async getSourceDeckCard(deckId: string, cardId: string): Promise<Card | null> {
+    const cards = this.sourceCards.get(deckId) ?? [];
+    return cards.find((c) => c.id === cardId) ?? null;
+  }
+
+  async getCardsByIds(
+    userId: string,
+    deckId: string,
+    cardIds: string[]
+  ): Promise<Card[]> {
+    const cards = this.cards.get(`${userId}/${deckId}`) ?? [];
+    const ids = new Set(cardIds);
+    return cards.filter((c) => ids.has(c.id));
+  }
+
+  async bulkFlipCards(_userId: string, _deckId: string): Promise<void> {
+    // no-op: not exercised by the services under unit test
+  }
+
   async getNewCards(
     userId: string,
     deckId: string,
